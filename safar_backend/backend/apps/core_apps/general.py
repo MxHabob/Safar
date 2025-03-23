@@ -2,6 +2,8 @@ import uuid
 from django.db import models
 from rest_framework.pagination import PageNumberPagination
 
+from backend.apps.safar.models import Discount
+
 class GlPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
