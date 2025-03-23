@@ -6,7 +6,7 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from django.http import HttpResponse
-from apps.core.views import health_check
+from apps.core_apps.views import health_check
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -24,8 +24,8 @@ schema_view = get_schema_view(
 rest_api_urlpatterns = [
     path('api/', include('djoser.urls')),
     path('api/', include('apps.authentication.urls')),
-    path('api/', include('apps.booking_app.urls')),
-    path('api/', include('apps.chat.urls')),
+    path('api/', include('apps.safar.urls')),
+    path('api/', include('apps.real_time.urls')),
     path('health/', health_check, name='health_check'),
 ]
 

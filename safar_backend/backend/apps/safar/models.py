@@ -161,10 +161,11 @@ class Box(BaseModel):
     description = models.TextField(blank=True, null=True, verbose_name="Description")
     total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Total Price", db_index=True)
     currency = models.CharField(max_length=10, default="USD", verbose_name="Currency")
-    place = models.ForeignKey(Place, on_delete=models.SET_NULL, null=True, blank=True, related_name="boxes", verbose_name="Place")
-    experience = models.ForeignKey(Experience, on_delete=models.SET_NULL, null=True, blank=True, related_name="boxes", verbose_name="Experience")
+    country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Country")
+    city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="City")
+    place = models.ManyToManyField(Place, on_delete=models.SET_NULL, null=True, blank=True, related_name="boxes", verbose_name="Place")
+    experience = models.ManyToManyField(Experience, on_delete=models.SET_NULL, null=True, blank=True, related_name="boxes", verbose_name="Experience")
     contents = models.JSONField(default=list, verbose_name="Contents")
-    discount = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Discount")
     images = models.JSONField(default=list, verbose_name="Images")
 
     def __str__(self):
