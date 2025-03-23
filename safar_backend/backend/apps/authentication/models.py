@@ -1,9 +1,9 @@
 import uuid
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
-from django.core.validators import EmailValidator, RegexValidator
+from django.core.validators import EmailValidator
 from django.utils.translation import gettext_lazy as _
-from apps.core.general import BaseModel
+from apps.core_apps.general import BaseModel
 from phonenumber_field.modelfields import PhoneNumberField
 from cities_light.models import City, Region, Country
 
