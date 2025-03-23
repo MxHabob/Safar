@@ -1,11 +1,12 @@
 import uuid
 from django.db import models
+from django.contrib.gis.db import models as gis_models
 from django.core.validators import MinValueValidator, MaxValueValidator
-from apps.core_apps.general import BaseModel
+from apps.core_apps.general import BaseModel , generate_unique_code
 from apps.authentication.models import User
 from cities_light.models import City, Region, Country
 
-
+# Categories such as hotels - apartments - chalets - Care places - kindergarten - restaurants - religious centers - mosques - villas - houses, etc.
 class Category(BaseModel):
     name = models.CharField(max_length=255, unique=True, verbose_name="Category Name", db_index=True)
     description = models.TextField(blank=True, null=True, verbose_name="Description")
@@ -17,7 +18,7 @@ class Category(BaseModel):
         verbose_name = "Category"
         verbose_name_plural = "Categories"
 
-
+# Store all the images in this table such as pictures of places, pictures of experiences, etc. ( future development )
 class Image(BaseModel):
     entity_id = models.UUIDField(verbose_name="Entity ID", db_index=True)
     entity_type = models.CharField(max_length=50, verbose_name="Entity Type", db_index=True)
@@ -34,10 +35,10 @@ class Image(BaseModel):
             models.Index(fields=["entity_id", "entity_type"]),  # Composite index for entity queries
         ]
 
-
+# Discount on reservations for places, boxes, experiences, flights, etc., provided that the discount is used once.
 class Discount(BaseModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    code = models.CharField(max_length=50, unique=True, verbose_name="Discount Code", db_index=True)
+    code = models.CharField( max_length=50, unique=True, verbose_name="Discount Code", db_index=True, default=generate_unique_code)
     discount_type = models.CharField(
         max_length=10,
         choices=[("Percentage", "Percentage"), ("Fixed", "Fixed")],
@@ -48,10 +49,10 @@ class Discount(BaseModel):
     valid_from = models.DateTimeField(verbose_name="Valid From", db_index=True)
     valid_to = models.DateTimeField(verbose_name="Valid To", db_index=True)
     is_active = models.BooleanField(default=True, verbose_name="Is Active", db_index=True)
-    applicable_places = models.ManyToManyField("Place", blank=True, related_name="applicable_discounts", verbose_name="Applicable Places")
-    applicable_experiences = models.ManyToManyField("Experience", blank=True, related_name="applicable_discounts", verbose_name="Applicable Experiences")
-    applicable_flights = models.ManyToManyField("Flight", blank=True, related_name="applicable_discounts", verbose_name="Applicable Flights")
-    applicable_boxes = models.ManyToManyField("Box", blank=True, related_name="applicable_discounts", verbose_name="Applicable Boxes")
+    applicable_places = models.ManyToManyField("Place", blank=True, related_name="discounts", verbose_name="Applicable Places")
+    applicable_experiences = models.ManyToManyField("Experience", blank=True, related_name="discounts", verbose_name="Applicable Experiences")
+    applicable_flights = models.ManyToManyField("Flight", blank=True, related_name="discounts", verbose_name="Applicable Flights")
+    applicable_boxes = models.ManyToManyField("Box", blank=True, related_name="discounts", verbose_name="Applicable Boxes")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created At", db_index=True)
 
     def __str__(self):
@@ -61,15 +62,13 @@ class Discount(BaseModel):
         verbose_name = "Discount"
         verbose_name_plural = "Discounts"
 
-
+# Place such as hotels - villas - apartments - museums - restaurants - museums - churches etc.
 class Place(BaseModel):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="places", verbose_name="Category")
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="owned_places", verbose_name="Owner")
     name = models.CharField(max_length=255, verbose_name="Place Name", db_index=True)
     description = models.TextField(blank=True, null=True, verbose_name="Description")
-    location = models.CharField(max_length=255, verbose_name="Location")
-    latitude = models.FloatField(verbose_name="Latitude", db_index=True)
-    longitude = models.FloatField(verbose_name="Longitude", db_index=True)
+    location = gis_models.PointField(geography=True, verbose_name="Geolocation")
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Country")
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="City")
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Region")
@@ -92,19 +91,17 @@ class Place(BaseModel):
         verbose_name = "Place"
         verbose_name_plural = "Places"
         indexes = [
-            models.Index(fields=["latitude", "longitude"]),  # Composite index for location-based queries
-            models.Index(fields=["name", "rating"]),  # Composite index for search and ranking
+            models.Index(fields=["name", "rating"]),
+            gis_models.Index(fields=['location']),  # Spatial index for location
         ]
 
-
+# Experience like motorcycling - skiing - walking around the monuments etc.
 class Experience(BaseModel):
     place = models.ForeignKey(Place, on_delete=models.SET_NULL, null=True, blank=True, related_name="experiences", verbose_name="Place")
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="owned_experiences", verbose_name="Owner")
     title = models.CharField(max_length=255, verbose_name="Title", db_index=True)
     description = models.TextField(blank=True, null=True, verbose_name="Description")
-    location = models.CharField(max_length=255, verbose_name="Location")
-    latitude = models.FloatField(blank=True, null=True, verbose_name="Latitude", db_index=True)
-    longitude = models.FloatField(blank=True, null=True, verbose_name="Longitude", db_index=True)
+    location = gis_models.PointField(geography=True, verbose_name="Geolocation")
     price_per_person = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Price Per Person", db_index=True)
     currency = models.CharField(max_length=10, default="USD", verbose_name="Currency")
     duration = models.PositiveIntegerField(verbose_name="Duration (minutes)")
@@ -126,11 +123,11 @@ class Experience(BaseModel):
         verbose_name = "Experience"
         verbose_name_plural = "Experiences"
         indexes = [
-            models.Index(fields=["title", "rating"]),  # Composite index for search and ranking
-            models.Index(fields=["latitude", "longitude"]),  # Composite index for location-based queries
+            models.Index(fields=["title", "rating"]),
+            gis_models.Index(fields=['location']),  # Spatial index for location
         ]
 
-
+# Flight reservations and basic data storage
 class Flight(BaseModel):
     airline = models.CharField(max_length=255, verbose_name="Airline", db_index=True)
     flight_number = models.CharField(max_length=50, unique=True, verbose_name="Flight Number", db_index=True)
@@ -151,11 +148,11 @@ class Flight(BaseModel):
         verbose_name = "Flight"
         verbose_name_plural = "Flights"
         indexes = [
-            models.Index(fields=["departure_airport", "arrival_airport"]),  # Composite index for route queries
-            models.Index(fields=["departure_time", "arrival_time"]),  # Composite index for time-based queries
+            models.Index(fields=["departure_airport", "arrival_airport"]),
+            models.Index(fields=["departure_time", "arrival_time"]),
         ]
 
-
+# Box is a collection of suggestions for comprehensive tourist trips, including accommodation in a specific hotel, visits to tourist attractions and restaurants, and experiences in a specific country. It is powered by artificial intelligence, which groups several boxes for users or suggests boxes based on a specific user's preferences.
 class Box(BaseModel):
     name = models.CharField(max_length=255, verbose_name="Box Name", db_index=True)
     description = models.TextField(blank=True, null=True, verbose_name="Description")
@@ -163,8 +160,8 @@ class Box(BaseModel):
     currency = models.CharField(max_length=10, default="USD", verbose_name="Currency")
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Country")
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="City")
-    place = models.ManyToManyField(Place, on_delete=models.SET_NULL, null=True, blank=True, related_name="boxes", verbose_name="Place")
-    experience = models.ManyToManyField(Experience, on_delete=models.SET_NULL, null=True, blank=True, related_name="boxes", verbose_name="Experience")
+    place = models.ManyToManyField(Place, blank=True, related_name="boxes", verbose_name="Places")
+    experience = models.ManyToManyField(Experience, blank=True, related_name="boxes", verbose_name="Experiences")
     contents = models.JSONField(default=list, verbose_name="Contents")
     images = models.JSONField(default=list, verbose_name="Images")
 
@@ -175,7 +172,7 @@ class Box(BaseModel):
         verbose_name = "Box"
         verbose_name_plural = "Boxes"
 
-
+# Booking: Reserving an entire box, flight, place, or experience.
 class Booking(BaseModel):
     STATUS_CHOICES = [
         ("Pending", "Pending"),
@@ -203,17 +200,17 @@ class Booking(BaseModel):
         verbose_name = "Booking"
         verbose_name_plural = "Bookings"
         indexes = [
-            models.Index(fields=["user", "status"]),  # Composite index for user-specific queries
-            models.Index(fields=["check_in", "check_out"]),  # Composite index for date range queries
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["check_in", "check_out"]),
         ]
 
 
 class Wishlist(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="wishlists", verbose_name="User", db_index=True)
-    place = models.ForeignKey(Place, on_delete=models.SET_NULL, null=True, blank=True, related_name="wishlisted_by", verbose_name="Place")
-    experience = models.ForeignKey(Experience, on_delete=models.SET_NULL, null=True, blank=True, related_name="wishlisted_by", verbose_name="Experience")
-    flight = models.ForeignKey(Flight, on_delete=models.SET_NULL, null=True, blank=True, related_name="wishlisted_by", verbose_name="Flight")
-    box = models.ForeignKey(Box, on_delete=models.SET_NULL, null=True, blank=True, related_name="wishlisted_by", verbose_name="Box")
+    place = models.ForeignKey(Place, on_delete=models.SET_NULL, null=True, blank=True, related_name="wishlists", verbose_name="Place")
+    experience = models.ForeignKey(Experience, on_delete=models.SET_NULL, null=True, blank=True, related_name="wishlists", verbose_name="Experience")
+    flight = models.ForeignKey(Flight, on_delete=models.SET_NULL, null=True, blank=True, related_name="wishlists", verbose_name="Flight")
+    box = models.ForeignKey(Box, on_delete=models.SET_NULL, null=True, blank=True, related_name="wishlists", verbose_name="Box")
 
     def __str__(self):
         return f"Wishlist for {self.user}"
@@ -224,16 +221,15 @@ class Wishlist(BaseModel):
 
 
 class Review(BaseModel):
+    RATING_CHOICES = [(i, str(i)) for i in range(1, 6)]  # (1-5)
+    
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reviews", verbose_name="User", db_index=True)
     place = models.ForeignKey(Place, on_delete=models.SET_NULL, null=True, blank=True, related_name="reviews", verbose_name="Place")
     experience = models.ForeignKey(Experience, on_delete=models.SET_NULL, null=True, blank=True, related_name="reviews", verbose_name="Experience")
     flight = models.ForeignKey(Flight, on_delete=models.SET_NULL, null=True, blank=True, related_name="reviews", verbose_name="Flight")
-    rating = models.PositiveIntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(5)],
-        verbose_name="Rating",
-        db_index=True,
-    )
+    rating = models.PositiveIntegerField(choices=RATING_CHOICES, verbose_name="Rating", db_index=True)
     review_text = models.TextField(verbose_name="Review Text")
+
 
     def __str__(self):
         return f"Review by {self.user}"

@@ -63,6 +63,7 @@ CHANNEL_LAYERS = {
 # Application definition
 INSTALLED_APPS = [
     "daphne",
+    "django.contrib.gis",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -123,7 +124,7 @@ ASGI_APPLICATION = "core.asgi.application"
 # Database configuration
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        "ENGINE": "django.contrib.gis.db.backends.postgis",
         'NAME': env('POSTGRES_DB', default=''),
         'USER': env('POSTGRES_USER', default=''),
         'PASSWORD': env('POSTGRES_PASSWORD', default=''),

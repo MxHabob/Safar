@@ -1,6 +1,7 @@
 import uuid
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
+from django.contrib.gis.db import models as gis_models
 from django.core.validators import EmailValidator
 from django.utils.translation import gettext_lazy as _
 from apps.core_apps.general import BaseModel
@@ -107,6 +108,7 @@ class UserProfile(BaseModel):
     avatar = models.ImageField(upload_to=upload_avatar, null=True, blank=True)
     bio = models.TextField(blank=True)
     phone_number = PhoneNumberField(blank=True, verbose_name=_("Phone Number"))
+    location = gis_models.PointField(geography=True, verbose_name="Geolocation")
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True)
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True)
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True)
