@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "drf_yasg",
     "rest_framework",
+    "rest_framework_api_key",
     "djoser",
     "storages",
     "social_django",
@@ -225,6 +226,7 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
     'DEFAULT_AUTHENTICATION_CLASSES': [
           'apps.authentication.authentication.CustomJWTAuthentication',
+          'rest_framework_api_key.authentication.HasAPIKey',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -268,7 +270,6 @@ DJOSER = {
 # JWT settings
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('JWT', 'Bearer'),
-    'SIGNING_KEY':SECRET_KEY,
     "AUTH_COOKIE": "jwt_token",
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
