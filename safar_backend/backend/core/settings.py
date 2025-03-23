@@ -268,6 +268,8 @@ DJOSER = {
 # JWT settings
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('JWT', 'Bearer'),
+    'SIGNING_KEY':SECRET_KEY,
+    "AUTH_COOKIE": "jwt_token",
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': False,
