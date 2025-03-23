@@ -2,7 +2,7 @@ services:
   backend:
     build:
       context: ./backend
-    container_name: sefer_backend
+    container_name: safar_backend
     env_file: .env
     ports:
       - "8000:8000"
@@ -24,7 +24,7 @@ services:
     build:
       context: ./backend
       dockerfile: ../infrastructure/celery/celery-flower/Dockerfile
-    container_name: sefer_celery
+    container_name: safar_celery
     env_file: .env
     depends_on:
       - db
@@ -40,7 +40,7 @@ services:
     build:
       context: ./backend
       dockerfile: ../infrastructure/celery/celery-flower/Dockerfile
-    container_name: sefer_celery_flower
+    container_name: safar_celery_flower
     env_file: .env
     ports:
       - "5555:5555"
@@ -56,7 +56,7 @@ services:
 
   redis:
     image: redis:latest
-    container_name: sefer_redis
+    container_name: safar_redis
     networks:
       - mynetwork
     volumes:
@@ -69,7 +69,7 @@ services:
 
   db:
     image: postgres:latest
-    container_name: sefer_postgres
+    container_name: safar_postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -83,7 +83,7 @@ services:
 
   nginx:
     image: nginx:latest
-    container_name: sefer_nginx
+    container_name: safar_nginx
     ports:
       - "80:80"
     volumes:
