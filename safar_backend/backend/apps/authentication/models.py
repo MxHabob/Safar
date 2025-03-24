@@ -100,7 +100,7 @@ class UserProfile(BaseModel):
     avatar = models.ImageField(upload_to=upload_avatar, null=True, blank=True)
     bio = models.TextField(blank=True)
     phone_number = PhoneNumberField(blank=True, verbose_name=_("Phone Number"))
-    location = gis_models.PointField(geography=True, verbose_name="Geolocation")
+    location = gis_models.PointField(geography=True, null=True, blank=True , verbose_name="Geolocation")
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True)
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True)
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True)
