@@ -62,8 +62,8 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
 
     role = models.CharField(
         max_length=10,
-        choices=[("patient", _("Patient")), ("doctor", _("Doctor")), ("clinic", _("Clinic"))],
-        default="patient",
+        choices=[("guest", _("Guest")), ("owner", _("Owner")), ("organization", _("Real Estate Organization")), ("developer", _("Developer"))],
+        default="guest",
         verbose_name=_("User Role")
     )
 
