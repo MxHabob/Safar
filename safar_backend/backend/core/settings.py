@@ -193,8 +193,6 @@ AUTH_USER_MODEL = "authentication.User"
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="https://painfx.in")
 
-# Google Maps API Key
-GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="https://painfx.in")
 
 # Twilio settings
 TWILIO_ACCOUNT_SID = env("TWILIO_ACCOUNT_SID", default="")

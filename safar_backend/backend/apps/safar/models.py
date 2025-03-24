@@ -33,7 +33,7 @@ class Image(BaseModel):
         verbose_name = "Image"
         verbose_name_plural = "Images"
         indexes = [
-            models.Index(fields=["entity_id", "entity_type"]),  # Composite index for entity queries
+            models.Index(fields=["entity_id", "entity_type"]),
         ]
 
 # Discount on reservations for places, boxes, experiences, flights, etc., provided that the discount is used once.
@@ -93,7 +93,7 @@ class Place(BaseModel):
         verbose_name_plural = "Places"
         indexes = [
             models.Index(fields=["name", "rating"]),
-            gis_models.Index(fields=['location']),  # Spatial index for location
+            gis_models.Index(fields=['location']),
         ]
 
 # Experience like motorcycling - skiing - walking around the monuments etc.
@@ -125,7 +125,7 @@ class Experience(BaseModel):
         verbose_name_plural = "Experiences"
         indexes = [
             models.Index(fields=["title", "rating"]),
-            gis_models.Index(fields=['location']),  # Spatial index for location
+            gis_models.Index(fields=['location']),
         ]
 
 # Flight reservations and basic data storage
@@ -222,7 +222,7 @@ class Wishlist(BaseModel):
 
 
 class Review(BaseModel):
-    RATING_CHOICES = [(i, str(i)) for i in range(1, 6)]  # (1-5)
+    RATING_CHOICES = [(i, str(i)) for i in range(1, 6)]
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reviews", verbose_name="User", db_index=True)
     place = models.ForeignKey(Place, on_delete=models.SET_NULL, null=True, blank=True, related_name="reviews", verbose_name="Place")
@@ -239,7 +239,7 @@ class Review(BaseModel):
         verbose_name = "Review"
         verbose_name_plural = "Reviews"
         indexes = [
-            models.Index(fields=["user", "rating"]),  # Composite index for user-specific reviews
+            models.Index(fields=["user", "rating"]),
         ]
 
 
@@ -274,7 +274,7 @@ class Message(BaseModel):
         verbose_name = "Message"
         verbose_name_plural = "Messages"
         indexes = [
-            models.Index(fields=["sender", "receiver"]),  # Composite index for message lookups
+            models.Index(fields=["sender", "receiver"]),
         ]
 
 

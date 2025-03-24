@@ -6,4 +6,4 @@ class SaferConfig(AppConfig):
     name = 'apps.safar'
 
     def ready(self):
-        import apps.safar.signals
+        import safar_backend.backend.apps.safar.signals
