@@ -41,7 +41,10 @@ CMD sh -c "\
     python manage.py collectstatic --noinput && \
     echo 'Creating superuser...' && \
     python manage.py shell -c \"from apps.authentication.models import User; User.objects.filter(email='admin@safar.com').exists() or User.objects.create_superuser(email='admin@safar.com', password='admin')\" && \
-    echo 'Downloading cities_light data...' && \
-    python manage.py cities_light && \
+    echo 'Downloading essential cities_light data...' && \
+    python manage.py cities_light --force-import country && \
+    python manage.py cities_light --force-import region && \
+    python manage.py cities_light --force-import subregion && \
+    python manage.py cities_light --force-import city && \
     echo 'Starting Daphne...' && \
     daphne -b 0.0.0.0 -p 8000 core.asgi:application"
