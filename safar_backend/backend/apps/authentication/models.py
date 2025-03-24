@@ -61,7 +61,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     is_staff = models.BooleanField(default=False, verbose_name=_("Staff Status"))
 
     role = models.CharField(
-        max_length=10,
+        max_length=25,
         choices=[("guest", _("Guest")), ("owner", _("Owner")), ("organization", _("Real Estate Organization")), ("developer", _("Developer"))],
         default="guest",
         verbose_name=_("User Role")
