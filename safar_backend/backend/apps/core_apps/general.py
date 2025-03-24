@@ -2,8 +2,6 @@ import uuid
 from django.db import models
 from rest_framework.pagination import PageNumberPagination
 
-from backend.apps.safar.models import Discount
-
 class GlPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
@@ -28,9 +26,3 @@ class BaseModel(models.Model):
 
     class Meta:
         abstract = True
-
-def generate_unique_code():
-    while True:
-        code = uuid.uuid4().hex[:8].upper()
-        if not Discount.objects.filter(code=code).exists():
-            return code

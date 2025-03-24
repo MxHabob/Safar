@@ -25,12 +25,11 @@ rest_api_urlpatterns = [
     path('api/', include('djoser.urls')),
     path('api/', include('apps.authentication.urls')),
     path('api/', include('apps.safar.urls')),
-    path('api/', include('apps.real_time.urls')),
     path('health/', health_check, name='health_check'),
 ]
 
 urlpatterns = [
-    path('', lambda request: HttpResponse('Welcome to PainFX!')),
+    path('', lambda request: HttpResponse('Safar API!')),
     path('admin/', admin.site.urls),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),

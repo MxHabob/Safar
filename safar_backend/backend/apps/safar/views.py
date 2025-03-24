@@ -1,13 +1,12 @@
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from django.shortcuts import get_object_or_404
 from apps.safar.models import (
     Category, Discount, Place, Experience,
     Flight, Box, Booking, Wishlist, Review, Payment, Message, Notification
 )
-from .serializers import (
-    UserSerializer, UserProfileSerializer, CategorySerializer, ImageSerializer,
+from apps.safar.serializers import (
+    CategorySerializer,
     DiscountSerializer, PlaceSerializer, ExperienceSerializer, FlightSerializer,
     BoxSerializer, BookingSerializer, WishlistSerializer, ReviewSerializer,
     PaymentSerializer, MessageSerializer, NotificationSerializer

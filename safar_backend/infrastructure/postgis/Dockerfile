@@ -1,3 +1,3 @@
-FROM postgres:13
+FROM postgis/postgis:latest
 
 COPY init.sql /docker-entrypoint-initdb.d/

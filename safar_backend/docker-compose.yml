@@ -68,7 +68,7 @@ services:
       retries: 3
 
   db:
-    image: postgres:latest
+    image: postgis/postgis:latest
     container_name: safar_postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -79,7 +79,7 @@ services:
     networks:
       - mynetwork
     volumes:
-      - postgres_data:/var/lib/postgresql/data:z
+      - postgis_data:/var/lib/postgresql/data:z
 
   nginx:
     image: nginx:latest
@@ -99,5 +99,5 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
+  postgis_data:
   redis_data:

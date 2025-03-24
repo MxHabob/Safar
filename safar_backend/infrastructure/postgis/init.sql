@@ -27,3 +27,9 @@ DO $$
 BEGIN
     EXECUTE format('GRANT ALL PRIVILEGES ON DATABASE %I TO %I', current_setting('POSTGRES_DB'), current_setting('POSTGRES_USER'));
 END $$;
+
+-- Connect to the database and enable PostGIS extension
+\c ${POSTGRES_DB}
+
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS postgis_topology;

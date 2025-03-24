@@ -15,6 +15,7 @@ def upload_avatar(instance, filename):
     return f'{path}.{extension}'
 
 class UserManager(BaseUserManager):
+    from apps.core_apps.utility import generate_unique_username
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError(_("The Email field must be set"))
@@ -26,15 +27,6 @@ class UserManager(BaseUserManager):
         user.set_password(password)
         user.save(using=self._db)
         return user
-
-    def generate_unique_username(self, email):
-        base_username = email.split('@')[0].replace('.', '').replace('_', '').replace('-', '')
-        username = f"{base_username}-painfx"
-        counter = 1
-        while self.model.objects.filter(username=username).exists():
-            username = f"{base_username}{counter}-painfx"
-            counter += 1
-        return username
 
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
