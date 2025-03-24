@@ -10,7 +10,6 @@ from django.utils.translation import gettext_lazy as _
 from .models import User, UserProfile
 from apps.core_apps.tasks import send_email_task, send_sms_task
 from phonenumber_field.phonenumber import PhoneNumber
-from cities_light.models import City, Region, Country
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +38,7 @@ def send_welcome_email(sender, instance, created, **kwargs):
     if created and instance.email:
         try:
             subject = _("Welcome to %(site_name)s") % {'site_name': settings.SITE_NAME}
-            message = render_to_string('apps.core_apps/emails/welcome.html', {
+            message = render_to_string('apps/core_apps/emails/welcome.html', {
                 'user': instance,
                 'site_name': settings.SITE_NAME,
                 'support_email': settings.SUPPORT_EMAIL
