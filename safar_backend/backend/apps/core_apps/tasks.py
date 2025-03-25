@@ -69,7 +69,6 @@ def process_notification(notification_id):
                 recipient_list=[user.email]
             )
         
-        # Send via SMS if user has phone number
         if user.profile.phone_number:
             send_sms_task.delay(
                 to_number=str(user.profile.phone_number),

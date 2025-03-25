@@ -42,30 +42,20 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin, BaseModel):
-    email = models.EmailField(
-        unique=True, 
-        max_length=255, 
-        validators=[EmailValidator()],
-        verbose_name=_("Email Address")
-    )
+    email = models.EmailField( unique=True,  max_length=255,  validators=[EmailValidator()], verbose_name=_("Email Address"))
     username = models.CharField(max_length=30, blank=True, verbose_name=_("Username"))
     first_name = models.CharField(max_length=30, blank=True, verbose_name=_("First Name"))
     last_name = models.CharField(max_length=30, blank=True, verbose_name=_("Last Name"))
+
     language = models.CharField(max_length=10, default="en")
     timezone = models.CharField(max_length=50, default="UTC")
-
     preferred_language = models.CharField(max_length=10, default="en", verbose_name=_("Preferred Language"))
     preferred_currency = models.CharField(max_length=10, default="USD", verbose_name=_("Preferred Currency"))
-    
+
+    is_online = models.BooleanField(default=False, verbose_name=_("Online Status"))
     is_active = models.BooleanField(default=True, verbose_name=_("Active"))
     is_staff = models.BooleanField(default=False, verbose_name=_("Staff Status"))
-
-    role = models.CharField(
-        max_length=25,
-        choices=[("guest", _("Guest")), ("owner", _("Owner")), ("organization", _("Real Estate Organization")), ("developer", _("Developer"))],
-        default="guest",
-        verbose_name=_("User Role")
-    )
+    role = models.CharField( max_length=25, choices=[("guest", _("Guest")), ("owner", _("Owner")), ("organization", _("Real Estate Organization")), ("developer", _("Developer"))],default="guest", verbose_name=_("User Role") )
 
     objects = UserManager()
 
@@ -96,25 +86,23 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
 
 class UserProfile(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    date_of_birth = models.DateField(null=True, blank=True)
     avatar = models.ImageField(upload_to=upload_avatar, null=True, blank=True)
     bio = models.TextField(blank=True)
-    phone_number = PhoneNumberField(blank=True, verbose_name=_("Phone Number"))
+    phone_number = PhoneNumberField(blank=True, null=True, verbose_name=_("Phone Number"))
     location = gis_models.PointField(geography=True, null=True, blank=True , verbose_name="Geolocation")
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True)
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True)
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True)
     postal_code = models.CharField(max_length=20, blank=True, verbose_name=_("Postal Code"))
+    date_of_birth = models.DateField(null=True, blank=True)
     address = models.CharField(max_length=255, blank=True, verbose_name=_("Address"))
     privacy_consent = models.BooleanField(default=False, verbose_name=_("Privacy Consent"))
     consent_date = models.DateTimeField(null=True, blank=True, verbose_name=_("Consent Date"))
-    expo_push_token = models.CharField(max_length=255, null=True, blank=True)
-    gender = models.CharField(
-        max_length=20,
+    notification_push_token = models.CharField(max_length=255, null=True, blank=True)
+    gender = models.CharField(max_length=20,
         choices=[
             ("male", _("Male")),
             ("female", _("Female")),
-            ("other", _("Other")),
             ("prefer_not_to_say", _("Prefer Not to Say"))
         ],
         default="prefer_not_to_say",

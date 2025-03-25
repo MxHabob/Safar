@@ -150,7 +150,11 @@ USE_TZ = True
 
 # city light settings
 CITIES_LIGHT_TRANSLATION_LANGUAGES = []
-CITIES_LIGHT_INCLUDE_CITY_TYPES = ['PPL', 'PPLA', 'PPLA2', 'PPLC'] 
+CITIES_LIGHT_INCLUDE_CITY_TYPES = ['PPL', 'PPLA', 'PPLA2', 'PPLC']
+
+# phonenumber field settings
+PHONENUMBER_DEFAULT_REGION = "YE"
+PHONENUMBER_DB_FORMAT = "E164"
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')

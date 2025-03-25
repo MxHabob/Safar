@@ -79,11 +79,11 @@ class Place(BaseModel):
         verbose_name="Rating",
         db_index=True,
     )
-    images = models.JSONField(default=list, verbose_name="Images")
+    images = models.JSONField(default=list,blank=True, null=True, verbose_name="Images")
     is_available = models.BooleanField(default=True, verbose_name="Is Available", db_index=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0, verbose_name="Price", db_index=True)
     currency = models.CharField(max_length=10, default="USD", verbose_name="Currency")
-    metadata = models.JSONField(default=dict, verbose_name="Metadata")
+    metadata = models.JSONField(default=dict,blank=True, null=True, verbose_name="Metadata")
 
     def __str__(self):
         return self.name
@@ -108,7 +108,7 @@ class Experience(BaseModel):
     duration = models.PositiveIntegerField(verbose_name="Duration (minutes)")
     capacity = models.PositiveIntegerField(verbose_name="Capacity")
     schedule = models.JSONField(default=list, verbose_name="Schedule")
-    images = models.JSONField(default=list, verbose_name="Images")
+    images = models.JSONField(default=list,blank=True, null=True, verbose_name="Images")
     rating = models.FloatField(
         default=0.0,
         validators=[MinValueValidator(0.0), MaxValueValidator(5.0)],
@@ -134,6 +134,7 @@ class Flight(BaseModel):
     flight_number = models.CharField(max_length=50, unique=True, verbose_name="Flight Number", db_index=True)
     departure_airport = models.CharField(max_length=3, verbose_name="Departure Airport", db_index=True)
     arrival_airport = models.CharField(max_length=3, verbose_name="Arrival Airport", db_index=True)
+    airline_url = models.URLField(blank=True, null=True,verbose_name="Airline URL")
     arrival_city = models.CharField(max_length=255, verbose_name="Arrival City", db_index=True)
     departure_time = models.DateTimeField(verbose_name="Departure Time", db_index=True)
     arrival_time = models.DateTimeField(verbose_name="Arrival Time", db_index=True)
@@ -157,14 +158,14 @@ class Flight(BaseModel):
 class Box(BaseModel):
     name = models.CharField(max_length=255, verbose_name="Box Name", db_index=True)
     description = models.TextField(blank=True, null=True, verbose_name="Description")
-    total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Total Price", db_index=True)
+    total_price = models.DecimalField(max_digits=10,blank=True, null=True, decimal_places=2, verbose_name="Total Price", db_index=True)
     currency = models.CharField(max_length=10, default="USD", verbose_name="Currency")
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Country")
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="City")
-    place = models.ManyToManyField(Place, blank=True, related_name="boxes", verbose_name="Places")
-    experience = models.ManyToManyField(Experience, blank=True, related_name="boxes", verbose_name="Experiences")
-    contents = models.JSONField(default=list, verbose_name="Contents")
-    images = models.JSONField(default=list, verbose_name="Images")
+    place = models.ManyToManyField(Place, blank=True, null=True, related_name="boxes", verbose_name="Places")
+    experience = models.ManyToManyField(Experience, blank=True, null=True, related_name="boxes", verbose_name="Experiences")
+    contents = models.JSONField(default=list,blank=True, null=True, verbose_name="Contents")
+    images = models.JSONField(default=list,blank=True, null=True, verbose_name="Images")
 
     def __str__(self):
         return self.name
