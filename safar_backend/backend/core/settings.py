@@ -52,7 +52,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": ["redis://red-ctk0mhbtq21c73e5i4gg:6379/0"],
+            "hosts": [env('REDIS_CACHS_URL',default='redis://red-ctk0mhbtq21c73e5i4gg:6379/0')],
         },
     },
 }
@@ -247,7 +247,7 @@ REST_FRAMEWORK = {
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': env('DJANGO_REDIS_CACHS_URL',default='redis://red-ctk0mhbtq21c73e5i4gg:6379/0'),
+        'LOCATION': env('REDIS_CACHS_URL',default='redis://red-ctk0mhbtq21c73e5i4gg:6379/0'),
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         },
@@ -310,7 +310,7 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
 SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ['first_name', 'last_name']
 
 # Celery settings
-CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://red-ctk0mhbtq21c73e5i4gg:6379/0')
+CELERY_BROKER_URL = env('REDIS_CACHS_URL', default='redis://red-ctk0mhbtq21c73e5i4gg:6379/0')
 CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default='redis://red-ctk0mhbtq21c73e5i4gg:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'

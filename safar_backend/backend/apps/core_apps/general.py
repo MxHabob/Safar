@@ -22,7 +22,7 @@ class BaseModel(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False, db_index=True)
 
-    objects = BaseModelManager()  # Use the new manager
+    objects = BaseModelManager()
 
     class Meta:
         abstract = True

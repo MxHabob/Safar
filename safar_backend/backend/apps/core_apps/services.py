@@ -1,4 +1,4 @@
-# apps/notifications/services.py
+# apps/core_apps/services.py
 import logging
 from twilio.rest import Client
 from django.core.mail import send_mail
