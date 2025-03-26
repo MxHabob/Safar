@@ -1,4 +1,5 @@
 import PlaceCard from "@/components/custom/place-card";
+import { Header } from "@/components/section/header";
 
 export default function Home() {
   const placeData = {
@@ -27,11 +28,8 @@ export default function Home() {
     },
   }
   return (
-    
-    <main className="flex min-h-screen flex-col items-center justify-center p-8">
-      <div className="w-full max-w-sm">
-        <PlaceCard {...placeData} />
-      </div>
+    <main className="w-full h-full">
+      <Header/>
     </main>
   );
 }
