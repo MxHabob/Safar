@@ -22,8 +22,8 @@ schema_view = get_schema_view(
 )
 
 rest_api_urlpatterns = [
-    path('api/', include('djoser.urls')),
-    path('api/', include('apps.authentication.urls')),
+    path('api/auth/', include('djoser.urls')),
+    path('api/auth/', include('apps.authentication.urls')),
     path('api/', include('apps.safar.urls')),
     path('health/', health_check, name='health_check'),
 ]

@@ -3,7 +3,7 @@ from apps.safar.models import (
     Category, Discount, Place, Experience,
     Flight, Box, Booking, Wishlist, Review, Payment, Message, Notification
 )
-
+from apps.authentication.serializers import UserSerializer
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
@@ -17,12 +17,39 @@ class DiscountSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
 class PlaceSerializer(serializers.ModelSerializer):
+    country = serializers.SerializerMethodField()
+    region = serializers.SerializerMethodField()
+    city = serializers.SerializerMethodField()
+    category = CategorySerializer(read_only=True)
+    owner = UserSerializer(read_only=True)
+    experiences = serializers.SerializerMethodField()
+
     class Meta:
         model = Place
-        fields = ['id', 'category', 'owner', 'name', 'description', 'location', 'country', 'city', 'region', 'rating', 'images', 'is_available', 'price', 'currency', 'metadata']
+        fields = [
+            'id', 'category', 'owner', 'name', 'description', 'location', 
+            'country', 'city', 'region', 'rating', 'images', 'is_available', 
+            'price', 'currency', 'metadata', 'experiences'
+        ]
         read_only_fields = ['id']
 
+    def get_country(self, obj):
+        return obj.country.name if obj.country else None
+
+    def get_region(self, obj):
+        return obj.region.name if obj.region else None
+
+    def get_city(self, obj):
+        return obj.city.name if obj.city else None
+
+    def get_experiences(self, obj):
+        experiences = obj.experience_set.all() 
+        return ExperienceSerializer(experiences, many=True).data
+
+
 class ExperienceSerializer(serializers.ModelSerializer):
+    owner = UserSerializer(read_only=True)
+
     class Meta:
         model = Experience
         fields = ['id', 'place', 'owner', 'title', 'description', 'location', 'price_per_person', 'currency', 'duration', 'capacity', 'schedule', 'images', 'rating', 'is_available']
@@ -35,12 +62,25 @@ class FlightSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 class BoxSerializer(serializers.ModelSerializer):
+    country = serializers.SerializerMethodField()
+    city = serializers.SerializerMethodField()
     class Meta:
         model = Box
         fields = ['id', 'name', 'description', 'total_price', 'currency', 'country', 'city', 'place', 'experience', 'contents', 'images']
         read_only_fields = ['id']
 
+        
+    def get_country(self, obj):
+        return obj.country.name if obj.country else None
+
+    def get_city(self, obj):
+        return obj.city.name if obj.city else None
+
 class BookingSerializer(serializers.ModelSerializer):
+    experience = ExperienceSerializer(read_only=True)
+    place = PlaceSerializer(read_only=True)
+    flight = FlightSerializer(read_only=True)
+    
     class Meta:
         model = Booking
         fields = ['id', 'user', 'place', 'experience', 'flight', 'box', 'check_in', 'check_out', 'booking_date', 'status', 'total_price', 'currency', 'payment_status']
@@ -53,6 +93,8 @@ class WishlistSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 class ReviewSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
     class Meta:
         model = Review
         fields = ['id', 'user', 'place', 'experience', 'flight', 'rating', 'review_text']
@@ -65,6 +107,9 @@ class PaymentSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 class MessageSerializer(serializers.ModelSerializer):
+    sender = UserSerializer(read_only=True)
+    receiver = UserSerializer(read_only=True)
+
     class Meta:
         model = Message
         fields = ['id', 'sender', 'receiver', 'booking', 'message_text', 'is_read']

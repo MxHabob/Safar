@@ -81,7 +81,7 @@ class PlaceViewSet(BaseViewSet):
         'category', 'country', 'city', 'region', 'owner'
     ).prefetch_related('images')
     serializer_class = PlaceSerializer
-    filterset_fields = ['category', 'country', 'city', 'is_available', 'price_range']
+    filterset_fields = ['category', 'country', 'city', 'is_available']
     search_fields = ['name', 'description']
     ordering_fields = ['rating', 'price', 'created_at']
     

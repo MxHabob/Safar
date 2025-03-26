@@ -8,7 +8,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = UserProfile
-        fields = ['id', 'phone_number', 'gender', 'avatar', 'bio', 'expo_push_token', 'country', 'region', 'city', 'postal_code', 'address']
+        fields = ['id', 'phone_number', 'gender', 'avatar', 'bio', 'notification_push_token', 'country', 'region', 'city', 'postal_code', 'address']
         read_only_fields = ['id']
 
     def get_country(self, obj):

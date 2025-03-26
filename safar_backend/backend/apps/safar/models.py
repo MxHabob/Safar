@@ -73,12 +73,7 @@ class Place(BaseModel):
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Country")
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="City")
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Region")
-    rating = models.FloatField(
-        default=0.0,
-        validators=[MinValueValidator(0.0), MaxValueValidator(5.0)],
-        verbose_name="Rating",
-        db_index=True,
-    )
+    rating = models.FloatField(default=0.0, validators=[MinValueValidator(0.0), MaxValueValidator(5.0)], verbose_name="Rating", db_index=True)
     images = models.JSONField(default=list,blank=True, null=True, verbose_name="Images")
     is_available = models.BooleanField(default=True, verbose_name="Is Available", db_index=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0, verbose_name="Price", db_index=True)
