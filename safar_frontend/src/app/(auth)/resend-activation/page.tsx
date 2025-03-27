@@ -1,26 +1,25 @@
-import { LoginForm } from "@/components/forms/sign-in-form"
+import { ResendActivationForm } from "@/components/forms/resend-activation-form"
 import type { Metadata } from "next"
 import Link from "next/link"
 
-
 export const metadata: Metadata = {
-  title: "Safar | Login",
-  description: "Welcome back to Safar - continue your journey",
+  title: "Safar | Resend Activation",
+  description: "Resend your Safar account activation email",
 }
 
-export default function LoginPage() {
+export default function ResendActivationPage() {
   return (
     <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px] md:w-[450px]">
       <div className="flex flex-col space-y-2 text-center">
         <h1 className="text-3xl font-semibold tracking-tight bg-gradient-to-r from-sky-600 to-emerald-500 text-transparent bg-clip-text">
-          Welcome Back
+          Missed Your Flight?
         </h1>
-        <p className="text-sm text-muted-foreground">Sign in to continue your journey with Safar</p>
+        <p className="text-sm text-muted-foreground">Enter your email to receive a new activation link</p>
       </div>
-      <LoginForm />
+      <ResendActivationForm />
       <p className="px-8 text-center text-sm text-muted-foreground">
-        <Link href="/sign-up" className="hover:text-sky-600 underline underline-offset-4">
-          New to Safar? Start your journey
+        <Link href="/auth/login" className="hover:text-sky-600 underline underline-offset-4">
+          Back to login
         </Link>
       </p>
     </div>
