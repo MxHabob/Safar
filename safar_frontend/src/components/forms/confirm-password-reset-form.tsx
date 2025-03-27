@@ -9,7 +9,6 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { Lock } from "lucide-react"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Spinner } from "../ui/spinner"
 import { useAuth } from "@/redux/hooks/useAuth"
@@ -70,14 +69,8 @@ export function ConfirmPasswordResetForm() {
   }
 
   return (
-    <Card className="border-sky-100 bg-white/80 backdrop-blur">
+    <Card className="border-none shadow-none sm:border sm:shadow">
       <CardContent className="pt-6">
-        <div className="flex justify-center mb-6">
-          <div className="rounded-full bg-sky-100 p-3">
-            <Lock className="h-6 w-6 text-sky-600" />
-          </div>
-        </div>
-
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {error && (
@@ -90,7 +83,7 @@ export function ConfirmPasswordResetForm() {
                 <FormItem>
                   <FormLabel>New Password</FormLabel>
                   <FormControl>
-                    <Input type="password" {...field} className="border-sky-200 focus:border-sky-500" />
+                    <Input type="password" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -103,19 +96,15 @@ export function ConfirmPasswordResetForm() {
                 <FormItem>
                   <FormLabel>Confirm New Password</FormLabel>
                   <FormControl>
-                    <Input type="password" {...field} className="border-sky-200 focus:border-sky-500" />
+                    <Input type="password" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-sky-600 to-emerald-500 hover:from-sky-700 hover:to-emerald-600"
-              disabled={isLoading}
-            >
-              {isLoading ? <Spinner /> : <Lock className="mr-2 h-4 w-4" />}
-              Set New Password
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? <Spinner /> : null}
+              Reset Password
             </Button>
           </form>
         </Form>
@@ -123,4 +112,3 @@ export function ConfirmPasswordResetForm() {
     </Card>
   )
 }
-

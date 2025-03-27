@@ -7,11 +7,11 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { Compass, CheckCircle } from "lucide-react"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Spinner } from "../ui/spinner"
+import { CheckCircle } from "lucide-react"
 import { useAuth } from "@/redux/hooks/useAuth"
+import { Spinner } from "../ui/spinner"
 
 const resetPasswordSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -45,29 +45,15 @@ export function RequestPasswordResetForm() {
   }
 
   return (
-    <Card className="border-sky-100 bg-white/80 backdrop-blur">
+    <Card className="border-none shadow-none sm:border sm:shadow">
       <CardContent className="pt-6">
-        {!isSuccess && (
-          <div className="flex justify-center mb-6">
-            <div className="rounded-full bg-sky-100 p-3">
-              <Compass className="h-6 w-6 text-sky-600" />
-            </div>
-          </div>
-        )}
-
         {isSuccess ? (
-          <div className="space-y-4">
-            <div className="flex justify-center">
-              <div className="rounded-full bg-emerald-100 p-4">
-                <CheckCircle className="h-8 w-8 text-emerald-600" />
-              </div>
-            </div>
-            <Alert className="bg-emerald-50 border-emerald-200">
-              <AlertDescription className="text-emerald-800">
-                We&apos;ve sent you directions! Check your inbox and follow the link to reset your password.
-              </AlertDescription>
-            </Alert>
-          </div>
+          <Alert className="bg-green-50 border-green-200">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              Password reset email sent! Please check your inbox and follow the instructions to reset your password.
+            </AlertDescription>
+          </Alert>
         ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -78,27 +64,15 @@ export function RequestPasswordResetForm() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="traveler@example.com"
-                        {...field}
-                        className="border-sky-200 focus:border-sky-500"
-                      />
+                      <Input placeholder="name@example.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button
-                type="submit"
-                className="w-full bg-gradient-to-r from-sky-600 to-emerald-500 hover:from-sky-700 hover:to-emerald-600"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <Spinner />
-                ) : (
-                  <Compass className="mr-2 h-4 w-4" />
-                )}
-                Send Reset Link
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? <Spinner /> : null}
+                Send reset link
               </Button>
             </form>
           </Form>

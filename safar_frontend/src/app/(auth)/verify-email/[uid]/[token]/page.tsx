@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle, XCircle, Plane } from "lucide-react"
+import { CheckCircle, XCircle } from "lucide-react"
 import { useAuth } from "@/redux/hooks/useAuth"
 
 export default function VerifyEmailPage() {
@@ -25,7 +25,6 @@ export default function VerifyEmailPage() {
           setStatus("error")
           setErrorMessage(result.error || "Verification failed")
         }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
         setStatus("error")
         setErrorMessage("An unexpected error occurred")
@@ -37,36 +36,26 @@ export default function VerifyEmailPage() {
 
   return (
     <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px] md:w-[450px]">
-      <Card className="border-sky-100 bg-white/80 backdrop-blur">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-center text-xl bg-gradient-to-r from-sky-600 to-emerald-500 text-transparent bg-clip-text">
-            Email Verification
-          </CardTitle>
-          <CardDescription className="text-center">
-            {status === "loading" && "Preparing for takeoff..."}
-            {status === "success" && "You're all set for your journey!"}
-            {status === "error" && "We've hit some turbulence"}
+          <CardTitle>Email Verification</CardTitle>
+          <CardDescription>
+            {status === "loading" && "Verifying your email address..."}
+            {status === "success" && "Your email has been verified!"}
+            {status === "error" && "Verification failed"}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex justify-center py-6">
           {status === "loading" && (
-            <div className="relative">
-              <Plane className="h-16 w-16 text-sky-500 animate-pulse" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
-              </div>
-            </div>
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           )}
-          {status === "success" && <CheckCircle className="h-16 w-16 text-emerald-500" />}
+          {status === "success" && <CheckCircle className="h-16 w-16 text-green-500" />}
           {status === "error" && <XCircle className="h-16 w-16 text-red-500" />}
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
           {status === "error" && <p className="text-sm text-red-500">{errorMessage}</p>}
-          <Button
-            onClick={() => router.push("/auth/login")}
-            className="w-full bg-gradient-to-r from-sky-600 to-emerald-500 hover:from-sky-700 hover:to-emerald-600"
-          >
-            {status === "success" ? "Continue to Login" : "Back to Login"}
+          <Button onClick={() => router.push("/sign-in")} className="w-full">
+            {status === "success" ? "Proceed to Login" : "Back to Login"}
           </Button>
         </CardFooter>
       </Card>

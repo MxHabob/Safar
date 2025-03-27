@@ -207,7 +207,7 @@ export function RegisterForm() {
     <CardFooter className="border-t px-6 py-4">
       <div className="text-center text-sm w-full">
         <span className="text-muted-foreground">Already have an account? </span>
-        <Link href="/auth/login" className="font-medium text-primary underline-offset-4 hover:underline">
+        <Link href="/sign-in" className="font-medium text-primary underline-offset-4 hover:underline">
           Sign in
         </Link>
       </div>
