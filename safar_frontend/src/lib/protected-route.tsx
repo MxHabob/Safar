@@ -1,0 +1,21 @@
+import React from 'react';
+import { useRouter } from 'next/router';
+import { useAuth } from '@/redux/hooks/useAuth';
+import { Spinner } from '@/components/ui/spinner';
+
+export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+
+  React.useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/sign-in');
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  if (isLoading || !isAuthenticated) {
+    return <Spinner />;
+  }
+
+  return <>{children}</>;
+};
