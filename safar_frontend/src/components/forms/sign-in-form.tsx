@@ -97,7 +97,7 @@ export function LoginForm() {
                 <FormItem>
                   <div className="flex items-center justify-between">
                     <FormLabel>Password</FormLabel>
-                    <Link href="/reset-password" className="text-xs text-muted-foreground hover:text-primary">
+                    <Link href="/password-reset" className="text-xs text-muted-foreground hover:text-primary">
                       Forgot password?
                     </Link>
                   </div>

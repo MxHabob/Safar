@@ -27,10 +27,12 @@ const baseQuery = fetchBaseQuery({
   baseUrl: `${process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000'}/api`,
   credentials: 'include',
   prepareHeaders: (headers, { getState }) => {
+    headers.set('Authorization', `Api-Key ${process.env.NEXT_PUBLIC_API_KEY || 'your-default-api-key-here'}`);
     const { accessToken } = (getState() as RootState).auth;
     if (accessToken) {
       headers.set('Authorization', `Bearer ${accessToken}`);
     }
+
     return headers;
   },
 });

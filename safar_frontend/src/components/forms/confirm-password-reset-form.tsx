@@ -57,7 +57,7 @@ export function ConfirmPasswordResetForm() {
       })
 
       if (result.success) {
-        router.push("/auth/login?reset=success")
+        router.push("/sign-in?reset=success")
       } else {
         setError(result.error || "Failed to reset password")
       }
