@@ -1,9 +1,16 @@
 from rest_framework import serializers
 from apps.safar.models import (
-    Category, Discount, Place, Experience,
+    Category, Discount, Image, Place, Experience,
     Flight, Box, Booking, Wishlist, Review, Payment, Message, Notification
 )
 from apps.authentication.serializers import UserSerializer
+
+class ImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Image
+        fields = ['id', 'url','uploaded_by']
+        read_only_fields = ['id']
+
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
@@ -23,6 +30,7 @@ class PlaceSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     owner = UserSerializer(read_only=True)
     experiences = serializers.SerializerMethodField()
+    images = ImageSerializer(many=True, read_only=True)
 
     class Meta:
         model = Place
@@ -49,7 +57,7 @@ class PlaceSerializer(serializers.ModelSerializer):
 
 class ExperienceSerializer(serializers.ModelSerializer):
     owner = UserSerializer(read_only=True)
-
+    images = ImageSerializer(many=True, read_only=True)
     class Meta:
         model = Experience
         fields = ['id', 'place', 'owner', 'title', 'description', 'location', 'price_per_person', 'currency', 'duration', 'capacity', 'schedule', 'images', 'rating', 'is_available']
@@ -64,6 +72,7 @@ class FlightSerializer(serializers.ModelSerializer):
 class BoxSerializer(serializers.ModelSerializer):
     country = serializers.SerializerMethodField()
     city = serializers.SerializerMethodField()
+    images = ImageSerializer(many=True, read_only=True)
     class Meta:
         model = Box
         fields = ['id', 'name', 'description', 'total_price', 'currency', 'country', 'city', 'place', 'experience', 'contents', 'images']

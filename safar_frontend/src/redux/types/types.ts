@@ -69,6 +69,12 @@ export interface Discount extends BaseModel {
   applicable_boxes?: string[];
 }
 
+
+export interface Images extends BaseModel {
+  url: string;
+  uploaded_by?: string;
+}
+
 // Place Types
 export interface Place extends BaseModel {
   category: Category;
@@ -83,7 +89,7 @@ export interface Place extends BaseModel {
   city?: string;
   region?: string;
   rating: number;
-  images: string[];
+  images?: Images[];
   is_available: boolean;
   price: number;
   currency: string;
@@ -106,7 +112,7 @@ export interface Experience extends BaseModel {
   duration: number;
   capacity: number;
   schedule: Record<string, unknown>[];
-  images: string[];
+  images: Images[];
   rating: number;
   is_available: boolean;
 }
@@ -138,7 +144,7 @@ export interface Box extends BaseModel {
   places?: Place[];
   experiences?: Experience[];
   contents: Record<string, unknown>[];
-  images: string[];
+  images: Images[];
 }
 
 // Booking Types

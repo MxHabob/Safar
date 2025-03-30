@@ -5,40 +5,30 @@ import "swiper/css/bundle";
 import { SwiperProps, SwiperSlide } from "swiper/react";
 import { Slider } from "../slider";
 import { ListItem } from "./list-item";
-import InfiniteScrollObserver from "../infinite-scroll-observer";
-import { JSX } from "react";
-
-type ItemProps = {
-  id: string | number;
-  label: string;
-  icon: JSX.Element;
-  path: string;
-};
+import { Category } from "@/redux/types/types";
 
 type Props = {
-  items: ItemProps[];
+  items: Category[];
   overlay?: boolean;
-  label?: string;
+  isLoading?: boolean;
   selected?: string;
   route?: boolean;
 } & SwiperProps;
 
-export const ListSlider = ({ items, overlay, label, selected, route, ...rest }: Props) => {
+export const ListSlider = ({ items, overlay, isLoading ,selected, route, ...rest }: Props) => {
   return (
-    <Slider slidesPerView={"auto"} spaceBetween={10} loop freeMode label={label} overlay={overlay} {...rest}>
-      <InfiniteScrollObserver>
+    <Slider slidesPerView="auto" spaceBetween={10} isLoading={isLoading} loop freeMode overlay={overlay} {...rest}>
         {items.map((item) => (
           <SwiperSlide key={item.id} className="content-width-slide">
             {route ? (
               <Link href={`/?${item.name}`}>
-                <ListItem {...item} selected={selected} />
+                <ListItem name={item.name} selected={selected} />
               </Link>
             ) : (
-              <ListItem {...item} />
+              <ListItem name={item.name} />
             )}
           </SwiperSlide>
         ))}
-      </InfiniteScrollObserver>
     </Slider>
   );
 };

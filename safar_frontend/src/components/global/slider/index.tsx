@@ -2,21 +2,22 @@
 
 import { Autoplay, FreeMode, Navigation, Pagination } from "swiper/modules"
 import { Swiper, SwiperProps } from "swiper/react"
-import { Label } from "../../ui/label"
+import InfiniteScrollObserver from "../infinite-scroll-observer"
 
 type SliderProps = {
   children: React.ReactNode
   overlay?: boolean
-  label?: string
+  isLoading?: boolean;
 } & SwiperProps
 
-export const Slider = ({ children, overlay, label, ...rest }: SliderProps) => {
+export const Slider = ({ children, overlay,isLoading, ...rest }: SliderProps) => {
   return (
+    <InfiniteScrollObserver loadingComponent={isLoading}>
     <div
       style={{
         maskImage: `linear-gradient(to right,rgba(0, 0, 0, 0),rgba(0, 0, 0, 1) 20%,rgba(0, 0, 0, 1) 80%,rgba(0, 0, 0, 0))`,
       }}
-      className="w-full max-w-full overflow-x-hidden mt-5 relative  "
+      className="w-full max-w-full  mt-5 relative"
     >
       {overlay && (
         <>
@@ -24,10 +25,10 @@ export const Slider = ({ children, overlay, label, ...rest }: SliderProps) => {
           <div className="absolute w-[40px] slider-overlay-rev right-0 h-full z-50" />
         </>
       )}
-      {label && <Label className="pl-7 mb-3 text-themeTextGray">{label}</Label>}
       <Swiper modules={[Navigation, Pagination, Autoplay, FreeMode]} {...rest}>
         {children}
       </Swiper>
     </div>
+    </InfiniteScrollObserver>
   )
 }

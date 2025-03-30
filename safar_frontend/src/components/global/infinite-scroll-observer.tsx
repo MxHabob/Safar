@@ -17,7 +17,7 @@ const InfiniteScrollObserver = ({ children, loadingComponent = <Skeleton /> }: P
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsLoading(true);
-          setTimeout(() => setIsLoading(false), 500); // Simulated delay
+          setTimeout(() => setIsLoading(false), 500);
         }
       },
       { threshold: 1.0 }

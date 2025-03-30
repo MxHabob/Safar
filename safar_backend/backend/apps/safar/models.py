@@ -7,6 +7,13 @@ from apps.core_apps.utility import generate_unique_code
 from apps.authentication.models import User
 from cities_light.models import City, Region, Country
 
+
+def upload_file(instance, filename):
+    user_uuid = instance.id if instance.id else uuid.uuid4().hex
+    path = f'file/{user_uuid}'
+    extension = filename.split('.')[-1] if '.' in filename else 'jpg'
+    return f'{path}.{extension}'
+
 # Categories such as hotels - apartments - chalets - Care places - kindergarten - restaurants - religious centers - mosques - villas - houses, etc.
 class Category(BaseModel):
     name = models.CharField(max_length=255, unique=True, verbose_name="Category Name", db_index=True)
@@ -21,19 +28,18 @@ class Category(BaseModel):
 
 # Store all the images in this table such as pictures of places, pictures of experiences, etc. ( future development )
 class Image(BaseModel):
-    entity_id = models.UUIDField(verbose_name="Entity ID", db_index=True)
-    entity_type = models.CharField(max_length=50, verbose_name="Entity Type", db_index=True)
-    url = models.URLField(verbose_name="Image URL")
+    url = models.URLField(verbose_name="Image URL",blank=True,null=True)
+    file = models.ImageField(upload_to=upload_file, null=True, blank=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="uploaded_images", verbose_name="Uploaded By")
 
     def __str__(self):
-        return f"Image for {self.entity_type} - {self.entity_id}"
+        return f"Image for {self.file} - {self.url}"
 
     class Meta:
         verbose_name = "Image"
         verbose_name_plural = "Images"
         indexes = [
-            models.Index(fields=["entity_id", "entity_type"]),
+            models.Index(fields=["url", "file"]),
         ]
 
 # Discount on reservations for places, boxes, experiences, flights, etc., provided that the discount is used once.
@@ -74,7 +80,7 @@ class Place(BaseModel):
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="City")
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Region")
     rating = models.FloatField(default=0.0, validators=[MinValueValidator(0.0), MaxValueValidator(5.0)], verbose_name="Rating", db_index=True)
-    images = models.JSONField(default=list,blank=True, null=True, verbose_name="Images")
+    images = models.ManyToManyField(Image, blank=True, related_name="places", verbose_name="Images")
     is_available = models.BooleanField(default=True, verbose_name="Is Available", db_index=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0, verbose_name="Price", db_index=True)
     currency = models.CharField(max_length=10, default="USD", verbose_name="Currency")
@@ -102,8 +108,8 @@ class Experience(BaseModel):
     currency = models.CharField(max_length=10, default="USD", verbose_name="Currency")
     duration = models.PositiveIntegerField(verbose_name="Duration (minutes)")
     capacity = models.PositiveIntegerField(verbose_name="Capacity")
-    schedule = models.JSONField(default=list, verbose_name="Schedule")
-    images = models.JSONField(default=list,blank=True, null=True, verbose_name="Images")
+    schedule = models.JSONField(default=list, blank=True, null=True, verbose_name="Schedule")
+    images = models.ManyToManyField(Image, blank=True, related_name="experiences", verbose_name="Images")
     rating = models.FloatField(
         default=0.0,
         validators=[MinValueValidator(0.0), MaxValueValidator(5.0)],
@@ -160,7 +166,7 @@ class Box(BaseModel):
     place = models.ManyToManyField(Place, blank=True, related_name="boxes", verbose_name="Places")
     experience = models.ManyToManyField(Experience, blank=True, related_name="boxes", verbose_name="Experiences")
     contents = models.JSONField(default=list,blank=True, null=True, verbose_name="Contents")
-    images = models.JSONField(default=list,blank=True, null=True, verbose_name="Images")
+    images = models.ManyToManyField(Image, blank=True, related_name="boxes", verbose_name="Images")
 
     def __str__(self):
         return self.name
