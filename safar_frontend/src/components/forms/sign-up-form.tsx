@@ -6,20 +6,21 @@ import Link from "next/link"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { FacebookIcon } from "lucide-react"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { useAuth } from "@/redux/hooks/useAuth"
 import { Spinner } from "../ui/spinner"
+import { toast } from "sonner"
 
 const registerSchema = z
   .object({
-    first_name: z.string().min(2, { message: "Name must be at least 2 characters long" }),
-    last_name: z.string().min(2, { message: "Name must be at least 2 characters long" }),
+    // first_name: z.string().min(2, { message: "First name must be at least 2 characters long" }),
+    // last_name: z.string().min(2, { message: "Last name must be at least 2 characters long" }),
     email: z.string().email({ message: "Please enter a valid email address" }),
     password: z
       .string()
@@ -27,11 +28,11 @@ const registerSchema = z
       .regex(/[a-zA-Z]/, { message: "Password must contain at least one letter" })
       .regex(/[0-9]/, { message: "Password must contain at least one number" })
       .regex(/[^a-zA-Z0-9]/, { message: "Password must contain at least one special character" }),
-    confirmPassword: z.string(),
+    re_password: z.string(),
   })
-  .refine((data) => data.password === data.confirmPassword, {
+  .refine((data) => data.password === data.re_password, {
     message: "Passwords do not match",
-    path: ["confirmPassword"],
+    path: ["re_password"],
   })
 
 type RegisterFormValues = z.infer<typeof registerSchema>
@@ -40,178 +41,189 @@ export function RegisterForm() {
   const { register, socialLogin } = useAuth()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-  const [isFacebookLoading, setIsFacebookLoading] = useState(false)
+  const [socialLoading, setSocialLoading] = useState<"google" | "facebook" | null>(null)
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      first_name: "",
-      last_name: "",
+      // first_name: "",
+      // last_name: "",
       email: "",
       password: "",
-      confirmPassword: "",
+      re_password: "",
     },
   })
 
   async function onSubmit(data: RegisterFormValues) {
     setIsLoading(true)
     try {
-      const { confirmPassword, ...userData } = data
-      const result = await register(userData)
+      const result = await register(data)
 
       if (result.success) {
+        toast.success("Account created successfully! Please check your email to verify your account.")
         router.push("/sign-in?registered=true")
+      } else if (result.error) {
+        toast.error(result.error)
       }
+    } catch (error) {
+      toast.error("An unexpected error occurred. Please try again.")
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleSocialLogin = async (provider: string) => {
-    if (provider === "google") {
-      setIsGoogleLoading(true)
-    } else if (provider === "facebook") {
-      setIsFacebookLoading(true)
-    }
-
+  const handleSocialLogin = async (provider: "google" | "facebook") => {
+    setSocialLoading(provider)
     try {
-      // This is a placeholder for the actual OAuth flow
       const code = "placeholder_auth_code"
       const result = await socialLogin(provider, code)
 
       if (result.success) {
         router.push("/dashboard")
+      } else if (result.error) {
+        toast.error(result.error)
       }
+    } catch (error) {
+      toast.error("Failed to login with " + provider)
     } finally {
-      setIsGoogleLoading(false)
-      setIsFacebookLoading(false)
+      setSocialLoading(null)
     }
   }
 
   return (
     <Card className="border-none shadow-none sm:border sm:shadow">
-    <CardContent className="pt-6">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="first_name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>First Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="John Doe" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+      <CardContent className="pt-6">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="first_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="last_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div> */}
+
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="name@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="••••••••" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="re_password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirm Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="••••••••" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading && <Spinner className="mr-2" />}
+              Create account
+            </Button>
+          </form>
+        </Form>
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <Separator className="w-full" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">
+              Or continue with
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Button
+            variant="outline"
+            type="button"
+            disabled={socialLoading === "google"}
+            onClick={() => handleSocialLogin("google")}
+          >
+            {socialLoading === "google" ? (
+              <Spinner className="mr-2 h-4 w-4" />
+            ) : (
+              <User className="mr-2 h-4 w-4" />
             )}
-          />
-          <FormField
-            control={form.control}
-            name="last_name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Last Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="John Doe" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input placeholder="name@example.com" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input type="password" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="confirmPassword"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Confirm Password</FormLabel>
-                <FormControl>
-                  <Input type="password" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? <Spinner className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Create account
+            Google
           </Button>
-        </form>
-      </Form>
-
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <Separator className="w-full" />
+          <Button
+            variant="outline"
+            type="button"
+            disabled={socialLoading === "facebook"}
+            onClick={() => handleSocialLogin("facebook")}
+          >
+            {socialLoading === "facebook" ? (
+              <Spinner className="mr-2 h-4 w-4" />
+            ) : (
+              <User className="mr-2 h-4 w-4" />
+            )}
+            Facebook
+          </Button>
         </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+      </CardContent>
+      <CardFooter className="border-t px-6 py-4">
+        <div className="text-center text-sm w-full">
+          <span className="text-muted-foreground">Already have an account? </span>
+          <Link
+            href="/sign-in"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Sign in
+          </Link>
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <Button
-          variant="outline"
-          type="button"
-          disabled={isGoogleLoading}
-          onClick={() => handleSocialLogin("google")}
-        >
-          {isGoogleLoading ? (
-            <Spinner className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <FacebookIcon className="mr-2 h-4 w-4" />
-          )}
-          Google
-        </Button>
-        <Button
-          variant="outline"
-          type="button"
-          disabled={isFacebookLoading}
-          onClick={() => handleSocialLogin("facebook")}
-        >
-          {isFacebookLoading ? (
-            <Spinner />
-          ) : (
-            <FacebookIcon className="mr-2 h-4 w-4" />
-          )}
-          Facebook
-        </Button>
-      </div>
-    </CardContent>
-    <CardFooter className="border-t px-6 py-4">
-      <div className="text-center text-sm w-full">
-        <span className="text-muted-foreground">Already have an account? </span>
-        <Link href="/sign-in" className="font-medium text-primary underline-offset-4 hover:underline">
-          Sign in
-        </Link>
-      </div>
-    </CardFooter>
-  </Card>
-)
+      </CardFooter>
+    </Card>
+  )
 }

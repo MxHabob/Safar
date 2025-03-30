@@ -34,13 +34,19 @@ export interface UserProfile extends BaseModel {
 
 export interface User extends BaseModel {
   email: string;
-  role: 'guest' | 'owner' | 'organization' | 'developer';
+  role?: 'guest' | 'owner' | 'organization' | 'developer';
   first_name?: string;
   last_name?: string;
   username?: string;
-  is_online: boolean;
+  is_online?: boolean;
   is_active: boolean;
   profile?: UserProfile;
+}
+
+
+export interface RegisterUser extends User {
+  password: string;
+  re_password: string;
 }
 
 // Category Types

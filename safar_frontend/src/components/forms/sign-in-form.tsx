@@ -17,7 +17,7 @@ import { User } from "lucide-react"
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters long" }),
+  password: z.string().min(4, { message: "Password must be at least 8 characters long" }),
 })
 
 type LoginFormValues = z.infer<typeof loginSchema>
@@ -42,7 +42,7 @@ export function LoginForm() {
     try {
       const result = await login(data)
       if (result.success) {
-        router.push("/dashboard")
+        router.push("/")
       }
     } finally {
       setIsLoading(false)

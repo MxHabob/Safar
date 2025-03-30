@@ -157,8 +157,8 @@ class Box(BaseModel):
     currency = models.CharField(max_length=10, default="USD", verbose_name="Currency")
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Country")
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="City")
-    place = models.ManyToManyField(Place, blank=True, null=True, related_name="boxes", verbose_name="Places")
-    experience = models.ManyToManyField(Experience, blank=True, null=True, related_name="boxes", verbose_name="Experiences")
+    place = models.ManyToManyField(Place, blank=True, related_name="boxes", verbose_name="Places")
+    experience = models.ManyToManyField(Experience, blank=True, related_name="boxes", verbose_name="Experiences")
     contents = models.JSONField(default=list,blank=True, null=True, verbose_name="Contents")
     images = models.JSONField(default=list,blank=True, null=True, verbose_name="Images")
 

@@ -27,12 +27,14 @@ const baseQuery = fetchBaseQuery({
   baseUrl: `${process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000'}/api`,
   credentials: 'include',
   prepareHeaders: (headers, { getState }) => {
-    headers.set('Authorization', `Api-Key ${process.env.NEXT_PUBLIC_API_KEY || 'your-default-api-key-here'}`);
-    const { accessToken } = (getState() as RootState).auth;
-    if (accessToken) {
-      headers.set('Authorization', `Bearer ${accessToken}`);
+    const { auth } = getState() as RootState;
+    
+    headers.set('Authorization', `Api-Key ${process.env.NEXT_PUBLIC_API_KEY || 'Bx50OEvF.zYCjhJvybRgERHVYUdsxivVw4g59NlgX'}`);
+    
+    if (auth.accessToken) {
+      headers.set('Authorization', `Bearer ${auth.accessToken}`);
     }
-
+    
     return headers;
   },
 });
@@ -112,6 +114,7 @@ export const api = createApi({
         query: (credentials) => ({
           url: '/auth/jwt/create/',
           method: 'POST',
+          
           body: credentials,
         }),
         invalidatesTags: ['Auth'],

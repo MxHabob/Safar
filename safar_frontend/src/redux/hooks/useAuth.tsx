@@ -23,7 +23,7 @@ import {
   setUser,
   setTokens,
 } from '@/redux/features/auth/auth-slice';
-import { User } from '../types/types';
+import { RegisterUser } from '../types/types';
 
 export const useAuth = () => {
   const dispatch = useDispatch();
@@ -61,7 +61,7 @@ export const useAuth = () => {
     }
   }, [dispatch, loginApi, fetchUser]);
 
-  const register = useCallback(async (userData: Partial<User>) => {
+  const register = useCallback(async (userData: Partial<RegisterUser>) => {
     try {
       dispatch(loginStart());
       await toast.promise(

@@ -8,8 +8,11 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
     TokenVerifyView
 )
+from rest_framework_api_key.permissions import HasAPIKey
 
 class CustomProviderAuthView(ProviderAuthView):
+    permission_classes = [HasAPIKey]
+    
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
 
@@ -39,6 +42,8 @@ class CustomProviderAuthView(ProviderAuthView):
         return response
 
 class CustomTokenObtainPairView(TokenObtainPairView):
+    permission_classes = [HasAPIKey]
+    
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
 
@@ -68,6 +73,8 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         return response
 
 class CustomTokenRefreshView(TokenRefreshView):
+    permission_classes = [HasAPIKey]
+    
     def post(self, request, *args, **kwargs):
         refresh_token = request.COOKIES.get('refresh')
 
@@ -92,6 +99,8 @@ class CustomTokenRefreshView(TokenRefreshView):
         return response
 
 class CustomTokenVerifyView(TokenVerifyView):
+    permission_classes = [HasAPIKey]
+    
     def post(self, request, *args, **kwargs):
         access_token = request.COOKIES.get('access')
 
@@ -101,6 +110,8 @@ class CustomTokenVerifyView(TokenVerifyView):
         return super().post(request, *args, **kwargs)
 
 class LogoutView(APIView):
+    permission_classes = [HasAPIKey]
+    
     def post(self, request, *args, **kwargs):
         response = Response({"detail": "Logged out successfully."}, status=status.HTTP_200_OK)
         response.delete_cookie(
