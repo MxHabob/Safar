@@ -12,18 +12,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Spinner } from "../ui/spinner"
 import { useAuth } from "@/redux/hooks/useAuth"
+import { resendActivationSchema } from "@/lib/validations/auth"
 
 
-const resendActivationSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-})
 
 type ResendActivationFormValues = z.infer<typeof resendActivationSchema>
 
 export function ResendActivationForm() {
-  const { resendActivationEmail } = useAuth()
-  const [isLoading, setIsLoading] = useState(false)
+  const { resendActivationEmail, isResendActivationLoading } = useAuth()
   const [isSuccess, setIsSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const form = useForm<ResendActivationFormValues>({
     resolver: zodResolver(resendActivationSchema),
@@ -33,15 +31,18 @@ export function ResendActivationForm() {
   })
 
   async function onSubmit(data: ResendActivationFormValues) {
-    setIsLoading(true)
+    setError(null)
     try {
       const result = await resendActivationEmail(data.email)
       if (result.success) {
         setIsSuccess(true)
         form.reset()
+      } else {
+        setError(result.error || "Failed to send activation email")
+       
       }
-    } finally {
-      setIsLoading(false)
+    } catch (err) {
+      setError("An unexpected error occurred")
     }
   }
 
@@ -58,6 +59,11 @@ export function ResendActivationForm() {
         ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {error && (
+                <div className="bg-red-50 border-red-200 text-red-800 rounded-md p-3 text-sm">
+                  {error}
+                </div>
+              )}
               <FormField
                 control={form.control}
                 name="email"
@@ -71,8 +77,12 @@ export function ResendActivationForm() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? <Spinner /> : null}
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isResendActivationLoading}
+              >
+                {isResendActivationLoading ? <Spinner /> : null}
                 Resend activation email
               </Button>
             </form>
@@ -82,4 +92,3 @@ export function ResendActivationForm() {
     </Card>
   )
 }
-

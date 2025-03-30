@@ -1,13 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { User } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -15,39 +13,19 @@ import { Separator } from "@/components/ui/separator"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { useAuth } from "@/redux/hooks/useAuth"
 import { Spinner } from "../ui/spinner"
-import { toast } from "sonner"
+import { registerSchema } from "@/lib/validations/auth"
 
-const registerSchema = z
-  .object({
-    // first_name: z.string().min(2, { message: "First name must be at least 2 characters long" }),
-    // last_name: z.string().min(2, { message: "Last name must be at least 2 characters long" }),
-    email: z.string().email({ message: "Please enter a valid email address" }),
-    password: z
-      .string()
-      .min(8, { message: "Password must be at least 8 characters long" })
-      .regex(/[a-zA-Z]/, { message: "Password must contain at least one letter" })
-      .regex(/[0-9]/, { message: "Password must contain at least one number" })
-      .regex(/[^a-zA-Z0-9]/, { message: "Password must contain at least one special character" }),
-    re_password: z.string(),
-  })
-  .refine((data) => data.password === data.re_password, {
-    message: "Passwords do not match",
-    path: ["re_password"],
-  })
+
 
 type RegisterFormValues = z.infer<typeof registerSchema>
 
 export function RegisterForm() {
-  const { register, socialLogin } = useAuth()
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [socialLoading, setSocialLoading] = useState<"google" | "facebook" | null>(null)
+  const { register, socialLogin, isRegisterLoading, isSocialAuthLoading } = useAuth()
+  const [socialProvider, setSocialProvider] = useState<"google" | "facebook" | null>(null)
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      // first_name: "",
-      // last_name: "",
       email: "",
       password: "",
       re_password: "",
@@ -55,38 +33,31 @@ export function RegisterForm() {
   })
 
   async function onSubmit(data: RegisterFormValues) {
-    setIsLoading(true)
     try {
       const result = await register(data)
-
       if (result.success) {
-        toast.success("Account created successfully! Please check your email to verify your account.")
-        router.push("/sign-in?registered=true")
-      } else if (result.error) {
-        toast.error(result.error)
+        
+      
+      } else {
+        
       }
     } catch (error) {
-      toast.error("An unexpected error occurred. Please try again.")
-    } finally {
-      setIsLoading(false)
+      
     }
   }
 
   const handleSocialLogin = async (provider: "google" | "facebook") => {
-    setSocialLoading(provider)
+    setSocialProvider(provider)
     try {
       const code = "placeholder_auth_code"
       const result = await socialLogin(provider, code)
-
-      if (result.success) {
-        router.push("/dashboard")
-      } else if (result.error) {
-        toast.error(result.error)
+      if (!result.success) {
+        
       }
     } catch (error) {
-      toast.error("Failed to login with " + provider)
+     
     } finally {
-      setSocialLoading(null)
+      setSocialProvider(null)
     }
   }
 
@@ -166,8 +137,8 @@ export function RegisterForm() {
               )}
             />
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading && <Spinner className="mr-2" />}
+            <Button type="submit" className="w-full" disabled={isRegisterLoading}>
+              {isRegisterLoading && <Spinner className="mr-2" />}
               Create account
             </Button>
           </form>
@@ -188,10 +159,10 @@ export function RegisterForm() {
           <Button
             variant="outline"
             type="button"
-            disabled={socialLoading === "google"}
+            disabled={isSocialAuthLoading && socialProvider === "google"}
             onClick={() => handleSocialLogin("google")}
           >
-            {socialLoading === "google" ? (
+            {isSocialAuthLoading && socialProvider === "google" ? (
               <Spinner className="mr-2 h-4 w-4" />
             ) : (
               <User className="mr-2 h-4 w-4" />
@@ -201,10 +172,10 @@ export function RegisterForm() {
           <Button
             variant="outline"
             type="button"
-            disabled={socialLoading === "facebook"}
+            disabled={isSocialAuthLoading && socialProvider === "facebook"}
             onClick={() => handleSocialLogin("facebook")}
           >
-            {socialLoading === "facebook" ? (
+            {isSocialAuthLoading && socialProvider === "facebook" ? (
               <Spinner className="mr-2 h-4 w-4" />
             ) : (
               <User className="mr-2 h-4 w-4" />
@@ -217,7 +188,7 @@ export function RegisterForm() {
         <div className="text-center text-sm w-full">
           <span className="text-muted-foreground">Already have an account? </span>
           <Link
-            href="/sign-in"
+            href="/login"
             className="font-medium text-primary underline-offset-4 hover:underline"
           >
             Sign in

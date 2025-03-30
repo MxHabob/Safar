@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
@@ -14,20 +13,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useAuth } from "@/redux/hooks/useAuth"
 import { Spinner } from "../ui/spinner"
 import { User } from "lucide-react"
+import { loginSchema } from "@/lib/validations/auth"
 
-const loginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(4, { message: "Password must be at least 8 characters long" }),
-})
+
 
 type LoginFormValues = z.infer<typeof loginSchema>
 
 export function LoginForm() {
-  const { login, socialLogin } = useAuth()
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-  const [isFacebookLoading, setIsFacebookLoading] = useState(false)
+  const { login, socialLogin, isLoginLoading, isSocialAuthLoading } = useAuth()
+  const [socialProvider, setSocialProvider] = useState<"google" | "facebook" | null>(null)
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -38,37 +32,23 @@ export function LoginForm() {
   })
 
   async function onSubmit(data: LoginFormValues) {
-    setIsLoading(true)
     try {
       const result = await login(data)
       if (result.success) {
-        router.push("/")
+       
       }
-    } finally {
-      setIsLoading(false)
+    } catch (error) {
+      
     }
   }
 
-  const handleSocialLogin = async (provider: string) => {
-    if (provider === "google") {
-      setIsGoogleLoading(true)
-    } else if (provider === "facebook") {
-      setIsFacebookLoading(true)
-    }
-
+  const handleSocialLogin = async (provider: "google" | "facebook") => {
+    setSocialProvider(provider)
     try {
-      // This is a placeholder for the actual OAuth flow
-      // In a real implementation, you would redirect to the provider's OAuth page
-      // and handle the callback with the code parameter
       const code = "placeholder_auth_code"
-      const result = await socialLogin(provider, code)
-
-      if (result.success) {
-        router.push("/dashboard")
-      }
+      await socialLogin(provider, code)
     } finally {
-      setIsGoogleLoading(false)
-      setIsFacebookLoading(false)
+      setSocialProvider(null)
     }
   }
 
@@ -108,8 +88,8 @@ export function LoginForm() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? <Spinner /> : null}
+            <Button type="submit" className="w-full" disabled={isLoginLoading}>
+              {isLoginLoading ? <Spinner /> : null}
               Sign in
             </Button>
           </form>
@@ -128,10 +108,10 @@ export function LoginForm() {
           <Button
             variant="outline"
             type="button"
-            disabled={isGoogleLoading}
+            disabled={isSocialAuthLoading && socialProvider === "google"}
             onClick={() => handleSocialLogin("google")}
           >
-            {isGoogleLoading ? (
+            {isSocialAuthLoading && socialProvider === "google" ? (
               <Spinner />
             ) : (
               <User className="mr-2 h-4 w-4" />
@@ -141,10 +121,10 @@ export function LoginForm() {
           <Button
             variant="outline"
             type="button"
-            disabled={isFacebookLoading}
+            disabled={isSocialAuthLoading && socialProvider === "facebook"}
             onClick={() => handleSocialLogin("facebook")}
           >
-            {isFacebookLoading ? (
+            {isSocialAuthLoading && socialProvider === "facebook" ? (
               <Spinner />
             ) : (
               <User className="mr-2 h-4 w-4" />
@@ -169,4 +149,3 @@ export function LoginForm() {
     </Card>
   )
 }
-

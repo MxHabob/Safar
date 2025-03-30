@@ -24,22 +24,24 @@ import {
   setTokens,
 } from '@/redux/features/auth/auth-slice';
 import { RegisterUser } from '../types/types';
+import { useRouter } from 'next/navigation';
 
 export const useAuth = () => {
   const dispatch = useDispatch();
+  const router = useRouter();
   const authState = useSelector((state: RootState) => state.auth);
   
-  const [loginApi] = useLoginMutation();
-  const [registerApi] = useRegisterMutation();
-  const [logoutApi] = useLogoutMutation();
-  const [refreshTokenApi] = useRefreshTokenMutation();
-  const [socialAuthApi] = useSocialAuthMutation();
-  const [verifyEmailApi] = useVerifyEmailMutation();
-  const [resendActivationEmailApi] = useResendActivationEmailMutation();
-  const [requestPasswordResetApi] = useRequestPasswordResetMutation();
-  const [confirmPasswordResetApi] = useConfirmPasswordResetMutation();
+  const [loginApi, { isLoading: isLoginLoading }] = useLoginMutation();
+  const [registerApi, { isLoading: isRegisterLoading }] = useRegisterMutation();
+  const [logoutApi, { isLoading: isLogoutLoading }] = useLogoutMutation();
+  const [refreshTokenApi, { isLoading: isRefreshLoading }] = useRefreshTokenMutation();
+  const [socialAuthApi, { isLoading: isSocialAuthLoading }] = useSocialAuthMutation();
+  const [verifyEmailApi, { isLoading: isVerifyEmailLoading }] = useVerifyEmailMutation();
+  const [resendActivationEmailApi, { isLoading: isResendActivationLoading }] = useResendActivationEmailMutation();
+  const [requestPasswordResetApi, { isLoading: isRequestPasswordResetLoading }] = useRequestPasswordResetMutation();
+  const [confirmPasswordResetApi, { isLoading: isConfirmPasswordResetLoading }] = useConfirmPasswordResetMutation();
   
-  const { refetch: fetchUser } = useGetUserQuery();
+  const { refetch: fetchUser, isLoading: isUserLoading } = useGetUserQuery();
 
   const login = useCallback(async (credentials: { email: string; password: string }) => {
     try {
@@ -47,11 +49,11 @@ export const useAuth = () => {
       const response = await loginApi(credentials).unwrap();
       dispatch(loginSuccess(response));
       
-      // Fetch user details after successful login
       const userResponse = await fetchUser().unwrap();
       dispatch(setUser(userResponse));
       
       toast.success('Login successful');
+      router.push('/');
       return { success: true };
     } catch (error: any) {
       const errorMessage = error.data?.detail || 'Login failed';
@@ -59,7 +61,7 @@ export const useAuth = () => {
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     }
-  }, [dispatch, loginApi, fetchUser]);
+  }, [dispatch, loginApi, fetchUser, router]);
 
   const register = useCallback(async (userData: Partial<RegisterUser>) => {
     try {
@@ -68,21 +70,20 @@ export const useAuth = () => {
         registerApi(userData).unwrap(),
         {
           loading: 'Creating your account...',
-          success: () => {
-            return 'Account created! Please check your email to verify your account.';
-          },
+          success: 'Account created! Please check your email to verify your account.',
           error: (error) => {
             return error.data?.detail || 'Registration failed';
           },
         }
       );
+      router.push('/login');
       return { success: true };
     } catch (error: any) {
       const errorMessage = error.data?.detail || 'Registration failed';
       dispatch(loginFailure(errorMessage));
       return { success: false, error: errorMessage };
     }
-  }, [dispatch, registerApi]);
+  }, [dispatch, registerApi, router]);
 
   const logout = useCallback(async () => {
     try {
@@ -96,8 +97,9 @@ export const useAuth = () => {
       );
     } finally {
       dispatch(logoutAction());
+      router.push('/login');
     }
-  }, [dispatch, logoutApi]);
+  }, [dispatch, logoutApi, router]);
 
   const verifyEmail = useCallback(async (data: { uid: string; token: string }) => {
     try {
@@ -111,6 +113,7 @@ export const useAuth = () => {
           },
         }
       );
+      // router.push('/login');
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.data?.detail || 'Email verification failed' };
@@ -165,15 +168,17 @@ export const useAuth = () => {
           },
         }
       );
+      router.push('/login');
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.data?.detail || 'Password reset failed' };
     }
-  }, [confirmPasswordResetApi]);
+  }, [confirmPasswordResetApi, router]);
 
   const refreshTokens = useCallback(async () => {
     if (!authState.refreshToken) {
       dispatch(logoutAction());
+      router.push('/login');
       return { success: false, error: 'No refresh token available' };
     }
 
@@ -183,11 +188,12 @@ export const useAuth = () => {
       return { success: true };
     } catch (error) {
       dispatch(logoutAction());
+      router.push('/login');
       toast.error('Session expired. Please login again.');
       return { success: false, error: 'Session expired. Please login again.' };
     }
-  }, [authState.refreshToken, dispatch, refreshTokenApi]);
-    // google, facebook 
+  }, [authState.refreshToken, dispatch, refreshTokenApi, router]);
+
   const socialLogin = useCallback(async (provider: string, code: string) => {
     try {
       dispatch(loginStart());
@@ -203,18 +209,18 @@ export const useAuth = () => {
       );
       dispatch(loginSuccess(response));
       
-      // Social auth response includes user data
       if (response.user) {
         dispatch(setUser(response.user));
       }
       
+      router.push('/');
       return { success: true };
     } catch (error: any) {
       const errorMessage = error.data?.detail || 'Social login failed';
       dispatch(loginFailure(errorMessage));
       return { success: false, error: errorMessage };
     }
-  }, [dispatch, socialAuthApi]);
+  }, [dispatch, socialAuthApi, router]);
 
   const loadUser = useCallback(async () => {
     if (!authState.accessToken) return { success: false };
@@ -240,5 +246,19 @@ export const useAuth = () => {
     refreshTokens,
     socialLogin,
     loadUser,
+    isLoading: isLoginLoading || isRegisterLoading || isLogoutLoading || 
+              isRefreshLoading || isSocialAuthLoading || isVerifyEmailLoading || 
+              isResendActivationLoading || isRequestPasswordResetLoading || 
+              isConfirmPasswordResetLoading || isUserLoading,
+    isLoginLoading,
+    isRegisterLoading,
+    isLogoutLoading,
+    isRefreshLoading,
+    isSocialAuthLoading,
+    isVerifyEmailLoading,
+    isResendActivationLoading,
+    isRequestPasswordResetLoading,
+    isConfirmPasswordResetLoading,
+    isUserLoading,
   };
 };

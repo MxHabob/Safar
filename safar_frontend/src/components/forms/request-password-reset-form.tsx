@@ -12,17 +12,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle } from "lucide-react"
 import { useAuth } from "@/redux/hooks/useAuth"
 import { Spinner } from "../ui/spinner"
+import { resetPasswordSchema } from "@/lib/validations/auth"
 
-const resetPasswordSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-})
 
 type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>
 
 export function RequestPasswordResetForm() {
-  const { requestPasswordReset } = useAuth()
-  const [isLoading, setIsLoading] = useState(false)
+  const { requestPasswordReset, isRequestPasswordResetLoading } = useAuth()
   const [isSuccess, setIsSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const form = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
@@ -32,15 +30,19 @@ export function RequestPasswordResetForm() {
   })
 
   async function onSubmit(data: ResetPasswordFormValues) {
-    setIsLoading(true)
+    setError(null)
     try {
       const result = await requestPasswordReset(data.email)
       if (result.success) {
         setIsSuccess(true)
         form.reset()
+      } else {
+        setError(result.error || "Failed to send reset email")
+      
       }
-    } finally {
-      setIsLoading(false)
+    } catch (err) {
+      setError("An unexpected error occurred")
+      
     }
   }
 
@@ -57,6 +59,11 @@ export function RequestPasswordResetForm() {
         ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {error && (
+                <div className="bg-red-50 border-red-200 text-red-800 rounded-md p-3 text-sm">
+                  {error}
+                </div>
+              )}
               <FormField
                 control={form.control}
                 name="email"
@@ -70,8 +77,12 @@ export function RequestPasswordResetForm() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? <Spinner /> : null}
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isRequestPasswordResetLoading}
+              >
+                {isRequestPasswordResetLoading ? <Spinner /> : null}
                 Send reset link
               </Button>
             </form>
@@ -81,4 +92,3 @@ export function RequestPasswordResetForm() {
     </Card>
   )
 }
-

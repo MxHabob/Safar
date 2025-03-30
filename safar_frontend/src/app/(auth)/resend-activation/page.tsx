@@ -17,7 +17,7 @@ export default function ResendActivationPage() {
       </div>
       <ResendActivationForm />
       <p className="px-8 text-center text-sm text-muted-foreground">
-        <Link href="/sign-in" className="hover:text-brand underline underline-offset-4">
+        <Link href="/login" className="hover:text-brand underline underline-offset-4">
           Back to login
         </Link>
       </p>
