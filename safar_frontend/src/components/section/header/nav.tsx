@@ -15,13 +15,13 @@ export function Nav() {
     <nav className="hidden md:block">
       <ul className="flex space-x-6">
         <li>
-          <Link href="#" className="font-mediumpb-2">
+          <Link href="/" className="font-mediumpb-2">
             Homes
           </Link>
         </li>
         <li>
-          <Link href="#" className="font-medium">
-            Experiences
+          <Link href="/flight" className="font-medium">
+          Flight
           </Link>
         </li>
       </ul>

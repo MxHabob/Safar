@@ -2,23 +2,23 @@
 import { useGetPlaceQuery } from "@/redux/services/api";
 import { ImageGallery } from "./image-gallery";
 import { Button } from "@/components/ui/button";
-import { Heart, Share } from "lucide-react";
-import { Avatar, AvatarFallback } from "@radix-ui/react-avatar";
+import { ArrowBigLeft, Heart, Share } from "lucide-react";
 import { GuestFavoriteBadge } from "@/components/global/cards/guest-favorite-badge";
-import { BookingSummaryCard } from "@/components/global/cards/booking-summary-card";
+import MapboxMap from "@/components/global/mapBox";
+import { useRouter } from "next/navigation";
+
 
 export const PlacePageContant = ({id}:{id:string}) => {
     const { data } = useGetPlaceQuery(id)
+    const router = useRouter()
     console.log("place : ",data)
     return ( 
     <div className="max-w-6xl mx-auto p-4">
       <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="p-1 rounded">
-            <Avatar src={data?.owner.profile?.avatar} alt={data?.owner.username || "User avatar"} >
-                <AvatarFallback className=" font-bold uppercase text-lg">{data?.owner.username?.charAt(0)}</AvatarFallback>
-            </Avatar>
-          </div>
+        <div className="flex items-center justify-center">
+          <Button variant={"ghost"}  onClick={()=> router.back()} className="rounded-full p-4">
+           <ArrowBigLeft />
+          </Button>
           <h1 className="text-2xl font-bold">{data?.name || ""}</h1>
         </div>
         <div className="flex items-center gap-4">
@@ -38,9 +38,11 @@ export const PlacePageContant = ({id}:{id:string}) => {
           <h2 className="text-2xl font-semibold">{data?.name} - {data?.country} - <span>{data?.city}</span></h2>
           <p className="text-lg">{data?.description}</p>
         </div>
-        <BookingSummaryCard originalPrice={data?.price || 5} guests={5} priceBreakdown={[{ label: "Base Price", amount: 12 }, { label: "Service Fee", amount: 15 }]}/>
-      </div>    
+      </div>  
       <GuestFavoriteBadge rating={0} reviewCount={0} />
+      <div className="max-h[50px] mb-20">
+      <MapboxMap location={data?.location || ""} />
+      </div>
     </div>
 );
 }

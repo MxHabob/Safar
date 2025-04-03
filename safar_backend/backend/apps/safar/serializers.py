@@ -58,9 +58,10 @@ class PlaceSerializer(serializers.ModelSerializer):
 class ExperienceSerializer(serializers.ModelSerializer):
     owner = UserSerializer(read_only=True)
     images = ImageSerializer(many=True, read_only=True)
+    category = CategorySerializer(read_only=True)
     class Meta:
         model = Experience
-        fields = ['id', 'place', 'owner', 'title', 'description', 'location', 'price_per_person', 'currency', 'duration', 'capacity', 'schedule', 'images', 'rating', 'is_available']
+        fields = ['id', 'place', 'owner', 'category', 'title', 'description', 'location', 'price_per_person', 'currency', 'duration', 'capacity', 'schedule', 'images', 'rating', 'is_available']
         read_only_fields = ['id']
 
 class FlightSerializer(serializers.ModelSerializer):
@@ -72,13 +73,28 @@ class FlightSerializer(serializers.ModelSerializer):
 class BoxSerializer(serializers.ModelSerializer):
     country = serializers.SerializerMethodField()
     city = serializers.SerializerMethodField()
+    places = PlaceSerializer(
+        many=True, 
+        read_only=True,
+        source="place"
+    )
+    experiences = ExperienceSerializer(
+        many=True,
+        read_only=True,
+        source="experience"
+    )
+    category = CategorySerializer(read_only=True)
     images = ImageSerializer(many=True, read_only=True)
+
     class Meta:
         model = Box
-        fields = ['id', 'name', 'description', 'total_price', 'currency', 'country', 'city', 'place', 'experience', 'contents', 'images']
+        fields = [
+            'id', 'name', 'category', 'description', 'total_price',
+            'currency', 'country', 'city', 'places', 'experiences',
+            'contents', 'images'
+        ]
         read_only_fields = ['id']
 
-        
     def get_country(self, obj):
         return obj.country.name if obj.country else None
 

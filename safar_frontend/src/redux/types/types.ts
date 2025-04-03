@@ -82,10 +82,7 @@ export interface Place extends BaseModel {
   owner: User;
   name: string;
   description?: string;
-  location: {
-    type: 'Point';
-    coordinates: [number, number];
-  };
+  location: string;
   country?: string;
   city?: string;
   region?: string;
@@ -100,15 +97,12 @@ export interface Place extends BaseModel {
 
 // Experience Types
 export interface Experience extends BaseModel {
+  category?:Category;
   place?: Place;
   owner: User;
   title: string;
   description?: string;
-  category?:Category;
-  location: {
-    type: 'Point';
-    coordinates: [number, number];
-  };
+  location: string;
   price_per_person: number;
   currency: string;
   duration: number;
@@ -137,14 +131,15 @@ export interface Flight extends BaseModel {
 
 // Box Types
 export interface Box extends BaseModel {
+  category?:Category;
   name: string;
   description?: string;
   total_price?: number;
   currency: string;
   country?: string;
   city?: string;
-  place?: Place[];
-  experience?: Experience[];
+  places?: Place[];
+  experiences?: Experience[];
   contents: Record<string, unknown>[];
   images: Images[];
 }

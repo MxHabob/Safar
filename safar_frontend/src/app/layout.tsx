@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import ReduxProvider from "@/components/providers/redux-provider";
 import { Toaster } from "sonner";
+import { Nav } from "@/components/section/header/nav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,8 +33,10 @@ export default function RootLayout({
       >
       <ReduxProvider>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange >
-
+      <main className=" min-h-screen flex flex-col mx-6">
+        <Nav />
         {children}
+      </main>
         <Toaster position="bottom-center"/>
       </ThemeProvider>
       </ReduxProvider>

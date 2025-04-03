@@ -21,7 +21,7 @@ export const ImageGallery = ({ images }: ImageGalleryProps) => {
             className="h-full w-full object-cover rounded-tl-lg rounded-bl-lg"
           />
         </div>
-        {images.slice(1, 4).map((image, index) => (
+        {images.slice(1, 5).map((image, index) => (
           <div key={index} className="h-48 md:h-auto">
             <Image
               src={image.file || "/placeholder-image.jpg"}

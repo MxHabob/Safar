@@ -99,6 +99,7 @@ class Place(BaseModel):
 
 # Experience like motorcycling - skiing - walking around the monuments etc.
 class Experience(BaseModel):
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="experience", verbose_name="Category")
     place = models.ForeignKey(Place, on_delete=models.SET_NULL, null=True, blank=True, related_name="experiences", verbose_name="Place")
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="owned_experiences", verbose_name="Owner")
     title = models.CharField(max_length=255, verbose_name="Title", db_index=True)
@@ -155,8 +156,8 @@ class Flight(BaseModel):
             models.Index(fields=["departure_time", "arrival_time"]),
         ]
 
-# Box is a collection of suggestions for comprehensive tourist trips, including accommodation in a specific hotel, visits to tourist attractions and restaurants, and experiences in a specific country. It is powered by artificial intelligence, which groups several boxes for users or suggests boxes based on a specific user's preferences.
 class Box(BaseModel):
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="box", verbose_name="Category")
     name = models.CharField(max_length=255, verbose_name="Box Name", db_index=True)
     description = models.TextField(blank=True, null=True, verbose_name="Description")
     total_price = models.DecimalField(max_digits=10,blank=True, null=True, decimal_places=2, verbose_name="Total Price", db_index=True)

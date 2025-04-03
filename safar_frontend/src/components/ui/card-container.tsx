@@ -15,10 +15,10 @@ export function CardContainer({
   ...props
 }: CardContainerProps) {
   const variantClasses = {
-    default: "bg-white border border-slate-200 shadow-soft",
-    glass: "bg-white/80 backdrop-blur-md border border-white/20 shadow-medium",
-    elevated: "bg-white border-none shadow-strong",
-    outline: "bg-white border border-slate-200 shadow-none",
+    default: "bg-card border border-slate-200 shadow-soft",
+    glass: "bg-card backdrop-blur-lg border border-card/20 shadow-medium",
+    elevated: "bg-card border-none shadow-strong",
+    outline: "bg-card border border-slate-200 shadow-none",
   }
 
   return (
