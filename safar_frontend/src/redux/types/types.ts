@@ -72,6 +72,7 @@ export interface Discount extends BaseModel {
 
 export interface Images extends BaseModel {
   url: string;
+  file:string;
   uploaded_by?: string;
 }
 
@@ -103,6 +104,7 @@ export interface Experience extends BaseModel {
   owner: User;
   title: string;
   description?: string;
+  category?:Category;
   location: {
     type: 'Point';
     coordinates: [number, number];

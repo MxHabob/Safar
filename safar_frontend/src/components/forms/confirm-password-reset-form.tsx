@@ -11,11 +11,11 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Spinner } from "../ui/spinner"
 import { useAuth } from "@/redux/hooks/useAuth"
-import { resetPasswordSchema } from "@/lib/validations/auth"
+import { confirmPasswordResetSchema } from "@/lib/validations/auth"
 
 
 
-type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>
+type ResetPasswordFormValues = z.infer<typeof confirmPasswordResetSchema>
 
 export function ConfirmPasswordResetForm() {
   const { uid, token } = useParams() as { uid: string; token: string }
@@ -23,7 +23,7 @@ export function ConfirmPasswordResetForm() {
   const [error, setError] = useState<string | null>(null)
 
   const form = useForm<ResetPasswordFormValues>({
-    resolver: zodResolver(resetPasswordSchema),
+    resolver: zodResolver(confirmPasswordResetSchema),
     defaultValues: {
       new_password: "",
       re_password: "",
@@ -43,7 +43,7 @@ export function ConfirmPasswordResetForm() {
       if (!result.success) {
         setError(result.error || "Failed to reset password")
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred")
     }
   }

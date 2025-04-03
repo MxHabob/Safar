@@ -302,6 +302,7 @@ export const api = createApi({
       }),
       providesTags: ['Place']
     }),
+    
     getSimilarPlaces: builder.query<PaginatedResponse<Place>, { id: string; page?: number; page_size?: number }>({
       query: ({ id, ...params }) => ({
         url: `/places/${id}/similar/`,

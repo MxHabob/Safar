@@ -40,9 +40,8 @@ export function RequestPasswordResetForm() {
         setError(result.error || "Failed to send reset email")
       
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred")
-      
     }
   }
 

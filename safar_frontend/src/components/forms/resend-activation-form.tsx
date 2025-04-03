@@ -41,7 +41,7 @@ export function ResendActivationForm() {
         setError(result.error || "Failed to send activation email")
        
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred")
     }
   }

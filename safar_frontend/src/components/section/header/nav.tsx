@@ -31,12 +31,12 @@ export function Nav() {
       <Button className="rounded-full p-2 ">
         <Globe className="h-5 w-5" />
       </Button>
-      <Button className="flex items-center rounded-full p-2 ">
-        <Menu className="h-5 w-5 mr-2" />
+      <div className="flex items-center rounded-full p-2 ">
+        <Menu className="h-5 w-5 mr-4" />
         <div>
           <UserAvatar className="h-5 w-5 " />
         </div>
-      </Button>
+      </div>
     </div>
   </div>
   )

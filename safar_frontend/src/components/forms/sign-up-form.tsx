@@ -41,7 +41,7 @@ export function RegisterForm() {
       } else {
         
       }
-    } catch (error) {
+    } catch {
       
     }
   }
@@ -54,7 +54,7 @@ export function RegisterForm() {
       if (!result.success) {
         
       }
-    } catch (error) {
+    } catch {
      
     } finally {
       setSocialProvider(null)

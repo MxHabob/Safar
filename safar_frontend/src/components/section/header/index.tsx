@@ -9,13 +9,13 @@ import { Nav } from "./nav"
 export function Header() {
 const { data: categories ,isLoading} = useGetCategoriesQuery({})
   return (
-    <header className=" px-10">
+    <header className="p">
     <Nav/>
     <MSearch/>
-      <div className="flex items-center justify-between">
+      <div className=" sticky top-0 flex items-center justify-between">
             <ListSlider overlay route  loop={true} isLoading={isLoading} items={categories?.results || []} />
           <div className=" flex items-center space-x-4">
-            <Button className="flex items-center rounded-full px-4 py-2 text-sm font-medium">
+            <Button className=" items-center hidden rounded-full px-4 py-2 text-sm font-medium">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="16"

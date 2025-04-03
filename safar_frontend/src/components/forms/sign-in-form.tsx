@@ -37,7 +37,7 @@ export function LoginForm() {
       if (result.success) {
        
       }
-    } catch (error) {
+    } catch {
       
     }
   }

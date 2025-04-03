@@ -42,7 +42,7 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
   if (!isAuthenticated || !user) {
     return (
       <Button
-        variant="outline"
+        variant={"link"}
         onClick={() => router.push('/login')}
         className={className}
       >
@@ -54,7 +54,7 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
   const handleLogout = async () => {
     try {
       await logout();
-    } catch (error) {
+    } catch {
 
     }
   };
@@ -86,8 +86,8 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="relative h-8 w-8 rounded-full p-0">
+      <DropdownMenuTrigger >
+        <Button variant={"ghost"} className="relative h-8 w-8 rounded-full p-0">
           {avatarContent}
         </Button>
       </DropdownMenuTrigger>
@@ -95,7 +95,7 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
-              {user.first_name || 'User'}
+              {user.username || 'User'}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}

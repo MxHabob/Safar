@@ -24,17 +24,7 @@ export const registerSchema = z
   })
 
 export const resetPasswordSchema = z.object({
-  new_password: z
-  .string()
-  .min(8, { message: "Password must be at least 8 characters long" })
-  .regex(/[a-zA-Z]/, { message: "Password must contain at least one letter" })
-  .regex(/[0-9]/, { message: "Password must contain at least one number" })
-  .regex(/[^a-zA-Z0-9]/, { message: "Password must contain at least one special character" }),
-  re_password: z.string(),
-})
-.refine((data) => data.new_password === data.re_password, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
+  email: z.string().email({ message: "Please enter a valid email address" }),
 })
 
 export const confirmPasswordResetSchema = z
@@ -45,9 +35,9 @@ export const confirmPasswordResetSchema = z
       .regex(/[a-zA-Z]/, { message: "Password must contain at least one letter" })
       .regex(/[0-9]/, { message: "Password must contain at least one number" })
       .regex(/[^a-zA-Z0-9]/, { message: "Password must contain at least one special character" }),
-    confirm_password: z.string(),
+      re_password: z.string(),
   })
-  .refine((data) => data.new_password === data.confirm_password, {
+  .refine((data) => data.new_password === data.re_password, {
     message: "Passwords do not match",
     path: ["confirm_password"],
   })
