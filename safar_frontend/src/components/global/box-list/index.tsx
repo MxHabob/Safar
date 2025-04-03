@@ -3,31 +3,19 @@ import Link from "next/link"
 import "swiper/css/bundle"
 import { type SwiperProps, SwiperSlide } from "swiper/react"
 import { Slider } from "../slider"
-import ExperienceCard from "./experience-card"
-import { useGetExperiencesQuery } from "@/redux/services/api"
+import { useGetBoxesQuery } from "@/redux/services/api"
 import { Loader2 } from "lucide-react"
+import { BoxCard } from "./box-card"
 
 type Props = {
   overlay?: boolean
   selected?: string
-  favorites?: string[]
-  onFavoriteToggle?: (id: string) => void
 } & SwiperProps
 
-export const ListExperience = ({ overlay, selected, favorites = [], onFavoriteToggle, ...rest }: Props) => {
-  const { data: experiences, isLoading, error } = useGetExperiencesQuery({})
+export const ListBox = ({ overlay, selected,  ...rest }: Props) => {
+  const { data: boxes, isLoading, error } = useGetBoxesQuery({})
 
-  console.log("experiences : ",experiences )
-
-  const isExperienceFavorited = (experienceId: string) => {
-    return favorites.includes(experienceId)
-  }
-
-  const handleFavorite = (id: string) => {
-    if (onFavoriteToggle) {
-      onFavoriteToggle(id)
-    }
-  }
+  console.log("boxes : ",boxes )
 
   if (isLoading) {
     return (
@@ -46,7 +34,7 @@ export const ListExperience = ({ overlay, selected, favorites = [], onFavoriteTo
     )
   }
 
-  if (!experiences?.results || experiences.results.length === 0) {
+  if (!boxes?.results || boxes.results.length === 0) {
     return (
       <div className="flex justify-center items-center py-8 text-gray-500">
         <p>No experiences found.</p>
@@ -58,23 +46,21 @@ export const ListExperience = ({ overlay, selected, favorites = [], onFavoriteTo
     <Slider
       slidesPerView="auto"
       spaceBetween={16}
-      loop={experiences.results.length > 3}
+      loop={boxes.results.length > 3}
       freeMode
       overlay={overlay}
       {...rest}
     >
-      {experiences.results.map((experience) => (
+      {boxes.results.map((box) => (
         <SwiperSlide
-          key={experience.id}
+          key={box.id}
           className={`content-width-slide transition-all duration-200 ${
-            selected === experience.id ? "scale-[1.02]" : ""
+            selected === box.id ? "scale-[1.02]" : ""
           }`}
         >
-          <Link href={`/experience/${experience.id}`}>
-            <ExperienceCard
-              experience={experience}
-              onFavorite={handleFavorite}
-              isFavorited={isExperienceFavorited(experience.id)}
+          <Link href={`/box/${box.id}`}>
+            <BoxCard
+              box={box}
             />
           </Link>
         </SwiperSlide>

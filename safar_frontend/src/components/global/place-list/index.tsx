@@ -79,7 +79,7 @@ export const ListPlaces = ({ selected, favorites = [], onFavoriteToggle }: Props
                 selected === place.id ? "scale-[1.02] ring-2 ring-primary ring-offset-2 rounded-3xl" : ""
               }`}
             >
-              <Link href={`/?${place.id}`}>
+              <Link href={`/place/${place.id}`}>
                 <PlaceCard 
                   place={place} 
                   onFavorite={handleFavorite} 

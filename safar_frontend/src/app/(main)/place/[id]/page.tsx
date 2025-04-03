@@ -1,3 +1,4 @@
+import { PlacePageContant } from "@/components/section/place";
 
 type Props = {
 	params: Promise<{ id: string}>
@@ -6,7 +7,9 @@ type Props = {
   export default async function PlacePage({  params  }: Props) {
     const id = (await params).id
     return (
-         <h1>Place Page{id}</h1> 
+      <div className="">
+        <PlacePageContant id={id} />
+      </div>
         );
 }
  

@@ -20,10 +20,8 @@ export default function ExperienceCard({ experience, onFavorite, isFavorited: ex
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [internalFavorite, setInternalFavorite] = useState(false)
 
-  // Use external favorite state if provided, otherwise use internal state
   const isFavorite = externalFavorite !== undefined ? externalFavorite : internalFavorite
 
-  // Safely access images array with fallbacks
   const images = experience.images || []
   const hasMultipleImages = images.length > 1
 
@@ -53,7 +51,6 @@ export default function ExperienceCard({ experience, onFavorite, isFavorited: ex
     }
   }
 
-  // Format price with proper currency
   const formattedPrice = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: experience.currency || "USD",
@@ -61,7 +58,6 @@ export default function ExperienceCard({ experience, onFavorite, isFavorited: ex
     maximumFractionDigits: 0,
   }).format(experience.price_per_person || 0)
 
-  // Get duration text (days or hours)
   const getDurationText = (minutes = 0) => {
     if (minutes >= 1440) {
       const days = Math.floor(minutes / 1440)
@@ -72,7 +68,6 @@ export default function ExperienceCard({ experience, onFavorite, isFavorited: ex
     }
   }
 
-  // Format location for display
   const formattedLocation = (() => {
     if (experience.location?.coordinates?.length === 2) {
       const [lat, lng] = experience.location.coordinates

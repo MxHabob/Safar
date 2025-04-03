@@ -3,9 +3,8 @@ import { Button } from "../../ui/button"
 
 export function MSearch() {
   return (
-      <div className="p-6">
         <div className="relative mx-auto max-w-4xl">
-          <div className="flex items-center rounded-full border shadow-sm">
+          <div className="flex items-center rounded-full shadow-lg">
             <div className="flex-1 border-r px-6 py-3">
               <div className="text-sm font-medium">Where</div>
               <input
@@ -23,7 +22,6 @@ export function MSearch() {
             </Button>
           </div>
         </div>
-      </div>
   )
 }
 

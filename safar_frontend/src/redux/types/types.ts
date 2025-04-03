@@ -143,8 +143,8 @@ export interface Box extends BaseModel {
   currency: string;
   country?: string;
   city?: string;
-  places?: Place[];
-  experiences?: Experience[];
+  place?: Place[];
+  experience?: Experience[];
   contents: Record<string, unknown>[];
   images: Images[];
 }
