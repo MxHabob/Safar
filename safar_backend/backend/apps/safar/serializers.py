@@ -8,7 +8,7 @@ from apps.authentication.serializers import UserSerializer
 class ImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Image
-        fields = ['id', 'url','uploaded_by']
+        fields = ['id', 'url','file','uploaded_by']
         read_only_fields = ['id']
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -51,7 +51,7 @@ class PlaceSerializer(serializers.ModelSerializer):
         return obj.city.name if obj.city else None
 
     def get_experiences(self, obj):
-        experiences = obj.experience_set.all() 
+        experiences = obj.experiences.all() 
         return ExperienceSerializer(experiences, many=True).data
 
 

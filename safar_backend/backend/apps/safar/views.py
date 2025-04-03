@@ -19,6 +19,7 @@ from apps.safar.serializers import (
 
 class BaseViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly] 
     pagination_class = GENPagination
     
     def get_queryset(self):
