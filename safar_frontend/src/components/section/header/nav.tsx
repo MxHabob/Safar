@@ -6,7 +6,7 @@ import { ModeToggle } from "@/components/global/mode-toggle"
 
 export function Nav() {
   return (
-    <div className="flex items-center justify-between py-4">
+    <div className="flex items-center justify-between px-6 py-4 shadow-md">
     <div className="flex items-center">
       <Link href="/" className="">
         <span className="ml-2 text-lg font-bold">Safar</span>

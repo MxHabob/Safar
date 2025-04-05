@@ -1,3 +1,4 @@
+import BoxPageContant from "@/components/section/box";
 
 type Props = {
 	params: Promise<{ id: string}>
@@ -6,8 +7,9 @@ type Props = {
   export default async function BoxPage({  params  }: Props) {
     const id = (await params).id
     return (
-         <h1>Box Page{id}</h1> 
-         <BoxPageContant id={id}/>
-        );
+      <div >
+      <BoxPageContant id={id} />
+       </div>
+  );
 }
  

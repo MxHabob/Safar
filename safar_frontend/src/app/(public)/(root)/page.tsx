@@ -7,8 +7,8 @@ import { MSearch } from "@/components/section/header/Serch";
 export default function Home() {
   return (
     <div>
-      <div className="sticky top-0 z-10 bg-background/50 backdrop-blur-lg items-center pt-4 justify-center overflow-hidden ">
       <MSearch/>
+      <div className="sticky top-0 z-10 bg-background/50 backdrop-blur-lg items-center justify-center ">
       <HeaderFilters/>
       </div>
       <div className="px-2 sm:px-6 lg:px-8 md:mx-8 space-y-4">
