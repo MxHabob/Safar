@@ -9,7 +9,7 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
 
   React.useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push('/sign-in');
+      router.push('/login');
     }
   }, [isAuthenticated, isLoading, router]);
 
