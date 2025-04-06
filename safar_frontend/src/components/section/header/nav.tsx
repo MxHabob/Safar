@@ -12,7 +12,7 @@ export function Nav() {
         <span className="ml-2 text-lg font-bold">Safar</span>
       </Link>
     </div>
-    <nav className="hidden md:block ml-34">
+    <nav className="hidden md:block ">
       <ul className="flex space-x-6">
         <li>
           <Link href="/" className="font-medium">
@@ -28,9 +28,9 @@ export function Nav() {
     </nav>
     <div className="flex items-center space-x-4">
       <ModeToggle/>
-      <Button className="rounded-full p-2 ">
+      {/* <Button className="rounded-full p-2 ">
         <Globe className="h-6 w-5" />
-      </Button>
+      </Button> */}
       <div className="flex items-center rounded-full ">
           <UserAvatar className=" w-9 h-9" />
       </div>
