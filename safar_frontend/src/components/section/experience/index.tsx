@@ -51,12 +51,12 @@ export const ExperiencePageContent = ({id}:{id:string}) => {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-primary/20 text-primary text-xs font-bold">
-                        {data?.owner?.username?.charAt(0)?.toUpperCase() || "H"}
+                        {data?.owner?.first_name?.charAt(0)?.toUpperCase() || "H"}
                       </div>
                     )}
                   </div>
                   <span className="text-xs font-medium text-white drop-shadow-md">
-                    by {data?.owner?.username || "Host"}
+                    by {data?.owner?.first_name  || "Host"} {data?.owner?.last_name}
                   </span>
                 </div>
       <GuestFavoriteBadge rating={0} reviewCount={0} />
