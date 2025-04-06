@@ -6,6 +6,7 @@ import { Heart, MapPin, ChevronRight, ChevronLeft } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { Place } from "@/redux/types/types"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface PlaceCardProps {
   place: Place;
@@ -13,7 +14,7 @@ interface PlaceCardProps {
   isFavorited?: boolean;
 }
 
-export default function PlaceCard({ place, onFavorite, isFavorited: externalFavorite }: PlaceCardProps) {
+export const PlaceCard =({ place, onFavorite, isFavorited: externalFavorite }: PlaceCardProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [internalFavorite, setInternalFavorite] = useState(false)
   
@@ -58,14 +59,6 @@ export default function PlaceCard({ place, onFavorite, isFavorited: externalFavo
     maximumFractionDigits: 0,
   }).format(place.price || 0)
 
-  // Format location for display
-  const formattedLocation = (() => {
-    if (place.location?.coordinates?.length === 2) {
-      const [lat, lng] = place.location.coordinates
-      return `${lat.toFixed(2)}, ${lng.toFixed(2)}`
-    }
-    return "Location unavailable"
-  })()
 
   return (
 <div className="relative w-full rounded-3xl bg-card shadow-md overflow-hidden group transition-all hover:shadow-lg">
@@ -158,7 +151,7 @@ export default function PlaceCard({ place, onFavorite, isFavorited: externalFavo
 
         <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm mb-3">
           <MapPin className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
-          <span className="truncate">{formattedLocation}</span>
+          <span className="truncate">{place.location}</span>
         </div>
 
         <div className="flex justify-between items-center">
@@ -168,6 +161,49 @@ export default function PlaceCard({ place, onFavorite, isFavorited: externalFavo
             {place.region && <span>{place.region}</span>}
           </div>
           <div className="font-semibold text-base">{formattedPrice}</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+PlaceCard.Skeleton = function PlaceCardSkeleton() {
+  return (
+    <div className="relative w-full rounded-3xl bg-card overflow-hidden">
+      <div className="relative aspect-[4/3] w-full">
+        <Skeleton className="h-full w-full rounded-none" />
+        
+        <div className="absolute top-3 left-3">
+          <Skeleton className="h-6 w-16 rounded-full" />
+        </div>
+      
+        <div className="absolute top-3 right-3">
+          <Skeleton className="h-8 w-8 rounded-full" />
+        </div>
+      </div>
+
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-3">
+          <div className="space-y-1.5 w-full">
+            <Skeleton className="h-5 w-3/4 rounded" />
+            <Skeleton className="h-3 w-1/2 rounded" />
+          </div>
+          <Skeleton className="h-5 w-10 rounded-md" />
+        </div>
+        <div className="space-y-2 mb-3">
+          <Skeleton className="h-3 w-full rounded" />
+          <Skeleton className="h-3 w-5/6 rounded" />
+        </div>
+
+        <div className="flex items-center mb-3">
+          <Skeleton className="h-3.5 w-3.5 rounded-full mr-1" />
+          <Skeleton className="h-3 w-24 rounded" />
+        </div>
+
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-4 w-32 rounded" />
+          <Skeleton className="h-5 w-20 rounded" />
         </div>
       </div>
     </div>

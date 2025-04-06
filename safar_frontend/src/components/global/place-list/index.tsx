@@ -3,9 +3,9 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useGetPlacesQuery } from "@/redux/services/api"
-import PlaceCard from "./place-card"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from 'lucide-react'
+import { PlaceCard } from "./place-card"
 
 type Props = {
   overlay?: boolean
@@ -96,9 +96,11 @@ export const ListPlaces = ({ selected, favorites = [], onFavoriteToggle }: Props
 
         {isLoading && (
           <div className="flex justify-center p-6 col-span-full">
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              <span>Loading places...</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-12 w-full overflow-x-auto pb-4">
+            <PlaceCard.Skeleton />
+            <PlaceCard.Skeleton />
+            <PlaceCard.Skeleton />
+            <PlaceCard.Skeleton />
             </div>
           </div>
         )}

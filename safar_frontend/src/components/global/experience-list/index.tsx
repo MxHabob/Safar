@@ -3,9 +3,8 @@ import Link from "next/link"
 import "swiper/css/bundle"
 import { type SwiperProps, SwiperSlide } from "swiper/react"
 import { Slider } from "../slider"
-import ExperienceCard from "./experience-card"
 import { useGetExperiencesQuery } from "@/redux/services/api"
-import { Loader2 } from "lucide-react"
+import { ExperienceCard } from "./experience-card"
 
 type Props = {
   overlay?: boolean
@@ -29,14 +28,6 @@ export const ListExperience = ({ overlay, selected, favorites = [], onFavoriteTo
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin mr-2" />
-        <span>Loading experiences...</span>
-      </div>
-    )
-  }
 
   if (error) {
     return (
@@ -46,24 +37,18 @@ export const ListExperience = ({ overlay, selected, favorites = [], onFavoriteTo
     )
   }
 
-  if (!experiences?.results || experiences.results.length === 0) {
-    return (
-      <div className="flex justify-center items-center py-8 text-gray-500">
-        <p>No experiences found.</p>
-      </div>
-    )
-  }
 
   return (
     <Slider
       slidesPerView="auto"
       spaceBetween={16}
-      loop={experiences.results.length > 3}
+      loop={(experiences?.count ?? 0) > 3}
       freeMode
       overlay={overlay}
       {...rest}
     >
-      {experiences.results.map((experience) => (
+       {(experiences?.count ?? 0) > 0 ? (
+        experiences?.results.map((experience) => (
         <SwiperSlide
           key={experience.id}
           className={`content-width-slide transition-all duration-200 ${
@@ -77,8 +62,25 @@ export const ListExperience = ({ overlay, selected, favorites = [], onFavoriteTo
               isFavorited={isExperienceFavorited(experience.id)}
             />
           </Link>
+          
         </SwiperSlide>
-      ))}
+      ))
+       ) : !isLoading ? (
+                <div className="flex justify-center items-center p-8 text-gray-500 col-span-full">
+                  <p>No places found.</p>
+                </div>
+              ) : null}
+      
+              {isLoading && (
+                <div className="flex justify-center p-6 col-span-full">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-12 w-full overflow-x-auto pb-4">
+                  <ExperienceCard.Skeleton />
+                  <ExperienceCard.Skeleton />
+                  <ExperienceCard.Skeleton />
+                  <ExperienceCard.Skeleton />
+                  </div>
+                </div>
+              )}
     </Slider>
   )
 }

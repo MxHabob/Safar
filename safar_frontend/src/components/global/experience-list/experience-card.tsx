@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 import type { Experience } from "@/redux/types/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface ExperienceCardProps {
   experience: Experience
@@ -16,7 +17,7 @@ interface ExperienceCardProps {
   isFavorited?: boolean
 }
 
-export default function ExperienceCard({ experience, onFavorite, isFavorited: externalFavorite }: ExperienceCardProps) {
+export const ExperienceCard =({ experience, onFavorite, isFavorited: externalFavorite }: ExperienceCardProps) =>{
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [internalFavorite, setInternalFavorite] = useState(false)
 
@@ -68,16 +69,9 @@ export default function ExperienceCard({ experience, onFavorite, isFavorited: ex
     }
   }
 
-  const formattedLocation = (() => {
-    if (experience.location?.coordinates?.length === 2) {
-      const [lat, lng] = experience.location.coordinates
-      return `${lat.toFixed(2)}, ${lng.toFixed(2)}`
-    }
-    return "Location unavailable"
-  })()
 
   return (
-    <div className="relative w-full min-w-sm max-w-sm rounded-3xl bg-card shadow-md overflow-hidden group transition-all hover:shadow-lg">
+    <div className="relative w-full rounded-3xl bg-card shadow-md overflow-hidden group min-w-sm max-w-sm transition-all hover:shadow-lg">
       <div className="relative aspect-[4/3] w-full overflow-hidden">
         <Image
           src={images[currentImageIndex]?.file || "/placeholder.svg?height=300&width=400"}
@@ -187,7 +181,7 @@ export default function ExperienceCard({ experience, onFavorite, isFavorited: ex
 
         <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm mb-3">
           <MapPin className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
-          <span className="truncate">{formattedLocation}</span>
+          <span className="truncate">{experience.location}</span>
         </div>
 
         <div className="flex justify-between items-center">
@@ -211,3 +205,62 @@ export default function ExperienceCard({ experience, onFavorite, isFavorited: ex
   )
 }
 
+ExperienceCard.Skeleton = function ExperienceCardSkeleton() {
+  return (
+    <div className="relative w-full min-w-sm max-w-sm rounded-3xl bg-card overflow-hidden">
+      {/* Image area skeleton */}
+      <div className="relative aspect-[4/3] w-full">
+        <Skeleton className="h-full w-full rounded-none" />
+        
+        {/* Badge skeleton */}
+        <div className="absolute top-3 left-3">
+          <Skeleton className="h-6 w-16 rounded-full" />
+        </div>
+        
+        {/* Favorite button skeleton */}
+        <div className="absolute top-3 right-3">
+          <Skeleton className="h-8 w-8 rounded-full" />
+        </div>
+        
+        {/* Bottom area skeletons */}
+        <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <Skeleton className="h-3 w-16 rounded" />
+          </div>
+          <Skeleton className="h-6 w-12 rounded-full" />
+        </div>
+      </div>
+
+      {/* Content area skeleton */}
+      <div className="p-4">
+        {/* Title and rating */}
+        <div className="flex justify-between items-start mb-3">
+          <Skeleton className="h-5 w-3/4 rounded" />
+          <Skeleton className="h-5 w-10 rounded-md" />
+        </div>
+
+        {/* Description */}
+        <div className="space-y-2 mb-3">
+          <Skeleton className="h-3 w-full rounded" />
+          <Skeleton className="h-3 w-5/6 rounded" />
+        </div>
+
+        {/* Location */}
+        <div className="flex items-center mb-3">
+          <Skeleton className="h-3.5 w-3.5 rounded-full mr-1" />
+          <Skeleton className="h-3 w-24 rounded" />
+        </div>
+
+        {/* Duration, capacity, and price */}
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-4 w-12 rounded" />
+            <Skeleton className="h-4 w-16 rounded" />
+          </div>
+          <Skeleton className="h-5 w-20 rounded" />
+        </div>
+      </div>
+    </div>
+  )
+}

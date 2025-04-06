@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { Box } from "@/redux/types/types"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface BoxCardProps {
   box: Box
@@ -24,7 +25,7 @@ export const BoxCard = ({ box }: BoxCardProps) => {
 
   return (
     <Link href={`/box/${box.id}`} className="block">
-      <div className="relative h-[350px] w-[280px] min-w-sm rounded-3xl bg-card hover:backdrop-blur-lg overflow-hidden group transition-all hover:shadow-lg">
+      <div className="relative h-[350px] w-[280px] min-w-sm rounded-3xl bg-card shadow-md overflow-hidden group transition-all hover:shadow-lg">
         <div className="relative h-[180px]">
         <div className="grid grid-cols-3 gap-0.5 h-full w-full">
           <div className="relative col-span-2 row-span-2 overflow-hidden rounded-l-3xl">
@@ -101,5 +102,38 @@ export const BoxCard = ({ box }: BoxCardProps) => {
         </div>
       </div>
     </Link>
+  )
+}
+
+
+BoxCard.Skeleton = function BoxCardSkeleton() {
+  return (
+    <div className="relative h-[370px] w-[280px] min-w-sm rounded-3xl shadow-md bg-card overflow-hidden hover:shadow-lg">
+      <div className="relative h-[180px]">
+        <div className="grid grid-cols-3 gap-0.5 h-full w-full">
+          <div className="col-span-2 row-span-2 rounded-l-3xl">
+            <Skeleton className="h-full w-full" />
+          </div>
+          <div className="flex flex-col gap-0.5 row-span-2">
+            <Skeleton className="h-1/3 w-full" />
+            <Skeleton className="h-1/3 w-full" />
+            <Skeleton className="h-1/3 w-full" />
+          </div>
+        </div>
+      </div>
+      <div className="p-4">
+        <div className="mb-3 flex items-center">
+          <Skeleton className="h-3.5 w-3.5 rounded-full mr-1" />
+          <Skeleton className="h-3 w-20 rounded" />
+        </div>
+        <Skeleton className="mb-2 h-5 w-3/4 rounded" />
+        <Skeleton className="mb-4 h-3 w-full rounded" />
+        <Skeleton className="mb-1 h-3 w-4/5 rounded" />
+        <div className="flex flex-wrap gap-2 mt-4">
+          <Skeleton className="h-6 w-24 rounded-full" />
+          <Skeleton className="h-6 w-28 rounded-full" />
+        </div>
+      </div>
+    </div>
   )
 }

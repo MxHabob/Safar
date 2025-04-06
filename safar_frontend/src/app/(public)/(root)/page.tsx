@@ -12,11 +12,11 @@ export default function Home() {
       <HeaderFilters/>
       </div>
       <div className="px-2 sm:px-6 lg:px-8 md:mx-8 space-y-4">
-        <h2 className="text-2xl font-bold mb-4 ">picked for you Box</h2>
+        <h2 className="text-2xl font-bold my-4 ">picked for you Box</h2>
         <ListBox overlay={false} loop={true} />
-        <h2 className="text-2xl font-bold mb-4">Featured Experiences</h2>
+        <h2 className="text-2xl font-bold my-4">Featured Experiences</h2>
         <ListExperience overlay={true} loop={true} />
-        <h2 className="text-2xl font-bold mb-4">Most popular Places</h2>
+        <h2 className="text-2xl font-bold my-4">Most popular Places</h2>
         <ListPlaces overlay={true} />
         </div>
     </div>
