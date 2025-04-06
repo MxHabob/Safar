@@ -13,7 +13,7 @@ class NotificationService:
         try:
             from_email = from_email or settings.DEFAULT_FROM_EMAIL
             if not html_message:
-                html_message = render_to_string('email/base_template.html', {
+                html_message = render_to_string('templates/emails/base_template.html', {
                     'message': message,
                     'subject': subject
                 })

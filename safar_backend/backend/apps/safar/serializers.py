@@ -73,8 +73,6 @@ class FlightSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 class BoxSerializer(serializers.ModelSerializer):
-    country = serializers.SerializerMethodField()
-    city = serializers.SerializerMethodField()
     places = PlaceSerializer(
         many=True, 
         read_only=True,
@@ -97,11 +95,6 @@ class BoxSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id']
 
-    def get_country(self, obj):
-        return obj.country.name if obj.country else None
-
-    def get_city(self, obj):
-        return obj.city.name if obj.city else None
 
 class BookingSerializer(serializers.ModelSerializer):
     experience = ExperienceSerializer(read_only=True)
