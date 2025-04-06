@@ -1,4 +1,4 @@
-
+import { ExperiencePageContent } from "@/components/section/experience";
 type Props = {
 	params: Promise<{ id: string}>
 	
@@ -6,7 +6,7 @@ type Props = {
   export default async function ExperiencePage({  params  }: Props) {
     const id = (await params).id
     return (
-         <h1>Place Page{id}</h1> 
+         <ExperiencePageContent id={id} />
         );
 }
  
