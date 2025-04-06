@@ -38,13 +38,12 @@ def send_welcome_email(sender, instance, created, **kwargs):
     if created and instance.email:
         try:
             subject = _("Welcome to %(site_name)s") % {'site_name': settings.SITE_NAME}
-            # message = render_to_string('./templates/emails/welcome.html', {
-            #     'user': instance,
-            #     'site_name': settings.SITE_NAME,
-            #     'support_email': settings.SUPPORT_EMAIL
-            # })
-            message = _("Welcome to %(site_name)s!") % {'site_name': settings.SITE_NAME}
-            
+            message = render_to_string('./templates/emails/welcome.html', {
+                'user': instance,
+                'site_name': settings.SITE_NAME,
+                'support_email': settings.SUPPORT_EMAIL
+            })
+
             send_email_task.delay(
                 subject=subject,
                 message=strip_tags(message),

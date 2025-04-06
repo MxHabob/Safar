@@ -32,7 +32,7 @@ COPY . .
 
 EXPOSE 8000
 
-# Command to run migrations, create superuser, and start Daphne
+# Command to run migrations, create superuser, and start Daphne and download geographic data
 CMD sh -c "\
     echo 'Running migrations...' && \
     python manage.py makemigrations && \
@@ -41,10 +41,9 @@ CMD sh -c "\
     python manage.py collectstatic --noinput && \
     echo 'Creating superuser...' && \
     python manage.py shell -c \"from apps.authentication.models import User; User.objects.filter(email='admin@safar.com').exists() or User.objects.create_superuser(email='admin@safar.com', password='admin')\" && \
-    # echo 'Downloading essential cities_light data...' && \
-    # python manage.py cities_light --force-import country && \
-    # python manage.py cities_light --force-import region && \
-    # python manage.py cities_light --force-import subregion && \
-    # python manage.py cities_light --force-import city && \
+    echo 'Downloading essential geographic data...' && \
+    python manage.py import_geodata && \
+    echo 'Generate a fake data...' && \
+    python manage.py generate_fake_data --users 100 --places 30 --experiences 20 --flights 15 --boxes 10 && \
     echo 'Starting Daphne...' && \
     daphne -b 0.0.0.0 -p 8000 core.asgi:application"

@@ -6,7 +6,7 @@ from django.core.validators import EmailValidator
 from django.utils.translation import gettext_lazy as _
 from apps.core_apps.general import BaseModel
 from phonenumber_field.modelfields import PhoneNumberField
-from cities_light.models import City, Region, Country
+from apps.geographic_data.models import Country, Region, City
 
 def upload_avatar(instance, filename):
     user_uuid = instance.id if instance.id else uuid.uuid4().hex

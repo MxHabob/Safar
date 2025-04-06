@@ -1,4 +1,3 @@
-# apps/core_apps/services.py
 import logging
 from twilio.rest import Client
 from django.core.mail import send_mail
@@ -53,12 +52,12 @@ class NotificationService:
 
     @staticmethod
     def send_push_notification(user, title, message, data=None):
-        if not user.profile.expo_push_token:
+        if not user.profile.notification_push_token:
             logger.warning(f"No Expo push token for user {user.id}")
             return False
             
         try:
-            logger.info(f"Would send push to {user.profile.expo_push_token}: {title} - {message}")
+            logger.info(f"Would send push to {user.profile.notification_push_token}: {title} - {message}")
             return True
         except Exception as e:
             logger.error(f"Failed to send push notification: {str(e)}")

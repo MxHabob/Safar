@@ -5,7 +5,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from apps.core_apps.general import BaseModel
 from apps.core_apps.utility import generate_unique_code
 from apps.authentication.models import User
-from cities_light.models import City, Region, Country
+from apps.geographic_data.models import Country, Region, City
 
 
 def upload_file(instance, filename):

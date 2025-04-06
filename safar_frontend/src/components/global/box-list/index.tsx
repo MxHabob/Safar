@@ -1,5 +1,4 @@
 "use client"
-import Link from "next/link"
 import "swiper/css/bundle"
 import { type SwiperProps, SwiperSlide } from "swiper/react"
 import { Slider } from "../slider"
@@ -58,11 +57,9 @@ export const ListBox = ({ overlay, selected,  ...rest }: Props) => {
             selected === box.id ? "scale-[1.02]" : ""
           }`}
         >
-          <Link href={`/box/${box.id}`}>
             <BoxCard
               box={box}
             />
-          </Link>
         </SwiperSlide>
       ))}
     </Slider>

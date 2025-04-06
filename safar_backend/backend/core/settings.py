@@ -90,7 +90,6 @@ INSTALLED_APPS = [
     "djoser",
     "storages",
     "social_django",
-    "cities_light",
     "phonenumber_field",
     "django_filters",
     "django_celery_beat",
@@ -101,6 +100,8 @@ INSTALLED_APPS = [
     "apps.authentication",
     "apps.safar",
     "apps.real_time",
+    "apps.geographic_data",
+    "apps.core_apps",
 ]
 
 MIDDLEWARE = [
@@ -180,7 +181,7 @@ USE_TZ = True
 #  STATIC & MEDIA FILES CONFIGURATION
 # ======================
 # Base directories
-STATIC_DIR = BASE_DIR / 'static'
+STATIC_DIR = BASE_DIR / 'staticfiles'
 STATICFILES_DIR = BASE_DIR / 'staticfiles'
 MEDIA_DIR = BASE_DIR / 'media'
 
@@ -210,17 +211,17 @@ else:
     # ======================
     #  LOCAL STORAGE CONFIGURATION
     # ======================
-    STATIC_URL = "/static/"
-    STATIC_ROOT = STATICFILES_DIR
+    STATIC_URL = '/static/'
+    STATIC_ROOT = BASE_DIR / 'staticfiles'
     MEDIA_URL = "/media/"
-    MEDIA_ROOT = MEDIA_DIR
+    MEDIA_ROOT = BASE_DIR / 'media'
     if not DEVELOPMENT_MODE:
         STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
     else:
         STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 
 STATICFILES_DIRS = [
-    STATIC_DIR,
+   BASE_DIR / 'static',
 ]
 
 # Static files finders

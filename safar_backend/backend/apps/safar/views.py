@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
+from django.contrib.gis.geos import GEOSGeometry
 from django.db.models import Q
 from django.utils import timezone
 from apps.core_apps.general import GENPagination
@@ -97,6 +98,42 @@ class PlaceViewSet(BaseViewSet):
             queryset = queryset.filter(price__lte=max_price)
             
         return queryset
+    
+    @action(detail=False, methods=['get'])
+    def search(self, request):
+        """
+        Enhanced search that also generates personalized boxes
+        """
+        query = request.query_params.get('q', '')
+        location = request.query_params.get('location')
+        
+        # Convert location if provided
+        geo_location = None
+        if location:
+            try:
+                geo_location = GEOSGeometry(location)
+            except:
+                pass
+        
+        places = self.filter_queryset(self.get_queryset())
+        places = self.paginate_queryset(places)
+        serializer = self.get_serializer(places, many=True)
+        
+        box = None
+        if request.user.is_authenticated:
+            generator = BoxGenerator(
+                user=request.user,
+                search_query=query,
+                location=geo_location
+            )
+            box = generator.generate_personalized_box()
+        
+        response_data = {
+            'results': serializer.data,
+            'personalized_box': BoxSerializer(box).data if box else None
+        }
+        
+        return Response(response_data)
     
     @action(detail=True, methods=['get'])
     def similar(self, request, pk=None):

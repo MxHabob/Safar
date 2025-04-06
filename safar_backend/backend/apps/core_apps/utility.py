@@ -2,14 +2,14 @@ import uuid
 
 def generate_unique_username(self, email):
     # Current implementation could lead to long usernames
-    base_username = email.split('@')[0][:20]  # Limit base username length
-    base_username = ''.join(c for c in base_username if c.isalnum())  # Remove special chars
+    base_username = email.split('@')[0][:20]
+    base_username = ''.join(c for c in base_username if c.isalnum())
     username = base_username.lower()
     counter = 1
     while self.model.objects.filter(username=username).exists():
         username = f"{base_username}{counter}"
         counter += 1
-        if counter > 100:  # Safety check
+        if counter > 100:
             username = f"user{uuid.uuid4().hex[:8]}"
             break
     return username
