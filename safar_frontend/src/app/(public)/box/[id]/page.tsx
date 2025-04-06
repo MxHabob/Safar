@@ -1,4 +1,4 @@
-import BoxPageContant from "@/components/section/box";
+import BoxPageContent from "@/components/section/box";
 
 type Props = {
 	params: Promise<{ id: string}>
@@ -8,7 +8,7 @@ type Props = {
     const id = (await params).id
     return (
       <div >
-      <BoxPageContant id={id} />
+      <BoxPageContent id={id} />
        </div>
   );
 }

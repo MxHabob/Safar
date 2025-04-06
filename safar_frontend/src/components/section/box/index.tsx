@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useGetBoxItineraryQuery, useGetBoxQuery } from "@/redux/services/api";
 import ItineraryView from "./itinerary-view";
 
-export default function BoxPageContant({id}:{id:string}) {
+export default function BoxPageContent({id}:{id:string}) {
   const [visitedPlaces, setVisitedPlaces] = useState<Set<string>>(new Set());
   const [isMapReady, setIsMapReady] = useState(false);
   const [activeDay, setActiveDay] = useState<number | null>(null);
@@ -45,7 +45,7 @@ export default function BoxPageContant({id}:{id:string}) {
   };
 
   useEffect(() => {
-    if (itineraryData && itineraryData.days && itineraryData.days.length > 0 && activeDay === null) {
+    if (itineraryData && itineraryData.days && itineraryData?.days?.length > 0 && activeDay === null) {
       setActiveDay(1);
     }
   }, [itineraryData, activeDay]);
