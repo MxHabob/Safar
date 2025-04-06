@@ -59,6 +59,8 @@ class ExperienceSerializer(serializers.ModelSerializer):
     owner = UserSerializer(read_only=True)
     images = ImageSerializer(many=True, read_only=True)
     category = CategorySerializer(read_only=True)
+    place = PlaceSerializer(read_only=True)
+
     class Meta:
         model = Experience
         fields = ['id', 'place', 'owner', 'category', 'title', 'description', 'location', 'price_per_person', 'currency', 'duration', 'capacity', 'schedule', 'images', 'rating', 'is_available']
