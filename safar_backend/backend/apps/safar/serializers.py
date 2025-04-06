@@ -26,17 +26,37 @@ class DiscountSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
 class ExperiencePlaceSerializer(serializers.ModelSerializer):
-    """Simplified Place serializer to avoid recursion in ExperienceSerializer"""
+    """Enhanced Place serializer for Experience with location details"""
+    country = serializers.SerializerMethodField()
+    region = serializers.SerializerMethodField()
+    city = serializers.SerializerMethodField()
+    category = CategorySerializer(read_only=True)
+    images = ImageSerializer(many=True, read_only=True)
+
     class Meta:
         model = Place
-        fields = ['id', 'name']
+        fields = [
+            'id', 'name', 'description', 'location', 
+            'country', 'city', 'region', 'rating', 
+            'images', 'is_available', 'price', 'currency', 
+            'metadata', 'category'
+        ]
         read_only_fields = ['id']
+
+    def get_country(self, obj):
+        return obj.country.name if obj.country else None
+
+    def get_region(self, obj):
+        return obj.region.name if obj.region else None
+
+    def get_city(self, obj):
+        return obj.city.name if obj.city else None
 
 class ExperienceSerializer(serializers.ModelSerializer):
     owner = UserSerializer(read_only=True)
     images = ImageSerializer(many=True, read_only=True)
     category = CategorySerializer(read_only=True)
-    place = ExperiencePlaceSerializer(read_only=True)  # Using simplified serializer
+    place = ExperiencePlaceSerializer(read_only=True)  # Using enhanced serializer
 
     class Meta:
         model = Experience
@@ -77,7 +97,7 @@ class PlaceSerializer(serializers.ModelSerializer):
 
     def get_experiences(self, obj):
         experiences = obj.experiences.all()
-        return ExperienceSerializer(experiences, many=True).data
+        return ExperienceSerializer(experiences, many=True, context=self.context).data
 
 class FlightSerializer(serializers.ModelSerializer):
     class Meta:

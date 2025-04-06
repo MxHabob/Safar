@@ -35,7 +35,7 @@ export function GuestFavoriteBadge({
         ) : (
           <div>
             <span className="font-semibold">Guest favorite</span>
-            <p className="text-sm mt-0.5">One of the most loved homes on Airbnb, according to guests</p>
+            <p className="text-sm mt-0.5">One of the most loved homes on Safar, according to guests</p>
           </div>
         )}
       </div>
