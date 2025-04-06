@@ -8,7 +8,7 @@ from apps.authentication.serializers import UserSerializer
 class ImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Image
-        fields = ['id', 'url','file','uploaded_by']
+        fields = ['id', 'url', 'file', 'uploaded_by']
         read_only_fields = ['id']
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -20,8 +20,33 @@ class CategorySerializer(serializers.ModelSerializer):
 class DiscountSerializer(serializers.ModelSerializer):
     class Meta:
         model = Discount
-        fields = ['id', 'code', 'discount_type', 'amount', 'valid_from', 'valid_to', 'is_active', 'applicable_places', 'applicable_experiences', 'applicable_flights', 'applicable_boxes', 'created_at']
+        fields = ['id', 'code', 'discount_type', 'amount', 'valid_from', 'valid_to', 
+                 'is_active', 'applicable_places', 'applicable_experiences', 
+                 'applicable_flights', 'applicable_boxes', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+class ExperiencePlaceSerializer(serializers.ModelSerializer):
+    """Simplified Place serializer to avoid recursion in ExperienceSerializer"""
+    class Meta:
+        model = Place
+        fields = ['id', 'name']
+        read_only_fields = ['id']
+
+class ExperienceSerializer(serializers.ModelSerializer):
+    owner = UserSerializer(read_only=True)
+    images = ImageSerializer(many=True, read_only=True)
+    category = CategorySerializer(read_only=True)
+    place = ExperiencePlaceSerializer(read_only=True)  # Using simplified serializer
+
+    class Meta:
+        model = Experience
+        fields = [
+            'id', 'place', 'owner', 'category', 'title', 
+            'description', 'location', 'price_per_person', 
+            'currency', 'duration', 'capacity', 'schedule', 
+            'images', 'rating', 'is_available'
+        ]
+        read_only_fields = ['id']
 
 class PlaceSerializer(serializers.ModelSerializer):
     country = serializers.SerializerMethodField()
@@ -51,25 +76,16 @@ class PlaceSerializer(serializers.ModelSerializer):
         return obj.city.name if obj.city else None
 
     def get_experiences(self, obj):
-        experiences = obj.experiences.all() 
+        experiences = obj.experiences.all()
         return ExperienceSerializer(experiences, many=True).data
-
-
-class ExperienceSerializer(serializers.ModelSerializer):
-    owner = UserSerializer(read_only=True)
-    images = ImageSerializer(many=True, read_only=True)
-    category = CategorySerializer(read_only=True)
-    place = PlaceSerializer(read_only=True)
-
-    class Meta:
-        model = Experience
-        fields = ['id', 'place', 'owner', 'category', 'title', 'description', 'location', 'price_per_person', 'currency', 'duration', 'capacity', 'schedule', 'images', 'rating', 'is_available']
-        read_only_fields = ['id']
 
 class FlightSerializer(serializers.ModelSerializer):
     class Meta:
         model = Flight
-        fields = ['id', 'airline', 'flight_number', 'departure_airport', 'arrival_airport', 'arrival_city', 'departure_time', 'arrival_time', 'price', 'currency', 'duration', 'baggage_policy']
+        fields = ['id', 'airline', 'flight_number', 'departure_airport', 
+                 'arrival_airport', 'arrival_city', 'departure_time', 
+                 'arrival_time', 'price', 'currency', 'duration', 
+                 'baggage_policy']
         read_only_fields = ['id']
 
 class BoxSerializer(serializers.ModelSerializer):
@@ -95,7 +111,6 @@ class BoxSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id']
 
-
 class BookingSerializer(serializers.ModelSerializer):
     experience = ExperienceSerializer(read_only=True)
     place = PlaceSerializer(read_only=True)
@@ -103,7 +118,9 @@ class BookingSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Booking
-        fields = ['id', 'user', 'place', 'experience', 'flight', 'box', 'check_in', 'check_out', 'booking_date', 'status', 'total_price', 'currency', 'payment_status']
+        fields = ['id', 'user', 'place', 'experience', 'flight', 'box', 
+                 'check_in', 'check_out', 'booking_date', 'status', 
+                 'total_price', 'currency', 'payment_status']
         read_only_fields = ['id', 'booking_date']
 
 class WishlistSerializer(serializers.ModelSerializer):
@@ -117,13 +134,15 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ['id', 'user', 'place', 'experience', 'flight', 'rating', 'review_text']
+        fields = ['id', 'user', 'place', 'experience', 'flight', 
+                 'rating', 'review_text']
         read_only_fields = ['id']
 
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
-        fields = ['id', 'user', 'booking', 'amount', 'currency', 'payment_method', 'payment_status', 'transaction_id']
+        fields = ['id', 'user', 'booking', 'amount', 'currency', 
+                 'payment_method', 'payment_status', 'transaction_id']
         read_only_fields = ['id']
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -132,7 +151,8 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ['id', 'sender', 'receiver', 'booking', 'message_text', 'is_read']
+        fields = ['id', 'sender', 'receiver', 'booking', 'message_text', 
+                 'is_read']
         read_only_fields = ['id']
 
 class NotificationSerializer(serializers.ModelSerializer):
