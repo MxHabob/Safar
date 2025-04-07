@@ -12,7 +12,6 @@ from apps.safar.serializers import (
 )
 from django.core.cache import cache
 
-# Type definitions for WebSocket messages
 class WebSocketMessage(TypedDict):
     type: str
     payload: Dict

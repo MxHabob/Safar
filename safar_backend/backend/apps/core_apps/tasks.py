@@ -1,47 +1,69 @@
 from celery import shared_task
-from django.contrib.auth import get_user_model
-from apps.core_apps.services import NotificationService
-from apps.safar.models import Notification,Place
 from django.core.cache import cache
+from django.db import transaction
 import logging
-
+from datetime import timedelta
+from django.utils import timezone
+from apps.authentication.models import User
 
 logger = logging.getLogger(__name__)
-User = get_user_model()
 
 @shared_task(bind=True, max_retries=3)
-def send_email_task(self, subject, message, recipient_list, html_message=None, from_email=None):
+def send_email_task(self, subject, message, recipient_list, html_message=None, from_email=None, context=None):
+    """
+    Enhanced email task with:
+    - Better retry logic
+    - Context support
+    - Improved logging
+    """
     try:
         success = NotificationService.send_email(
             subject=subject,
             message=message,
             recipient_list=recipient_list,
             html_message=html_message,
-            from_email=from_email
+            from_email=from_email,
+            context=context
         )
         if not success:
-            raise Exception("Email sending failed")
+            raise Exception("Email sending reported failure")
         return True
     except Exception as e:
-        logger.error(f"Email task failed: {str(e)}")
-        self.retry(exc=e, countdown=60 * self.request.retries)
+        logger.error(f"Email task failed for {recipient_list}: {str(e)}", exc_info=True)
+        self.retry(exc=e, countdown=min(60 * (2 ** self.request.retries), 3600))
+        return False
 
 @shared_task(bind=True, max_retries=3)
 def send_sms_task(self, to_number, message):
+    """
+    Enhanced SMS task with:
+    - Number validation
+    - Better retry logic
+    """
     try:
+        if not to_number or not message:
+            logger.error("Invalid SMS task parameters")
+            return False
+            
         success = NotificationService.send_sms(
             to_number=to_number,
             message=message
         )
         if not success:
-            raise Exception("SMS sending failed")
+            raise Exception("SMS sending reported failure")
         return True
     except Exception as e:
-        logger.error(f"SMS task failed: {str(e)}")
-        self.retry(exc=e, countdown=60 * self.request.retries)
+        logger.error(f"SMS task failed for {to_number}: {str(e)}", exc_info=True)
+        self.retry(exc=e, countdown=min(60 * (2 ** self.request.retries), 3600))
+        return False
 
 @shared_task(bind=True, max_retries=3)
 def send_push_notification_task(self, user_id, title, message, data=None):
+    """
+    Enhanced push notification task with:
+    - User validation
+    - Better error handling
+    """
     try:
         user = User.objects.get(id=user_id)
         success = NotificationService.send_push_notification(
@@ -51,149 +73,225 @@ def send_push_notification_task(self, user_id, title, message, data=None):
             data=data
         )
         if not success:
-            raise Exception("Push notification failed")
+            raise Exception("Push notification reported failure")
         return True
+    except User.DoesNotExist:
+        logger.error(f"User {user_id} not found for push notification")
+        return False
     except Exception as e:
-        logger.error(f"Push notification task failed: {str(e)}")
-        self.retry(exc=e, countdown=60 * self.request.retries)
+        logger.error(f"Push task failed for user {user_id}: {str(e)}", exc_info=True)
+        self.retry(exc=e, countdown=min(60 * (2 ** self.request.retries), 3600))
+        return False
 
 @shared_task
 def process_notification(notification_id):
+    """
+    Enhanced notification processing with:
+    - Better state management
+    - Comprehensive logging
+    - Error recovery
+    """
+    from apps.safar.models import Notification
+    
     try:
         notification = Notification.objects.get(id=notification_id)
         user = notification.user
         
-        # Send via email if user has email
+        if notification.is_read:
+            logger.info(f"Notification {notification_id} already processed")
+            return True
+            
+        notification.processing_started = timezone.now()
+        notification.save()
+        
+        context = {
+            'notification': notification,
+            'user': user,
+            'action_url': notification.metadata.get('deep_link', settings.SITE_URL)
+        }
+        
+        results = {}
+        
         if user.email:
-            send_email_task.delay(
+            results['email'] = send_email_task.delay(
                 subject=f"Notification: {notification.type}",
                 message=notification.message,
-                recipient_list=[user.email]
+                recipient_list=[user.email],
+                context=context
             )
-        
-        if user.profile.phone_number:
-            send_sms_task.delay(
+            
+        if hasattr(user, 'profile') and user.profile.phone_number:
+            results['sms'] = send_sms_task.delay(
                 to_number=str(user.profile.phone_number),
-                message=f"{notification.type}: {notification.message}"
+                message=f"{notification.type}: {notification.message[:120]}..."
             )
-        
-        # Send push notification if user has token
-        if user.profile.notification_push_token:
-            send_push_notification_task.delay(
+            
+        if hasattr(user, 'profile') and user.profile.notification_push_token:
+            results['push'] = send_push_notification_task.delay(
                 user_id=user.id,
                 title=notification.type,
-                message=notification.message
+                message=notification.message,
+                data=notification.metadata
             )
         
-        # Mark as processed
         notification.is_read = True
+        notification.processed_at = timezone.now()
+        notification.channels = [k for k, v in results.items() if v]
         notification.save()
+        
         return True
-    except Exception as e:
-        logger.error(f"Failed to process notification {notification_id}: {str(e)}")
+        
+    except Notification.DoesNotExist:
+        logger.error(f"Notification {notification_id} not found")
         return False
-    
+    except Exception as e:
+        logger.error(f"Failed to process notification {notification_id}: {str(e)}", exc_info=True)
+        return False
 
 @shared_task(bind=True, max_retries=3)
 def generate_trending_boxes(self):
     """
-    Generate personalized travel boxes based on trending destinations and user preferences.
-    Uses a combination of booking data, wishlists, reviews, and manual curation.
+    Enhanced box generation with:
+    - Better progress tracking
+    - Improved error handling
+    - Resource management
     """
     from apps.core_apps.generation_algorithm import BoxGenerator
     from apps.core_apps.helper_algorithm import (
         calculate_trending_destinations,
         get_user_preference_clusters
     )
-    from django.db import transaction
-
+    
     try:
-        # 1. Get trending destinations with caching
-        logger.info("Calculating trending destinations...")
+        logger.info("Starting trending box generation")
         destinations = cache.get('trending_destinations')
         
         if not destinations:
+            logger.info("Calculating fresh trending destinations")
             destinations = calculate_trending_destinations()
             cache.set('trending_destinations', destinations, timeout=3600)
-
-        user_clusters = get_user_preference_clusters()
         
+        user_clusters = get_user_preference_clusters()
         if not user_clusters:
-            logger.warning("No user clusters found")
-            return
-
-        for (city, country), score in destinations[:10]:
+            logger.warning("No user clusters found - using default")
+            user_clusters = {'general': User.objects.filter(is_active=True)[:100]}
+        
+        
+        for i, ((city, country), score) in enumerate(destinations[:10], 1):
             try:
                 with transaction.atomic():
-                    places = Place.objects.filter(
-                        city=city,
-                        country=country,
-                        is_available=True
-                    ).select_related('city', 'country').order_by('-rating')[:5]
-
-                    if not places:
-                        logger.debug(f"No available places for {city}, {country}")
-                        continue
-
-                    location = places[0].location
-                    place_types = {p.category.name.lower() for p in places}
-
-                    for cluster_name, users in user_clusters.items():
-                        if self._should_skip_cluster(cluster_name, place_types):
-                            continue
-
-                        for user in users[:200]:
-                            try:
-                                generator = BoxGenerator(
-                                    user=user,
-                                    location=location,
-                                    query=f"Trending {cluster_name} getaway in {city}"
-                                )
-                                
-                                box = generator.generate_personalized_box()
-                                
-                                if box:
-                                    self._create_box_notification(user, cluster_name, city, box.id)
-                                    logger.info(f"Created box {box.id} for user {user.id}")
-                            except Exception as e:
-                                logger.error(f"Failed to generate box for user {user.id}: {str(e)}")
-                                continue
-
+                    self._process_destination(
+                        city, country, score, user_clusters
+                    )
+                    
             except Exception as e:
-                logger.error(f"Error processing destination {city}: {str(e)}")
+                logger.error(f"Error processing {city}: {str(e)}", exc_info=True)
+                continue
+                
+        return True
+        
+    except Exception as e:
+        logger.error(f"Critical error in box generation: {str(e)}", exc_info=True)
+
+        self.retry(exc=e, countdown=min(60 * (2 ** self.request.retries), 3600))
+        return False
+
+def _process_destination(self, city, country, score, user_clusters, log_entry):
+    """Process a single destination for box generation"""
+    from apps.safar.models import Place
+    
+    logger.info(f"Processing {city}, {country} with score {score}")
+    
+    places = Place.objects.filter(
+        city=city,
+        country=country,
+        is_available=True
+    ).select_related('city', 'country').prefetch_related('images')[:5]
+
+    if not places:
+        logger.debug(f"No available places for {city}, {country}")
+        return
+
+    location = places[0].location
+    place_categories = {p.category.name.lower() for p in places}
+    
+    for cluster_name, users in user_clusters.items():
+        if self._should_skip_cluster(cluster_name, place_categories):
+            continue
+            
+        for user in users[:50]:
+            try:
+                box = self._generate_user_box(user, location, city, cluster_name)
+                if box:
+                    self._send_box_notification(user, box, cluster_name, city)
+                    log_entry.boxes_created += 1
+                    log_entry.save()
+            except Exception as e:
+                logger.error(f"Failed for user {user.id}: {str(e)}")
                 continue
 
-    except Exception as e:
-        logger.error(f"Critical error in generate_trending_boxes: {str(e)}")
-        self.retry(exc=e, countdown=60 * self.request.retries)
-
-def _should_skip_cluster(self, cluster_name, place_types):
-    """Determine if cluster should be skipped based on place types"""
-    cluster_name = cluster_name.lower()
+def _generate_user_box(self, user, location, city, cluster_name):
+    """Generate a box for a specific user with timeout"""
+    from apps.core_apps.generation_algorithm import BoxGenerator
+    import signal
     
-    skip_conditions = {
-        'beach': {'ski', 'snow', 'winter'},
-        'ski': {'beach', 'summer', 'tropical'},
-        'luxury': {'hostel', 'budget'},
-        'adventure': {'spa', 'resort'}
-    }
+    class TimeoutException(Exception):
+        pass
+        
+    def timeout_handler(signum, frame):
+        raise TimeoutException("Box generation timed out")
     
-    return any(
-        forbidden in place_types
-        for forbidden in skip_conditions.get(cluster_name, set())
-    )
+    try:
+        signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(30) 
+        
+        generator = BoxGenerator(
+            user=user,
+            location=location,
+            query=f"{cluster_name.title()} experience in {city}"
+        )
+        box = generator.generate_personalized_box()
+        
+        signal.alarm(0)
+        return box
+        
+    except TimeoutException:
+        logger.warning(f"Box generation timeout for user {user.id}")
+        return None
+    finally:
+        signal.alarm(0)
 
-def _create_box_notification(self, user, cluster_name, city, box_id):
-    """Create notification about new box"""
-    notification = Notification.objects.create(
+def _send_box_notification(self, user, box, cluster_name, city):
+    """Send enhanced box notification with tracking"""
+    from apps.safar.models import Notification
+    
+    notification = UserBoxNotification.objects.create(
         user=user,
-        type="Personalized Box",
+        box=box,
+        notification_type="personalized_box",
         message=f"We've created a {cluster_name}-themed box for {city}!",
         metadata={
-            "box_id": str(box_id),
+            "box_id": str(box.id),
             "cluster": cluster_name,
-            "destination": city
+            "destination": city,
+            "deep_link": f"/boxes/{box.id}",
+            "image_url": box.images.first().url if box.images.exists() else None
         }
     )
-    # Process notification through all channels
+    
     process_notification.delay(notification.id)
+
+def _should_skip_cluster(self, cluster_name, place_categories):
+    """Enhanced cluster skipping logic"""
+    cluster_name = cluster_name.lower()
+    
+    skip_rules = {
+        'beach': {'ski', 'snow', 'winter', 'cold'},
+        'ski': {'beach', 'summer', 'tropical', 'warm'},
+        'luxury': {'hostel', 'budget', 'cheap'},
+        'adventure': {'spa', 'resort', 'relax'},
+        'family': {'adult', 'party', 'nightclub'}
+    }
+    
+    forbidden_categories = skip_rules.get(cluster_name, set())
+    return not place_categories.isdisjoint(forbidden_categories)

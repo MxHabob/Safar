@@ -84,7 +84,7 @@ class Place(BaseModel):
     is_available = models.BooleanField(default=True, verbose_name="Is Available", db_index=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0, verbose_name="Price", db_index=True)
     currency = models.CharField(max_length=10, default="USD", verbose_name="Currency")
-    metadata = models.JSONField(default=dict,blank=True, null=True, verbose_name="Metadata")
+    metadata = models.JSONField(default=dict, blank=True)
 
     def __str__(self):
         return self.name
@@ -160,14 +160,19 @@ class Box(BaseModel):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="box", verbose_name="Category")
     name = models.CharField(max_length=255, verbose_name="Box Name", db_index=True)
     description = models.TextField(blank=True, null=True, verbose_name="Description")
-    total_price = models.DecimalField(max_digits=10,blank=True, null=True, decimal_places=2, verbose_name="Total Price", db_index=True)
+    total_price = models.DecimalField(max_digits=10, blank=True, null=True, decimal_places=2, verbose_name="Total Price", db_index=True)
     currency = models.CharField(max_length=10, default="USD", verbose_name="Currency")
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Country")
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="City")
-    place = models.ManyToManyField(Place, blank=True, related_name="boxes", verbose_name="Places")
-    experience = models.ManyToManyField(Experience, blank=True, related_name="boxes", verbose_name="Experiences")
-    contents = models.JSONField(default=list,blank=True, null=True, verbose_name="Contents")
     images = models.ManyToManyField(Image, blank=True, related_name="boxes", verbose_name="Images")
+    duration_days = models.PositiveIntegerField(default=1, verbose_name="Duration in Days")
+    duration_hours = models.PositiveIntegerField(default=0, verbose_name="Duration in Hours")
+    metadata = models.JSONField(default=dict, blank=True)
+    start_date = models.DateField(null=True, blank=True, verbose_name="Start Date")
+    end_date = models.DateField(null=True, blank=True, verbose_name="End Date")
+    is_customizable = models.BooleanField(default=False, verbose_name="Is Customizable")
+    max_group_size = models.PositiveIntegerField(default=10, verbose_name="Maximum Group Size")
+    tags = models.JSONField(default=list, blank=True)
 
     def __str__(self):
         return self.name
@@ -176,6 +181,41 @@ class Box(BaseModel):
         verbose_name = "Box"
         verbose_name_plural = "Boxes"
 
+class BoxItineraryDay(BaseModel):
+    """
+    Represents a single day in a box itinerary
+    """
+    box = models.ForeignKey(Box, on_delete=models.CASCADE, related_name="itinerary_days", verbose_name="Box")
+    day_number = models.PositiveIntegerField(verbose_name="Day Number")
+    date = models.DateField(null=True, blank=True, verbose_name="Specific Date")
+    description = models.TextField(blank=True, null=True, verbose_name="Day Description")
+    estimated_hours = models.FloatField(default=8, verbose_name="Estimated Hours")
+    class Meta:
+        verbose_name = "Box Itinerary Day"
+        verbose_name_plural = "Box Itinerary Days"
+        ordering = ['day_number']
+        unique_together = ('box', 'day_number')
+
+class BoxItineraryItem(BaseModel):
+    """
+    Represents an item (place or experience) in a box itinerary day
+    """
+    itinerary_day = models.ForeignKey(BoxItineraryDay, on_delete=models.CASCADE, related_name="items", verbose_name="Itinerary Day")
+    place = models.ForeignKey(Place, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Place")
+    experience = models.ForeignKey(Experience, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Experience")
+    start_time = models.TimeField(verbose_name="Start Time")
+    end_time = models.TimeField(verbose_name="End Time")
+    duration_minutes = models.PositiveIntegerField(verbose_name="Duration in Minutes")
+    order = models.PositiveIntegerField(verbose_name="Order in Day")
+    notes = models.TextField(blank=True, null=True, verbose_name="Notes")
+    is_optional = models.BooleanField(default=False, verbose_name="Is Optional")
+    estimated_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Estimated Cost")
+    
+    class Meta:
+        verbose_name = "Box Itinerary Item"
+        verbose_name_plural = "Box Itinerary Items"
+        ordering = ['order']
+        
 # Booking: Reserving an entire box, flight, place, or experience.
 class Booking(BaseModel):
     STATUS_CHOICES = [
@@ -285,14 +325,34 @@ class Notification(BaseModel):
     NOTIFICATION_TYPES = [
         ("Booking Update", "Booking Update"),
         ("Payment", "Payment"),
+        ("New Box", "New Box"),
         ("Discount", "Discount"),
         ("Message", "Message"),
         ("General", "General"),
     ]
-
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('sent', 'Sent'),
+        ('failed', 'Failed'),
+        ('delivered', 'Delivered')
+    ]
+    
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notifications", verbose_name="User", db_index=True)
     type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES, default="General", verbose_name="Type", db_index=True)
     message = models.TextField(verbose_name="Message")
+    metadata = models.JSONField(default=dict, blank=True)
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        db_index=True
+    )
+    channels = models.JSONField(
+        default=list,
+        help_text="List of channels used to send this notification"
+    )
+    processing_started = models.DateTimeField(null=True, blank=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
     is_read = models.BooleanField(default=False, verbose_name="Is Read", db_index=True)
 
     def __str__(self):
