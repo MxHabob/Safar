@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safar Notification</title>
+    <style type="text/css">
+        /* Base styles */
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f9fc;
+        }
+        
+        /* Container */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        .logo {
+            color: #2d3748;
+            font-size: 24px;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        
+        .logo span {
+            color: #4a6ee0;
+        }
+        
+        /* Content */
+        .content {
+            padding: 30px 20px;
+        }
+        
+        h1 {
+            color: #2d3748;
+            font-size: 22px;
+            margin-top: 0;
+        }
+        
+        p {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #4a6ee0;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+            color: #718096;
+            border-top: 1px solid #eaeaea;
+        }
+        
+        .social-links {
+            margin: 20px 0;
+        }
+        
+        .social-links a {
+            margin: 0 10px;
+            text-decoration: none;
+        }
+        
+        /* Responsive */
+        @media only screen and (max-width: 600px) {
+            .container {
+                width: 100%;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="{{ site_url }}" class="logo">Safar<span>.</span></a>
+        </div>
+        
+        <div class="content">
+            <h1>{{ subject }}</h1>
+            
+            <p>Hello {{ user.first_name|default:"there" }},</p>
+            
+            <p>{{ message|linebreaksbr }}</p>
+            
+            {% if action_url %}
+            <p>
+                <a href="{{ action_url }}" class="button">
+                    {% if notification_type == 'Booking Update' %}View Booking{% else %}View Details{% endif %}
+                </a>
+            </p>
+            {% endif %}
+            
+            {% if notification_type == 'Booking Update' %}
+            <p>Need help with your booking? <a href="{{ site_url }}/contact">Contact our support team</a>.</p>
+            {% endif %}
+            
+            <p>Happy travels,<br>The Safar Team</p>
+        </div>
+        
+        <div class="footer">
+            <div class="social-links">
+                <a href="{{ site_url }}/facebook">Facebook</a>
+                <a href="{{ site_url }}/instagram">Instagram</a>
+                <a href="{{ site_url }}/twitter">Twitter</a>
+            </div>
+            
+            <p>© {{ current_year }} Safar. All rights reserved.</p>
+            <p>
+                <a href="{{ site_url }}/privacy">Privacy Policy</a> | 
+                <a href="{{ site_url }}/terms">Terms of Service</a>
+            </p>
+            
+            <p>
+                <small>
+                    You're receiving this email because you're a registered Safar user.
+                    <a href="{{ unsubscribe_url }}">Unsubscribe</a> from these notifications.
+                </small>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

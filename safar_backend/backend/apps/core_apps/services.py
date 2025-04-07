@@ -30,7 +30,7 @@ class NotificationService:
                     'site_name': settings.SITE_NAME,
                     **(context or {})
                 }
-                html_message = render_to_string('emails/notification.html', template_context)
+                html_message = render_to_string('templates/emails/notification.html', template_context)
             
             if NotificationService._email_rate_limit_exceeded(recipient_list):
                 logger.warning(f"Email rate limit exceeded for {recipient_list}")
