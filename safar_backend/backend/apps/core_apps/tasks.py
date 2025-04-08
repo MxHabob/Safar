@@ -2,9 +2,10 @@ from celery import shared_task
 from django.core.cache import cache
 from django.db import transaction
 import logging
-from datetime import timedelta
 from django.utils import timezone
 from apps.authentication.models import User
+from apps.core_apps.services import NotificationService
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -206,7 +207,7 @@ def _process_destination(self, city, country, score, user_clusters, log_entry):
         city=city,
         country=country,
         is_available=True
-    ).select_related('city', 'country').prefetch_related('images')[:5]
+    ).select_related('city', 'country').prefetch_related('media')[:5]
 
     if not places:
         logger.debug(f"No available places for {city}, {country}")
@@ -265,17 +266,17 @@ def _send_box_notification(self, user, box, cluster_name, city):
     """Send enhanced box notification with tracking"""
     from apps.safar.models import Notification
     
-    notification = UserBoxNotification.objects.create(
+    notification = Notification.objects.create(
         user=user,
         box=box,
-        notification_type="personalized_box",
+        type="Personalized Box",
         message=f"We've created a {cluster_name}-themed box for {city}!",
         metadata={
             "box_id": str(box.id),
             "cluster": cluster_name,
             "destination": city,
             "deep_link": f"/boxes/{box.id}",
-            "image_url": box.images.first().url if box.images.exists() else None
+            "image_url": box.media.first().url if box.media.exists() else None
         }
     )
     

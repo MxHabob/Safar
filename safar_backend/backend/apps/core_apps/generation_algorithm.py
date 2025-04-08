@@ -2,8 +2,11 @@ from django.db.models import Q
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
 from django.utils import timezone
+from datetime import time, timedelta
 from django.contrib.gis.geos import Point
-from apps.helper_algorithm import RecommendationEngine
+from django.db.models import Avg
+from apps.core_apps.helper_algorithm import RecommendationEngine
+from apps.safar.models import Booking, Review
 
 class BoxGenerator:
     def __init__(self, user, search_query=None, location=None, radius_km=50):
@@ -83,7 +86,7 @@ class BoxGenerator:
                 intent['type'] = 'cultural'
             elif any(word in query for word in ['family', 'kids', 'children']):
                 intent['type'] = 'family'
-                intent['group_size'] = 4  # Default family size
+                intent['group_size'] = 4
             
             # Extract duration hints
             if 'weekend' in query:
@@ -456,20 +459,22 @@ class BoxGenerator:
     
     def _calculate_travel_time(self, activities):
         """
-        Estimate travel time between activities in a day
+        Estimate travel time between activities in a day using PostGIS.
         """
-        # In production, would use a routing service like Google Maps
-        # Here we use simple haversine distance with average speed
-        from geopy.distance import great_circle
-        
-        total_seconds = 0
+        total_seconds = 0    
+
         for i in range(len(activities) - 1):
-            loc1 = (activities[i]['location'].y, activities[i]['location'].x)
-            loc2 = (activities[i+1]['location'].y, activities[i+1]['location'].x)
-            distance_km = great_circle(loc1, loc2).km
-            time_hours = distance_km / 30  # Assume 30km/h average speed in cities
-            total_seconds += time_hours * 3600
-        
+            loc1 = activities[i].location
+            loc2 = activities[i + 1].location    
+
+            # PostGIS distance in meters (more accurate with geography type)
+            distance_m = loc1.distance(loc2)
+            distance_km = distance_m / 1000.0    
+
+            # Assume average city travel speed is 30 km/h
+            time_hours = distance_km / 30.0
+            total_seconds += time_hours * 3600    
+
         return timedelta(seconds=total_seconds)
     
     def _calculate_dynamic_pricing(self, places, experiences, context):

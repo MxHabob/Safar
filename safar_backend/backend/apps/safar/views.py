@@ -81,7 +81,7 @@ class DiscountViewSet(BaseViewSet):
 class PlaceViewSet(BaseViewSet):
     queryset = Place.objects.select_related(
         'category', 'country', 'city', 'region', 'owner'
-    ).prefetch_related('images')
+    ).prefetch_related('media')
     serializer_class = PlaceSerializer
     filterset_fields = ['category', 'country', 'city', 'is_available']
     search_fields = ['name', 'description']
@@ -148,7 +148,7 @@ class PlaceViewSet(BaseViewSet):
 class ExperienceViewSet(BaseViewSet):
     queryset = Experience.objects.select_related(
         'place', 'owner'
-    ).prefetch_related('images')
+    ).prefetch_related('media')
     serializer_class = ExperienceSerializer
     filterset_fields = ['place', 'is_available']
     search_fields = ['title', 'description']
@@ -191,7 +191,7 @@ class BoxViewSet(BaseViewSet):
     queryset = Box.objects.select_related(
         'country', 'city'
     ).prefetch_related(
-        'place', 'experience', 'images'
+        'place', 'experience', 'media'
     )
     serializer_class = BoxSerializer
     filterset_fields = ['country', 'city']

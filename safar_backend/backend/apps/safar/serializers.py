@@ -1,13 +1,13 @@
 from rest_framework import serializers
 from apps.safar.models import (
-    Category, Discount, Image, Place, Experience,
+    Category, Discount, Media, Place, Experience,
     Flight, Box, Booking, Wishlist, Review, Payment, Message, Notification
 )
 from apps.authentication.serializers import UserSerializer
 
-class ImageSerializer(serializers.ModelSerializer):
+class MediaSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Image
+        model = Media
         fields = ['id', 'url', 'file', 'uploaded_by']
         read_only_fields = ['id']
 
@@ -31,14 +31,14 @@ class ExperiencePlaceSerializer(serializers.ModelSerializer):
     region = serializers.SerializerMethodField()
     city = serializers.SerializerMethodField()
     category = CategorySerializer(read_only=True)
-    images = ImageSerializer(many=True, read_only=True)
+    media = MediaSerializer(many=True, read_only=True)
 
     class Meta:
         model = Place
         fields = [
             'id', 'name', 'description', 'location', 
             'country', 'city', 'region', 'rating', 
-            'images', 'is_available', 'price', 'currency', 
+            'media', 'is_available', 'price', 'currency', 
             'metadata', 'category'
         ]
         read_only_fields = ['id']
@@ -54,7 +54,7 @@ class ExperiencePlaceSerializer(serializers.ModelSerializer):
 
 class ExperienceSerializer(serializers.ModelSerializer):
     owner = UserSerializer(read_only=True)
-    images = ImageSerializer(many=True, read_only=True)
+    media = MediaSerializer(many=True, read_only=True)
     category = CategorySerializer(read_only=True)
     place = ExperiencePlaceSerializer(read_only=True)  # Using enhanced serializer
 
@@ -64,7 +64,7 @@ class ExperienceSerializer(serializers.ModelSerializer):
             'id', 'place', 'owner', 'category', 'title', 
             'description', 'location', 'price_per_person', 
             'currency', 'duration', 'capacity', 'schedule', 
-            'images', 'rating', 'is_available'
+            'media', 'rating', 'is_available'
         ]
         read_only_fields = ['id']
 
@@ -75,13 +75,13 @@ class PlaceSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     owner = UserSerializer(read_only=True)
     experiences = serializers.SerializerMethodField()
-    images = ImageSerializer(many=True, read_only=True)
+    media = MediaSerializer(many=True, read_only=True)
 
     class Meta:
         model = Place
         fields = [
             'id', 'category', 'owner', 'name', 'description', 'location', 
-            'country', 'city', 'region', 'rating', 'images', 'is_available', 
+            'country', 'city', 'region', 'rating', 'media', 'is_available', 
             'price', 'currency', 'metadata', 'experiences'
         ]
         read_only_fields = ['id']
@@ -120,14 +120,14 @@ class BoxSerializer(serializers.ModelSerializer):
         source="experience"
     )
     category = CategorySerializer(read_only=True)
-    images = ImageSerializer(many=True, read_only=True)
+    media = MediaSerializer(many=True, read_only=True)
 
     class Meta:
         model = Box
         fields = [
             'id', 'name', 'category', 'description', 'total_price',
             'currency', 'country', 'city', 'places', 'experiences',
-            'contents', 'images'
+            'contents', 'media'
         ]
         read_only_fields = ['id']
 

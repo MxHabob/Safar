@@ -9,8 +9,8 @@ from phonenumber_field.modelfields import PhoneNumberField
 from apps.geographic_data.models import Country, Region, City
 
 def upload_avatar(instance, filename):
-    user_uuid = instance.id if instance.id else uuid.uuid4().hex
-    path = f'avatar/{user_uuid}'
+    random_uuid = uuid.uuid4().hex
+    path = f'avatar/{random_uuid}'
     extension = filename.split('.')[-1] if '.' in filename else 'jpg'
     return f'{path}.{extension}'
 

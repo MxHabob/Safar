@@ -189,6 +189,20 @@ def get_seasonal_trends():
         return ['Wine Country', 'Foliage Trips']
     else:
         return ['Ski Resorts', 'Northern Lights']
+    
+def get_current_season():
+    """
+    Returns the current season based on the month.
+    """
+    month = timezone.now().month
+    if 3 <= month <= 5:
+        return 'spring'
+    elif 6 <= month <= 8:
+        return 'summer'
+    elif 9 <= month <= 11:
+        return 'fall'
+    else:
+        return 'winter'
 
 def get_user_preference_clusters():
     """Group users by travel preferences from profiles"""
@@ -211,7 +225,7 @@ def calculate_trending_destinations():
     - Seasonal adjustments
     - Performance optimizations
     """
-    from django.db.models import F, ExpressionWrapper, FloatField
+    from django.db.models import F,Case,When, ExpressionWrapper, FloatField
     
     trends = defaultdict(float)
     now = timezone.now()

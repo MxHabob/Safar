@@ -1,18 +1,23 @@
 import uuid
 from django.db import models
 from django.contrib.gis.db import models as gis_models
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator
 from apps.core_apps.general import BaseModel
 from apps.core_apps.utility import generate_unique_code
 from apps.authentication.models import User
 from apps.geographic_data.models import Country, Region, City
+from django.core.validators import FileExtensionValidator
 
+PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp']
+VIDEO_EXTENSIONS = ['mp4', 'mov', 'avi', 'mkv', 'webm', 'flv']
 
 def upload_file(instance, filename):
-    user_uuid = instance.id if instance.id else uuid.uuid4().hex
-    path = f'file/{user_uuid}'
-    extension = filename.split('.')[-1] if '.' in filename else 'jpg'
-    return f'{path}.{extension}'
+    file_uuid = uuid.uuid4().hex
+    extension = filename.split('.')[-1].lower() if '.' in filename else ''
+    if extension not in PHOTO_EXTENSIONS + VIDEO_EXTENSIONS:
+        raise ValueError(f"Unsupported file type. Allowed: {PHOTO_EXTENSIONS + VIDEO_EXTENSIONS}")
+    media_type = 'photos' if extension in PHOTO_EXTENSIONS else 'videos'
+    return f'{media_type}/{file_uuid}.{extension}'
 
 # Categories such as hotels - apartments - chalets - Care places - kindergarten - restaurants - religious centers - mosques - villas - houses, etc.
 class Category(BaseModel):
@@ -26,20 +31,36 @@ class Category(BaseModel):
         verbose_name = "Category"
         verbose_name_plural = "Categories"
 
-# Store all the images in this table such as pictures of places, pictures of experiences, etc. ( future development )
-class Image(BaseModel):
-    url = models.URLField(verbose_name="Image URL",blank=True,null=True)
-    file = models.ImageField(upload_to=upload_file, null=True, blank=True)
-    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="uploaded_images", verbose_name="Uploaded By")
 
+class Media(BaseModel):
+    FILE_TYPE_CHOICES = [
+        ('photo', 'Photo'),
+        ('video', 'Video'),
+    ]
+    url = models.URLField(verbose_name="Media URL", blank=True, null=True)
+    file = models.FileField( upload_to=upload_file, null=True, blank=True, validators=[FileExtensionValidator( allowed_extensions=PHOTO_EXTENSIONS + VIDEO_EXTENSIONS)])
+    file_type = models.CharField( max_length=10, choices=FILE_TYPE_CHOICES, verbose_name="Media Type" )
+    uploaded_by = models.ForeignKey( User, on_delete=models.CASCADE, related_name="uploaded_media", verbose_name="Uploaded By")
+    
+    def save(self, *args, **kwargs):
+        # Auto-set file_type based on extension before saving
+        if self.file:
+            extension = self.file.name.split('.')[-1].lower()
+            if extension in PHOTO_EXTENSIONS:
+                self.file_type = 'photo'
+            elif extension in VIDEO_EXTENSIONS:
+                self.file_type = 'video'
+        super().save(*args, **kwargs)
+    
     def __str__(self):
-        return f"Image for {self.file} - {self.url}"
-
+        return f"{self.get_file_type_display()} - {self.file.name if self.file else self.url}"
+    
     class Meta:
-        verbose_name = "Image"
-        verbose_name_plural = "Images"
+        verbose_name = "Media"
+        verbose_name_plural = "Media"
         indexes = [
             models.Index(fields=["url", "file"]),
+            models.Index(fields=["file_type"]),
         ]
 
 # Discount on reservations for places, boxes, experiences, flights, etc., provided that the discount is used once.
@@ -80,7 +101,7 @@ class Place(BaseModel):
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="City")
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Region")
     rating = models.FloatField(default=0.0, validators=[MinValueValidator(0.0), MaxValueValidator(5.0)], verbose_name="Rating", db_index=True)
-    images = models.ManyToManyField(Image, blank=True, related_name="places", verbose_name="Images")
+    media = models.ManyToManyField(Media, blank=True, related_name="places", verbose_name="Media")
     is_available = models.BooleanField(default=True, verbose_name="Is Available", db_index=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0, verbose_name="Price", db_index=True)
     currency = models.CharField(max_length=10, default="USD", verbose_name="Currency")
@@ -110,7 +131,7 @@ class Experience(BaseModel):
     duration = models.PositiveIntegerField(verbose_name="Duration (minutes)")
     capacity = models.PositiveIntegerField(verbose_name="Capacity")
     schedule = models.JSONField(default=list, blank=True, null=True, verbose_name="Schedule")
-    images = models.ManyToManyField(Image, blank=True, related_name="experiences", verbose_name="Images")
+    media = models.ManyToManyField(Media, blank=True, related_name="experiences", verbose_name="Media")
     rating = models.FloatField(
         default=0.0,
         validators=[MinValueValidator(0.0), MaxValueValidator(5.0)],
@@ -164,7 +185,7 @@ class Box(BaseModel):
     currency = models.CharField(max_length=10, default="USD", verbose_name="Currency")
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Country")
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="City")
-    images = models.ManyToManyField(Image, blank=True, related_name="boxes", verbose_name="Images")
+    media = models.ManyToManyField(Media, blank=True, related_name="boxes", verbose_name="Media")
     duration_days = models.PositiveIntegerField(default=1, verbose_name="Duration in Days")
     duration_hours = models.PositiveIntegerField(default=0, verbose_name="Duration in Hours")
     metadata = models.JSONField(default=dict, blank=True)
@@ -326,6 +347,7 @@ class Notification(BaseModel):
         ("Booking Update", "Booking Update"),
         ("Payment", "Payment"),
         ("New Box", "New Box"),
+        ("Personalized Box", "Personalized Box"),
         ("Discount", "Discount"),
         ("Message", "Message"),
         ("General", "General"),

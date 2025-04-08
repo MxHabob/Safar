@@ -1,10 +1,10 @@
 from django.contrib import admin
 from apps.safar.models import (
     Category, Discount, Place, Experience,
-    Flight, Box, Booking, Wishlist, Review, Payment, Message, Notification ,Image
+    Flight, Box, Booking, Wishlist, Review, Payment, Message, Notification ,Media
 )
 
-admin.site.register(Image)
+admin.site.register(Media)
 admin.site.register(Category)
 admin.site.register(Discount)
 admin.site.register(Place)
