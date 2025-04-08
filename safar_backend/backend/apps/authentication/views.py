@@ -110,7 +110,7 @@ class CustomTokenVerifyView(TokenVerifyView):
         return super().post(request, *args, **kwargs)
 
 class LogoutView(APIView):
-    permission_classes = [HasAPIKey]
+    # permission_classes = [HasAPIKey]
     
     def post(self, request, *args, **kwargs):
         response = Response({"detail": "Logged out successfully."}, status=status.HTTP_200_OK)

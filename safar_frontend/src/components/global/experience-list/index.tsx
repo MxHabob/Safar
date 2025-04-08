@@ -1,5 +1,4 @@
 "use client"
-import Link from "next/link"
 import "swiper/css/bundle"
 import { type SwiperProps, SwiperSlide } from "swiper/react"
 import { Slider } from "../slider"
@@ -15,8 +14,6 @@ type Props = {
 
 export const ListExperience = ({ overlay, selected, favorites = [], onFavoriteToggle, ...rest }: Props) => {
   const { data: experiences, isLoading, error } = useGetExperiencesQuery({})
-
-  console.log("experiences : ",experiences )
 
   const isExperienceFavorited = (experienceId: string) => {
     return favorites.includes(experienceId)
@@ -55,13 +52,11 @@ export const ListExperience = ({ overlay, selected, favorites = [], onFavoriteTo
             selected === experience.id ? "scale-[1.02]" : ""
           }`}
         >
-          <Link href={`/experience/${experience.id}`}>
             <ExperienceCard
               experience={experience}
               onFavorite={handleFavorite}
               isFavorited={isExperienceFavorited(experience.id)}
             />
-          </Link>
           
         </SwiperSlide>
       ))

@@ -24,6 +24,8 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
   const router = useRouter()
   const { user, isAuthenticated, isLoading, logout } = useAuth()
 
+  console.log("User : ", { user, isAuthenticated, isLoading })
+
   if (isLoading) {
     return (
       <div className="flex items-center space-x-2">
@@ -89,7 +91,7 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
               <User2 className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push("/bookings")}>
+            <DropdownMenuItem onClick={() => router.push("/booking")}>
               <Calendar className="mr-2 h-4 w-4" />
               My Bookings
             </DropdownMenuItem>
@@ -130,9 +132,9 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
               <User2 className="mr-2 h-4 w-4" />
               Sign In
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push("/register")}>
+            <DropdownMenuItem onClick={() => router.push("/sign-up")}>
               <UserPlus className="mr-2 h-4 w-4" />
-              Register
+              Sign Up
             </DropdownMenuItem>
           </>
         )}

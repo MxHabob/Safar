@@ -42,52 +42,50 @@ const baseQuery = fetchBaseQuery({
 export const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
   args,
   api,
-  extraOptions
+  extraOptions,
 ) => {
-  await mutex.waitForUnlock();
-  let result = await baseQuery(args, api, extraOptions);
+  await mutex.waitForUnlock()
+  let result = await baseQuery(args, api, extraOptions)
 
   if (result.error && result.error.status === 401) {
     if (!mutex.isLocked()) {
-      const release = await mutex.acquire();
+      const release = await mutex.acquire()
 
       try {
-        const { refreshToken } = (api.getState() as RootState).auth;
-        
+        const { refreshToken } = (api.getState() as RootState).auth
         if (refreshToken) {
           const refreshResult = await baseQuery(
             {
-              url: '/auth/jwt/refresh/',
-              method: 'POST',
+              url: "/auth/jwt/refresh/",
+              method: "POST",
               body: { refresh: refreshToken },
             },
             api,
-            extraOptions
-          );
+            extraOptions,
+          )
 
           if (refreshResult.data) {
-            const { access } = refreshResult.data as { access: string };
-            api.dispatch(setTokens({ access, refresh: refreshToken }));
-            
-            // Retry the original query with new access token
-            result = await baseQuery(args, api, extraOptions);
+            const { access } = refreshResult.data as { access: string }
+            api.dispatch(setTokens({ access, refresh: refreshToken }))
+
+            result = await baseQuery(args, api, extraOptions)
           } else {
-            api.dispatch(logout());
+            api.dispatch(logout())
           }
         } else {
-          api.dispatch(logout());
+          api.dispatch(logout())
         }
       } finally {
-        release();
+        release()
       }
     } else {
-      await mutex.waitForUnlock();
-      result = await baseQuery(args, api, extraOptions);
+      await mutex.waitForUnlock()
+      result = await baseQuery(args, api, extraOptions)
     }
   }
 
-  return result;
-};
+  return result
+}
 
 
 export const api = createApi({

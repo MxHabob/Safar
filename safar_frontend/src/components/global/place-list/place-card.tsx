@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Place } from "@/redux/types/types"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import Link from "next/link"
 
 interface PlaceCardProps {
   place: Place;
@@ -22,7 +23,7 @@ export const PlaceCard =({ place, onFavorite, isFavorited: externalFavorite }: P
   const isFavorite = externalFavorite !== undefined ? externalFavorite : internalFavorite
   
   // Safely access images array with fallbacks
-  const images = place.images || []
+  const images = place.media || []
   const hasMultipleImages = images.length > 1
 
   const nextImage = (e: React.MouseEvent) => {
@@ -61,7 +62,8 @@ export const PlaceCard =({ place, onFavorite, isFavorited: externalFavorite }: P
 
 
   return (
-<div className="relative w-full rounded-3xl bg-card shadow-md overflow-hidden group transition-all hover:shadow-lg">
+<Link href={`/place/${place.id}`} className="block">
+  <div className="relative w-full rounded-3xl bg-card shadow-md overflow-hidden group transition-all hover:shadow-lg">
       <div className="relative aspect-[4/3] w-full overflow-hidden">
         <Image
           src={images[currentImageIndex]?.file ?? "/placeholder.svg?height=300&width=400"}
@@ -163,7 +165,8 @@ export const PlaceCard =({ place, onFavorite, isFavorited: externalFavorite }: P
           <div className="font-semibold text-base">{formattedPrice}</div>
         </div>
       </div>
-    </div>
+  </div>
+</Link>
   )
 }
 

@@ -10,7 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import type { User, Booking, Review } from "@/types"
+import type { User, Booking, Review } from "@/redux/types/types"
+import { useAuth } from "@/redux/hooks/useAuth"
 
 // Sample data - replace with your actual data fetching logic
 const SAMPLE_USER: User = {
@@ -245,7 +246,10 @@ const SAMPLE_REVIEWS: Review[] = [
   },
 ]
 
-export default function ProfilePage() {
+export default function ProfilePageContent() {
+  const {user:data} = useAuth()
+
+  console.log("data : " , data)
   const [user, setUser] = useState<User>(SAMPLE_USER)
   const [bookings, setBookings] = useState<Booking[]>(SAMPLE_BOOKINGS)
   const [reviews, setReviews] = useState<Review[]>(SAMPLE_REVIEWS)

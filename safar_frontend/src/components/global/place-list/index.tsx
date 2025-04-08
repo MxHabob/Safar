@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
 import { useGetPlacesQuery } from "@/redux/services/api"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from 'lucide-react'
@@ -79,13 +78,11 @@ export const ListPlaces = ({ selected, favorites = [], onFavoriteToggle }: Props
                 selected === place.id ? "scale-[1.02] ring-2 ring-primary ring-offset-2 rounded-3xl" : ""
               }`}
             >
-              <Link href={`/place/${place.id}`}>
                 <PlaceCard 
                   place={place} 
                   onFavorite={handleFavorite} 
                   isFavorited={isPlaceFavorited(place.id)} 
                 />
-              </Link>
             </div>
           ))
         ) : !isLoading ? (

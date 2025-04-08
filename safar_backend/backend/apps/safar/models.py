@@ -39,7 +39,7 @@ class Media(BaseModel):
     ]
     url = models.URLField(verbose_name="Media URL", blank=True, null=True)
     file = models.FileField( upload_to=upload_file, null=True, blank=True, validators=[FileExtensionValidator( allowed_extensions=PHOTO_EXTENSIONS + VIDEO_EXTENSIONS)])
-    file_type = models.CharField( max_length=10, choices=FILE_TYPE_CHOICES, verbose_name="Media Type" )
+    type = models.CharField( max_length=10, choices=FILE_TYPE_CHOICES, verbose_name="Media Type", default='photo')
     uploaded_by = models.ForeignKey( User, on_delete=models.CASCADE, related_name="uploaded_media", verbose_name="Uploaded By")
     
     def save(self, *args, **kwargs):
@@ -47,20 +47,20 @@ class Media(BaseModel):
         if self.file:
             extension = self.file.name.split('.')[-1].lower()
             if extension in PHOTO_EXTENSIONS:
-                self.file_type = 'photo'
+                self.type = 'photo'
             elif extension in VIDEO_EXTENSIONS:
-                self.file_type = 'video'
+                self.type = 'video'
         super().save(*args, **kwargs)
     
     def __str__(self):
-        return f"{self.get_file_type_display()} - {self.file.name if self.file else self.url}"
+        return f"{self.get_type_display()} - {self.file.name if self.file else self.url}"
     
     class Meta:
         verbose_name = "Media"
         verbose_name_plural = "Media"
         indexes = [
             models.Index(fields=["url", "file"]),
-            models.Index(fields=["file_type"]),
+            models.Index(fields=["type"]),
         ]
 
 # Discount on reservations for places, boxes, experiences, flights, etc., provided that the discount is used once.

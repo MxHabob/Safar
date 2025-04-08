@@ -70,9 +70,10 @@ export interface Discount extends BaseModel {
 }
 
 
-export interface Images extends BaseModel {
+export interface Media extends BaseModel {
   url: string;
   file:string;
+  type: 'image' | 'video';
   uploaded_by?: string;
 }
 
@@ -87,7 +88,7 @@ export interface Place extends BaseModel {
   city?: string;
   region?: string;
   rating: number;
-  images?: Images[];
+  media?: Media[];
   is_available: boolean;
   price: number;
   currency: string;
@@ -108,7 +109,7 @@ export interface Experience extends BaseModel {
   duration: number;
   capacity: number;
   schedule: Record<string, unknown>[];
-  images: Images[];
+  media: Media[];
   rating: number;
   is_available: boolean;
 }
@@ -141,7 +142,7 @@ export interface Box extends BaseModel {
   places?: Place[];
   experiences?: Experience[];
   contents: Record<string, unknown>[];
-  images: Images[];
+  media: Media[];
 }
 
 // Booking Types

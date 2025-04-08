@@ -46,12 +46,10 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     username = models.CharField(max_length=30, blank=True, verbose_name=_("Username"))
     first_name = models.CharField(max_length=30, blank=True, verbose_name=_("First Name"))
     last_name = models.CharField(max_length=30, blank=True, verbose_name=_("Last Name"))
-
     language = models.CharField(max_length=10, default="en")
     timezone = models.CharField(max_length=50, default="UTC")
     preferred_language = models.CharField(max_length=10, default="en", verbose_name=_("Preferred Language"))
     preferred_currency = models.CharField(max_length=10, default="USD", verbose_name=_("Preferred Currency"))
-
     is_online = models.BooleanField(default=False, verbose_name=_("Online Status"))
     is_active = models.BooleanField(default=True, verbose_name=_("Active"))
     is_staff = models.BooleanField(default=False, verbose_name=_("Staff Status"))
@@ -71,13 +69,8 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
 
     is_profile_public = models.BooleanField(default=False)
     following = models.ManyToManyField("self", symmetrical=False, related_name="followers", blank=True)
-
     points = models.PositiveIntegerField(default=0)
-    membership_level = models.CharField(
-        max_length=20,
-        choices=[("bronze", "Bronze"), ("silver", "Silver"), ("gold", "Gold")],
-        default="bronze"
-    )
+    membership_level = models.CharField( max_length=20, choices=[("bronze", "Bronze"), ("silver", "Silver"), ("gold", "Gold")], default="bronze")
 
     objects = UserManager()
 
@@ -118,8 +111,7 @@ class UserProfile(BaseModel):
     postal_code = models.CharField(max_length=20, blank=True, verbose_name=_("Postal Code"))
     address = models.CharField(max_length=255, blank=True, verbose_name=_("Address"))
     date_of_birth = models.DateField(null=True, blank=True)
-    gender = models.CharField(
-        max_length=20,
+    gender = models.CharField( max_length=20,
         choices=[
             ("male", _("Male")),
             ("female", _("Female")),

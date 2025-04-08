@@ -10,6 +10,7 @@ import type { Experience } from "@/redux/types/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import Link from "next/link"
 
 interface ExperienceCardProps {
   experience: Experience
@@ -23,7 +24,7 @@ export const ExperienceCard =({ experience, onFavorite, isFavorited: externalFav
 
   const isFavorite = externalFavorite !== undefined ? externalFavorite : internalFavorite
 
-  const images = experience.images || []
+  const images = experience.media || []
   const hasMultipleImages = images.length > 1
 
   const nextImage = (e: React.MouseEvent) => {
@@ -71,6 +72,7 @@ export const ExperienceCard =({ experience, onFavorite, isFavorited: externalFav
 
 
   return (
+  <Link href={`/experience/${experience.id}`} className="block">
     <div className="relative w-full rounded-3xl bg-card shadow-md overflow-hidden group min-w-sm max-w-sm transition-all hover:shadow-lg">
       <div className="relative aspect-[4/3] w-full overflow-hidden">
         <Image
@@ -202,6 +204,7 @@ export const ExperienceCard =({ experience, onFavorite, isFavorited: externalFav
         </div>
       </div>
     </div>
+  </Link>
   )
 }
 

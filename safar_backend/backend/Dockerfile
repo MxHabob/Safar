@@ -44,6 +44,6 @@ CMD sh -c "\
     # echo 'Downloading essential geographic data...' && \
     # python manage.py import_geodata && \
     # echo 'Generate a fake data...' && \
-    # python manage.py generate_fake_data --users 100 --places 30 --experiences 20 --flights 15 --boxes 10 && \
+    # python manage.py generate_fake_data --users 50 --places 20 --experiences 15 --flights 10 --bookings 30 && \
     echo 'Starting Daphne...' && \
     daphne -b 0.0.0.0 -p 8000 core.asgi:application"

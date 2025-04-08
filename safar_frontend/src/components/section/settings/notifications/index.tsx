@@ -143,7 +143,7 @@ const SAMPLE_NOTIFICATIONS: Notification[] = [
 type NotificationType = "All" | "Booking Update" | "Payment" | "Discount" | "Message" | "General"
 type ReadStatus = "All" | "Read" | "Unread"
 
-export default function NotificationsPage() {
+export default function NotificationsPageContent() {
   const [notifications, setNotifications] = useState<Notification[]>(SAMPLE_NOTIFICATIONS)
   const [searchQuery, setSearchQuery] = useState("")
   const [typeFilter, setTypeFilter] = useState<NotificationType>("All")

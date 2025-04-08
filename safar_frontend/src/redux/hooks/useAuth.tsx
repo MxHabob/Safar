@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -41,27 +42,36 @@ export const useAuth = () => {
   const [requestPasswordResetApi, { isLoading: isRequestPasswordResetLoading }] = useRequestPasswordResetMutation();
   const [confirmPasswordResetApi, { isLoading: isConfirmPasswordResetLoading }] = useConfirmPasswordResetMutation();
   
-  const { refetch: fetchUser, isLoading: isUserLoading } = useGetUserQuery();
+  const { refetch: fetchUser, isLoading: isUserLoading } = useGetUserQuery(undefined, {
+    skip: !authState.accessToken,
+  })
 
-  const login = useCallback(async (credentials: { email: string; password: string }) => {
-    try {
-      dispatch(loginStart());
-      const response = await loginApi(credentials).unwrap();
-      dispatch(loginSuccess(response));
-      
-      const userResponse = await fetchUser().unwrap();
-      dispatch(setUser(userResponse));
-      
-      toast.success('Login successful');
-      router.push('/');
-      return { success: true };
-    } catch (error: any) {
-      const errorMessage = error.data?.detail || 'Login failed';
-      dispatch(loginFailure(errorMessage));
-      toast.error(errorMessage);
-      return { success: false, error: errorMessage };
-    }
-  }, [dispatch, loginApi, fetchUser, router]);
+  const login = useCallback(
+    async (credentials: { email: string; password: string }) => {
+      try {
+        dispatch(loginStart())
+        const response = await loginApi(credentials).unwrap()
+        dispatch(loginSuccess(response))
+
+        try {
+          const userResponse = await fetchUser().unwrap()
+          dispatch(setUser(userResponse))
+        } catch (userError) {
+          console.error("Failed to fetch user data:", userError)
+        }
+
+        toast.success("Login successful")
+        router.push("/")
+        return { success: true }
+      } catch (error: any) {
+        const errorMessage = error.data?.detail || "Login failed"
+        dispatch(loginFailure(errorMessage))
+        toast.error(errorMessage)
+        return { success: false, error: errorMessage }
+      }
+    },
+    [dispatch, loginApi, fetchUser, router],
+  )
 
   const register = useCallback(async (userData: Partial<RegisterUser>) => {
     try {
@@ -177,22 +187,20 @@ export const useAuth = () => {
 
   const refreshTokens = useCallback(async () => {
     if (!authState.refreshToken) {
-      dispatch(logoutAction());
-      router.push('/login');
-      return { success: false, error: 'No refresh token available' };
+      dispatch(logoutAction())
+      return { success: false, error: "No refresh token available" }
     }
 
     try {
-      const response = await refreshTokenApi({ refresh: authState.refreshToken }).unwrap();
-      dispatch(setTokens({ access: response.access, refresh: authState.refreshToken }));
-      return { success: true };
+      const response = await refreshTokenApi({ refresh: authState.refreshToken }).unwrap()
+      dispatch(setTokens({ access: response.access, refresh: authState.refreshToken }))
+      return { success: true }
     } catch (error) {
-      dispatch(logoutAction());
-      router.push('/login');
-      toast.error('Session expired. Please login again.');
-      return { success: false, error: 'Session expired. Please login again.' };
+      dispatch(logoutAction())
+      toast.error("Session expired. Please login again.")
+      return { success: false, error: "Session expired" }
     }
-  }, [authState.refreshToken, dispatch, refreshTokenApi, router]);
+  }, [authState.refreshToken, dispatch, refreshTokenApi])
 
   const socialLogin = useCallback(async (provider: string, code: string) => {
     try {
@@ -209,8 +217,8 @@ export const useAuth = () => {
       );
       dispatch(loginSuccess(response));
       
-      if (response.user) {
-        dispatch(setUser(response.user));
+      if (response) {
+        dispatch(setUser(response));
       }
       
       router.push('/');
@@ -223,16 +231,26 @@ export const useAuth = () => {
   }, [dispatch, socialAuthApi, router]);
 
   const loadUser = useCallback(async () => {
-    if (!authState.accessToken) return { success: false };
+    if (!authState.accessToken) return { success: false }
 
     try {
-      const response = await fetchUser().unwrap();
-      dispatch(setUser(response));
-      return { success: true, user: response };
+      const response = await fetchUser().unwrap()
+      dispatch(setUser(response))
+      return { success: true, user: response }
     } catch (error) {
-      return { success: false };
+      const refreshResult = await refreshTokens()
+      if (refreshResult.success) {
+        try {
+          const response = await fetchUser().unwrap()
+          dispatch(setUser(response))
+          return { success: true, user: response }
+        } catch (error) {
+          return { success: false }
+        }
+      }
+      return { success: false }
     }
-  }, [authState.accessToken, dispatch, fetchUser]);
+  }, [authState.accessToken, dispatch, fetchUser, refreshTokens])
 
   return {
     ...authState,

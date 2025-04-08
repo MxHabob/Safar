@@ -30,7 +30,7 @@ export const BoxCard = ({ box }: BoxCardProps) => {
         <div className="grid grid-cols-3 gap-0.5 h-full w-full">
           <div className="relative col-span-2 row-span-2 overflow-hidden rounded-l-3xl">
             <Image
-              src={box.images?.[0]?.file || "/placeholder.svg"}
+              src={box.media?.[0]?.file || "/placeholder.svg"}
               alt={`${box.name} main image`}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -39,7 +39,7 @@ export const BoxCard = ({ box }: BoxCardProps) => {
             />
           </div>
           <div className="flex flex-col gap-0.5  row-span-2">
-            {box.images.slice(1, 4).map((image, index) => (
+            {box.media.slice(1, 4).map((image, index) => (
               <div key={`${box.id}-side-image-${index}`} className="relative flex-1 overflow-hidden">
                 <Image
                   src={image.file || "/placeholder.svg"}
