@@ -6,27 +6,44 @@ import {
 } from '@/redux/types/real-time';
 
 export const useRealTime = (handlers: WebSocketEventHandlers = {}) => {
-  const [isConnected, setIsConnected] = useState(false);
-  const [initialData, setInitialData] = useState<InitialDataPayload | null>(null);
+  const [connectionState, setConnectionState] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  const [unreadCount, setUnreadCount] = useState({ messages: 0, notifications: 0 });
 
   useEffect(() => {
     const enhancedHandlers: WebSocketEventHandlers = {
       ...handlers,
-      onInitialData: (data) => {
-        setInitialData(data);
-        handlers.onInitialData?.(data);
+      onNewMessage: (payload) => {
+        setUnreadCount(prev => ({ ...prev, messages: prev.messages + 1 }));
+        handlers.onNewMessage?.(payload);
+      },
+      onNewNotification: (payload) => {
+        setUnreadCount(prev => ({ ...prev, notifications: prev.notifications + 1 }));
+        handlers.onNewNotification?.(payload);
       },
       onConnect: () => {
-        setIsConnected(true);
+        setUnreadCount({ messages: 0, notifications: 0 });
         handlers.onConnect?.();
-      },
-      onDisconnect: () => {
-        setIsConnected(false);
-        handlers.onDisconnect?.();
       },
     };
 
-    realTimeService.connect(enhancedHandlers);
+    const updateState = (state: 'disconnected' | 'connecting' | 'connected') => {
+      setConnectionState(state);
+      if (state === 'connected') {
+        setUnreadCount({ messages: 0, notifications: 0 });
+      }
+    };
+
+    realTimeService.connect({
+      ...enhancedHandlers,
+      onConnect: () => {
+        updateState('connected');
+        enhancedHandlers.onConnect?.();
+      },
+      onDisconnect: () => {
+        updateState('disconnected');
+        enhancedHandlers.onDisconnect?.();
+      },
+    });
 
     return () => {
       realTimeService.disconnect();
@@ -34,9 +51,16 @@ export const useRealTime = (handlers: WebSocketEventHandlers = {}) => {
   }, [handlers]);
 
   return {
-    isConnected,
-    initialData,
-    markMessageAsRead: realTimeService.markMessageAsRead.bind(realTimeService),
-    markNotificationAsRead: realTimeService.markNotificationAsRead.bind(realTimeService),
+    connectionState,
+    unreadCount,
+    markMessageAsRead: (id: string) => {
+      realTimeService.markMessageAsRead(id);
+      setUnreadCount(prev => ({ ...prev, messages: Math.max(0, prev.messages - 1) }));
+    },
+    markNotificationAsRead: (id: string) => {
+      realTimeService.markNotificationAsRead(id);
+      setUnreadCount(prev => ({ ...prev, notifications: Math.max(0, prev.notifications - 1) }));
+    },
+    service: realTimeService,
   };
 };

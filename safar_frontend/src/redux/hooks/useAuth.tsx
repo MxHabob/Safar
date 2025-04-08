@@ -46,32 +46,27 @@ export const useAuth = () => {
     skip: !authState.accessToken,
   })
 
-  const login = useCallback(
-    async (credentials: { email: string; password: string }) => {
-      try {
-        dispatch(loginStart())
-        const response = await loginApi(credentials).unwrap()
-        dispatch(loginSuccess(response))
-
-        try {
-          const userResponse = await fetchUser().unwrap()
-          dispatch(setUser(userResponse))
-        } catch (userError) {
-          console.error("Failed to fetch user data:", userError)
-        }
-
-        toast.success("Login successful")
-        router.push("/")
-        return { success: true }
-      } catch (error: any) {
-        const errorMessage = error.data?.detail || "Login failed"
-        dispatch(loginFailure(errorMessage))
-        toast.error(errorMessage)
-        return { success: false, error: errorMessage }
-      }
-    },
-    [dispatch, loginApi, fetchUser, router],
-  )
+  const login = useCallback(async (credentials: { email: string; password: string }) => {
+    try {
+      dispatch(loginStart());
+      
+      // 1. Login to set cookies
+      await loginApi(credentials).unwrap();
+      
+      // 2. Fetch user data
+      const user = await fetchUser().unwrap();
+      
+      // 3. Update state
+      dispatch(loginSuccess(user));
+      
+      router.push('/');
+      return { success: true };
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || "Login failed";
+      dispatch(loginFailure(errorMessage));
+      return { success: false, error: errorMessage };
+    }
+  }, [dispatch, loginApi, fetchUser, router]);
 
   const register = useCallback(async (userData: Partial<RegisterUser>) => {
     try {
@@ -95,10 +90,11 @@ export const useAuth = () => {
     }
   }, [dispatch, registerApi, router]);
 
+
   const logout = useCallback(async () => {
     try {
       await toast.promise(
-        logoutApi().unwrap(),
+        logoutApi().unwrap();
         {
           loading: 'Logging out...',
           success: 'Logged out successfully',
@@ -106,7 +102,8 @@ export const useAuth = () => {
         }
       );
     } finally {
-      dispatch(logoutAction());
+      dispatch(logout());
+      dispatch(api.util.resetApiState());
       router.push('/login');
     }
   }, [dispatch, logoutApi, router]);
@@ -231,26 +228,22 @@ export const useAuth = () => {
   }, [dispatch, socialAuthApi, router]);
 
   const loadUser = useCallback(async () => {
-    if (!authState.accessToken) return { success: false }
-
+    if (!authState.isAuthenticated) return { success: false };
+    
     try {
-      const response = await fetchUser().unwrap()
-      dispatch(setUser(response))
-      return { success: true, user: response }
+      const user = await fetchUser().unwrap();
+      dispatch(setUser(user));
+      return { success: true };
     } catch (error) {
-      const refreshResult = await refreshTokens()
-      if (refreshResult.success) {
-        try {
-          const response = await fetchUser().unwrap()
-          dispatch(setUser(response))
-          return { success: true, user: response }
-        } catch (error) {
-          return { success: false }
-        }
-      }
-      return { success: false }
+      dispatch(logout());
+      return { success: false };
     }
-  }, [authState.accessToken, dispatch, fetchUser, refreshTokens])
+  }, [authState.isAuthenticated, dispatch, fetchUser]);
+
+    useEffect(() => {
+      loadUser();
+    }, [loadUser]);
+
 
   return {
     ...authState,

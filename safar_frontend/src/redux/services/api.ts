@@ -24,17 +24,11 @@ import { logout, setTokens } from '../features/auth/auth-slice';
 const mutex = new Mutex();
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: `${process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000'}/api`,
-  credentials: 'include',
-  prepareHeaders: (headers, { getState }) => {
-    const { auth } = getState() as RootState;
-    
-    headers.set('Authorization', `Api-Key ${process.env.NEXT_PUBLIC_API_KEY || 'Bx50OEvF.zYCjhJvybRgERHVYUdsxivVw4g59NlgX'}`);
-    
-    if (auth.accessToken) {
-      headers.set('Authorization', `Bearer ${auth.accessToken}`);
-    }
-    
+  baseUrl: `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api`,
+  credentials: 'include', // This is crucial for cookies
+  prepareHeaders: (headers) => {
+    // Since tokens are in cookies, we only need the API key header
+    headers.set('Authorization', `Api-Key ${process.env.NEXT_PUBLIC_API_KEY}`);
     return headers;
   },
 });
@@ -44,49 +38,37 @@ export const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, Fetch
   api,
   extraOptions,
 ) => {
-  await mutex.waitForUnlock()
-  let result = await baseQuery(args, api, extraOptions)
+  let result = await baseQuery(args, api, extraOptions);
 
-  if (result.error && result.error.status === 401) {
-    if (!mutex.isLocked()) {
-      const release = await mutex.acquire()
+  if (result.error?.status === 403) {
+    // Handle CSRF or other cookie-related errors
+    api.dispatch(logout());
+    window.location.reload(); // Force full reset
+  }
+  
+  if (result.error?.status === 401) {
+    // Attempt refresh when receiving 401
+    const refreshResult = await baseQuery(
+      {
+        url: '/auth/jwt/refresh/',
+        method: 'POST',
+        credentials: 'include',
+      },
+      api,
+      extraOptions,
+    );
 
-      try {
-        const { refreshToken } = (api.getState() as RootState).auth
-        if (refreshToken) {
-          const refreshResult = await baseQuery(
-            {
-              url: "/auth/jwt/refresh/",
-              method: "POST",
-              body: { refresh: refreshToken },
-            },
-            api,
-            extraOptions,
-          )
-
-          if (refreshResult.data) {
-            const { access } = refreshResult.data as { access: string }
-            api.dispatch(setTokens({ access, refresh: refreshToken }))
-
-            result = await baseQuery(args, api, extraOptions)
-          } else {
-            api.dispatch(logout())
-          }
-        } else {
-          api.dispatch(logout())
-        }
-      } finally {
-        release()
-      }
+    if (refreshResult.data) {
+      // Retry original request with new tokens (which are in cookies)
+      result = await baseQuery(args, api, extraOptions);
     } else {
-      await mutex.waitForUnlock()
-      result = await baseQuery(args, api, extraOptions)
+      // Refresh failed - clear auth state
+      api.dispatch(logout());
     }
   }
 
-  return result
-}
-
+  return result;
+};
 
 export const api = createApi({
   reducerPath: 'api',
@@ -104,7 +86,8 @@ export const api = createApi({
     'Payment',
     'Message',
     'Notification',
-    'Auth'
+    'Auth',
+    'User'
   ],
   endpoints: (builder) => ({
     // Authentication endpoints
@@ -112,8 +95,8 @@ export const api = createApi({
         query: (credentials) => ({
           url: '/auth/jwt/create/',
           method: 'POST',
-          
           body: credentials,
+          credentials: 'include',
         }),
         invalidatesTags: ['Auth'],
       }),
@@ -180,12 +163,16 @@ export const api = createApi({
         query: () => ({
           url: '/auth/logout/',
           method: 'POST',
+          credentials: 'include',
         }),
         invalidatesTags: ['Auth'],
       }),
       
       getUser: builder.query<User, void>({
-        query: () => '/auth/users/me/',
+        query: () => ({
+          url: '/auth/users/me/',
+          credentials: 'include',
+        }),
         providesTags: ['Auth'],
       }),
       

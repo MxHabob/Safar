@@ -1,5 +1,11 @@
 import { Booking, Message ,Notification, User} from "./types";
 
+
+export interface ErrorPayload {
+  message: string;
+  code?: 'AUTH' | 'NETWORK' | 'VALIDATION' | 'UNKNOWN';
+  retryable?: boolean;
+}
 export type WebSocketMessageType = 
   | "initial_data" 
   | "booking_update" 
@@ -36,10 +42,6 @@ export interface NewNotificationPayload {
   type: string;
   message: string;
   created_at: string;
-}
-
-export interface ErrorPayload {
-  message: string;
 }
 
 export type WebSocketEventHandlers = {
