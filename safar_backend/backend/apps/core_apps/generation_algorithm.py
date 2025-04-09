@@ -570,6 +570,7 @@ class BoxGenerator:
         Create the Box model with full itinerary structure
         """
         from apps.safar.models import Box, BoxItineraryDay, BoxItineraryItem
+        from decimal import Decimal
     
         metadata = {
             'generated_at': timezone.now().isoformat(),
