@@ -7,6 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from apps.core_apps.general import BaseModel
 from phonenumber_field.modelfields import PhoneNumberField
 from apps.geographic_data.models import Country, Region, City
+from apps.core_apps.utility import validate_metadata
 
 def upload_avatar(instance, filename):
     random_uuid = uuid.uuid4().hex
@@ -133,6 +134,11 @@ class UserProfile(BaseModel):
     notification_push_token = models.CharField(max_length=255, null=True, blank=True)
     wants_push_notifications = models.BooleanField(default=True)
     wants_sms_notifications = models.BooleanField(default=False)
+    metadata = models.JSONField(
+        default=dict,
+        blank=True,
+        validators=[validate_metadata]
+    )
 
     class Meta:
         verbose_name = _("User Profile")
