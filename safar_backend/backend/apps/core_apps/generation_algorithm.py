@@ -569,7 +569,7 @@ class BoxGenerator:
         """
         Create the Box model with full itinerary structure
         """
-        from apps.safar.models import Box, BoxItineraryDay, BoxItineraryItem
+        from apps.safar.models import Box, BoxItineraryDay, BoxItineraryItem,Category
         from decimal import Decimal
     
         default_category, _ = Category.objects.get_or_create(
