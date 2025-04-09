@@ -570,7 +570,16 @@ class BoxGenerator:
         Create the Box model with full itinerary structure
         """
         from apps.safar.models import Box, BoxItineraryDay, BoxItineraryItem
-        
+    
+        metadata = {
+            'generated_at': timezone.now().isoformat(),
+            'user_id': str(self.user.id),  # UUID needs string conversion
+            'search_query': self.search_query,
+            'discounts': {
+                k: float(v) if isinstance(v, Decimal) else v  # Decimal conversion
+                for k, v in pricing['discounts'].items()
+            }
+        }
         # Create the base box
         box = Box.objects.create(
             name=f"Personalized {context['intent']['type'].title()} Experience",
@@ -585,12 +594,7 @@ class BoxGenerator:
             is_customizable=True,
             max_group_size=context['intent']['group_size'],
             tags=self._generate_box_tags(context),
-            metadata={
-                'generated_at': timezone.now(),
-                'user_id': self.user.id,
-                'search_query': self.search_query,
-                'discounts': pricing['discounts']
-            }
+            metadata=metadata,
         )
         
         # Add places and experiences

@@ -348,7 +348,7 @@ class Command(BaseCommand):
             gender=random.choice(["male", "female", "prefer_not_to_say"]),
             travel_interests=travel_interests,
             privacy_consent=True,
-            consent_date=timezone.now()
+            consent_date=timezone.now(),
             metadata=metadata
         )
 
