@@ -24,8 +24,6 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
   const router = useRouter()
   const { user, isAuthenticated, isLoading, logout } = useAuth()
 
-  console.log("User : ", { user, isAuthenticated, isLoading })
-
   if (isLoading) {
     return (
       <div className="flex items-center space-x-2">
@@ -82,7 +80,7 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
           <>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user.username || "User"}</p>
+                <p className="text-sm font-medium leading-none">{user.first_name || "User"}</p>
                 <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
               </div>
             </DropdownMenuLabel>

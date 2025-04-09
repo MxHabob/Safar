@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { 
@@ -14,6 +14,7 @@ import {
   useResendActivationEmailMutation,
   useRequestPasswordResetMutation,
   useConfirmPasswordResetMutation,
+  api,
 } from '@/redux/services/api';
 import { RootState } from '@/redux/store';
 import { 
@@ -22,7 +23,6 @@ import {
   loginFailure, 
   logout as logoutAction,
   setUser,
-  setTokens,
 } from '@/redux/features/auth/auth-slice';
 import { RegisterUser } from '../types/types';
 import { useRouter } from 'next/navigation';
@@ -42,31 +42,37 @@ export const useAuth = () => {
   const [requestPasswordResetApi, { isLoading: isRequestPasswordResetLoading }] = useRequestPasswordResetMutation();
   const [confirmPasswordResetApi, { isLoading: isConfirmPasswordResetLoading }] = useConfirmPasswordResetMutation();
   
-  const { refetch: fetchUser, isLoading: isUserLoading } = useGetUserQuery(undefined, {
-    skip: !authState.accessToken,
-  })
+  const { data: userData, refetch: fetchUser, isLoading: isUserLoading } = useGetUserQuery();
 
-  const login = useCallback(async (credentials: { email: string; password: string }) => {
-    try {
-      dispatch(loginStart());
-      
-      // 1. Login to set cookies
-      await loginApi(credentials).unwrap();
-      
-      // 2. Fetch user data
-      const user = await fetchUser().unwrap();
-      
-      // 3. Update state
-      dispatch(loginSuccess(user));
-      
-      router.push('/');
-      return { success: true };
-    } catch (error: any) {
-      const errorMessage = error.data?.detail || "Login failed";
-      dispatch(loginFailure(errorMessage));
-      return { success: false, error: errorMessage };
-    }
-  }, [dispatch, loginApi, fetchUser, router]);
+
+  const login = useCallback(
+    async (credentials: { email: string; password: string }) => {
+      try {
+        dispatch(loginStart())
+
+        // First, login to get the tokens (stored in cookies)
+        await toast.promise(loginApi(credentials).unwrap(), {
+          loading: "Logging in...",
+          success: "Logged in successfully!",
+          error: (error) => error.data?.detail || "Login failed",
+        })
+
+        // Then fetch the user data
+        const user = await fetchUser().unwrap()
+        console.log("user : " , user)
+        dispatch(loginSuccess(user))
+
+        router.push("/")
+        return { success: true }
+      } catch (error: any) {
+        const errorMessage = error.data?.detail || "Login failed"
+        dispatch(loginFailure(errorMessage))
+        toast.error(errorMessage)
+        return { success: false, error: errorMessage }
+      }
+    },
+    [dispatch, loginApi, fetchUser, router],
+  )
 
   const register = useCallback(async (userData: Partial<RegisterUser>) => {
     try {
@@ -76,9 +82,7 @@ export const useAuth = () => {
         {
           loading: 'Creating your account...',
           success: 'Account created! Please check your email to verify your account.',
-          error: (error) => {
-            return error.data?.detail || 'Registration failed';
-          },
+          error: (error) => error.data?.detail || 'Registration failed',
         }
       );
       router.push('/login');
@@ -86,23 +90,25 @@ export const useAuth = () => {
     } catch (error: any) {
       const errorMessage = error.data?.detail || 'Registration failed';
       dispatch(loginFailure(errorMessage));
+      toast.error(errorMessage);
       return { success: false, error: errorMessage };
     }
   }, [dispatch, registerApi, router]);
 
-
   const logout = useCallback(async () => {
     try {
       await toast.promise(
-        logoutApi().unwrap();
+        logoutApi().unwrap(),
         {
           loading: 'Logging out...',
           success: 'Logged out successfully',
           error: 'Failed to logout',
         }
       );
+    } catch (error) {
+      toast.error('Failed to logout');
     } finally {
-      dispatch(logout());
+      dispatch(logoutAction());
       dispatch(api.util.resetApiState());
       router.push('/login');
     }
@@ -115,15 +121,14 @@ export const useAuth = () => {
         {
           loading: 'Verifying your email...',
           success: 'Email verified successfully! You can now login.',
-          error: (error) => {
-            return error.data?.detail || 'Email verification failed';
-          },
+          error: (error) => error.data?.detail || 'Email verification failed',
         }
       );
-      // router.push('/login');
       return { success: true };
     } catch (error: any) {
-      return { success: false, error: error.data?.detail || 'Email verification failed' };
+      const errorMessage = error.data?.detail || 'Email verification failed';
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
     }
   }, [verifyEmailApi]);
 
@@ -134,14 +139,14 @@ export const useAuth = () => {
         {
           loading: 'Sending activation email...',
           success: 'Activation email sent! Please check your inbox.',
-          error: (error) => {
-            return error.data?.detail || 'Failed to send activation email';
-          },
+          error: (error) => error.data?.detail || 'Failed to send activation email',
         }
       );
       return { success: true };
     } catch (error: any) {
-      return { success: false, error: error.data?.detail || 'Failed to send activation email' };
+      const errorMessage = error.data?.detail || 'Failed to send activation email';
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
     }
   }, [resendActivationEmailApi]);
 
@@ -152,14 +157,14 @@ export const useAuth = () => {
         {
           loading: 'Sending password reset email...',
           success: 'Password reset email sent! Please check your inbox.',
-          error: (error) => {
-            return error.data?.detail || 'Failed to send password reset email';
-          },
+          error: (error) => error.data?.detail || 'Failed to send password reset email',
         }
       );
       return { success: true };
     } catch (error: any) {
-      return { success: false, error: error.data?.detail || 'Failed to send password reset email' };
+      const errorMessage = error.data?.detail || 'Failed to send password reset email';
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
     }
   }, [requestPasswordResetApi]);
 
@@ -170,34 +175,17 @@ export const useAuth = () => {
         {
           loading: 'Resetting your password...',
           success: 'Password reset successfully! You can now login with your new password.',
-          error: (error) => {
-            return error.data?.detail || 'Password reset failed';
-          },
+          error: (error) => error.data?.detail || 'Password reset failed',
         }
       );
       router.push('/login');
       return { success: true };
     } catch (error: any) {
-      return { success: false, error: error.data?.detail || 'Password reset failed' };
+      const errorMessage = error.data?.detail || 'Password reset failed';
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
     }
   }, [confirmPasswordResetApi, router]);
-
-  const refreshTokens = useCallback(async () => {
-    if (!authState.refreshToken) {
-      dispatch(logoutAction())
-      return { success: false, error: "No refresh token available" }
-    }
-
-    try {
-      const response = await refreshTokenApi({ refresh: authState.refreshToken }).unwrap()
-      dispatch(setTokens({ access: response.access, refresh: authState.refreshToken }))
-      return { success: true }
-    } catch (error) {
-      dispatch(logoutAction())
-      toast.error("Session expired. Please login again.")
-      return { success: false, error: "Session expired" }
-    }
-  }, [authState.refreshToken, dispatch, refreshTokenApi])
 
   const socialLogin = useCallback(async (provider: string, code: string) => {
     try {
@@ -207,25 +195,21 @@ export const useAuth = () => {
         {
           loading: 'Logging in with social account...',
           success: 'Logged in successfully!',
-          error: (error) => {
-            return error.data?.detail || 'Social login failed';
-          },
+          error: (error) => error.data?.detail || 'Social login failed',
         }
       );
-      dispatch(loginSuccess(response));
       
-      if (response) {
-        dispatch(setUser(response));
-      }
-      
+      const user = await fetchUser().unwrap();
+      dispatch(loginSuccess(user));
       router.push('/');
       return { success: true };
     } catch (error: any) {
       const errorMessage = error.data?.detail || 'Social login failed';
       dispatch(loginFailure(errorMessage));
+      toast.error(errorMessage);
       return { success: false, error: errorMessage };
     }
-  }, [dispatch, socialAuthApi, router]);
+  }, [dispatch, socialAuthApi, fetchUser, router]);
 
   const loadUser = useCallback(async () => {
     if (!authState.isAuthenticated) return { success: false };
@@ -235,14 +219,11 @@ export const useAuth = () => {
       dispatch(setUser(user));
       return { success: true };
     } catch (error) {
-      dispatch(logout());
+      dispatch(logoutAction());
       return { success: false };
     }
   }, [authState.isAuthenticated, dispatch, fetchUser]);
 
-    useEffect(() => {
-      loadUser();
-    }, [loadUser]);
 
 
   return {
@@ -254,7 +235,6 @@ export const useAuth = () => {
     resendActivationEmail,
     requestPasswordReset,
     confirmPasswordReset,
-    refreshTokens,
     socialLogin,
     loadUser,
     isLoading: isLoginLoading || isRegisterLoading || isLogoutLoading || 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Base Types
 export interface BaseModel {
   id: string;
@@ -6,47 +7,123 @@ export interface BaseModel {
   is_deleted: boolean;
 }
 
+
+export interface PointGeometry {
+  type: 'Point';
+  coordinates: [number, number];
+}
+
+export interface PolygonGeometry {
+  type: 'Polygon';
+  coordinates: [number, number][][];
+}
+
+export interface MultiPolygonGeometry {
+  type: 'MultiPolygon';
+  coordinates: [number, number][][][];
+}
+
+export interface Country extends BaseModel {
+  name: string;
+  iso_code?: string;
+  iso3_code?: string;
+  phone_code?: string;
+  capital?: string;
+  currency?: string;
+  languages: string[];
+  geometry?: MultiPolygonGeometry;
+  centroid?: PointGeometry;
+  bounding_box?: PolygonGeometry;
+}
+
+export interface Region extends BaseModel {
+  country: Country | string; // Can be full object or just ID
+  name: string;
+  code?: string;
+  admin_level: number;
+  geometry?: MultiPolygonGeometry;
+  centroid?: PointGeometry;
+  bounding_box?: PolygonGeometry;
+}
+
+export interface City extends BaseModel {
+  country: Country | string;
+  region?: Region | string | null;
+  name: string;
+  name_ascii: string;
+  timezone?: string;
+  population?: number;
+  elevation?: number;
+  feature_code?: string;
+  geometry: PointGeometry;
+  bounding_box?: PolygonGeometry;
+}
+
 // Authentication Types
 export interface LoginResponse {
   access: string;
   refresh: string;
 }
 
+export interface RegisterUser {
+  email: string;
+  password: string;
+  re_password: string;
+  first_name?: string;
+  last_name?: string;
+}
+
 export interface SocialAuthResponse {
   access: string;
   refresh: string;
-  user : User;
+  user: User;
 }
 
 export interface UserProfile extends BaseModel {
-  phone_number?: string;
-  gender: 'male' | 'female' | 'prefer_not_to_say';
+  user: string; // User ID
   avatar?: string;
   bio?: string;
-  expo_push_token?: string;
-  country?: string;
-  region?: string;
-  city?: string;
+  phone_number?: string;
+  location?: PointGeometry;
+  country?: Country;
+  region?: Region;
+  city?: City;
   postal_code?: string;
   address?: string;
   date_of_birth?: string;
+  gender: 'male' | 'female' | 'prefer_not_to_say';
+  travel_history: any[];
+  travel_interests: any[];
+  language_proficiency: Record<string, unknown>;
+  preferred_countries: Country[];
+  last_active?: string;
+  search_history: any[];
+  privacy_consent: boolean;
+  consent_date?: string;
+  notification_push_token?: string;
+  wants_push_notifications: boolean;
+  wants_sms_notifications: boolean;
 }
 
 export interface User extends BaseModel {
   email: string;
-  role?: 'guest' | 'owner' | 'organization' | 'developer';
+  username?: string;
   first_name?: string;
   last_name?: string;
-  username?: string;
-  is_online?: boolean;
+  language: string;
+  timezone: string;
+  preferred_language: string;
+  preferred_currency: string;
+  is_online: boolean;
   is_active: boolean;
+  is_staff: boolean;
+  is_2fa_enabled: boolean;
+  role: 'guest' | 'owner' | 'organization' | 'developer';
+  is_profile_public: boolean;
+  following: string[]; // Array of user IDs
+  points: number;
+  membership_level: 'bronze' | 'silver' | 'gold';
   profile?: UserProfile;
-}
-
-
-export interface RegisterUser extends User {
-  password: string;
-  re_password: string;
 }
 
 // Category Types

@@ -1,6 +1,5 @@
 import { BaseQueryFn, createApi, FetchArgs, fetchBaseQuery, FetchBaseQueryError } from '@reduxjs/toolkit/query/react';
 import { Mutex } from 'async-mutex';
-import type { RootState } from '../store';
 import type {
   Category,
   Discount,
@@ -16,59 +15,84 @@ import type {
   Notification,
   LoginResponse,
   User,
-  SocialAuthResponse,
   PaginatedResponse
 } from '@/redux/types/types';
-import { logout, setTokens } from '../features/auth/auth-slice';
+import { logout } from '../features/auth/auth-slice';
 
-const mutex = new Mutex();
+const mutex = new Mutex()
 
+// Base query with the API URL
 const baseQuery = fetchBaseQuery({
   baseUrl: `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api`,
-  credentials: 'include', // This is crucial for cookies
+  credentials: "include",
   prepareHeaders: (headers) => {
-    // Since tokens are in cookies, we only need the API key header
-    headers.set('Authorization', `Api-Key ${process.env.NEXT_PUBLIC_API_KEY}`);
-    return headers;
-  },
-});
+    // Add API key if needed
+    if (process.env.NEXT_PUBLIC_API_KEY) {
+      headers.set("Authorization", `Api-Key ${process.env.NEXT_PUBLIC_API_KEY}`)
+    }
 
+    const csrfToken = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("csrftoken="))
+    ?.split("=")[1]
+
+  if (csrfToken) {
+    headers.set("X-CSRFToken", csrfToken)
+  }
+    return headers
+  },
+})
+
+// Enhanced query with token refresh logic
 export const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
   args,
   api,
   extraOptions,
 ) => {
-  let result = await baseQuery(args, api, extraOptions);
+  // Wait if a refresh is already in progress
+  await mutex.waitForUnlock()
 
-  if (result.error?.status === 403) {
-    // Handle CSRF or other cookie-related errors
-    api.dispatch(logout());
-    window.location.reload(); // Force full reset
-  }
-  
+  let result = await baseQuery(args, api, extraOptions)
+
   if (result.error?.status === 401) {
-    // Attempt refresh when receiving 401
-    const refreshResult = await baseQuery(
-      {
-        url: '/auth/jwt/refresh/',
-        method: 'POST',
-        credentials: 'include',
-      },
-      api,
-      extraOptions,
-    );
+    // Try to get a new token only if another refresh isn't in progress
+    if (!mutex.isLocked()) {
+      const release = await mutex.acquire()
 
-    if (refreshResult.data) {
-      // Retry original request with new tokens (which are in cookies)
-      result = await baseQuery(args, api, extraOptions);
+      try {
+        // Try to refresh the token
+        const refreshResult = await baseQuery(
+          { url: "/auth/jwt/refresh/", method: "POST", credentials: "include" },
+          api,
+          extraOptions,
+        )
+
+        if (refreshResult.data) {
+          // Retry the original request with the new token
+          result = await baseQuery(args, api, extraOptions)
+        } else {
+          // If refresh fails, log the user out
+          api.dispatch(logout())
+        }
+      } finally {
+        // Release the mutex
+        release()
+      }
     } else {
-      // Refresh failed - clear auth state
-      api.dispatch(logout());
+      // Wait for the mutex to be released (another refresh is in progress)
+      await mutex.waitForUnlock()
+      // Retry the request
+      result = await baseQuery(args, api, extraOptions)
     }
   }
 
-  return result;
-};
+  if (result.error?.status === 403) {
+    // Handle CSRF or other cookie-related errors
+    api.dispatch(logout())
+  }
+
+  return result
+}
 
 export const api = createApi({
   reducerPath: 'api',
@@ -92,64 +116,62 @@ export const api = createApi({
   endpoints: (builder) => ({
     // Authentication endpoints
     login: builder.mutation<LoginResponse, { email: string; password: string }>({
-        query: (credentials) => ({
-          url: '/auth/jwt/create/',
-          method: 'POST',
-          body: credentials,
-          credentials: 'include',
-        }),
-        invalidatesTags: ['Auth'],
+      query: (credentials) => ({
+        url: "/auth/jwt/create/",
+        method: "POST",
+        body: credentials,
       }),
+      invalidatesTags: ["User"],
+    }),
       
-      register: builder.mutation<User, Partial<User>>({
-        query: (userData) => ({
-          url: '/auth/users/',
-          method: 'POST',
-          body: userData,
-        }),
-        invalidatesTags: ['Auth'],
+    register: builder.mutation<User, Partial<User>>({
+      query: (userData) => ({
+        url: "/auth/users/",
+        method: "POST",
+        body: userData,
       }),
+      invalidatesTags: ["Auth"],
+    }),
       
-      verifyEmail: builder.mutation<void, { uid: string; token: string }>({
-        query: ({ uid, token }) => ({
-          url: '/auth/users/activation/',
-          method: 'POST',
-          body: { uid, token },
-        }),
-        invalidatesTags: ['Auth'],
+    verifyEmail: builder.mutation<void, { uid: string; token: string }>({
+      query: ({ uid, token }) => ({
+        url: "/auth/users/activation/",
+        method: "POST",
+        body: { uid, token },
       }),
+      invalidatesTags: ["Auth"],
+    }),
       
-      resendActivationEmail: builder.mutation<void, { email: string }>({
-        query: (email) => ({
-          url: '/auth/users/resend_activation/',
-          method: 'POST',
-          body: email,
-        }),
+    resendActivationEmail: builder.mutation<void, { email: string }>({
+      query: (email) => ({
+        url: "/auth/users/resend_activation/",
+        method: "POST",
+        body: email,
       }),
+    }),
       
-      requestPasswordReset: builder.mutation<void, { email: string }>({
-        query: (email) => ({
-          url: '/auth/users/reset_password/',
-          method: 'POST',
-          body: email,
-        }),
+    requestPasswordReset: builder.mutation<void, { email: string }>({
+      query: (email) => ({
+        url: "/auth/users/reset_password/",
+        method: "POST",
+        body: email,
       }),
+    }),
       
-      confirmPasswordReset: builder.mutation<void, { uid: string; token: string; new_password: string }>({
-        query: (data) => ({
-          url: '/auth/users/reset_password_confirm/',
-          method: 'POST',
-          body: data,
-        }),
+    confirmPasswordReset: builder.mutation<void, { uid: string; token: string; new_password: string }>({
+      query: (data) => ({
+        url: "/auth/users/reset_password_confirm/",
+        method: "POST",
+        body: data,
       }),
+    }),
       
-      refreshToken: builder.mutation<{ access: string }, { refresh: string }>({
-        query: (refreshToken) => ({
-          url: '/auth/jwt/refresh/',
-          method: 'POST',
-          body: refreshToken,
-        }),
+    refreshToken: builder.mutation<void, void>({
+      query: () => ({
+        url: "/auth/jwt/refresh/",
+        method: "POST",
       }),
+    }),
       
       verifyToken: builder.mutation<void, { token: string }>({
         query: (token) => ({
@@ -161,28 +183,26 @@ export const api = createApi({
       
       logout: builder.mutation<void, void>({
         query: () => ({
-          url: '/auth/logout/',
-          method: 'POST',
-          credentials: 'include',
+          url: "/auth/logout/",
+          method: "POST",
         }),
-        invalidatesTags: ['Auth'],
+        invalidatesTags: ["User"],
       }),
       
       getUser: builder.query<User, void>({
         query: () => ({
-          url: '/auth/users/me/',
-          credentials: 'include',
+          url: "/auth/users/me/",
         }),
-        providesTags: ['Auth'],
+        providesTags: ["User"],
       }),
       
       updateUser: builder.mutation<User, Partial<User>>({
         query: (userData) => ({
-          url: '/auth/users/me/',
-          method: 'PATCH',
+          url: "/auth/users/me/",
+          method: "PATCH",
           body: userData,
         }),
-        invalidatesTags: ['Auth'],
+        invalidatesTags: ["User"],
       }),
       
       deleteUser: builder.mutation<void, { current_password: string }>({
@@ -191,20 +211,20 @@ export const api = createApi({
           method: 'DELETE',
           body: data,
         }),
-        invalidatesTags: ['Auth'],
+        invalidatesTags: ['User'],
       }),
       
-      socialAuth: builder.mutation<SocialAuthResponse, { provider: string; code: string }>({
+      socialAuth: builder.mutation<LoginResponse, { provider: string; code: string }>({
         query: ({ provider, code }) => ({
           url: `/auth/o/${provider}/`,
-          method: 'POST',
+          method: "POST",
           body: { code },
           headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            Accept: "application/json",
+            "Content-Type": "application/json",
           },
         }),
-        invalidatesTags: ['Auth'],
+        invalidatesTags: ["User"],
       }),
 
       getCategories: builder.query<PaginatedResponse<Category>, { page?: number; page_size?: number }>({

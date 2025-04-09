@@ -33,7 +33,7 @@ COPY . .
 EXPOSE 8000
 
 # Command to run migrations, create superuser, and start Daphne and download geographic data
-CMD sh -c "\
+CMD ["sh", "-c", "\
     echo 'Running migrations...' && \
     python manage.py makemigrations && \
     python manage.py migrate && \
@@ -43,7 +43,7 @@ CMD sh -c "\
     python manage.py shell -c \"from apps.authentication.models import User; User.objects.filter(email='admin@safar.com').exists() or User.objects.create_superuser(email='admin@safar.com', password='admin')\" && \
     # echo 'Downloading essential geographic data...' && \
     # python manage.py import_geodata && \
-    # echo 'Generate a fake data...' && \
-    # python manage.py generate_fake_data --users 50 --places 20 --experiences 15 --flights 10 --bookings 30 && \
+    echo 'Generate a fake data...' && \
+    python manage.py generate_fake_data --users 50 --places 20 --experiences 15 --flights 10 --bookings 30 && \
     echo 'Starting Daphne...' && \
-    daphne -b 0.0.0.0 -p 8000 core.asgi:application"
+    daphne -b 0.0.0.0 -p 8000 core.asgi:application"]

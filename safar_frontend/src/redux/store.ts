@@ -14,15 +14,18 @@ const rootReducer = combineReducers({
   scroll: scrollReducer,
 })
 
-const persistConfig = {
+export const persistConfig = {
   key: "root",
   storage,
   whitelist: ["auth"],
+  blacklist: [api.reducerPath],
   version: 1,
 }
 
+// Create persisted reducer
 const persistedReducer = persistReducer(persistConfig, rootReducer)
 
+// Create store factory function
 export const makeStore = () => {
   return configureStore({
     reducer: persistedReducer,
@@ -36,9 +39,11 @@ export const makeStore = () => {
   })
 }
 
+// Define types
 export type AppStore = ReturnType<typeof makeStore>
 export type RootState = ReturnType<AppStore["getState"]>
 export type AppDispatch = AppStore["dispatch"]
 
+// Create store instance
 export const store = makeStore()
 export const persistor = persistStore(store)

@@ -1,4 +1,6 @@
-import ProfilePageContent from "@/components/section/settings/profile";
+import { ProfilePageContent } from "@/components/section/settings/profile";
+import { PlayerCard } from "@/components/section/settings/profile/user-card";
+
 
 
 type Props = {
@@ -7,9 +9,10 @@ type Props = {
   }
   export default async function ProfilePage({  params  }: Props) {
     return (
-      <div >
-      <ProfilePageContent />
-       </div>
+      <div className=" w-[50vh]] h-[50vh] bg-gradient-to-b  flex flex-col ">
+      {/* <ProfilePageContent/> */}
+      <PlayerCard/>
+      </div>
   );
 }
  
