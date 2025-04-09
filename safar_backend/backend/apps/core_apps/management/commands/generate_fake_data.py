@@ -1,5 +1,6 @@
 import random
 from datetime import timedelta
+from django.utils import timezone
 from django.core.management.base import BaseCommand
 from django.contrib.gis.geos import Point
 from django.utils import timezone
@@ -153,11 +154,11 @@ class Command(BaseCommand):
         # Create sample cities if none exist
         if not City.objects.exists():
             cities_data = [
-                {"name": "Los Angeles", "location": Point(-118.2437, 34.0522)},
-                {"name": "San Francisco", "location": Point(-122.4194, 37.7749)},
-                {"name": "New York", "location": Point(-74.0060, 40.7128)},
-                {"name": "Chicago", "location": Point(-87.6298, 41.8781)},
-                {"name": "Miami", "location": Point(-80.1918, 25.7617)}
+                {"name": "Los Angeles", "geometry": Point(-118.2437, 34.0522)},
+                {"name": "San Francisco", "geometry": Point(-122.4194, 37.7749)},
+                {"name": "New York", "geometry": Point(-74.0060, 40.7128)},
+                {"name": "Chicago", "geometry": Point(-87.6298, 41.8781)},
+                {"name": "Miami", "geometry": Point(-80.1918, 25.7617)}
             ]    
         
             cities = []
@@ -166,7 +167,7 @@ class Command(BaseCommand):
                     name=city_data["name"],
                     region=region,
                     country=country,
-                    location=city_data["location"]
+                    geometry=city_data["geometry"]
                 )
                 cities.append(city)
                 self.stdout.write(self.style.SUCCESS(f'Created city: {city.name}'))
@@ -323,11 +324,11 @@ class Command(BaseCommand):
 
     def create_places(self, count, categories, users, media_items, cities):
         """Generate various accommodation places"""
-        place_categories = categories.filter(name__in=["Hotel", "Apartment", "Villa"])
+        place_categories = [c for c in categories if c.name in ["Hotel", "Apartment", "Villa"]]
         owners = [u for u in users if u.role in ["owner", "organization"]]
         places = []
 
-        if not place_categories.exists():
+        if not place_categories:
             self.stdout.write(self.style.ERROR('No place categories found'))
             return places
         
@@ -351,7 +352,7 @@ class Command(BaseCommand):
                     owner=random.choice(owners),
                     name=f"{category.name} {fake.company_suffix()}",
                     description='\n'.join(fake.paragraphs(nb=2)),
-                    location=city.location,
+                    location=city.geometry,
                     country=city.country,
                     region=city.region,
                     city=city,
@@ -398,7 +399,7 @@ class Command(BaseCommand):
                     owner=random.choice(owners),
                     title=f"{category.name} Experience: {fake.catch_phrase()}",
                     description='\n'.join(fake.paragraphs(nb=3)),
-                    location=city.location,
+                    location=city.geometry,
                     price_per_person=round(random.uniform(25, 300), 2),
                     currency='USD',
                     duration=random.choice([60, 90, 120, 180, 240]),
@@ -444,15 +445,22 @@ class Command(BaseCommand):
                 airline, code, url = random.choice(airlines)
                 departure_city = random.choice(cities)
                 arrival_city = random.choice([c for c in cities if c != departure_city])
+                
+                # Generate naive datetime
                 departure_time = fake.future_datetime(end_date="+60d")
                 duration = random.randint(60, 720)  # 1-12 hours
                 arrival_time = departure_time + timedelta(minutes=duration)
                 
+                # Make datetime objects timezone-aware using timezone.get_current_timezone()
+                departure_time = timezone.make_aware(departure_time, timezone.get_current_timezone())
+                arrival_time = timezone.make_aware(arrival_time, timezone.get_current_timezone())
+                
+                # Create the flight
                 flight = Flight.objects.create(
                     airline=airline,
                     flight_number=f"{code}{random.randint(1000, 9999)}",
-                    departure_airport=departure_city.name[:3].upper(),
-                    arrival_airport=arrival_city.name[:3].upper(),
+                    departure_airport=departure_city.name[:3].upper(),  # Assuming 'name' is the correct field
+                    arrival_airport=arrival_city.name[:3].upper(),      # Assuming 'name' is the correct field
                     airline_url=url,
                     arrival_city=arrival_city.name,
                     departure_time=departure_time,
@@ -469,20 +477,21 @@ class Command(BaseCommand):
                 
                 flights.append(flight)
                 self.stdout.write(f'Created flight: {flight.airline} {flight.flight_number}')
-                
+            
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f'Error creating flight: {str(e)}'))
         
         return flights
 
+# In the create_boxes method:
     def create_boxes(self, count, categories, users, media_items, places, experiences, cities):
         """Generate curated travel boxes/packages"""
         boxes = []
-        box_category = categories.filter(name="Package").first()
+        box_category = next((c for c in categories if c.name == 'Package'), None)
 
         if not box_category:
-                self.stdout.write(self.style.ERROR('Package category not found - skipping boxes'))
-                return boxes
+            self.stdout.write(self.style.ERROR('Package category not found - skipping boxes'))
+            return boxes
         
         owners = User.objects.filter(role__in=["owner", "organization"])
         if not owners.exists():
@@ -494,8 +503,13 @@ class Command(BaseCommand):
                 city = random.choice(cities)
                 available_places = Place.objects.filter(city=city) if city else Place.objects.all()
                 available_experiences = Experience.objects.filter(city=city) if city else Experience.objects.all()
+                
+                # Calculate dates for the box
+                start_date = fake.future_date(end_date="+60d")
+                end_date = start_date + timedelta(days=random.randint(3, 10))
+                
                 box = Box.objects.create(
-                    category=random.choice(box_category),
+                    category=box_category,  # Fixed: Use the box_category directly
                     name=f"Travel Package: {fake.city()} Adventure",
                     description='\n'.join(fake.paragraphs(nb=3)),
                     total_price=round(random.uniform(500, 5000), 2),
@@ -503,12 +517,16 @@ class Command(BaseCommand):
                     country=city.country,
                     city=city,
                     duration_days=random.randint(3, 10),
+                    duration_hours=random.randint(0, 23),  # Added
+                    start_date=start_date,  # Added
+                    end_date=end_date,  # Added
                     is_customizable=random.choice([True, False]),
-                    max_group_size=random.choice([2, 4, 6, 8])
+                    max_group_size=random.choice([2, 4, 6, 8]),
+                    tags=random.sample(["adventure", "luxury", "family", "romantic", "budget"], k=2)  # Added
                 )
                 
                 # Create itinerary
-                self.create_box_itinerary(box, places, experiences)
+                self.create_box_itinerary(box, places, experiences, start_date)
                 
                 # Attach media
                 if media_items:
@@ -522,16 +540,20 @@ class Command(BaseCommand):
         
         return boxes
 
-    def create_box_itinerary(self, box, places, experiences):
+# Update the create_box_itinerary method:
+    def create_box_itinerary(self, box, places, experiences, start_date):
         """Create detailed itinerary for a travel box"""
         available_places = list(places.filter(city=box.city)) if box.city else list(places)
         available_experiences = list(experiences.filter(city=box.city)) if box.city else list(experiences)
         
         for day_num in range(1, box.duration_days + 1):
+            day_date = start_date + timedelta(days=day_num - 1)
             itinerary_day = BoxItineraryDay.objects.create(
                 box=box,
                 day_number=day_num,
-                description=f"Day {day_num}: {fake.sentence()}"
+                date=day_date,  # Added
+                description=f"Day {day_num}: {fake.sentence()}",
+                estimated_hours=random.uniform(6, 12)  # Added
             )
             
             # Create 2-4 items per day
@@ -550,7 +572,8 @@ class Command(BaseCommand):
                         duration_minutes=duration,
                         order=item_num,
                         notes=fake.sentence(),
-                        estimated_cost=place.price * 1.2  # Add some margin
+                        estimated_cost=place.price * 1.2,  # Add some margin
+                        is_optional=random.choice([True, False])  # Added
                     )
                 elif available_experiences:
                     experience = random.choice(available_experiences)
@@ -562,9 +585,9 @@ class Command(BaseCommand):
                         duration_minutes=duration,
                         order=item_num,
                         notes=fake.sentence(),
-                        estimated_cost=experience.price_per_person
+                        estimated_cost=experience.price_per_person,
+                        is_optional=random.choice([True, False])  # Added
                     )
-
     def create_bookings(self, count, users, places, experiences, flights, boxes):
         """Generate realistic bookings"""
         status_choices = ["Pending", "Confirmed", "Cancelled"]
