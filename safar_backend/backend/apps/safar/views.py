@@ -200,7 +200,6 @@ class BoxViewSet(BaseViewSet):
     search_fields = ['name', 'description']
     ordering_fields = ['total_price', 'created_at']
 
-
     @action(detail=False, methods=['post'], url_path='test-generator')
     def test_generator(self, request):
         """
@@ -209,17 +208,16 @@ class BoxViewSet(BaseViewSet):
         Parameters:
         - location (optional): "lat,lng" string
         - query (optional): search query
-        - force_refresh (optional): boolean to ignore cache
         - debug (optional): boolean to return debug info
         
         Returns:
         - Generated box
+        - Debug info (if debug=True)
         - Status
         """
         
         location = request.data.get('location')
         query = request.data.get('query', '')
-        force_refresh = request.data.get('force_refresh', False)
         debug = request.data.get('debug', False)
         
         geo_location = None
@@ -237,8 +235,7 @@ class BoxViewSet(BaseViewSet):
             generator = BoxGenerator(
                 user=request.user,
                 location=geo_location,
-                search_query=query,
-                force_refresh=force_refresh
+                search_query=query
             )
             
             box = generator.generate_personalized_box()
@@ -249,6 +246,14 @@ class BoxViewSet(BaseViewSet):
                 'generated_at': timezone.now().isoformat()
             }
             
+            if debug:
+                response_data['debug'] = {
+                    'user_cluster': generator.user_cluster,
+                    'trending_destinations': generator.trending_destinations,
+                    'search_results': generator.search_results,
+                    'generation_time': generator.generation_time
+                }
+            
             return Response(response_data)
             
         except Exception as e:
@@ -257,41 +262,60 @@ class BoxViewSet(BaseViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['get'], url_path='test-generator-defaults')
-    def test_generator_defaults(self, request):
+    @action(detail=False, methods=['post'], url_path='test-generator-bulk')
+    def test_generator_bulk(self, request):
         """
-        Generate test boxes with default parameters
-        (Cached endpoint for quick testing)
+        Generate multiple test boxes with different parameters
+        
+        Parameters:
+        - locations: list of "lat,lng" strings
+        - queries: list of search queries
+        - count: number of boxes to generate per combination
         
         Returns:
         - Generated boxes
         - Status
         """
-        scenarios = [
-            {'name': 'Default', 'params': {}},
-            {'name': 'Beach', 'params': {'query': 'beach vacation'}},
-            {'name': 'Mountain', 'params': {'query': 'mountain retreat'}},
-            {'name': 'City', 'params': {'query': 'city break'}}
-        ]
+        
+        locations = request.data.get('locations', [])
+        queries = request.data.get('queries', [])
+        count = int(request.data.get('count', 1))
+        
+        test_combinations = []
+        for loc in locations:
+            for q in queries:
+                test_combinations.append((loc, q))
         
         results = []
-        for scenario in scenarios:
+        for loc, q in test_combinations:
             try:
-                generator = BoxGenerator(
-                    user=request.user,
-                    **scenario['params']
-                )
+                geo_location = None
+                if loc:
+                    try:
+                        lat, lng = map(float, loc.split(','))
+                        geo_location = Point(lng, lat)
+                    except:
+                        continue
                 
-                box = generator.generate_personalized_box()
-                results.append({
-                    'scenario': scenario['name'],
-                    'box': BoxSerializer(box).data if box else None,
-                    'success': box is not None
-                })
-                
+                for i in range(count):
+                    generator = BoxGenerator(
+                        user=request.user,
+                        location=geo_location,
+                        search_query=q
+                    )
+                    
+                    box = generator.generate_personalized_box()
+                    results.append({
+                        'location': loc,
+                        'query': q,
+                        'box': BoxSerializer(box).data if box else None,
+                        'success': box is not None
+                    })
+                    
             except Exception as e:
                 results.append({
-                    'scenario': scenario['name'],
+                    'location': loc,
+                    'query': q,
                     'error': str(e),
                     'success': False
                 })
