@@ -43,7 +43,6 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=not DEVELOPMENT_MODE)
 CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=not DEVELOPMENT_MODE)
 CSRF_TRUSTED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
-
 # Content Security Policy (if using django-csp)
 if not DEVELOPMENT_MODE:
     CSP_DEFAULT_SRC = ("'self'",)
@@ -58,6 +57,7 @@ if not DEVELOPMENT_MODE:
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:8000",
 ])
 
 if DEVELOPMENT_MODE:
