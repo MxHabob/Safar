@@ -194,6 +194,7 @@ class Box(BaseModel):
     is_customizable = models.BooleanField(default=False, verbose_name="Is Customizable")
     max_group_size = models.PositiveIntegerField(default=10, verbose_name="Maximum Group Size")
     tags = models.JSONField(default=list, blank=True)
+    
 
     def __str__(self):
         return self.name
@@ -253,6 +254,7 @@ class Booking(BaseModel):
     check_in = models.DateField(null=True, blank=True, verbose_name="Check-In Date", db_index=True)
     check_out = models.DateField(null=True, blank=True, verbose_name="Check-Out Date", db_index=True)
     booking_date = models.DateTimeField(auto_now_add=True, verbose_name="Booking Date", db_index=True)
+    group_size = models.PositiveIntegerField(default=1)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Pending", verbose_name="Status", db_index=True)
     total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Total Price", db_index=True)
     currency = models.CharField(max_length=10, default="USD", verbose_name="Currency")
