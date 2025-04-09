@@ -572,6 +572,10 @@ class BoxGenerator:
         from apps.safar.models import Box, BoxItineraryDay, BoxItineraryItem
         from decimal import Decimal
     
+        default_category, _ = Category.objects.get_or_create(
+            name="Adventure Packages",  # Or use context['intent']['type']
+            defaults={'description': 'Default category for adventure packages'}
+        )
         metadata = {
             'generated_at': timezone.now().isoformat(),
             'user_id': str(self.user.id),  # UUID needs string conversion
@@ -583,6 +587,7 @@ class BoxGenerator:
         }
         # Create the base box
         box = Box.objects.create(
+            category=default_category,
             name=f"Personalized {context['intent']['type'].title()} Experience",
             description=self._generate_box_description(context),
             total_price=pricing['final_price'],
