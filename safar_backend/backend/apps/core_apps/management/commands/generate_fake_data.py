@@ -232,7 +232,7 @@ class Command(BaseCommand):
                     membership_level=random.choice(["bronze", "silver", "gold"]),
                     is_active=True
                 )
-                user.set_password('password123')
+                user.set_password('Password123-')
                 user.save()
                 
                 # Create detailed profile

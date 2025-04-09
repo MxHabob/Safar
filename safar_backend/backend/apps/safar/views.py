@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.geos import Point
 from django.db.models import Q
 from django.utils import timezone
 from apps.core_apps.general import GENPagination
@@ -11,6 +12,7 @@ from apps.safar.models import (
     Category, Discount, Place, Experience,
     Flight, Box, Booking, Wishlist, Review, Payment, Message, Notification
 )
+from apps.core_apps.generation_algorithm import BoxGenerator
 from apps.safar.serializers import (
     CategorySerializer,
     DiscountSerializer, PlaceSerializer, ExperienceSerializer, FlightSerializer,
@@ -197,12 +199,112 @@ class BoxViewSet(BaseViewSet):
     filterset_fields = ['country', 'city']
     search_fields = ['name', 'description']
     ordering_fields = ['total_price', 'created_at']
-    
+
+
+    @action(detail=False, methods=['post'], url_path='test-generator')
+    def test_generator(self, request):
+        """
+        Custom endpoint to test BoxGenerator functionality
+        
+        Parameters:
+        - location (optional): "lat,lng" string
+        - query (optional): search query
+        - force_refresh (optional): boolean to ignore cache
+        - debug (optional): boolean to return debug info
+        
+        Returns:
+        - Generated box
+        - Status
+        """
+        
+        location = request.data.get('location')
+        query = request.data.get('query', '')
+        force_refresh = request.data.get('force_refresh', False)
+        debug = request.data.get('debug', False)
+        
+        geo_location = None
+        if location:
+            try:
+                lat, lng = map(float, location.split(','))
+                geo_location = Point(lng, lat)
+            except:
+                return Response(
+                    {'error': 'Invalid location format. Use "lat,lng"'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        try:
+            generator = BoxGenerator(
+                user=request.user,
+                location=geo_location,
+                search_query=query,
+                force_refresh=force_refresh
+            )
+            
+            box = generator.generate_personalized_box()
+            
+            response_data = {
+                'status': 'success',
+                'box': BoxSerializer(box).data if box else None,
+                'generated_at': timezone.now().isoformat()
+            }
+            
+            return Response(response_data)
+            
+        except Exception as e:
+            return Response(
+                {'error': str(e), 'status': 'failed'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['get'], url_path='test-generator-defaults')
+    def test_generator_defaults(self, request):
+        """
+        Generate test boxes with default parameters
+        (Cached endpoint for quick testing)
+        
+        Returns:
+        - Generated boxes
+        - Status
+        """
+        scenarios = [
+            {'name': 'Default', 'params': {}},
+            {'name': 'Beach', 'params': {'query': 'beach vacation'}},
+            {'name': 'Mountain', 'params': {'query': 'mountain retreat'}},
+            {'name': 'City', 'params': {'query': 'city break'}}
+        ]
+        
+        results = []
+        for scenario in scenarios:
+            try:
+                generator = BoxGenerator(
+                    user=request.user,
+                    **scenario['params']
+                )
+                
+                box = generator.generate_personalized_box()
+                results.append({
+                    'scenario': scenario['name'],
+                    'box': BoxSerializer(box).data if box else None,
+                    'success': box is not None
+                })
+                
+            except Exception as e:
+                results.append({
+                    'scenario': scenario['name'],
+                    'error': str(e),
+                    'success': False
+                })
+        
+        return Response({
+            'results': results,
+            'generated_at': timezone.now().isoformat()
+        })
+
     @action(detail=True, methods=['get'])
     def itinerary(self, request, pk=None):
         """Get detailed itinerary for a box"""
         box = self.get_object()
-        # Generate detailed itinerary logic
         return Response({'itinerary': 'Detailed itinerary would be here'})
 
 class BookingViewSet(BaseViewSet):
@@ -407,3 +509,6 @@ class NotificationViewSet(BaseViewSet):
             is_read=False
         ).update(is_read=True)
         return Response({'status': f'{updated} notifications marked as read'})
+
+
+
