@@ -27,6 +27,7 @@ const mockUser = {
     updated_at: "2023-01-01T00:00:00Z",
     is_deleted: false,
     user: "1",
+    avatar: "/placeholder.svg?height=96&width=96",
     bio: "Travel enthusiast and explorer",
     gender: "prefer_not_to_say" as const,
     travel_history: [],
@@ -41,7 +42,7 @@ const mockUser = {
 
   export default async function ProfilePage() {
     return (
-      <main className="min-h-screen py-8">
+      <main className="min-h-screen">
       <ProfilePageContent user={mockUser} />
     </main>
   );

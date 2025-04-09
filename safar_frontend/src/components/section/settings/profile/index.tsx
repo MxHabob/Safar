@@ -1,90 +1,154 @@
-import type { User, UserProfile } from "@/redux/types/types"
-import Image from "next/image"
-import { CheckCircle } from "lucide-react"
+"use client"
 
-interface ProfilePageProps {
-  user: User & { profile: UserProfile }
+import { useState } from "react"
+import Image from "next/image"
+import { Card, CardContent } from "@/components/ui/card"
+import { CheckCircle, MapPin } from "lucide-react"
+import type { User, UserProfile } from "@/redux/types/types"
+import StatsCard from "@/components/section/settings/profile/stats-card"
+import AboutSection from "@/components/section/settings/profile/about-section"
+import TravelHistory from "@/components/section/settings/profile/travel-history"
+import ExperiencesSection from "@/components/section/settings/profile/experiences-section"
+
+// Mock data based on the provided interfaces
+const mockUser: User = {
+  id: "1",
+  created_at: "2023-01-01T00:00:00Z",
+  updated_at: "2023-04-01T00:00:00Z",
+  is_deleted: false,
+  email: "angel.john@example.com",
+  first_name: "Angel",
+  last_name: "John",
+  language: "en",
+  timezone: "America/Phoenix",
+  preferred_language: "en",
+  preferred_currency: "USD",
+  is_online: true,
+  is_active: true,
+  is_staff: false,
+  is_2fa_enabled: false,
+  role: "guest",
+  is_profile_public: true,
+  following: ["2", "3", "4", "5"],
+  points: 1250,
+  membership_level: "gold",
+  gender: "prefer_not_to_say",
 }
 
-export const ProfilePageContent = ({ user }: ProfilePageProps) => {
+const mockProfile: UserProfile = {
+  id: "1",
+  created_at: "2023-01-01T00:00:00Z",
+  updated_at: "2023-04-01T00:00:00Z",
+  is_deleted: false,
+  user: "1",
+  avatar: "/placeholder.svg?height=100&width=100",
+  bio: "Travel enthusiast and adventure seeker. Always looking for the next exciting destination.",
+  location: {
+    type: "Point",
+    coordinates: [33.4484, -112.074],
+  },
+  gender: "prefer_not_to_say",
+  travel_history: [
+    { id: "1", name: "Paris", date: "2023-03-15" },
+    { id: "2", name: "Tokyo", date: "2022-11-10" },
+    { id: "3", name: "New York", date: "2022-07-22" },
+  ],
+  travel_interests: ["Hiking", "Cultural", "Food", "Photography"],
+  language_proficiency: {
+    english: "native",
+    spanish: "intermediate",
+    french: "beginner",
+  },
+  preferred_countries: [],
+  privacy_consent: true,
+  wants_push_notifications: true,
+  wants_sms_notifications: false,
+}
+
+export const ProfilePageContent = () => {
+  const [user] = useState<User>(mockUser)
+  const [profile] = useState<UserProfile>(mockProfile)
+  const travelStats = {
+    rating: 4.7,
+    placesVisited: 12,
+    experiencesCreated: 5,
+    placesCreated: 3,
+    country: "United States",
+  }
   return (
-    <div className="container mx-auto p-4 max-w-5xl">
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Left side - User info */}
-        <div className="flex-1">
-          <div className="flex flex-col items-start">
-            {/* Profile image with verification badge */}
-            <div className="relative mb-4">
-              <div className="w-24 h-24 rounded-full bg-gray-200 overflow-hidden">
-                {user.profile?.avatar ? (
-                  <Image
-                    src={user.profile.avatar || "/placeholder.svg"}
-                    alt={`${user.first_name} ${user.last_name}`}
-                    width={96}
-                    height={96}
-                    className="object-cover"
-                  />
-                ) : null}
-              </div>
-              <div className="absolute bottom-0 right-0">
-                <CheckCircle className="w-6 h-6 text-blue-500 fill-blue-500" />
+    <div className=" mx-8 px-4 py-8">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row gap-6 mb-8">
+        {/* Left column - User info */}
+        <div className="flex-1 mt-16">
+          <div className="flex items-start gap-4">
+            <div className="relative">
+              <Image
+                src={profile.avatar || "/placeholder.svg?height=100&width=100"}
+                alt={`${user.first_name} ${user.last_name}`}
+                width={80}
+                height={80}
+                className="rounded-full bg-gray-200"
+              />
+              <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-1">
+                <CheckCircle className="h-4 w-4 text-white" />
               </div>
             </div>
-
-            {/* User name and location */}
-            <h1 className="text-2xl font-bold mb-1">Angel John</h1>
-            <p className="text-gray-700 mb-4">United States - Arizona - Madeley</p>
-
-            {/* Placeholder content bars */}
-            <div className="w-full h-4 bg-gray-200 rounded mb-2"></div>
-            <div className="w-3/4 h-4 bg-gray-200 rounded mb-4"></div>
-            <div className="w-1/2 h-4 bg-gray-200 rounded"></div>
-
-            {/* About section */}
-            <h2 className="text-xl font-bold mt-8 mb-4">About Angel</h2>
-            <div className="w-3/4 h-4 bg-gray-200 rounded"></div>
-          </div>
-        </div>
-
-        {/* Right side - Stats badge */}
-        <div className="flex-shrink-0 w-full md:w-auto">
-          <div className="relative w-full md:w-64">
-            <div className="bg-black text-white rounded-t-2xl rounded-b-3xl overflow-hidden">
-              {/* Badge header */}
-              <div className="relative pt-6 px-6 pb-2">
-                <div className="absolute top-2 right-4 bg-gray-200 text-black text-xs px-2 py-0.5 rounded-full">
-                  Membership
-                </div>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="text-4xl font-bold">88</div>
-                    <div className="text-xl font-bold">UK</div>
-                    <div className="text-2xl font-bold mt-1">4.7</div>
-                  </div>
-                  <div className="w-16 h-16 bg-gray-500 rounded-full mt-2"></div>
-                </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold">
+                  {user.first_name} {user.last_name}
+                </h1>
               </div>
-
-              {/* User name in badge */}
-              <div className="text-center py-4 text-3xl font-bold">ANGEL</div>
-
-              {/* Stats rows */}
-              {[1, 2, 3].map((_, index) => (
-                <div key={index} className="flex justify-between text-xs px-4 py-1 border-t border-gray-700">
-                  <span>places visited</span>
-                  <span>|</span>
-                  <span>12</span>
-                  <span>experiments</span>
-                  <span>|</span>
-                  <span>12</span>
-                </div>
-              ))}
-
-              {/* Badge footer */}
-              <div className="text-right pr-4 py-2 text-xs">English</div>
+              <div className="flex items-center text-gray-500 mt-1">
+                <MapPin className="h-4 w-4 mr-1" />
+                <span className="text-sm">United States - Arizona - Madeley</span>
+              </div>
+              <div className="mt-4 space-y-1">
+                <div className="h-2 bg-gray-200 rounded-full w-full max-w-[200px]"></div>
+                <div className="h-2 bg-gray-200 rounded-full w-full max-w-[180px]"></div>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Right column - Stats card */}
+        <div className="md:w-[300px]">
+          <StatsCard user={user} stats={travelStats} />
+        </div>
+      </div>
+
+      {/* Content Sections - Vertically Stacked */}
+      <div className="space-y-8">
+        {/* About Section */}
+        <section>
+          <h2 className="text-2xl font-bold mb-4">About</h2>
+          <AboutSection profile={profile} user={user} />
+        </section>
+
+        {/* Travel History Section */}
+        <section>
+          <h2 className="text-2xl font-bold mb-4">Travel History</h2>
+          <TravelHistory history={profile.travel_history} />
+        </section>
+
+        {/* Experiences Section */}
+        <section>
+          <h2 className="text-2xl font-bold mb-4">Experiences</h2>
+          <ExperiencesSection userId={user.id} />
+        </section>
+
+        {/* Reviews Section */}
+        <section>
+          <h2 className="text-2xl font-bold mb-4">Reviews</h2>
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-center py-8 text-gray-500">
+                <p>No reviews yet</p>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
       </div>
     </div>
   )
