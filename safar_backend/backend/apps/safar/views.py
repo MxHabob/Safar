@@ -207,7 +207,7 @@ class BoxViewSet(BaseViewSet):
         
         Parameters:
         - location (optional): "lat,lng" string
-        - query (optional): search query
+        - search_query (optional): search query
         - debug (optional): boolean to return debug info
         
         Returns:
@@ -216,9 +216,9 @@ class BoxViewSet(BaseViewSet):
         """
         
         location = request.data.get('location')
-        query = request.data.get('query', '')
+        search_query = request.data.get('search_query', '')
         debug = request.data.get('debug', False)
-        
+
         geo_location = None
         if location:
             try:
@@ -234,7 +234,7 @@ class BoxViewSet(BaseViewSet):
             generator = BoxGenerator(
                 user=request.user,
                 location=geo_location,
-                query=query
+                search_query=search_query
             )
             
             box = generator.generate_personalized_box()
@@ -284,6 +284,7 @@ class BoxViewSet(BaseViewSet):
         for loc in locations:
             for q in queries:
                 try:
+
                     geo_location = None
                     if loc:
                         try:
@@ -291,12 +292,12 @@ class BoxViewSet(BaseViewSet):
                             geo_location = Point(lng, lat)
                         except:
                             continue
-                            
+                    
                     for i in range(count):
                         generator = BoxGenerator(
                             user=request.user,
                             location=geo_location,
-                            query=q
+                            search_query=q
                         )
                         
                         box = generator.generate_personalized_box()
@@ -331,9 +332,9 @@ class BoxViewSet(BaseViewSet):
         """
         scenarios = [
             {'name': 'Default', 'params': {}},
-            {'name': 'Beach', 'params': {'query': 'beach vacation'}},
-            {'name': 'Mountain', 'params': {'query': 'mountain retreat'}},
-            {'name': 'City', 'params': {'query': 'city break'}}
+            {'name': 'Beach', 'params': {'search_query': 'beach vacation'}},
+            {'name': 'Mountain', 'params': {'search_query': 'mountain retreat'}},
+            {'name': 'City', 'params': {'search_query': 'city break'}}
         ]
         
         results = []
