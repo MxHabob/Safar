@@ -7,10 +7,12 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import type { Booking } from "@/redux/types/types"
 import Image from "next/image"
+
 interface BookingCardProps {
   booking: Booking
   onCancel: () => void
 }
+
 
 export function BookingCard({ booking, onCancel }: BookingCardProps) {
   const getBookingContent = () => {

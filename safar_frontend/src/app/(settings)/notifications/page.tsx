@@ -1,14 +1,9 @@
-import NotificationsPage from "@/components/section/settings/notifications";
+import { NotificationsPageContent } from "@/components/section/settings/notifications";
 
-type Props = {
-	params: Promise<{ id: string}>
-	
-  }
-  export default async function BoxPage({  params  }: Props) {
-    const id = (await params).id
+  export default async function NotificationsPage() {
     return (
       <div >
-      <NotificationsPage />
+      <NotificationsPageContent />
        </div>
   );
 }
