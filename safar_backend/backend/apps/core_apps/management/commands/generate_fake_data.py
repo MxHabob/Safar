@@ -214,6 +214,28 @@ class Command(BaseCommand):
         attempt_limit = count * 2  # Allow some retries for uniqueness
         fake = Faker()    
 
+        accessibility_options = [
+                "wheelchair_access",
+                "visual_impairment_support",
+                "hearing_impairment_support",
+                "none"
+            ]
+            
+        dietary_options = [
+            "vegetarian",
+            "vegan",
+            "gluten_free",
+            "kosher",
+            "halal",
+            "nut_allergy",
+            "none"
+        ]
+        
+        time_preferences = [
+            "morning_person",
+            "night_owl",
+            "flexible"
+        ]
         for _ in range(attempt_limit):
             if created_count >= count:
                 break
@@ -269,12 +291,49 @@ class Command(BaseCommand):
             )
         except:
             phone_number = None
-            
+
+        accessibility_options = [
+            "wheelchair_access",
+            "visual_impairment_support",
+            "hearing_impairment_support",
+            "none"
+        ]
+        
+        dietary_options = [
+            "vegetarian",
+            "vegan",
+            "gluten_free",
+            "kosher",
+            "halal",
+            "nut_allergy",
+            "none"
+        ]
+        
+        time_preferences = [
+            "morning_person",
+            "night_owl",
+            "flexible"
+        ]
+
+        # Generate compliant metadata
+        metadata = {
+            "accessibility_needs": random.sample(accessibility_options, random.randint(1, 2)),
+            "dietary_restrictions": random.sample(dietary_options, random.randint(1, 2)),
+            "preferred_times": random.choice(time_preferences)
+        }
+        
+        # Remove 'none' if other options are selected
+        if len(metadata["accessibility_needs"]) > 1 and "none" in metadata["accessibility_needs"]:
+            metadata["accessibility_needs"].remove("none")
+        if len(metadata["dietary_restrictions"]) > 1 and "none" in metadata["dietary_restrictions"]:
+            metadata["dietary_restrictions"].remove("none")
+
         travel_interests = random.sample([
             "adventure", "culture", "beach", "food", 
             "history", "shopping", "nature", "luxury"
         ], k=random.randint(2, 5))
-        
+
+  
         UserProfile.objects.update_or_create(
             user=user,
             bio=fake.text(max_nb_chars=300),
@@ -290,6 +349,7 @@ class Command(BaseCommand):
             travel_interests=travel_interests,
             privacy_consent=True,
             consent_date=timezone.now()
+            metadata=metadata
         )
 
     def create_media(self, users, count):
