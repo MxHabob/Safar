@@ -3,8 +3,9 @@
 import { useState } from "react"
 import { useGetPlacesQuery } from "@/redux/services/api"
 import { Button } from "@/components/ui/button"
-import { Loader2 } from 'lucide-react'
 import { PlaceCard } from "./place-card"
+import { Spinner } from "@/components/ui/spinner"
+import { Place } from "@/redux/types/types"
 
 type Props = {
   overlay?: boolean
@@ -15,36 +16,23 @@ type Props = {
 
 export const ListPlaces = ({ selected, favorites = [], onFavoriteToggle }: Props) => {
   const [page, setPage] = useState(1)
+  const [allFetchedPlaces, setAllFetchedPlaces] = useState<Place[]>([])
 
-  const { data, isLoading, isFetching, error } = useGetPlacesQuery({
-    page,
-    page_size: 10,
-  })
+  const { data, isLoading, isFetching, error } = useGetPlacesQuery({page,page_size: 12})
   
-  const allPlaces = (() => {
-    const accumulated = []
-    for (let i = 1; i <= page; i++) {
-      const pageData = data?.results || []
-
-      if (i === page && pageData.length > 0) {
-        accumulated.push(...pageData)
-      }
+  if (data?.results && !isFetching) {
+    const newPlaces = data.results.filter(
+      newPlace => !allFetchedPlaces.some(place => place.id === newPlace.id)
+    )
+    if (newPlaces.length > 0) {
+      setAllFetchedPlaces(prev => [...prev, ...newPlaces])
     }
-    const uniquePlaces = []
-    const seenIds = new Set()
-
-    for (const place of accumulated) {
-      if (!seenIds.has(place.id)) {
-        seenIds.add(place.id)
-        uniquePlaces.push(place)
-      }
-    }
-
-    return uniquePlaces
-  })()
+  }
 
   const handleLoadMore = () => {
-    setPage((prev) => prev + 1)
+    if (!isFetching) {
+      setPage(prev => prev + 1)
+    }
   }
 
   const hasMorePlaces = data?.next !== null
@@ -70,8 +58,8 @@ export const ListPlaces = ({ selected, favorites = [], onFavoriteToggle }: Props
   return (
     <div className="flex flex-col w-full mt-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-12 w-full overflow-x-auto pb-4">
-        {allPlaces.length > 0 ? (
-          allPlaces.map((place) => (
+      {allFetchedPlaces.length > 0 ? (
+          allFetchedPlaces.map((place) => (
             <div
               key={place.id}
               className={`transition-all duration-200 ${
@@ -91,7 +79,7 @@ export const ListPlaces = ({ selected, favorites = [], onFavoriteToggle }: Props
           </div>
         ) : null}
 
-        {isLoading && (
+        {isLoading && isFetching && (
           <div className="flex justify-center p-6 col-span-full">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-12 w-full overflow-x-auto pb-4">
             <PlaceCard.Skeleton />
@@ -105,7 +93,7 @@ export const ListPlaces = ({ selected, favorites = [], onFavoriteToggle }: Props
 
       {/* Load more button */}
       {hasMorePlaces && (
-        <div className="mt-4 w-full flex justify-center">
+        <div className="my-8 w-full flex justify-center">
           <Button 
             onClick={handleLoadMore} 
             disabled={isFetching} 
@@ -114,11 +102,10 @@ export const ListPlaces = ({ selected, favorites = [], onFavoriteToggle }: Props
           >
             {isFetching ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Loading...
+                <Spinner className="mr-2 h-4 w-4" />
               </>
             ) : (
-              "Load More"
+              "More"
             )}
           </Button>
         </div>

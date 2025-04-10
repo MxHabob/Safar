@@ -190,11 +190,7 @@ class FlightViewSet(BaseViewSet):
         return Response(serializer.data)
 
 class BoxViewSet(BaseViewSet):
-    queryset = Box.objects.select_related(
-        'country', 'city'
-    ).prefetch_related(
-        'place', 'experience', 'media'
-    )
+    queryset = Box.objects.select_related('country', 'city').prefetch_related('media')
     serializer_class = BoxSerializer
     filterset_fields = ['country', 'city']
     search_fields = ['name', 'description']

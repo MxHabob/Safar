@@ -1,16 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Bell } from "lucide-react";
 import { 
   useGetNotificationsQuery,
   useMarkNotificationAsReadMutation,
   useMarkAllNotificationsAsReadMutation,
-  useDeleteNotificationMutation
 } from "@/redux/services/api";
-import { NotificationActions } from "./NotificationActions";
-import { NotificationFilters } from "./NotificationFilters";
-import { NotificationsList } from "./NotificationsList";
+import { NotificationActions } from "./notification-actions";
+import { NotificationFilters } from "./notification-filters";
+import { NotificationsList } from "./notifications-list";
 import type { NotificationsFilters } from "./types";
 
 export const NotificationsPageContent = () => {
@@ -19,7 +17,6 @@ export const NotificationsPageContent = () => {
 
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
-  const [deleteNotification] = useDeleteNotificationMutation();
 
   const [filters, setFilters] = useState<NotificationsFilters>({
     searchQuery: "",
@@ -62,14 +59,6 @@ export const NotificationsPageContent = () => {
     console.log("Mark as unread not implemented yet");
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteNotification(id).unwrap();
-      refetch();
-    } catch (error) {
-      console.error("Failed to delete notification:", error);
-    }
-  };
 
   const handleMarkAllAsRead = async () => {
     try {
@@ -88,6 +77,8 @@ export const NotificationsPageContent = () => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   };
 
+  console.log("Filtered Notifications:", filteredNotifications);
+  console.log("notifications :", notificationsData);
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -117,7 +108,7 @@ export const NotificationsPageContent = () => {
         filters={filters}
         onMarkAsRead={handleMarkAsRead}
         onMarkAsUnread={handleMarkAsUnread}
-        onDelete={handleDelete}
+        // onDelete={handleDelete}
       />
     </div>
   );

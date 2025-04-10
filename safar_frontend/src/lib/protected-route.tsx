@@ -1,6 +1,6 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import { useAuth } from '@/redux/hooks/useAuth';
+import { useAuth } from '@/redux/hooks/usee-auth';
 import { Spinner } from '@/components/ui/spinner';
 
 export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {

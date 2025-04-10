@@ -11,7 +11,16 @@ from apps.safar.serializers import (
     NotificationSerializer
 )
 from django.core.cache import cache
+from uuid import UUID
 
+class UUIDEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, UUID):
+            return str(obj)  # Using str() instead of hex for standard UUID format
+        if hasattr(obj, '__dict__'):
+            return vars(obj)
+        return super().default(obj)
+    
 class WebSocketMessage(TypedDict):
     type: str
     payload: Dict
@@ -99,7 +108,7 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
     def _get_initial_data_sync(self) -> tuple:
         """Synchronous method to fetch all initial data"""
         bookings = BookingSerializer(
-            Booking.objects.filter(user=self.user).select_related('trip'),
+            Booking.objects.filter(user=self.user).select_related('place', 'experience', 'flight', 'box'),
             many=True
         ).data
         
@@ -177,11 +186,27 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
         await cache.adelete(cache_key)
 
     async def _send_initial_data(self, data: Dict):
-        """Send initial data to client"""
-        await self.send_json({
-            "type": "initial_data",
-            "payload": data
-        })
+        """Send initial data to client with enhanced error handling"""
+        try:
+            # First validate the data can be serialized
+            test_data = {
+                "type": "initial_data",
+                "payload": data
+            }
+            json.dumps(test_data, cls=UUIDEncoder)
+            
+            # If successful, send the actual data
+            await self.send_json(test_data, cls=UUIDEncoder)
+        except TypeError as e:
+            # Handle specific serialization errors
+            error_msg = f"Data serialization error: {str(e)}"
+            print(error_msg)
+            await self._send_error(error_msg)
+        except Exception as e:
+            # Handle other unexpected errors
+            error_msg = f"Unexpected error sending initial data: {str(e)}"
+            print(error_msg)
+            await self._send_error(error_msg)
 
     async def _send_error(self, message: str):
         """Send error message to client"""

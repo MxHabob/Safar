@@ -335,6 +335,13 @@ export const api = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [{ type: 'Place', id }]
     }),
+    deletePlace: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/places/${id}/`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: (result, error, id) => [{ type: 'Place', id }]
+    }),
 
     // Experience endpoints
     getExperiences: builder.query<PaginatedResponse<Experience>, { page?: number; page_size?: number }>({
@@ -363,7 +370,22 @@ export const api = createApi({
       }),
       invalidatesTags: ['Experience']
     }),
-
+    updateExperience: builder.mutation<Experience, Partial<Experience>>({
+      query: ({ id, ...patch }) => ({
+        url: `/experiences/${id}/`,
+        method: 'PATCH',
+        body: patch
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Experience', id }]
+    }),
+    
+    deleteExperience: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/experiences/${id}/`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: (result, error, id) => [{ type: 'Experience', id }]
+    }),
     // Flight endpoints
     getFlights: builder.query<PaginatedResponse<Flight>, { page?: number; page_size?: number }>({
       query: (params) => ({
@@ -438,6 +460,14 @@ export const api = createApi({
         body
       }),
       invalidatesTags: ['Booking']
+    }),
+    updateBooking: builder.mutation<Booking, Partial<Booking>>({
+      query: ({ id, ...patch }) => ({
+        url: `/bookings/${id}/`,
+        method: 'PATCH',
+        body: patch
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Booking', id }]
     }),
     confirmBooking: builder.mutation<Booking, string>({
       query: (id) => ({
@@ -636,13 +666,16 @@ export const {
   useGetSimilarPlacesQuery,
   useCreatePlaceMutation,
   useUpdatePlaceMutation,
+  useDeletePlaceMutation,
+
 
   // Experience
   useGetExperiencesQuery,
   useGetExperienceQuery,
   useCheckExperienceAvailabilityQuery,
   useCreateExperienceMutation,
-
+  useUpdateExperienceMutation,
+  useDeleteExperienceMutation,
   // Flight
   useGetFlightsQuery,
   useSearchFlightsQuery,
@@ -661,7 +694,7 @@ export const {
   useCreateBookingMutation,
   useConfirmBookingMutation,
   useCancelBookingMutation,
-
+  useUpdateBookingMutation,
   // Wishlist
   useGetWishlistsQuery,
   useGetUserWishlistQuery,

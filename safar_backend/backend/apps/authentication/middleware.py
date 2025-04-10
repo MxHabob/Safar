@@ -8,18 +8,27 @@ import jwt
 from channels.db import database_sync_to_async
 
 class JWTAuthMiddleware:
-    """
-    Custom middleware to authenticate WebSocket connections using JWT.
-    """
     def __init__(self, inner):
         self.inner = inner
 
     async def __call__(self, scope, receive, send):
         query_string = parse_qs(scope["query_string"].decode())
         token = query_string.get("token", [None])[0]
-
+        
+        # If not in query string, check cookies
+        if not token and "headers" in scope:
+            cookies = {}
+            for name, value in scope.get("headers", []):
+                if name == b"cookie":
+                    cookie_string = value.decode()
+                    cookies = {
+                        c.split("=")[0]: c.split("=")[1]
+                        for c in cookie_string.split("; ")
+                    }
+                    break
+            token = cookies.get("access")
+        
         user = AnonymousUser()
-
         if token:
             try:
                 decoded_data = AccessToken(token)
@@ -29,8 +38,7 @@ class JWTAuthMiddleware:
 
         close_old_connections()
         scope["user"] = user
-
-        await self.inner(scope, receive, send)
+        return await self.inner(scope, receive, send)
 
     @database_sync_to_async
     def get_user(self, user_id):

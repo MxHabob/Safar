@@ -51,6 +51,8 @@ export default function BookingsPageContent() {
     }
   }
 
+  console.log("Bookings:", bookings)
+
   const getBookingType = (booking: Booking): BookingType => {
     if (booking.place) return "Place"
     if (booking.experience) return "Experience"

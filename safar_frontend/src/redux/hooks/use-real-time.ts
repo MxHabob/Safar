@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import realTimeService from '@/redux/services/real-time';
 import {
   WebSocketEventHandlers,
-  InitialDataPayload,
 } from '@/redux/types/real-time';
 
 export const useRealTime = (handlers: WebSocketEventHandlers = {}) => {

@@ -1,8 +1,8 @@
 import Link from "next/link"
-import { Globe, Menu } from "lucide-react"
-import { Button } from "../../ui/button"
+
 import { UserAvatar } from "@/components/global/user-avatar"
 import { ModeToggle } from "@/components/global/mode-toggle"
+import WebSocketStatus from "@/components/global/websocket-status"
 
 export function Nav() {
   return (
@@ -31,6 +31,7 @@ export function Nav() {
       {/* <Button className="rounded-full p-2 ">
         <Globe className="h-6 w-5" />
       </Button> */}
+      <WebSocketStatus/>
       <div className="flex items-center rounded-full ">
           <UserAvatar className=" w-9 h-9" />
       </div>

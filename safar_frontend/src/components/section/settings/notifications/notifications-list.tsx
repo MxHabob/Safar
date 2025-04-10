@@ -1,8 +1,8 @@
 "use client";
 
 import { Bell } from "lucide-react";
-import { NotificationItem } from "./NotificationItem";
-import type { Notification } from "@/types";
+import { NotificationItem } from "./notification-item";
+import type { Notification } from "@/redux/types/types";
 import type { NotificationsFilters } from "./types";
 
 interface NotificationsListProps {
@@ -11,7 +11,7 @@ interface NotificationsListProps {
   filters: NotificationsFilters;
   onMarkAsRead: (id: string) => void;
   onMarkAsUnread: (id: string) => void;
-  onDelete: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 export function NotificationsList({ 

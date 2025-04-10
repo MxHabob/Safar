@@ -1,6 +1,8 @@
 from django.db.models import Q
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
+from django.db import transaction
+from decimal import Decimal
 from django.utils import timezone
 from datetime import time, timedelta
 from django.contrib.gis.geos import Point
@@ -564,82 +566,102 @@ class BoxGenerator:
         elif item_count >= 3:
             return 0.05
         return 0
-    
+
     def _create_box_with_itinerary(self, places, experiences, itinerary, pricing, context):
         """
-        Create the Box model with full itinerary structure
+        Create a Box with a complete itinerary structure using efficient database operations.
         """
-        from apps.safar.models import Box, BoxItineraryDay, BoxItineraryItem,Category
-        from decimal import Decimal
-    
-        default_category, _ = Category.objects.get_or_create(
-            name="Adventure Packages",  # Or use context['intent']['type']
-            defaults={'description': 'Default category for adventure packages'}
-        )
-        metadata = {
-            'generated_at': timezone.now().isoformat(),
-            'user_id': str(self.user.id),  # UUID needs string conversion
-            'search_query': self.search_query,
-            'discounts': {
-                k: float(v) if isinstance(v, Decimal) else v  # Decimal conversion
-                for k, v in pricing['discounts'].items()
-            }
-        }
-        # Create the base box
-        box = Box.objects.create(
-            category=default_category,
-            name=f"Personalized {context['intent']['type'].title()} Experience",
-            description=self._generate_box_description(context),
-            total_price=pricing['final_price'],
-            currency=pricing['currency'],
-            country=places[0].country if places else None,
-            city=places[0].city if places else None,
-            duration_days=context['intent']['duration_days'],
-            start_date=itinerary[0]['date'],
-            end_date=itinerary[-1]['date'],
-            is_customizable=True,
-            max_group_size=context['intent']['group_size'],
-            tags=self._generate_box_tags(context),
-            metadata=metadata,
-        )
-        
-        # Add places and experiences
-        box.place.set(places)
-        box.experience.set(experiences)
-        
-        # Create itinerary days and items
-        for day_plan in itinerary:
-            itinerary_day = BoxItineraryDay.objects.create(
-                box=box,
-                day_number=day_plan['day_number'],
-                date=day_plan['date'],
-                description=f"Day {day_plan['day_number']} of your {context['intent']['type']} experience",
-                estimated_hours=sum(
-                    a['duration'].total_seconds() / 3600
-                    for a in day_plan['activities']
-                )
-            )
-            
-            # Add activities to the day
-            for i, activity in enumerate(day_plan['activities'], start=1):
-                BoxItineraryItem.objects.create(
-                    itinerary_day=itinerary_day,
-                    place=activity['object'] if activity['type'] == 'place' else None,
-                    experience=activity['object'] if activity['type'] == 'experience' else None,
-                    start_time=time(9, 0) if i % 2 == 1 else time(14, 0),  # Alternate morning/afternoon
-                    end_time=(
-                        time(9, 0) + activity['duration'] if i % 2 == 1
-                        else time(14, 0) + activity['duration']
-                    ),
-                    duration_minutes=int(activity['duration'].total_seconds() / 60),
-                    order=i,
-                    notes=f"Recommended {activity['type']} activity",
-                    estimated_cost=(
-                        activity['object'].price if activity['type'] == 'place'
-                        else activity['object'].price_per_person * context['intent']['group_size']
+        from apps.safar.models import Box, BoxItineraryDay, BoxItineraryItem, Category    
+
+        with transaction.atomic():
+            # Step 1: Create the base Box object
+            default_category, _ = Category.objects.get_or_create(
+                name=f"{context['intent']['type'].title()} Packages",
+                defaults={'description': f"Default category for {context['intent']['type']} packages"}
+            )    
+
+            metadata = {
+                'generated_at': timezone.now().isoformat(),
+                'user_id': str(self.user.id),
+                'search_query': self.search_query,
+                'discounts': {
+                    k: float(v) if isinstance(v, Decimal) else v
+                    for k, v in pricing['discounts'].items()
+                }
+            }    
+
+            box = Box.objects.create(
+                category=default_category,
+                name=f"Personalized {context['intent']['type'].title()} Experience",
+                description=self._generate_box_description(context),
+                total_price=pricing['final_price'],
+                currency=pricing['currency'],
+                country=context.get('location', {}).get('country'),
+                city=context.get('location', {}).get('city'),
+                duration_days=context['intent']['duration_days'],
+                start_date=itinerary[0]['date'],
+                end_date=itinerary[-1]['date'],
+                is_customizable=True,
+                max_group_size=context['intent']['group_size'],
+                tags=self._generate_box_tags(context),
+                metadata=metadata,
+            )    
+
+            # Step 2: Prepare data for bulk creation of itinerary days and items
+            itinerary_days_to_create = []
+            itinerary_items_to_create = []    
+
+            for day_plan in itinerary:
+                # Create a BoxItineraryDay for each day
+                itinerary_day = BoxItineraryDay(
+                    box=box,
+                    day_number=day_plan['day_number'],
+                    date=day_plan['date'],
+                    description=f"Day {day_plan['day_number']} of your {context['intent']['type']} experience",
+                    estimated_hours=sum(
+                        a['duration'].total_seconds() / 3600
+                        for a in day_plan['activities']
                     )
                 )
-        
+                itinerary_days_to_create.append(itinerary_day)    
+
+            # Bulk create all itinerary days at once
+            created_days = BoxItineraryDay.objects.bulk_create(itinerary_days_to_create)
+            day_map = {day.day_number: day for day in created_days}    
+
+            # Add activities to the corresponding days
+            for day_plan in itinerary:
+                day_number = day_plan['day_number']
+                itinerary_day = day_map[day_number]    
+
+                for i, activity in enumerate(day_plan['activities'], start=1):
+                    # Determine start and end times
+                    start_time = time(9, 0) if i % 2 == 1 else time(14, 0)
+                    end_time = (
+                        time(9, 0) + activity['duration'] if i % 2 == 1
+                        else time(14, 0) + activity['duration']
+                    )    
+
+                    # Create a BoxItineraryItem for each activity
+                    itinerary_item = BoxItineraryItem(
+                        itinerary_day=itinerary_day,
+                        place=activity['object'] if activity['type'] == 'place' else None,
+                        experience=activity['object'] if activity['type'] == 'experience' else None,
+                        start_time=start_time,
+                        end_time=end_time,
+                        duration_minutes=int(activity['duration'].total_seconds() / 60),
+                        order=i,
+                        notes=f"Recommended {activity['type']} activity",
+                        estimated_cost=(
+                            activity['object'].price if activity['type'] == 'place'
+                            else activity['object'].price_per_person * context['intent']['group_size']
+                        ),
+                    )
+                    itinerary_items_to_create.append(itinerary_item)    
+
+            # Bulk create all itinerary items at once
+            BoxItineraryItem.objects.bulk_create(itinerary_items_to_create)    
+
         return box
     
     def _generate_box_description(self, context):

@@ -4,13 +4,14 @@ import type React from "react"
 
 import { useState } from "react"
 import Image from "next/image"
-import { Heart, MapPin, ChevronRight, ChevronLeft, Clock, Users } from "lucide-react"
+import { MapPin, ChevronRight, ChevronLeft, Clock, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Experience } from "@/redux/types/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
+import { WishlistButton } from "../wishlist-button"
 
 interface ExperienceCardProps {
   experience: Experience
@@ -18,9 +19,9 @@ interface ExperienceCardProps {
   isFavorited?: boolean
 }
 
-export const ExperienceCard =({ experience, onFavorite, isFavorited: externalFavorite }: ExperienceCardProps) =>{
+export const ExperienceCard =({ experience, isFavorited: externalFavorite }: ExperienceCardProps) =>{
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [internalFavorite, setInternalFavorite] = useState(false)
+  const [internalFavorite] = useState(false)
 
   const isFavorite = externalFavorite !== undefined ? externalFavorite : internalFavorite
 
@@ -43,15 +44,6 @@ export const ExperienceCard =({ experience, onFavorite, isFavorited: externalFav
     }
   }
 
-  const handleFavorite = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-
-    setInternalFavorite(!internalFavorite)
-    if (onFavorite) {
-      onFavorite(experience.id)
-    }
-  }
 
   const formattedPrice = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -83,21 +75,17 @@ export const ExperienceCard =({ experience, onFavorite, isFavorited: externalFav
           sizes="(max-width: 768px) 100vw, 400px"
         />
 
-        <Badge className="absolute top-3 left-3 px-2 py-1 bg-black/70 text-white border-none">
+        <Badge className="absolute top-3 left-3 px-2 py-1 border-none">
           {experience?.category?.name || "Experience"}
         </Badge>
 
-        <Button
-          onClick={handleFavorite}
-          variant="ghost"
-          className="absolute top-3 right-3 p-1.5 rounded-full bg-white/80 hover:bg-white dark:bg-gray-800/80 dark:hover:bg-gray-800 opacity-0 group-hover:opacity-100 transition-all duration-200"
-          size="icon"
-        >
-          <Heart
-            className={cn("h-5 w-5", isFavorite ? "fill-red-500 text-red-500" : "text-gray-700 dark:text-gray-300")}
-          />
-          <span className="sr-only">Add to favorites</span>
-        </Button>
+        <WishlistButton 
+          placeId={experience.id} 
+          className="absolute top-3 right-3 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200"
+          isInitiallyFavorited={isFavorite} 
+          size="default"
+          variant="outline"
+        />
 
         {hasMultipleImages && (
           <>
@@ -199,7 +187,7 @@ export const ExperienceCard =({ experience, onFavorite, isFavorited: externalFav
           </div>
           <div className="font-semibold text-base text-gray-900 dark:text-white">
             {formattedPrice}
-            <span className="text-xs font-normal text-gray-500 dark:text-gray-400">/person</span>
+            <span className="text-xs font-normal text-gray-500 dark:text-gray-400"> / person</span>
           </div>
         </div>
       </div>

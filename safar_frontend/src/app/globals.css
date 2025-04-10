@@ -147,3 +147,22 @@
 .content-width-slide {
   width: fit-content !important;
 }
+
+.toast-enter {
+  transform: translateX(100%);
+  opacity: 0;
+}
+.toast-enter-active {
+  transform: translateX(0);
+  opacity: 1;
+  transition: transform 300ms, opacity 300ms;
+}
+.toast-exit {
+  transform: translateX(0);
+  opacity: 1;
+}
+.toast-exit-active {
+  transform: translateX(100%);
+  opacity: 0;
+  transition: transform 300ms, opacity 300ms;
+}

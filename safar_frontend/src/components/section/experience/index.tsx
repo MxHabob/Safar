@@ -27,7 +27,7 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <MapPin className="h-4 w-4" />
               <span>
-                {data?.place?.city}, {data?.place?.region}, {data?.place?.country}
+                {data?.place?.city?.name}, {data?.place?.region?.name}, {data?.place?.country?.name}
               </span>
             </div>
           </div>
@@ -44,7 +44,7 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
         </div>
       </div>
 
-      <ImageGallery images={data?.images || []} />
+      <ImageGallery images={data?.media || []} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-6">
@@ -136,7 +136,7 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
       <div className="space-y-2">
         <h2 className="text-xl font-bold">Location</h2>
         <p className="text-gray-600">
-          {data?.place?.name}, {data?.place?.city}, {data?.place?.country}
+          {data?.place?.name}, {data?.place?.city?.name}, {data?.place?.country?.name}
         </p>
         <div className="h-[400px] rounded-xl overflow-hidden">
           <MapboxMap location={data?.location || ""} />

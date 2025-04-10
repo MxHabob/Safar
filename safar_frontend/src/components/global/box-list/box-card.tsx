@@ -3,25 +3,21 @@
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Heart, MapPin, Calendar } from "lucide-react"
+import { MapPin, Calendar } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 import type { Box } from "@/redux/types/types"
 import { Skeleton } from "@/components/ui/skeleton"
+import { WishlistButton } from "../wishlist-button"
 
 interface BoxCardProps {
   box: Box
 }
 
 export const BoxCard = ({ box }: BoxCardProps) => {
-  const [isFavorite, setIsFavorite] = useState(false)
+  const [isFavorite] = useState(false)
 
   const formattedPrice = (box?.total_price ?? 0).toLocaleString()
-  const toggleFavorite = (e: React.MouseEvent) => {
-    e.preventDefault()
-    setIsFavorite((prev) => !prev)
-  }
+
 
   return (
     <Link href={`/box/${box.id}`} className="block">
@@ -52,18 +48,13 @@ export const BoxCard = ({ box }: BoxCardProps) => {
             ))}
           </div>
         </div>
-          <Button
-            variant="ghost"
-            className="absolute top-3 right-3 p-1.5 rounded-full bg-white/80 hover:bg-white dark:bg-gray-800/80 dark:hover:bg-gray-800 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
-            size="icon"
-            onClick={toggleFavorite}
-          >
-            <Heart
-              className={cn("h-4 w-4", isFavorite ? "fill-red-500 text-red-500" : "text-gray-700 dark:text-gray-300")}
-            />
-            <span className="sr-only">Add to favorites</span>
-          </Button>
-
+        <WishlistButton 
+          placeId={box.id} 
+          isInitiallyFavorited={isFavorite} 
+          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200"
+          size="default"
+          variant="outline"
+        />
           <div className="absolute bottom-3 left-3 z-10">
             <div className="rounded-full px-3 py-1 bg-white/90 dark:bg-gray-800/90 shadow-md backdrop-blur-sm">
               <span className="text-base font-bold">{formattedPrice}</span>
@@ -75,7 +66,7 @@ export const BoxCard = ({ box }: BoxCardProps) => {
         <div className="p-4">
           <div className="mb-1 flex items-center text-gray-500 dark:text-gray-400">
             <MapPin className="mr-1 h-3.5 w-3.5 flex-shrink-0" />
-            <span className="truncate text-xs">{box?.country} - {box?.city}</span>
+            <span className="truncate text-xs">{box?.country?.name} - {box?.city?.name}</span>
           </div>
 
           <h3 className="mb-1 text-lg font-semibold line-clamp-1" title={box.name}>
@@ -86,16 +77,16 @@ export const BoxCard = ({ box }: BoxCardProps) => {
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-2 mb-1">
-            {box.places && (
+            {box.itinerary_days && (
               <Badge variant="outline" className="flex items-center text-sm font-normal">
                 <Calendar className="h-3 w-3 mr-1" />
-                Place - {box.places.length}
+                Place - {box.itinerary_days.items?.place?.length}
               </Badge>
             )}
-            {box.experiences && (
+            {box.itinerary_days && (
               <Badge variant="outline" className="flex items-center text-sm font-normal">
                 <Calendar className="h-3 w-3 mr-1" />
-                Experiences - {box.experiences.length}
+                Experiences - {box.itinerary_days.items?.experience?.length}
               </Badge>
             )}
           </div>

@@ -11,7 +11,7 @@ import { CheckCircle } from "lucide-react"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Spinner } from "../ui/spinner"
-import { useAuth } from "@/redux/hooks/useAuth"
+import { useAuth } from "@/redux/hooks/usee-auth"
 import { resendActivationSchema } from "@/lib/validations/auth"
 
 

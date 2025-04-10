@@ -161,9 +161,9 @@ export interface Place extends BaseModel {
   name: string;
   description?: string;
   location: string;
-  country?: string;
-  city?: string;
-  region?: string;
+  country?: Country;
+  city?: City;
+  region?: Region;
   rating: number;
   media?: Media[];
   is_available: boolean;
@@ -207,19 +207,48 @@ export interface Flight extends BaseModel {
   baggage_policy: Record<string, unknown>;
 }
 
+// Box Itinerary Types
+export interface BoxItineraryDay extends BaseModel {
+  box: Box | string;
+  day_number: number;
+  date?: string | null;
+  description?: string;
+  estimated_hours: number;
+  items: BoxItineraryItem;
+}
+
+export interface BoxItineraryItem extends BaseModel {
+  itinerary_day: BoxItineraryDay | string;
+  place?: Place[] | string | null;
+  experience?: Experience[] | string | null;
+  start_time: string;
+  end_time: string;
+  duration_minutes: number;
+  order: number;
+  notes?: string;
+  is_optional: boolean;
+  estimated_cost?: number | null;
+}
+
 // Box Types
 export interface Box extends BaseModel {
-  category?:Category;
+  category?: Category | string;
   name: string;
   description?: string;
-  total_price?: number;
+  total_price?: number | null;
   currency: string;
-  country?: string;
-  city?: string;
-  places?: Place[];
-  experiences?: Experience[];
-  contents: Record<string, unknown>[];
+  country?: Country | null;
+  city?: City | null;
   media: Media[];
+  duration_days: number;
+  duration_hours: number;
+  metadata?: Record<string, unknown>;
+  start_date?: string | null;
+  end_date?: string | null;
+  is_customizable: boolean;
+  max_group_size: number;
+  tags: any[];
+  itinerary_days?: BoxItineraryDay;
 }
 
 // Booking Types

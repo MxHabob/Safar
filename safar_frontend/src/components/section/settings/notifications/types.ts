@@ -13,5 +13,5 @@ export interface NotificationItemProps {
   notification: Notification;
   onMarkAsRead: () => void;
   onMarkAsUnread: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
 }

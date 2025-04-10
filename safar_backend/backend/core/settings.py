@@ -440,6 +440,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Domain and site settings
 DOMAIN = env("DOMAIN", default="localhost:3000")
 SITE_NAME = env("SITE_NAME", default="Safer")
+SITE_URL = env("SITE_URL", default="http://localhost:3000")
 
 # Cities light settings
 CITIES_LIGHT_TRANSLATION_LANGUAGES = []

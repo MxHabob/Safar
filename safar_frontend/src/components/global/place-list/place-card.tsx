@@ -8,6 +8,8 @@ import { Place } from "@/redux/types/types"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
+import { Badge } from "@/components/ui/badge"
+import { WishlistButton } from "../wishlist-button"
 
 interface PlaceCardProps {
   place: Place;
@@ -74,22 +76,18 @@ export const PlaceCard =({ place, onFavorite, isFavorited: externalFavorite }: P
         />
 
         {place?.category?.name && (
-          <div className="absolute top-3 left-3 bg-black/70 dark:bg-gray-900/90 text-white text-xs font-medium px-2.5 py-1.5 rounded-full">
+           <Badge className="absolute top-3 left-3 px-2 py-1 border-none">
             {place.category.name}
-          </div>
+          </Badge>
         )}
 
-        <Button
-          onClick={handleFavorite}
-          className="absolute top-3 right-3 p-1.5 rounded-full bg-white/80 hover:bg-white dark:bg-gray-800/80 dark:hover:bg-gray-800 opacity-0 group-hover:opacity-100 transition-all duration-200"
-          size="icon"
-          variant="ghost"
-        >
-          <Heart
-            className={cn("h-5 w-5", isFavorite ? "fill-red-500 text-red-500" : "text-gray-700 dark:text-gray-300")}
-          />
-          <span className="sr-only">Add to favorites</span>
-        </Button>
+          <WishlistButton 
+           placeId={place.id} 
+           className="absolute top-3 right-3 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200"
+           isInitiallyFavorited={isFavorite} 
+           size="default"
+           variant="outline"
+         />
 
         {hasMultipleImages && (
           <>
@@ -139,7 +137,7 @@ export const PlaceCard =({ place, onFavorite, isFavorited: externalFavorite }: P
         <div className="flex justify-between items-start mb-1.5">
           <h3 className="font-semibold text-lg line-clamp-1">
             {place.name}
-            {place.country && `, ${place.country}`}
+            {place.country?.name && `, ${place.country.name}`}
           </h3>
           {place.rating !== undefined && (
             <div className="flex items-center gap-1 bg-yellow-50 dark:bg-yellow-950/30 px-1.5 py-0.5 rounded-md">
@@ -158,9 +156,9 @@ export const PlaceCard =({ place, onFavorite, isFavorited: externalFavorite }: P
 
         <div className="flex justify-between items-center">
           <div className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[60%]">
-            {place.city && <span className="mr-1">{place.city}</span>}
+            {place.city && <span className="mr-1">{place.city.name}</span>}
             {place.city && place.region && <span className="mr-1">,</span>}
-            {place.region && <span>{place.region}</span>}
+            {place.region && <span>{place.region.name}</span>}
           </div>
           <div className="font-semibold text-base">{formattedPrice}</div>
         </div>

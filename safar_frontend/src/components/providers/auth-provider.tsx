@@ -3,7 +3,7 @@
 import { useEffect, createContext, useContext, type ReactNode } from "react"
 
 import { usePathname, useRouter } from "next/navigation"
-import { useAuth } from "@/redux/hooks/useAuth"
+import { useAuth } from "@/redux/hooks/usee-auth"
 
 interface AuthContextType {
   isAuthenticated: boolean

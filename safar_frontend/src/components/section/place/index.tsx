@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 export const PlacePageContant = ({id}:{id:string}) => {
     const { data } = useGetPlaceQuery(id)
     const router = useRouter()
-    console.log("place : ",data)
+
     return ( 
     <div className="max-w-6xl mx-auto p-4">
       <div className="mb-6 flex items-center justify-between">
@@ -32,10 +32,10 @@ export const PlacePageContant = ({id}:{id:string}) => {
           </Button>
         </div>
       </div>
-        <ImageGallery images={data?.images || []} />   
+        <ImageGallery images={data?.media || []} />   
         <div className="flex flex-col md:flex-row justify-between gap-8">
         <div className="space-y-4">
-          <h2 className="text-2xl font-semibold">{data?.name} - {data?.country} - <span>{data?.city}</span></h2>
+          <h2 className="text-2xl font-semibold">{data?.name} - {data?.country?.name} - <span>{data?.city?.name}</span></h2>
           <p className="text-lg">{data?.description}</p>
         </div>
       </div>  

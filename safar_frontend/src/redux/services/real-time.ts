@@ -18,7 +18,7 @@ class RealTimeService {
   private shouldReconnect = true;
   private messageQueue: Array<{action: string, payload: unknown}> = [];
   private pingInterval: NodeJS.Timeout | null = null;
-  private readonly PING_INTERVAL = 30000;
+  private readonly PING_INTERVAL = 60000;
   private connectionState: 'disconnected' | 'connecting' | 'connected' = 'disconnected';
   private lastActivityTimestamp = 0;
 
@@ -110,9 +110,10 @@ class RealTimeService {
   }
 
   private getReconnectDelay(): number {
+    const jitter = Math.random() * 10000; // Add random jitter (up to 1 second)
     return Math.min(
-      this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts),
-      30000
+      this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts) + jitter,
+      30000 // Cap at 30 seconds
     );
   }
 
@@ -180,7 +181,7 @@ class RealTimeService {
 
 // Singleton instance
 const realTimeService = new RealTimeService(
-  process.env.NEXT_PUBLIC_WS_URL || 'wss://your-backend.com/ws'
+  process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/safar/'
 );
 
 export default realTimeService;

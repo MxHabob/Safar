@@ -16,10 +16,12 @@ export const ListBox = ({ overlay, selected,  ...rest }: Props) => {
   if (error) {
     return (
       <div className="flex justify-center items-center py-8 text-red-500">
-        <p>Error loading experiences. Please try again later.</p>
+        <p>Error loading boxes. Please try again later.</p>
       </div>
     )
   }
+
+  console.log("boxes", boxes)
 
   return (
 
@@ -39,10 +41,7 @@ overlay={overlay}
       selected === box.id ? "scale-[1.02]" : ""
     }`}
   >
-      <BoxCard
-         box={box}
-            />
-    
+      <BoxCard box={box}/>
   </SwiperSlide>
 ))
  ) : !isLoading ? (
