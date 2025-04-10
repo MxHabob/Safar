@@ -87,7 +87,6 @@ export const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, Fetch
   }
 
   if (result.error?.status === 403) {
-    // Handle CSRF or other cookie-related errors
     api.dispatch(logout())
   }
 
@@ -676,6 +675,7 @@ export const {
   useCreateExperienceMutation,
   useUpdateExperienceMutation,
   useDeleteExperienceMutation,
+
   // Flight
   useGetFlightsQuery,
   useSearchFlightsQuery,
@@ -695,6 +695,7 @@ export const {
   useConfirmBookingMutation,
   useCancelBookingMutation,
   useUpdateBookingMutation,
+  
   // Wishlist
   useGetWishlistsQuery,
   useGetUserWishlistQuery,

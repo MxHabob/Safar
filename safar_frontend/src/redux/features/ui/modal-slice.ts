@@ -1,4 +1,4 @@
-import { Booking, Flight, Experience, Place } from '@/redux/types/types';
+import { Booking, Flight, Experience, Place, Message, User } from '@/redux/types/types';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export type ModalType = "CreateOrEditPlace" | "deletePlace" | "CreateOrEditExperience" | "deleteExperience" | "BookingDetails" | "BookingConfirmationOrCancellation" | "BookingModification" | "SuccessOrFailure" | "PaymentConfirmation" | "Events" | "ChatModel" | "DiscountDetails"
@@ -8,6 +8,8 @@ export interface ModalData {
   Experience?: Experience;
   Flight?: Flight;
   Booking?: Booking;
+  otherUser?: User;
+  messages?: Message;
   message?: string;
   success?: boolean;
 }

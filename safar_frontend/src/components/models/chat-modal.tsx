@@ -15,71 +15,22 @@ import { useSendMessageMutation } from "@/redux/services/api"
 import { toastPromise } from "@/lib/toast-promise"
 import { Send, Loader2 } from "lucide-react"
 import { formatDate } from "@/lib/utils/date-formatter"
-
-// Mock messages data - replace with actual API call
-const mockMessages = [
-  {
-    id: "1",
-    sender: {
-      id: "user1",
-      first_name: "John",
-      last_name: "Doe",
-    },
-    receiver: {
-      id: "user2",
-      first_name: "Jane",
-      last_name: "Smith",
-    },
-    message_text: "Hello, I have a question about my booking.",
-    created_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-    is_read: true,
-  },
-  {
-    id: "2",
-    sender: {
-      id: "user2",
-      first_name: "Jane",
-      last_name: "Smith",
-    },
-    receiver: {
-      id: "user1",
-      first_name: "John",
-      last_name: "Doe",
-    },
-    message_text: "Hi John, how can I help you?",
-    created_at: new Date(Date.now() - 3000000).toISOString(), // 50 minutes ago
-    is_read: true,
-  },
-  {
-    id: "3",
-    sender: {
-      id: "user1",
-      first_name: "John",
-      last_name: "Doe",
-    },
-    receiver: {
-      id: "user2",
-      first_name: "Jane",
-      last_name: "Smith",
-    },
-    message_text: "I'd like to change the dates of my reservation. Is that possible?",
-    created_at: new Date(Date.now() - 2400000).toISOString(), // 40 minutes ago
-    is_read: true,
-  },
-]
+import type { Message, User } from "@/redux/types/types"
+import { useAuth } from "@/redux/hooks/usee-auth"
 
 export default function ChatModal() {
   const dispatch = useDispatch()
   const { isOpen, type, data } = useSelector((state: RootState) => state.modal)
   const [sendMessage] = useSendMessageMutation()
   const [isLoading, setIsLoading] = useState(false)
-  const [messages, setMessages] = useState(mockMessages)
   const [newMessage, setNewMessage] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const isModalOpen = isOpen && type === "ChatModel"
+  const messages = (data.messages as Message[]) || []
+  const otherUser = data.otherUser as User
   const booking = data.Booking
-  const currentUser = { id: "user1", first_name: "John", last_name: "Doe" } // Replace with actual user
+  const { user, isAuthenticated } = useAuth()
 
   useEffect(() => {
     if (isModalOpen) {
@@ -102,7 +53,7 @@ export default function ChatModal() {
     if (!newMessage.trim()) return
 
     const messageData = {
-      receiver: { id: "user2" }, // Replace with actual receiver
+      receiver: otherUser.id,
       message_text: newMessage,
       booking: booking?.id,
     }
@@ -116,19 +67,6 @@ export default function ChatModal() {
         error: (error) => `Failed to send message: ${error.data?.message || "Unknown error"}`,
       })
 
-      // Optimistically add message to UI
-      setMessages([
-        ...messages,
-        {
-          id: Date.now().toString(),
-          sender: currentUser,
-          receiver: { id: "user2", first_name: "Jane", last_name: "Smith" },
-          message_text: newMessage,
-          created_at: new Date().toISOString(),
-          is_read: false,
-        },
-      ])
-
       setNewMessage("")
     } catch (error) {
       console.error("Error sending message:", error)
@@ -137,10 +75,12 @@ export default function ChatModal() {
     }
   }
 
+  if (!isModalOpen || !otherUser) return null
+
   return (
     <Modal
-      title="Chat"
-      description={booking ? `Regarding booking #${booking.id}` : "Support Chat"}
+      title={`Chat with ${otherUser.first_name} ${otherUser.last_name}`}
+      description={booking ? `Regarding booking #${booking.id}` : ""}
       isOpen={isModalOpen}
       onClose={onClose}
       className="sm:max-w-md"
@@ -148,37 +88,43 @@ export default function ChatModal() {
       <div className="flex h-[400px] flex-col">
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-4">
-            {messages.map((message) => {
-              const isCurrentUser = message.sender.id === currentUser.id
+            {messages.length === 0 ? (
+              <div className="flex h-32 items-center justify-center">
+                <p className="text-center text-muted-foreground">No messages yet. Start the conversation!</p>
+              </div>
+            ) : (
+              messages.map((message) => {
+                const isCurrentUser = message.sender.id === user.id
 
-              return (
-                <div key={message.id} className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}>
-                  <div className={`flex max-w-[80%] ${isCurrentUser ? "flex-row-reverse" : "flex-row"}`}>
-                    <Avatar className={`h-8 w-8 ${isCurrentUser ? "ml-2" : "mr-2"}`}>
-                      <AvatarImage src={`/placeholder.svg?height=32&width=32`} />
-                      <AvatarFallback>
-                        {isCurrentUser
-                          ? `${currentUser.first_name.charAt(0)}${currentUser.last_name.charAt(0)}`
-                          : `${message.sender.first_name.charAt(0)}${message.sender.last_name.charAt(0)}`}
-                      </AvatarFallback>
-                    </Avatar>
+                return (
+                  <div key={message.id} className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}>
+                    <div className={`flex max-w-[80%] ${isCurrentUser ? "flex-row-reverse" : "flex-row"}`}>
+                      <Avatar className={`h-8 w-8 ${isCurrentUser ? "ml-2" : "mr-2"}`}>
+                        <AvatarImage src={`/placeholder.svg?height=32&width=32`} />
+                        <AvatarFallback>
+                          {isCurrentUser
+                            ? `${currentUser.first_name.charAt(0)}${currentUser.last_name.charAt(0)}`
+                            : `${message.sender.first_name.charAt(0)}${message.sender.last_name.charAt(0)}`}
+                        </AvatarFallback>
+                      </Avatar>
 
-                    <div>
-                      <div
-                        className={`rounded-lg p-3 ${
-                          isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted"
-                        }`}
-                      >
-                        <p className="text-sm">{message.message_text}</p>
+                      <div>
+                        <div
+                          className={`rounded-lg p-3 ${
+                            isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted"
+                          }`}
+                        >
+                          <p className="text-sm">{message.message_text}</p>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {formatDate(new Date(message.created_at), "HH:mm")}
+                        </p>
                       </div>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {formatDate(new Date(message.created_at), "HH:mm")}
-                      </p>
                     </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })
+            )}
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
