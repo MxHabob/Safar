@@ -78,15 +78,14 @@ export const ExperienceCard =({ experience, isFavorited: externalFavorite }: Exp
         <Badge className="absolute top-3 left-3 px-2 py-1 border-none">
           {experience?.category?.name || "Experience"}
         </Badge>
-
         <WishlistButton 
-          placeId={experience.id} 
+          itemId={experience.id} 
+          itemType={"experience"} 
+          isFavorite={isFavorite} 
           className="absolute top-3 right-3 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200"
-          isInitiallyFavorited={isFavorite} 
           size="default"
           variant="outline"
         />
-
         {hasMultipleImages && (
           <>
             <Button

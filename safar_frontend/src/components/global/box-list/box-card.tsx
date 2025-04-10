@@ -49,8 +49,9 @@ export const BoxCard = ({ box }: BoxCardProps) => {
           </div>
         </div>
         <WishlistButton 
-          placeId={box.id} 
-          isInitiallyFavorited={isFavorite} 
+          itemId={box.id} 
+          itemType={"box"} 
+          isFavorite={isFavorite} 
           className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200"
           size="default"
           variant="outline"

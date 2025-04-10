@@ -3,27 +3,30 @@
 import { Heart } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-
 import { useState } from "react"
 import { toast } from 'sonner'
 import { useAddToWishlistMutation, useRemoveFromWishlistMutation } from '@/redux/services/api'
 
+type WishlistItemType = 'place' | 'experience' | 'flight' | 'box'
+
 interface WishlistButtonProps {
-  placeId: string
-  isInitiallyFavorited: boolean
+  itemId: string
+  itemType: WishlistItemType
+  isFavorite: boolean
   className?: string
   size?: "sm" | "default" | "lg" | "icon"
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
 }
 
 export const WishlistButton = ({
-  placeId,
-  isInitiallyFavorited,
+  itemId,
+  itemType,
+  isFavorite,
   className,
   size = "icon",
   variant = "ghost",
 }: WishlistButtonProps) => {
-  const [isFavorited, setIsFavorited] = useState(isInitiallyFavorited)
+  const [isFavorited, setIsFavorited] = useState(isFavorite)
   const [addToWishlist] = useAddToWishlistMutation()
   const [removeFromWishlist] = useRemoveFromWishlistMutation()
 
@@ -31,7 +34,7 @@ export const WishlistButton = ({
     try {
       if (isFavorited) {
         await toast.promise(
-          removeFromWishlist(placeId).unwrap(),
+          removeFromWishlist(itemId).unwrap(),
           {
             loading: 'Removing from wishlist...',
             success: () => {
@@ -42,8 +45,12 @@ export const WishlistButton = ({
           }
         )
       } else {
+        const wishlistItem = {
+          [itemType]: { id: itemId }
+        }
+        
         await toast.promise(
-          addToWishlist({ place: placeId }).unwrap(),
+          addToWishlist(wishlistItem).unwrap(),
           {
             loading: 'Adding to wishlist...',
             success: () => {
