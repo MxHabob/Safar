@@ -14,7 +14,7 @@ services:
     volumes:
       - ./backend:/app:z
       - ./static:/app/static
-      - ./safar-firebase-credentials.json:/app/safar-firebase-credentials.json
+      - ./safar_firebase_credentials.json:/app/safar_firebase_credentials.json:ro,z
       - ./staticfiles:/app/staticfiles:z
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]

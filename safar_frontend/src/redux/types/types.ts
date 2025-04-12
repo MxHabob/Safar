@@ -79,8 +79,30 @@ export interface SocialAuthResponse {
   user: User;
 }
 
+export enum UserRole {
+  GUEST = 'guest',
+  OWNER = 'owner',
+  ORGANIZATION = 'organization',
+  DEVELOPER = 'developer',
+  ADMIN = 'admin'
+}
+
+export enum MembershipLevel {
+  BRONZE = 'bronze',
+  SILVER = 'silver',
+  GOLD = 'gold',
+  PLATINUM = 'platinum'
+}
+
+export enum Gender {
+  MALE = 'male',
+  FEMALE = 'female',
+  PREFER_NOT_TO_SAY = 'prefer_not_to_say',
+  OTHER = 'other'
+}
+
 export interface UserProfile extends BaseModel {
-  user: string; // User ID
+  user: string;
   avatar?: string;
   bio?: string;
   phone_number?: string;
@@ -91,7 +113,7 @@ export interface UserProfile extends BaseModel {
   postal_code?: string;
   address?: string;
   date_of_birth?: string;
-  gender: 'male' | 'female' | 'prefer_not_to_say';
+  gender: Gender;
   travel_history: any[];
   travel_interests: any[];
   language_proficiency: Record<string, unknown>;
@@ -117,49 +139,57 @@ export interface User extends BaseModel {
   is_active: boolean;
   is_staff: boolean;
   is_2fa_enabled: boolean;
-  role: 'guest' | 'owner' | 'organization' | 'developer';
+  role: UserRole;
   is_profile_public: boolean;
-  following: string[]; // Array of user IDs
+  following: string[];
   points: number;
-  membership_level: 'bronze' | 'silver' | 'gold';
+  membership_level: MembershipLevel;
   profile?: UserProfile;
+  last_login_device?: string;
+  last_login_ip?: string;
+  last_activity?: string;
 }
-export interface ContentType extends BaseModel{
-  app_label: string; // Not limited to specific apps since it's generic
-  model: string; // Python
+
+// Content Types
+export interface ContentType extends BaseModel {
+  app_label: string;
+  model: string;
 }
+export enum InteractionType {
+  VIEW_PLACE = 'view_place',
+  VIEW_EXPERIENCE = 'view_experience',
+  VIEW_FLIGHT = 'view_flight',
+  WISHLIST_ADD = 'wishlist_add',
+  WISHLIST_REMOVE = 'wishlist_remove',
+  SHARE = 'share',
+  PHOTO_VIEW = 'photo_view',
+  MAP_VIEW = 'map_view',
+  SEARCH = 'search',
+  FILTER = 'filter',
+  DETAILS_EXPAND = 'details_expand',
+  AVAILABILITY_CHECK = 'availability_check',
+  BOOKING_START = 'booking_start',
+  BOOKING_ABANDON = 'booking_abandon',
+  BOOKING_COMPLETE = 'booking_complete',
+  RATING_GIVEN = 'rating_given',
+  REVIEW_ADDED = 'review_added',
+  RECOMMENDATION_SHOW = 'recommendation_show',
+  RECOMMENDATION_CLICK = 'recommendation_click'
+}
+
+
 export interface UserInteraction extends BaseModel {
-  user: number | User; // Can be either the user ID or the full User object
-  content_type: number | ContentType; // ContentType ID or full ContentType object
-  object_id: number; // ID of the related object
-  content_object: {  id: number;
-    [key: string]: any;}; // Strongly typed generic reference
+  user: User | string;
+  content_type: string | ContentType;
+  object_id: string;
+  content_object: {
+    id: string;
+    [key: string]: any;
+  };
   interaction_type: InteractionType;
   metadata: Record<string, any>;
-  device_type?: string;
-
+  device_type?: 'mobile' | 'desktop' | 'tablet';
 }
-
-type InteractionType = 
-  | 'view_place'
-  | 'view_experience'
-  | 'view_flight'
-  | 'wishlist_add'
-  | 'wishlist_remove'
-  | 'share'
-  | 'photo_view'
-  | 'map_view'
-  | 'search'
-  | 'filter'
-  | 'details_expand'
-  | 'availability_check'
-  | 'booking_start'
-  | 'booking_abandon'
-  | 'booking_complete'
-  | 'rating_given'
-  | 'review_added'
-  | 'recommendation_show'
-  | 'recommendation_click';
 
 // Category Types
 export interface Category extends BaseModel {
@@ -206,6 +236,7 @@ export interface Place extends BaseModel {
   currency: string;
   metadata?: Record<string, unknown>;
   experiences?: Experience[];
+  is_in_wishlist?: boolean
 }
 
 // Experience Types
@@ -224,6 +255,7 @@ export interface Experience extends BaseModel {
   media: Media[];
   rating: number;
   is_available: boolean;
+  is_in_wishlist?: boolean | false
 }
 
 // Flight Types
@@ -240,6 +272,7 @@ export interface Flight extends BaseModel {
   currency: string;
   duration: number;
   baggage_policy: Record<string, unknown>;
+  is_in_wishlist?: boolean | false
 }
 
 // Box Itinerary Types
@@ -284,6 +317,7 @@ export interface Box extends BaseModel {
   max_group_size: number;
   tags: any[];
   itinerary_days?: BoxItineraryDay;
+  is_in_wishlist?: boolean | false
 }
 
 // Booking Types

@@ -6,24 +6,19 @@ import { useState } from "react"
 import Image from "next/image"
 import { MapPin, ChevronRight, ChevronLeft, Clock, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { Experience } from "@/redux/types/types"
+import { InteractionType, type Experience } from "@/redux/types/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import Link from "next/link"
 import { WishlistButton } from "../wishlist-button"
+import InteractionLink from "../interaction-link"
 
 interface ExperienceCardProps {
   experience: Experience
-  onFavorite?: (id: string) => void
-  isFavorited?: boolean
 }
 
-export const ExperienceCard =({ experience, isFavorited: externalFavorite }: ExperienceCardProps) =>{
+export const ExperienceCard =({ experience }: ExperienceCardProps) =>{
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [internalFavorite] = useState(false)
-
-  const isFavorite = externalFavorite !== undefined ? externalFavorite : internalFavorite
 
   const images = experience.media || []
   const hasMultipleImages = images.length > 1
@@ -64,7 +59,7 @@ export const ExperienceCard =({ experience, isFavorited: externalFavorite }: Exp
 
 
   return (
-  <Link href={`/experience/${experience.id}`} className="block">
+  <InteractionLink href={`/experience/${experience.id}`} className="block" interactionType={InteractionType.VIEW_EXPERIENCE} contentType={"experience"} objectId={experience.id}>
     <div className="relative w-full rounded-3xl bg-card shadow-md overflow-hidden group min-w-sm max-w-sm transition-all hover:shadow-lg">
       <div className="relative aspect-[4/3] w-full overflow-hidden">
         <Image
@@ -81,7 +76,7 @@ export const ExperienceCard =({ experience, isFavorited: externalFavorite }: Exp
         <WishlistButton 
           itemId={experience.id} 
           itemType={"experience"} 
-          isFavorite={isFavorite} 
+          isInwishlist={experience.is_in_wishlist || false} 
           className="absolute top-3 right-3 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200"
           size="default"
           variant="outline"
@@ -191,7 +186,7 @@ export const ExperienceCard =({ experience, isFavorited: externalFavorite }: Exp
         </div>
       </div>
     </div>
-  </Link>
+  </InteractionLink>
   )
 }
 

@@ -37,9 +37,6 @@ export const ListPlaces = ({ selected, favorites = [], onFavoriteToggle }: Props
 
   const hasMorePlaces = data?.next !== null
   
-  const isPlaceFavorited = (placeId: string) => {
-    return favorites.includes(placeId)
-  }
 
   const handleFavorite = (id: string) => {
     if (onFavoriteToggle) {
@@ -66,11 +63,7 @@ export const ListPlaces = ({ selected, favorites = [], onFavoriteToggle }: Props
                 selected === place.id ? "scale-[1.02] ring-2 ring-primary ring-offset-2 rounded-3xl" : ""
               }`}
             >
-                <PlaceCard 
-                  place={place} 
-                  onFavorite={handleFavorite} 
-                  isFavorited={isPlaceFavorited(place.id)} 
-                />
+              <PlaceCard  place={place}  />
             </div>
           ))
         ) : !isLoading ? (

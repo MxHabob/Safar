@@ -225,8 +225,6 @@ else:
 
 STATICFILES_DIRS = [STATIC_DIR]
 
-print("STATICFILES_DIRS : ", STATICFILES_DIRS)
-
 # Static files finders
 STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.FileSystemFinder",
@@ -450,7 +448,7 @@ SITE_NAME = env("SITE_NAME", default="Safer")
 SITE_URL = env("SITE_URL", default="http://localhost:3000")
 
 # Firebase settings
-FIREBASE_CREDENTIALS_PATH = env("FIREBASE_CREDENTIALS_PATH", default="/app/safar-firebase-credentials.json")
+FIREBASE_CREDENTIALS_PATH = env("FIREBASE_CREDENTIALS_PATH", default="/app/safar_firebase_credentials.json")
 
 # Phone number field settings
 PHONENUMBER_DEFAULT_REGION = "YE"

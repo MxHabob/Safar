@@ -1,6 +1,9 @@
 import uuid
 from django.db import models
 from rest_framework.pagination import PageNumberPagination
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework import viewsets, permissions, status
 
 class GENPagination(PageNumberPagination):
     page_size = 10
@@ -26,3 +29,14 @@ class BaseModel(models.Model):
 
     class Meta:
         abstract = True
+
+class BaseViewSet(viewsets.ModelViewSet):
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter] 
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = GENPagination
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if hasattr(self.queryset.model, 'is_deleted'):
+            queryset = queryset.filter(is_deleted=False)
+        return queryset

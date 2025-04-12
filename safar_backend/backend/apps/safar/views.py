@@ -1,17 +1,15 @@
-from rest_framework import viewsets, permissions, status
+from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter, OrderingFilter
 from django.db.models import Q
 from django.utils import timezone
-from apps.core_apps.general import GENPagination
 from apps.safar.models import (
     Category, Discount, Place, Experience,
     Flight, Box, Booking, Wishlist, Review, Payment, Message, Notification
 )
 from apps.core_apps.algorithms_engines.recommendation_engine import RecommendationEngine
 from apps.core_apps.algorithms_engines.generation_box_algorithm import BoxGenerator
+from apps.core_apps.general import BaseViewSet
 import logging
 from apps.safar.serializers import (
     CategorySerializer,
@@ -22,16 +20,6 @@ from apps.safar.serializers import (
 
 logger = logging.getLogger(__name__)
 
-class BaseViewSet(viewsets.ModelViewSet):
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter] 
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    pagination_class = GENPagination
-    
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        if hasattr(self.queryset.model, 'is_deleted'):
-            queryset = queryset.filter(is_deleted=False)
-        return queryset
 
 class CategoryViewSet(BaseViewSet):
     queryset = Category.objects.all()
