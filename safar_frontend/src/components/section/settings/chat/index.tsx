@@ -169,22 +169,19 @@ export const ChatInbox = () => {
     }
   }, [messagesData, user?.id, getConversationId])
 
-  // Open chat and mark messages as read
+
   const handleOpenChat = useCallback((conversation: Conversation) => {
     if (!user?.id) return
 
-    // Mark unread messages as read
-<<<<<<< HEAD
     conversation.messages.forEach((message) => {
       if (!message.is_read && message.sender.id !== user?.id) {
-=======
+
     const unreadMessages = conversation.messages.filter(
       (message) => !message.is_read && message.sender.id !== user.id
     )
 
     if (unreadMessages.length > 0) {
       unreadMessages.forEach((message) => {
->>>>>>> 77b4ed997afdaa7bab9e8ba55da69d420558ee3d
         markMessageAsRead(message.id)
       })
 
