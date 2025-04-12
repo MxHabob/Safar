@@ -1,11 +1,12 @@
 "use client"
 
 import { Heart } from 'lucide-react'
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { toast } from 'sonner'
 import { useAddToWishlistMutation, useRemoveFromWishlistMutation } from '@/redux/services/api'
+import InteractionButton from './interaction-button'
+import { InteractionType } from '@/redux/types/types'
 
 type WishlistItemType = 'place' | 'experience' | 'flight' | 'box'
 
@@ -67,7 +68,8 @@ export const WishlistButton = ({
   }
 
   return (
-    <Button
+    <InteractionButton
+     interactionType={InteractionType.WISHLIST_ADD} contentType={'wishlist'} objectId={itemId}    
       onClick={handleWishlistToggle}
       className={cn(
         "rounded-full transition-colors",
@@ -77,7 +79,7 @@ export const WishlistButton = ({
       size={size}
       variant={variant}
       aria-label={isFavorited ? "Remove from wishlist" : "Add to wishlist"}
-    >
+      >
       <Heart
         className={cn(
           "h-4 w-4 transition-all",
@@ -86,6 +88,6 @@ export const WishlistButton = ({
           size === "sm" ? "h-3.5 w-3.5" : ""
         )}
       />
-    </Button>
+    </InteractionButton>
   )
 }

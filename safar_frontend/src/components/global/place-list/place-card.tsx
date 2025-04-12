@@ -2,28 +2,27 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Heart, MapPin, ChevronRight, ChevronLeft } from 'lucide-react'
+import { MapPin, ChevronRight, ChevronLeft } from 'lucide-react'
 import { cn } from "@/lib/utils"
-import { Place } from "@/redux/types/types"
+import { InteractionType, Place } from "@/redux/types/types"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { WishlistButton } from "../wishlist-button"
+import InteractionLink from "../interaction-link"
 
 interface PlaceCardProps {
   place: Place;
-  onFavorite?: (id: string) => void;
-  isFavorited?: boolean;
+
 }
 
-export const PlaceCard =({ place, onFavorite, isFavorited: externalFavorite }: PlaceCardProps) => {
+export const PlaceCard =({ place}: PlaceCardProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [internalFavorite, setInternalFavorite] = useState(false)
   
   // Use external favorite state if provided, otherwise use internal state
   const isFavorite = externalFavorite !== undefined ? externalFavorite : internalFavorite
-  
+
   // Safely access images array with fallbacks
   const images = place.media || []
   const hasMultipleImages = images.length > 1
@@ -44,16 +43,6 @@ export const PlaceCard =({ place, onFavorite, isFavorited: externalFavorite }: P
     }
   }
 
-  const handleFavorite = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
-    setInternalFavorite(!internalFavorite)
-    if (onFavorite) {
-      onFavorite(place.id)
-    }
-  }
-
   // Format price with proper currency
   const formattedPrice = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -64,7 +53,7 @@ export const PlaceCard =({ place, onFavorite, isFavorited: externalFavorite }: P
 
 
   return (
-<Link href={`/place/${place.id}`} className="block">
+<InteractionLink href={`/place/${place.id}`} className="block" interactionType={InteractionType.VIEW_PLACE} contentType={"place"} objectId={place.id} >
   <div className="relative w-full rounded-3xl bg-card shadow-md overflow-hidden group transition-all hover:shadow-lg">
       <div className="relative aspect-[4/3] w-full overflow-hidden">
         <Image
@@ -163,7 +152,7 @@ export const PlaceCard =({ place, onFavorite, isFavorited: externalFavorite }: P
         </div>
       </div>
   </div>
-</Link>
+</InteractionLink>
   )
 }
 

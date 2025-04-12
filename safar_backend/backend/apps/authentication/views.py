@@ -8,7 +8,10 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
     TokenVerifyView
 )
+from apps.authentication.serializers import UserInteractionSerializer
+from apps.authentication.models import UserInteraction
 from rest_framework_api_key.permissions import HasAPIKey
+from apps.core_apps.general import BaseViewSet
 
 class CustomProviderAuthView(ProviderAuthView):
     permission_classes = [HasAPIKey]
@@ -125,3 +128,17 @@ class LogoutView(APIView):
             samesite=settings.AUTH_COOKIE_SAMESITE
         )
         return response
+
+class UserInteractionListView(BaseViewSet):
+    """
+    Endpoint for listing and creating user interactions
+    """
+    serializer_class = UserInteractionSerializer
+    
+    def get_queryset(self):
+        return UserInteraction.objects.filter(user=self.request.user).select_related(
+            'content_type'
+        ).order_by('-created_at')
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

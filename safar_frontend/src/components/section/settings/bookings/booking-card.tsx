@@ -82,7 +82,7 @@ function PlaceBookingCard({ booking, place, onCancel }: { booking: Booking; plac
         <div className="flex items-center gap-1 mb-4">
           <MapPin className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
-            {place?.city}, {place?.country}
+            {place?.city?.name}, {place?.country?.name}
           </span>
         </div>
 
@@ -298,7 +298,7 @@ function FlightBookingCard({ booking, flight, onCancel }: { booking: Booking; fl
           <Link href={`/bookings/${booking.id}`}>View Details</Link>
         </Button>
         {booking.status !== "Cancelled" && (
-          <Button variant="destructive" onClick={onCancel} disabled={booking?.status === "Cancelled"}>
+          <Button variant="destructive" onClick={onCancel} disabled={booking?.status as string === "Cancelled"}>
             <X className="h-4 w-4 mr-2" />
             Cancel
           </Button>
@@ -359,7 +359,7 @@ function BoxBookingCard({ booking, box, onCancel }: { booking: Booking; box: Boo
         <div className="flex items-center gap-1 mb-4">
           <MapPin className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
-            {box?.city}, {box?.country}
+            {box?.city?.name}, {box?.country?.name}
           </span>
         </div>
 
@@ -390,7 +390,7 @@ function BoxBookingCard({ booking, box, onCancel }: { booking: Booking; box: Boo
           <Link href={`/bookings/${booking.id}`}>View Details</Link>
         </Button>
         {booking.status !== "Cancelled" && (
-          <Button variant="destructive" onClick={onCancel} disabled={booking.status === "Cancelled"}>
+          <Button variant="destructive" onClick={onCancel} disabled={booking.status as string === "Cancelled"}>
             <X className="h-4 w-4 mr-2" />
             Cancel
           </Button>

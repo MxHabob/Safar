@@ -15,7 +15,9 @@ import type {
   Notification,
   LoginResponse,
   User,
-  PaginatedResponse
+  PaginatedResponse,
+  InteractionType,
+  UserInteraction
 } from '@/redux/types/types';
 import { logout } from '../features/auth/auth-slice';
 
@@ -110,7 +112,8 @@ export const api = createApi({
     'Message',
     'Notification',
     'Auth',
-    'User'
+    'User',
+    'UserInteraction'
   ],
   endpoints: (builder) => ({
     // Authentication endpoints
@@ -224,6 +227,47 @@ export const api = createApi({
           },
         }),
         invalidatesTags: ["User"],
+      }),
+      getUserInteractions: builder.query<PaginatedResponse<UserInteraction>, { 
+        page?: number; 
+        page_size?: number;
+        interaction_type?: InteractionType;
+        content_type?: string;
+      }>({
+        query: (params) => ({
+          url: '/interactions/',
+          params
+        }),
+        providesTags: ['UserInteraction']
+      }),
+      
+      getUserInteraction: builder.query<UserInteraction, string>({
+        query: (id) => `/interactions/${id}/`,
+        providesTags: (result, error, id) => [{ type: 'UserInteraction', id }]
+      }),
+      
+      createUserInteraction: builder.mutation<UserInteraction, Partial<UserInteraction>>({
+        query: (body) => ({
+          url: '/interactions/',
+          method: 'POST',
+          body
+        }),
+        invalidatesTags: ['UserInteraction']
+      }),
+      
+      logInteraction: builder.mutation<UserInteraction, {
+        content_type: string;
+        object_id: string;
+        interaction_type: InteractionType;
+        metadata?: Record<string, never>;
+        device_type?: 'mobile' | 'desktop' | 'tablet';
+      }>({
+        query: (body) => ({
+          url: '/interactions/',
+          method: 'POST',
+          body
+        }),
+        invalidatesTags: ['UserInteraction']
       }),
 
       getCategories: builder.query<PaginatedResponse<Category>, { page?: number; page_size?: number }>({
@@ -645,6 +689,11 @@ export const {
   useDeleteUserMutation,
   useSocialAuthMutation,
 
+  // User Interaction hooks
+  useGetUserInteractionsQuery,
+  useGetUserInteractionQuery,
+  useCreateUserInteractionMutation,
+  useLogInteractionMutation,
   // Category
   useGetCategoriesQuery,
   useGetCategoryQuery,

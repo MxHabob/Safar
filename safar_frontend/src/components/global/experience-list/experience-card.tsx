@@ -6,12 +6,12 @@ import { useState } from "react"
 import Image from "next/image"
 import { MapPin, ChevronRight, ChevronLeft, Clock, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { Experience } from "@/redux/types/types"
+import { InteractionType, type Experience } from "@/redux/types/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import Link from "next/link"
 import { WishlistButton } from "../wishlist-button"
+import InteractionLink from "../interaction-link"
 
 interface ExperienceCardProps {
   experience: Experience
@@ -64,7 +64,7 @@ export const ExperienceCard =({ experience, isFavorited: externalFavorite }: Exp
 
 
   return (
-  <Link href={`/experience/${experience.id}`} className="block">
+  <InteractionLink href={`/experience/${experience.id}`} className="block" interactionType={InteractionType.VIEW_EXPERIENCE} contentType={"experience"} objectId={experience.id}>
     <div className="relative w-full rounded-3xl bg-card shadow-md overflow-hidden group min-w-sm max-w-sm transition-all hover:shadow-lg">
       <div className="relative aspect-[4/3] w-full overflow-hidden">
         <Image
@@ -191,7 +191,7 @@ export const ExperienceCard =({ experience, isFavorited: externalFavorite }: Exp
         </div>
       </div>
     </div>
-  </Link>
+  </InteractionLink>
   )
 }
 

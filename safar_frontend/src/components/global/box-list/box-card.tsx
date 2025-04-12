@@ -2,12 +2,12 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import Link from "next/link"
 import { MapPin, Calendar } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import type { Box } from "@/redux/types/types"
+import { InteractionType, type Box } from "@/redux/types/types"
 import { Skeleton } from "@/components/ui/skeleton"
 import { WishlistButton } from "../wishlist-button"
+import InteractionLink from "../interaction-link"
 
 interface BoxCardProps {
   box: Box
@@ -20,7 +20,7 @@ export const BoxCard = ({ box }: BoxCardProps) => {
 
 
   return (
-    <Link href={`/box/${box.id}`} className="block">
+    <InteractionLink href={`/box/${box.id}`} className="block" interactionType={InteractionType.VIEW_PLACE} contentType={"box"} objectId={box.id}>
       <div className="relative h-[350px] w-[280px] min-w-sm rounded-3xl bg-card shadow-md overflow-hidden group transition-all hover:shadow-lg">
         <div className="relative h-[180px]">
         <div className="grid grid-cols-3 gap-0.5 h-full w-full">
@@ -93,7 +93,7 @@ export const BoxCard = ({ box }: BoxCardProps) => {
           </div>
         </div>
       </div>
-    </Link>
+    </InteractionLink>
   )
 }
 

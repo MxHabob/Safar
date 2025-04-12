@@ -50,6 +50,7 @@ class ExperienceSerializer(serializers.ModelSerializer):
     media = MediaSerializer(many=True, read_only=True)
     category = CategorySerializer(read_only=True)
     place = ExperiencePlaceSerializer(read_only=True)
+    is_in_wishlist = serializers.SerializerMethodField()
 
     class Meta:
         model = Experience
@@ -57,10 +58,16 @@ class ExperienceSerializer(serializers.ModelSerializer):
             'id', 'place', 'owner', 'category', 'title', 
             'description', 'location', 'price_per_person', 
             'currency', 'duration', 'capacity', 'schedule', 
-            'media', 'rating', 'is_available'
+            'media', 'rating','is_in_wishlist', 'is_available'
         ]
         read_only_fields = ['id']
 
+    def get_is_in_wishlist(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return Wishlist.objects.filter(user=request.user, experience=obj).exists()
+        return False
+    
 class PlaceSerializer(serializers.ModelSerializer):
     country = CountrySerializer(read_only=True)
     region = RegionSerializer(read_only=True)
@@ -69,13 +76,14 @@ class PlaceSerializer(serializers.ModelSerializer):
     owner = UserSerializer(read_only=True)
     experiences = serializers.SerializerMethodField()
     media = MediaSerializer(many=True, read_only=True)
+    is_in_wishlist = serializers.SerializerMethodField()
 
     class Meta:
         model = Place
         fields = [
             'id', 'category', 'owner', 'name', 'description', 'location', 
             'country', 'city', 'region', 'rating', 'media', 'is_available', 
-            'price', 'currency', 'metadata', 'experiences'
+            'price', 'currency', 'metadata','is_in_wishlist', 'experiences'
         ]
         read_only_fields = ['id']
 
@@ -84,16 +92,28 @@ class PlaceSerializer(serializers.ModelSerializer):
         experiences = obj.experiences.all()
         return ExperienceSerializer(experiences, many=True, context=self.context).data
 
+    def get_is_in_wishlist(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return Wishlist.objects.filter(user=request.user, place=obj).exists()
+        return False
+    
 class FlightSerializer(serializers.ModelSerializer):
+    is_in_wishlist = serializers.SerializerMethodField()
     class Meta:
         model = Flight
         fields = ['id', 'airline', 'flight_number', 'departure_airport', 
                  'arrival_airport', 'arrival_city', 'departure_time', 
                  'arrival_time', 'price', 'currency', 'duration', 
-                 'baggage_policy']
+                 'is_in_wishlist','baggage_policy']
         read_only_fields = ['id']
 
-
+    def get_is_in_wishlist(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return Wishlist.objects.filter(user=request.user, flight=obj).exists()
+        return False
+    
 class BoxItineraryItemSerializer(serializers.ModelSerializer):
     place = PlaceSerializer(read_only=True)
     experience = ExperienceSerializer(read_only=True)
@@ -122,6 +142,7 @@ class BoxSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     media = MediaSerializer(many=True, read_only=True)
     itinerary_days = BoxItineraryDaySerializer(many=True, read_only=True)
+    is_in_wishlist = serializers.SerializerMethodField()
 
     class Meta:
         model = Box
@@ -129,10 +150,16 @@ class BoxSerializer(serializers.ModelSerializer):
             'id', 'category', 'name', 'description', 'total_price', 'currency',
             'country', 'city', 'media', 'duration_days', 'duration_hours',
             'start_date', 'end_date', 'is_customizable', 'max_group_size',
-            'tags', 'itinerary_days'
+            'tags', 'is_in_wishlist', 'itinerary_days'
         ]
         read_only_fields = ['id']
 
+    def get_is_in_wishlist(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return Wishlist.objects.filter(user=request.user, box=obj).exists()
+        return False
+    
 class BookingSerializer(serializers.ModelSerializer):
     experience = ExperienceSerializer(read_only=True)
     place = PlaceSerializer(read_only=True)

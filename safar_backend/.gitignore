@@ -29,7 +29,7 @@ venv
 *.sw?
 
 backend/media
-safar-firbase-credentials.*
+safar_firebase_credentials.*
 backend/staticfiles
 backend/logs
 staticfiles
