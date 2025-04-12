@@ -1,17 +1,13 @@
 import { Booking, Message ,Notification, User} from "./types";
 
-
-export interface ErrorPayload {
-  message: string;
-  code?: 'AUTH' | 'NETWORK' | 'VALIDATION' | 'UNKNOWN';
-  retryable?: boolean;
-}
+// real-time/types.ts
 export type WebSocketMessageType = 
-  | "initial_data" 
-  | "booking_update" 
-  | "new_message" 
-  | "new_notification" 
-  | "error";
+  | 'initial_data'
+  | 'booking_update'
+  | 'new_message'
+  | 'new_notification'
+  | 'error'
+  | 'pong';
 
 export interface WebSocketMessage<T = unknown> {
   type: WebSocketMessageType;
@@ -25,31 +21,36 @@ export interface InitialDataPayload {
 }
 
 export interface BookingUpdatePayload {
-  id: string;
-  status: string;
+  booking: Booking;
+  update_type: 'created' | 'updated' | 'cancelled';
 }
 
 export interface NewMessagePayload {
-  id: string;
-  sender: User;
-  receiver: User;
-  message_text: string;
-  created_at: string;
+  message: Message;
 }
 
 export interface NewNotificationPayload {
-  id: string;
-  type: string;
-  message: string;
-  created_at: string;
+  notification: Notification;
 }
 
-export type WebSocketEventHandlers = {
-  onInitialData?: (data: InitialDataPayload) => void;
-  onBookingUpdate?: (data: BookingUpdatePayload) => void;
-  onNewMessage?: (data: NewMessagePayload) => void;
-  onNewNotification?: (data: NewNotificationPayload) => void;
-  onError?: (error: ErrorPayload) => void;
+export interface ErrorPayload {
+  message: string;
+  code: string;
+  retryable: boolean;
+}
+
+export interface WebSocketEventHandlers {
+  onInitialData?: (payload: InitialDataPayload) => void;
+  onBookingUpdate?: (payload: BookingUpdatePayload) => void;
+  onNewMessage?: (payload: NewMessagePayload) => void;
+  onNewNotification?: (payload: NewNotificationPayload) => void;
+  onError?: (payload: ErrorPayload) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
-};
+}
+
+export type ConnectionState = 
+  | 'disconnected' 
+  | 'connecting' 
+  | 'connected' 
+  | 'reconnecting';
