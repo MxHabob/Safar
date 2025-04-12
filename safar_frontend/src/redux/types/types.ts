@@ -96,7 +96,6 @@ export interface UserProfile extends BaseModel {
   travel_interests: any[];
   language_proficiency: Record<string, unknown>;
   preferred_countries: Country[];
-  last_active?: string;
   search_history: any[];
   privacy_consent: boolean;
   consent_date?: string;
@@ -125,6 +124,42 @@ export interface User extends BaseModel {
   membership_level: 'bronze' | 'silver' | 'gold';
   profile?: UserProfile;
 }
+export interface ContentType extends BaseModel{
+  app_label: string; // Not limited to specific apps since it's generic
+  model: string; // Python
+}
+export interface UserInteraction extends BaseModel {
+  user: number | User; // Can be either the user ID or the full User object
+  content_type: number | ContentType; // ContentType ID or full ContentType object
+  object_id: number; // ID of the related object
+  content_object: {  id: number;
+    [key: string]: any;}; // Strongly typed generic reference
+  interaction_type: InteractionType;
+  metadata: Record<string, any>;
+  device_type?: string;
+
+}
+
+type InteractionType = 
+  | 'view_place'
+  | 'view_experience'
+  | 'view_flight'
+  | 'wishlist_add'
+  | 'wishlist_remove'
+  | 'share'
+  | 'photo_view'
+  | 'map_view'
+  | 'search'
+  | 'filter'
+  | 'details_expand'
+  | 'availability_check'
+  | 'booking_start'
+  | 'booking_abandon'
+  | 'booking_complete'
+  | 'rating_given'
+  | 'review_added'
+  | 'recommendation_show'
+  | 'recommendation_click';
 
 // Category Types
 export interface Category extends BaseModel {
