@@ -225,8 +225,6 @@ else:
 
 STATICFILES_DIRS = [STATIC_DIR]
 
-print("STATICFILES_DIRS : ", STATICFILES_DIRS)
-
 # Static files finders
 STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.FileSystemFinder",
