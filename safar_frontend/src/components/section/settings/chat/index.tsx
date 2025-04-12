@@ -12,6 +12,7 @@ import { MessageSquare, Wifi, WifiOff } from "lucide-react"
 import { useRealTime } from "@/redux/hooks/use-real-time"
 import { useModal } from "@/redux/hooks/use-modal"
 import { useAuth } from "@/redux/hooks/usee-auth"
+import { NewMessagePayload } from "@/redux/types/real-time"
 
 // Group messages by conversation (sender/receiver pair)
 interface Conversation {
@@ -19,14 +20,21 @@ interface Conversation {
   otherUser: User
   lastMessage: Message
   unreadCount: number
-  messages: Message[]
+  messages: Message[] // Ensure this is correctly typed as an array of Message
 }
 
 export const ChatInbox = () => {
   const { data: messagesData, isLoading } = useGetMessagesQuery({ page_size: 100 })
   const { user, isAuthenticated } = useAuth()
+  console.log("messagedata:" ,messagesData)
   const { connectionState, unreadCount, markMessageAsRead } = useRealTime({
-    onNewMessage: (message) => {
+    onNewMessage: (data: NewMessagePayload) => {
+      const message: Message = {
+        ...data,
+        is_read: false, // Default value or map appropriately
+        updated_at: new Date().toISOString(), // Default value or map appropriately
+        is_deleted: false, // Default value or map appropriately
+      };
       // Add new message to conversations
       setConversations((prev) => {
         const conversationId = getConversationId(message.sender.id, message.receiver.id)
@@ -46,7 +54,7 @@ export const ChatInbox = () => {
           })
         } else {
           // Create new conversation
-          const otherUser = user.id === message.sender.id ? message.receiver : message.sender
+          const otherUser = user?.id === message.sender.id ? message.receiver : message.sender
           return [
             ...prev,
             {
@@ -71,7 +79,7 @@ export const ChatInbox = () => {
 
   useEffect(() => {
     if (messagesData?.results) {
-      const currentUserId = user.id || "";
+      const currentUserId = user?.id || "";
       const conversationMap = new Map<string, Conversation>()
 
       messagesData.results.forEach((message) => {
@@ -112,7 +120,7 @@ export const ChatInbox = () => {
   const handleOpenChat = (conversation: Conversation) => {
     // Mark unread messages as read
     conversation.messages.forEach((message) => {
-      if (!message.is_read && message.sender.id !== user.id) {
+      if (!message.is_read && message.sender.id !== user?.id) {
         markMessageAsRead(message.id)
       }
     })
@@ -122,7 +130,7 @@ export const ChatInbox = () => {
 
     // Open chat modal
     onOpen("ChatModel", {
-      messages: conversation.messages,
+      messages: conversation.messages as Message[],
       otherUser: conversation.otherUser,
     })
   }
@@ -175,7 +183,7 @@ export const ChatInbox = () => {
                       {conversation.otherUser.first_name} {conversation.otherUser.last_name}
                     </h3>
                     <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(conversation.lastMessage.created_at), { addSuffix: true })}
+                      {/* {formatDistanceToNow(new Date(conversation.lastMessage.created_at), { addSuffix: true })} */}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">

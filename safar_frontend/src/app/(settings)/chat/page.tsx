@@ -1,7 +1,7 @@
-import { ChatInbox } from "@/components/section/setting/chat"
+import { ChatInbox } from "@/components/section/settings/chat"
 
 
-export default async function ChatPage(params:type) {
+export default async function ChatPage() {
   
   return (
     <div className="container mx-auto py-8">

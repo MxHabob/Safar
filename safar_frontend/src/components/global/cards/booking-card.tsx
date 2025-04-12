@@ -4,7 +4,7 @@ import { useState } from "react"
 import { format } from "date-fns"
 import { CalendarIcon, Minus, Plus, Star } from "lucide-react"
 import { toast } from "sonner"
-
+import { useCreateBookingMutation } from "@/redux/services/api"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
@@ -20,6 +20,7 @@ export interface BookingCardProps {
 }
 
 export default function BookingCard({ id, data, placeType }: BookingCardProps) {
+  const [confirmBooking, { isLoading }] = useCreateBookingMutation()
   const [date, setDate] = useState<{
     from: Date | undefined
     to: Date | undefined
@@ -37,7 +38,7 @@ export default function BookingCard({ id, data, placeType }: BookingCardProps) {
   // Get price based on place type
   const getBasePrice = () => {
     if (placeType === "experience") {
-      return (data as Experience).price_per_person || 0
+      return (data as Experience)?.price_per_person || 0
     } else if (placeType === "place") {
       return (data as Place).price || 0
     } else if (placeType === "box") {
@@ -60,35 +61,33 @@ export default function BookingCard({ id, data, placeType }: BookingCardProps) {
       toast.error("Please select check-in and check-out dates")
       return
     }
-
+  
     setIsSubmitting(true)
-
+  
+    const bookingData = {
+      [placeType]: id,
+      check_in: format(date.from, "yyyy-MM-dd"),
+      check_out: format(date.to, "yyyy-MM-dd"),
+      booking_date: new Date().toISOString(),
+      status: "Pending" as const,
+      total_price: totalPrice,
+      currency: getCurrency(),
+      payment_status: "Pending",
+    }
+  
     try {
-      // Here you would make an API call to create the booking
-      const bookingData = {
-        [placeType]: id,
-        check_in: format(date.from, "yyyy-MM-dd"),
-        check_out: format(date.to, "yyyy-MM-dd"),
-        booking_date: new Date().toISOString(),
-        status: "Pending",
-        total_price: totalPrice,
-        currency: getCurrency(),
-        payment_status: "Pending",
-      }
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
+      const response = await confirmBooking(bookingData).unwrap()
+  
       toast.success(`Your ${placeType} has been reserved!`, {
         description: `Check-in: ${format(date.from, "PPP")} - Check-out: ${format(date.to, "PPP")}`,
       })
-
-      console.log("Booking created:", bookingData)
-      // Reset form or redirect
-      // window.location.href = `/bookings/${bookingId}`
+  
+      console.log("Booking created:", response)
+      // Optionally redirect
+      // window.location.href = `/bookings/${response.id}`
     } catch (error) {
       toast.error("Failed to complete your reservation. Please try again.")
-      console.error(error)
+      console.error("Booking error:", error)
     } finally {
       setIsSubmitting(false)
     }
@@ -112,7 +111,7 @@ export default function BookingCard({ id, data, placeType }: BookingCardProps) {
   // Get title based on place type
   const getTitle = () => {
     if (placeType === "experience") {
-      return (data as Experience).title
+      return (data as Experience)?.title
     } else if (placeType === "place") {
       return (data as Place).name
     } else if (placeType === "box") {
@@ -125,7 +124,7 @@ export default function BookingCard({ id, data, placeType }: BookingCardProps) {
   const getRating = () => {
     if (placeType === "experience" || placeType === "place") {
       if (placeType === "experience" || placeType === "place") {
-        return (data as Experience | Place).rating || 0
+        return (data as Experience | Place)?.rating || 0
       }
       return 0
     }
@@ -210,7 +209,7 @@ export default function BookingCard({ id, data, placeType }: BookingCardProps) {
                   onClick={incrementGroupSize}
                   disabled={
                     placeType === "experience"
-                      ? groupSize >= ((data as Experience).capacity || 10)
+                      ? groupSize >= ((data as Experience)?.capacity || 10)
                       : placeType === "box"
                         ? groupSize >= ((data as Box).max_group_size || 10)
                         : groupSize >= 10
@@ -259,7 +258,7 @@ export default function BookingCard({ id, data, placeType }: BookingCardProps) {
         </div>
       </CardContent>
       <CardFooter className="flex flex-col gap-2">
-        <Button className="w-full" onClick={handleReserve} disabled={!date.from || !date.to || isSubmitting}>
+        <Button className="w-full" onClick={handleReserve} disabled={!date.from || !date.to || isSubmitting || isLoading}>
           {isSubmitting ? "Processing..." : "Reserve"}
         </Button>
         <div className="text-center text-sm text-muted-foreground">You won&apos;t be charged yet</div>
