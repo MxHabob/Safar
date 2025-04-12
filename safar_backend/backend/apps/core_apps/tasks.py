@@ -1,3 +1,4 @@
+from datetime import timedelta
 from celery import shared_task
 from django.core.cache import cache
 from django.db import transaction
@@ -242,7 +243,7 @@ def notify_expiring_discounts():
                     hours_remaining = int((discount.valid_to - now).total_seconds() / 3600)
                     
                     # Send notification
-                    send_notification.delay(
+                    NotificationService.send_notification.delay(
                         user_id=user.id,
                         notification_type="Discount Expiring Soon",
                         message=f"Your discount code {discount.code} expires in {hours_remaining} hours! Use it before it's gone.",

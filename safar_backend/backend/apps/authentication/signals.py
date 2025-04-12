@@ -2,14 +2,10 @@ import logging
 from django.db.models.signals import post_save, pre_save, post_delete
 from django.dispatch import receiver
 from django.conf import settings
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
-from datetime import timedelta
-from .models import User, UserProfile, UserInteraction, UserLoginLog
-from apps.core_apps.tasks import send_email_task, send_sms_task, send_push_notification_task
+from apps.authentication.models import User, UserProfile, UserInteraction, UserLoginLog
+from apps.core_apps.tasks import send_email_task, send_sms_task
 from apps.core_apps.services import NotificationService
 from phonenumber_field.phonenumber import PhoneNumber
 from .points import PointsManager
@@ -574,7 +570,7 @@ def send_travel_preference_suggestions(user_id):
     try:
         from apps.authentication.models import User
         from apps.safar.models import Place, Experience
-        from apps.core_apps.recommendation import RecommendationEngine
+        from apps.core_apps.algorithms_engines.recommendation_engine import RecommendationEngine
         
         user = User.objects.get(id=user_id)
         

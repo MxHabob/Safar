@@ -1,7 +1,5 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from django.urls import reverse
-from django.utils import timezone
 from apps.marketing.models import Campaign, CampaignRecipient, CampaignTemplate
 
 class CampaignRecipientInline(admin.TabularInline):

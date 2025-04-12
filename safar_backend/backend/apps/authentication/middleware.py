@@ -2,7 +2,6 @@ import logging
 from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
 from django.contrib.auth import get_user_model
-from apps.authentication.tasks import send_security_notification
 from apps.authentication.models import UserLoginLog
 
 User = get_user_model()
@@ -35,8 +34,8 @@ class UserActivityMiddleware(MiddlewareMixin):
                 location = self._get_location_from_ip(current_ip)
                 
                 # Send security notification
-                from apps.authentication.tasks import send_security_notification
-                send_security_notification.delay(
+                from apps.authentication.signals import send_security_notification
+                send_security_notification(
                     user_id=str(user.id),
                     event_type="login",
                     ip_address=current_ip,

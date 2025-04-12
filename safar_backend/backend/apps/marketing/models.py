@@ -5,6 +5,10 @@ from django.contrib.postgres.fields import ArrayField
 from django.utils.translation import gettext_lazy as _
 from apps.authentication.models import User
 
+
+def get_default_notification_channels():
+    return ['email', 'push', 'in_app']
+
 class Campaign(BaseModel):
     """
     Advertising campaign model for managing marketing initiatives
@@ -62,7 +66,7 @@ class Campaign(BaseModel):
     related_experiences = models.ManyToManyField('safar.Experience', blank=True, related_name='campaigns')
     
     # Notification settings
-    notification_channels = ArrayField(models.CharField(max_length=20), default=list(['email', 'push', 'in_app']))
+    notification_channels = ArrayField(models.CharField(max_length=20),default=get_default_notification_channels, size=5)
     notification_priority = models.CharField(max_length=10, default='normal', choices=[
         ('low', 'Low'),
         ('normal', 'Normal'),
@@ -239,7 +243,7 @@ class CampaignTemplate(BaseModel):
     deep_link_template = models.CharField(max_length=255, blank=True)
     
     # Default notification settings
-    notification_channels = ArrayField(models.CharField(max_length=20), default=list(['email', 'push', 'in_app']))
+    notification_channels = ArrayField(models.CharField(max_length=20),default=get_default_notification_channels, size=5)
     notification_priority = models.CharField(max_length=10, default='normal', choices=[
         ('low', 'Low'),
         ('normal', 'Normal'),

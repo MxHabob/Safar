@@ -2,6 +2,7 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
+from django.db import models
 from apps.marketing.models import Campaign, CampaignRecipient, CampaignTemplate
 from apps.marketing.serializers import CampaignSerializer, CampaignTemplateSerializer, CampaignRecipientSerializer
 from apps.marketing.services import CampaignService

@@ -9,9 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from apps.core_apps.general import BaseModel
 from phonenumber_field.modelfields import PhoneNumberField
 from apps.geographic_data.models import Country, Region, City
-from apps.core_apps.utility import validate_metadata, generate_unique_username
 import logging
-from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +20,7 @@ def upload_avatar(instance, filename):
     return f'{path}.{extension}'
 
 class UserManager(BaseUserManager):
+    from apps.core_apps.utility import generate_unique_username
     def create_user(self, email, password=None, **extra_fields):
         try:
             if not email:
@@ -83,6 +82,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     is_2fa_enabled = models.BooleanField(default=False, verbose_name=_("Two-Factor Authentication Enabled"))
     last_login_device = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("Last Login Device"))
     last_login_ip = models.GenericIPAddressField(blank=True, null=True, verbose_name=_("Last Login IP Address"))
+    last_activity = models.DateTimeField(null=True, blank=True, verbose_name=_("Last Activity"))
     role = models.CharField(max_length=25, choices=Role.choices, default=Role.GUEST, verbose_name=_("User Role"))
     is_profile_public = models.BooleanField(default=False)
     following = models.ManyToManyField("self", symmetrical=False, related_name="followers", blank=True)
@@ -161,6 +161,7 @@ class UserProfile(BaseModel):
         indexes = [
             models.Index(fields=['user']),
             models.Index(fields=['phone_number']),
+            models.Index(fields=['country', 'region', 'city']),
         ]
 
     def __str__(self):
@@ -205,13 +206,12 @@ class UserInteraction(BaseModel):
             models.Index(fields=['user', 'interaction_type']),
             models.Index(fields=['content_type', 'object_id']),
             models.Index(fields=['created_at', 'interaction_type']),
-            models.Index(fields=['session_id', 'user']),
+            models.Index(fields=['user']),
         ]
         constraints = [
             models.UniqueConstraint(
-                fields=['user', 'content_type', 'object_id', 'interaction_type', 'session_id'],
+                fields=['user', 'content_type', 'object_id', 'interaction_type'],
                 name='unique_user_interaction',
-                condition=models.Q(session_id__isnull=False)
             )
         ]
 

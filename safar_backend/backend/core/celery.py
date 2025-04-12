@@ -1,6 +1,6 @@
 import os
 from celery import Celery
-
+from celery.schedules import crontab
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 
 app = Celery('core')
@@ -9,7 +9,7 @@ app.autodiscover_tasks()
 
 
 # Add these to your CELERYBEAT_SCHEDULE
-CELERYBEAT_SCHEDULE = {
+app.conf.beat_schedule = CELERYBEAT_SCHEDULE = {
     'notify-expiring-discounts': {
         'task': 'apps.core_apps.tasks.notify_expiring_discounts',
         'schedule': crontab(hour='10,18', minute=0),  # Run at 10 AM and 6 PM

@@ -3,11 +3,11 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from django.utils import timezone
 from apps.safar.models import Booking, Message, Notification, Payment, Review,Discount
 from apps.safar.serializers import BookingSerializer, MessageSerializer, NotificationSerializer
-from apps.core_apps.services import NotificationService
 from apps.core_apps.tasks import process_notification, send_email_task
+from apps.authentication.middleware import User
+from apps.core_apps.services import NotificationService
 
 logger = logging.getLogger(__name__)
 channel_layer = get_channel_layer()
@@ -335,7 +335,7 @@ def discount_signals(sender, instance, created, **kwargs):
                 admin_users = User.objects.filter(is_staff=True)
                 
                 for user in admin_users:
-                    send_notification.delay(
+                    NotificationService.send_notification.delay(
                         user_id=user.id,
                         notification_type="New Discount Created",
                         message=f"New discount code {instance.code} has been created.",
@@ -362,7 +362,7 @@ def discount_signals(sender, instance, created, **kwargs):
                     
                     status_text = "activated" if instance.is_active else "deactivated"
                     for user in admin_users:
-                        send_notification.delay(
+                        NotificationService.send_notification.delay(
                             user_id=user.id,
                             notification_type="Discount Status Changed",
                             message=f"Discount code {instance.code} has been {status_text}.",
@@ -408,7 +408,7 @@ def booking_discount_signals(sender, instance, **kwargs):
                     savings_text = f"${instance.discount.amount}"
                 
                 # Notify user about applied discount
-                send_notification.delay(
+                NotificationService.send_notification.delay(
                     user_id=instance.user.id,
                     notification_type="Discount Applied",
                     message=f"Discount code {instance.discount.code} applied to your booking! You saved {savings_text}.",

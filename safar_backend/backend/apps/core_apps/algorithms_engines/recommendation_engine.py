@@ -1,16 +1,13 @@
-import os
 import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import TruncatedSVD
-from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 
 import logging
 from django.db import models
-from django.db.models import Q, Case, When, IntegerField, F, Value, FloatField, Count, Avg
+from django.db.models import Q, Case, When, F, Value, FloatField, Count, Avg
 from django.db.models.functions import Coalesce
 from django.contrib.contenttypes.models import ContentType
 from apps.authentication.models import User, UserInteraction

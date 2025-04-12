@@ -1,13 +1,9 @@
 import logging
 from datetime import timedelta, datetime, time
 from django.db import transaction
-from django.db.models import Q, Count, F, Value, FloatField
-from django.db.models.functions import Coalesce
-from django.contrib.gis.db.models.functions import Distance
-from django.contrib.gis.measure import D
 from django.contrib.gis.geos import Point
-from apps.authentication.models import User, Notification
-from apps.safar.models import (Place, Experience, Box, BoxItineraryDay, BoxItineraryItem)
+from apps.authentication.models import User
+from apps.safar.models import (Notification,Box, BoxItineraryDay, BoxItineraryItem)
 from apps.geographic_data.models import City, Region, Country
 from apps.core_apps.algorithms_engines.recommendation_engine import RecommendationEngine
 from sklearn.cluster import DBSCAN
@@ -175,7 +171,7 @@ class BoxGenerator:
                     "duration_days": box.duration_days,
                     "total_price": box.total_price
                 },
-                channels=["app", "email"]  # Or whichever channels you prefer
+                channels=["app", "email"]
             )
             
             logger.info(f"Created notification for box {box.id} for user {self.user.id}")
@@ -245,7 +241,7 @@ class BoxGenerator:
         elif theme == 'budget':
             self.constraints.update({
                 'activity_weights': {'outdoor': 0.5, 'cultural': 0.3, 'leisure': 0.1, 'shopping': 0.1},
-                'max_daily_budget': budget / duration_days * 0.8 if budget else None,  # 20% buffer
+                # 'max_daily_budget': budget / duration_days * 0.8 if budget else None,  # 20% buffer
             })
 
     def _create_base_box(self, destination, duration_days, start_date, theme):
@@ -284,7 +280,7 @@ class BoxGenerator:
         if start_date:
             box_data.update({
                 'start_date': start_date,
-                'end_date': start_date + timedelta(days=duration_days - 1)  # End date is inclusive
+                'end_date': start_date + timedelta(days=duration_days - 1)
             })
             
         return Box.objects.create(**box_data)

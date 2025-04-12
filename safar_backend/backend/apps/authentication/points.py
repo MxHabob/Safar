@@ -1,11 +1,10 @@
 import logging
 from decimal import Decimal
 from django.utils import timezone
-from django.db import transaction
 from django.conf import settings
 from django.core.cache import cache
-from django.db.models import Sum, Count, Q
-from apps.authentication.models import User, UserProfile, PointsTransaction, UserInteraction, InteractionType
+from django.db.models import Sum
+from apps.authentication.models import User, PointsTransaction, UserInteraction, InteractionType
 
 logger = logging.getLogger(__name__)
 

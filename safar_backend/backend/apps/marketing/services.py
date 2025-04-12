@@ -1,16 +1,13 @@
 import logging
-import random
 from datetime import timedelta
 from django.utils import timezone
-from django.db.models import Q, Count, F
-from django.core.cache import cache
+from django.db.models import Count
 from django.template import Template, Context
 from django.conf import settings
-from apps.authentication.models import User, UserProfile
-from apps.safar.models import Booking, UserInteraction, Discount
+from apps.authentication.models import User,UserInteraction
+from apps.safar.models import Booking
 from apps.core_apps.services import NotificationService
-from apps.core_apps.tasks import send_notification, send_bulk_notifications
-from apps.marketing.models import Campaign, CampaignRecipient, CampaignTemplate
+from apps.marketing.models import Campaign, CampaignRecipient
 
 logger = logging.getLogger(__name__)
 

@@ -5,23 +5,25 @@ from apps.authentication.models import User, UserProfile, UserInteraction, UserL
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     list_display = ('email', 'first_name', 'last_name', 'role', 'membership_level', 'points', 'is_active', 'created_at')
-    list_filter = ('role', 'membership_level', 'is_active', 'is_staff')
     search_fields = ('email', 'first_name', 'last_name')
-    readonly_fields = ('created_at', 'updated_at', 'last_login')
-    fieldsets = (
-        (None, {'fields': ('email', 'password')}),
-        (_('Personal info'), {'fields': ('first_name', 'last_name')}),
-        (_('Membership'), {'fields': ('role', 'membership_level', 'points')}),
-        (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
-        (_('Important dates'), {'fields': ('last_login', 'created_at', 'updated_at')}),
-    )
+    list_filter = ('role', 'membership_level', 'is_active')
     ordering = ('-created_at',)
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'phone_number', 'country', 'city')
-    search_fields = ('user__email', 'user__first_name', 'user__last_name', 'phone_number', 'country', 'city')
+    search_fields = ('user__email', 'user__first_name', 'user__last_name', 'phone_number')
     raw_id_fields = ('user',)
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related(
+            'user', 'country', 'region', 'city'
+        )
+    def location_display(self, obj):
+        if obj.location:
+            return f"Point ({obj.location.x:.4f}, {obj.location.y:.4f})"
+        return "-"
+    location_display.short_description = "Location"
 
 @admin.register(UserInteraction)
 class UserInteractionAdmin(admin.ModelAdmin):
