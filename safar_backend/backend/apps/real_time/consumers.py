@@ -1,9 +1,10 @@
-from typing import Dict, List, Literal, TypedDict, Optional
+from typing import Dict, List, Literal, TypedDict, Optional, Any, Union
 from dataclasses import dataclass
 import json
+import logging
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from channels.db import database_sync_to_async
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from apps.safar.models import Booking, Message, Notification
 from apps.safar.serializers import (
     BookingSerializer,
@@ -12,110 +13,146 @@ from apps.safar.serializers import (
 )
 from django.core.cache import cache
 from uuid import UUID
+from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 class UUIDEncoder(json.JSONEncoder):
+    """Enhanced JSON encoder that handles UUIDs, datetimes, and other complex types"""
     def default(self, obj):
         if isinstance(obj, UUID):
-            return str(obj)  # Using str() instead of hex for standard UUID format
+            return str(obj)
+        if isinstance(obj, datetime):
+            return obj.isoformat()
         if hasattr(obj, '__dict__'):
             return vars(obj)
         return super().default(obj)
-    
-class WebSocketMessage(TypedDict):
-    type: str
-    payload: Dict
-
-class InitialDataMessage(WebSocketMessage):
-    type: Literal["initial_data"]
-    payload: Dict[str, List[Dict]]
-
-class EventMessage(WebSocketMessage):
-    type: Literal["booking_update", "new_message", "new_notification"]
-    payload: Dict
-
-class ErrorMessage(WebSocketMessage):
-    type: Literal["error"]
-    payload: Dict[str, str]
-
-@dataclass
-class ConsumerGroups:
-    BOOKING: str = 'bookings_'
-    MESSAGE: str = 'messages_'
-    NOTIFICATION: str = 'notifications_'
 
 class SafariConsumer(AsyncJsonWebsocketConsumer):
-    """Enhanced WebSocket consumer with type safety and better error handling"""
+    """Enhanced WebSocket consumer with better error handling and performance"""
     
-    groups_prefix = ConsumerGroups()
+    # Group prefixes for different notification types
+    BOOKING_GROUP = 'bookings_'
+    MESSAGE_GROUP = 'messages_'
+    NOTIFICATION_GROUP = 'notifications_'
+    GENERAL_GROUP = 'safar_'
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = None
         self.groups: List[str] = []
-        self.cache_timeout = 300 
+        self.cache_timeout = 300  # 5 minutes
+        self.connection_id = None
 
     async def connect(self):
         """Handle WebSocket connection with JWT authentication"""
         self.user = self.scope["user"]
+        self.connection_id = self.scope.get("client", ["unknown"])[0]
         
         if self.user.is_anonymous:
+            logger.warning(f"Rejected anonymous WebSocket connection from {self.connection_id}")
             await self.close(code=4001)
             return
 
+        # Add user to all relevant groups
         self.groups = [
-            f"{prefix}{self.user.id}"
-            for prefix in self.groups_prefix.__dict__.values()
-            if not prefix.startswith('_')
+            f"{self.BOOKING_GROUP}{self.user.id}",
+            f"{self.MESSAGE_GROUP}{self.user.id}",
+            f"{self.NOTIFICATION_GROUP}{self.user.id}",
+            f"{self.GENERAL_GROUP}{self.user.id}"
         ]
         
         for group in self.groups:
             await self.channel_layer.group_add(group, self.channel_name)
         
+        logger.info(f"WebSocket connection established for user {self.user.id} from {self.connection_id}")
         await self.accept()
         
-        # Send initial data with caching
-        initial_data = await self._get_cached_initial_data()
-        await self._send_initial_data(initial_data)
+        # Send initial data with error handling
+        try:
+            initial_data = await self._get_cached_initial_data()
+            await self.send_json({
+                "type": "initial_data",
+                "payload": initial_data
+            }, encoder=UUIDEncoder)
+   
+            # await self._update_user_online_status(True)
+            
+        except Exception as e:
+            logger.error(f"Error sending initial data: {str(e)}", exc_info=True)
+            await self._send_error(f"Failed to load initial data: {str(e)}")
 
     async def disconnect(self, close_code: int):
         """Clean up on WebSocket disconnect"""
         if self.user and not self.user.is_anonymous:
-            for group in self.groups:
-                await self.channel_layer.group_discard(group, self.channel_name)
+            try:
+                for group in self.groups:
+                    await self.channel_layer.group_discard(group, self.channel_name)
+                
+                # await self._update_user_online_status(False)
+                
+                logger.info(f"WebSocket connection closed for user {self.user.id} with code {close_code}")
+            except Exception as e:
+                logger.error(f"Error during disconnect: {str(e)}")
+
+    async def _update_user_online_status(self, is_online: bool):
+        """Update user's online status"""
+    
+        pass
 
     async def _get_cached_initial_data(self) -> Dict:
-        """Get initial data with Redis caching"""
+        """Get initial data with Redis caching for performance"""
         cache_key = f"ws_initial_data_{self.user.id}"
-        cached_data = await cache.aget(cache_key)
         
-        if not cached_data:
-            cached_data = await self._fetch_initial_data()
-            await cache.aset(cache_key, cached_data, timeout=self.cache_timeout)
-        
-        return cached_data
+        try:
+            cached_data = await cache.aget(cache_key)
+            
+            if cached_data:
+                return json.loads(cached_data)
+            
+            data = await self._fetch_initial_data()
+            
+            serialized_data = json.dumps(data, cls=UUIDEncoder)
+            await cache.aset(cache_key, serialized_data, timeout=self.cache_timeout)
+            
+            return data
+            
+        except Exception as e:
+            logger.error(f"Cache error: {str(e)}")
+ 
+            return await self._fetch_initial_data()
 
     async def _fetch_initial_data(self) -> Dict:
-        """Fetch all initial data in optimized DB queries"""
-        bookings, messages, notifications = await database_sync_to_async(
-            self._get_initial_data_sync
-        )()
-        return {
-            "bookings": bookings,
-            "messages": messages,
-            "notifications": notifications
-        }
+        """Fetch all initial data with optimized queries"""
+        try:
+            bookings, messages, notifications = await database_sync_to_async(
+                self._get_initial_data_sync
+            )()
+            
+            return {
+                "bookings": bookings,
+                "messages": messages,
+                "notifications": notifications,
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            logger.error(f"Error fetching initial data: {str(e)}", exc_info=True)
+            raise
 
     def _get_initial_data_sync(self) -> tuple:
-        """Synchronous method to fetch all initial data"""
+        """Synchronous method to fetch all initial data with optimized queries"""
         bookings = BookingSerializer(
-            Booking.objects.filter(user=self.user).select_related('place', 'experience', 'flight', 'box'),
+            Booking.objects.filter(user=self.user)
+            .select_related('place', 'experience', 'flight', 'box')
+            .order_by('-booking_date')[:10],
             many=True
         ).data
         
         messages = MessageSerializer(
             Message.objects.filter(
                 Q(sender=self.user) | Q(receiver=self.user)
-            ).select_related('sender', 'receiver')
+            )
+            .select_related('sender', 'receiver')
             .order_by('-created_at')[:20],
             many=True
         ).data
@@ -124,113 +161,224 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             Notification.objects.filter(
                 user=self.user,
                 is_read=False
-            ).order_by('-created_at'),
+            )
+            .order_by('-created_at')[:50],
             many=True
         ).data
         
         return bookings, messages, notifications
 
     async def receive_json(self, content: Dict, **kwargs):
-        """Handle incoming WebSocket messages"""
+        """Handle incoming WebSocket messages with comprehensive error handling"""
         try:
             action = content.get("action")
             payload = content.get("payload", {})
             
-            if action == "mark_message_read":
-                await self._handle_mark_message_read(payload.get("message_id"))
-            elif action == "mark_notification_read":
-                await self._handle_mark_notification_read(payload.get("notification_id"))
+            if not action:
+                await self._send_error("Missing 'action' field")
+                return
+                
+            handlers = {
+                "mark_message_read": self._handle_mark_message_read,
+                "mark_notification_read": self._handle_mark_notification_read,
+                "mark_all_notifications_read": self._handle_mark_all_notifications_read,
+                "get_more_messages": self._handle_get_more_messages,
+                "ping": self._handle_ping
+            }
+            
+            handler = handlers.get(action)
+            if handler:
+                await handler(payload)
             else:
-                await self._send_error("Invalid action specified")
+                await self._send_error(f"Unknown action: {action}")
                 
         except json.JSONDecodeError:
             await self._send_error("Invalid JSON format")
         except Exception as e:
-            await self._send_error(str(e))
+            logger.error(f"Error handling WebSocket message: {str(e)}", exc_info=True)
+            await self._send_error(f"Server error: {str(e)}")
 
-    async def _handle_mark_message_read(self, message_id: int):
+    async def _handle_ping(self, payload: Dict):
+        """Handle ping messages to keep connection alive"""
+        await self.send_json({
+            "type": "pong",
+            "payload": {
+                "timestamp": datetime.now().isoformat()
+            }
+        })
+
+    async def _handle_mark_message_read(self, payload: Dict):
         """Mark a message as read"""
+        message_id = payload.get("message_id")
         if not message_id:
             await self._send_error("Message ID is required")
             return
             
-        await database_sync_to_async(self._mark_message_read_sync)(message_id)
-        await self._invalidate_cache()
+        try:
+            success = await database_sync_to_async(self._mark_message_read_sync)(message_id)
+            if success:
+                await self._invalidate_cache()
+                await self.send_json({
+                    "type": "message_marked_read",
+                    "payload": {"message_id": message_id}
+                })
+            else:
+                await self._send_error("Message not found or not authorized")
+        except Exception as e:
+            logger.error(f"Error marking message read: {str(e)}")
+            await self._send_error(f"Failed to mark message as read: {str(e)}")
 
-    def _mark_message_read_sync(self, message_id: int):
-        """Sync version of mark message read"""
-        Message.objects.filter(
-            id=message_id, 
-            receiver=self.user
-        ).update(is_read=True)
+    def _mark_message_read_sync(self, message_id: Union[int, str]) -> bool:
+        """Sync version of mark message read with better error handling"""
+        try:
+            result = Message.objects.filter(
+                id=message_id, 
+                receiver=self.user,
+                is_read=False
+            ).update(is_read=True)
+            return result > 0
+        except Exception as e:
+            logger.error(f"Database error marking message read: {str(e)}")
+            return False
 
-    async def _handle_mark_notification_read(self, notification_id: int):
+    async def _handle_mark_notification_read(self, payload: Dict):
         """Mark a notification as read"""
+        notification_id = payload.get("notification_id")
         if not notification_id:
             await self._send_error("Notification ID is required")
             return
             
-        await database_sync_to_async(self._mark_notification_read_sync)(notification_id)
-        await self._invalidate_cache()
+        try:
+            success = await database_sync_to_async(self._mark_notification_read_sync)(notification_id)
+            if success:
+                await self._invalidate_cache()
+                await self.send_json({
+                    "type": "notification_marked_read",
+                    "payload": {"notification_id": notification_id}
+                })
+            else:
+                await self._send_error("Notification not found or not authorized")
+        except Exception as e:
+            logger.error(f"Error marking notification read: {str(e)}")
+            await self._send_error(f"Failed to mark notification as read: {str(e)}")
 
-    def _mark_notification_read_sync(self, notification_id: int):
-        """Sync version of mark notification read"""
-        Notification.objects.filter(
-            id=notification_id,
-            user=self.user
-        ).update(is_read=True)
+    def _mark_notification_read_sync(self, notification_id: Union[int, str]) -> bool:
+        """Sync version of mark notification read with better error handling"""
+        try:
+            result = Notification.objects.filter(
+                id=notification_id,
+                user=self.user,
+                is_read=False
+            ).update(is_read=True)
+            return result > 0
+        except Exception as e:
+            logger.error(f"Database error marking notification read: {str(e)}")
+            return False
+
+    async def _handle_mark_all_notifications_read(self, payload: Dict):
+        """Mark all notifications as read"""
+        try:
+            count = await database_sync_to_async(self._mark_all_notifications_read_sync)()
+            await self._invalidate_cache()
+            await self.send_json({
+                "type": "all_notifications_marked_read",
+                "payload": {"count": count}
+            })
+        except Exception as e:
+            logger.error(f"Error marking all notifications read: {str(e)}")
+            await self._send_error(f"Failed to mark all notifications as read: {str(e)}")
+
+    def _mark_all_notifications_read_sync(self) -> int:
+        """Mark all user's notifications as read"""
+        try:
+            return Notification.objects.filter(
+                user=self.user,
+                is_read=False
+            ).update(is_read=True)
+        except Exception as e:
+            logger.error(f"Database error marking all notifications read: {str(e)}")
+            return 0
+
+    async def _handle_get_more_messages(self, payload: Dict):
+        """Handle request for more messages with pagination"""
+        try:
+            offset = int(payload.get("offset", 0))
+            limit = min(int(payload.get("limit", 20)), 50)  # Cap at 50 for performance
+            
+            messages = await database_sync_to_async(self._get_more_messages_sync)(offset, limit)
+            
+            await self.send_json({
+                "type": "more_messages",
+                "payload": {
+                    "messages": messages,
+                    "offset": offset,
+                    "limit": limit
+                }
+            }, encoder=UUIDEncoder)
+            
+        except ValueError:
+            await self._send_error("Invalid pagination parameters")
+        except Exception as e:
+            logger.error(f"Error fetching more messages: {str(e)}")
+            await self._send_error(f"Failed to fetch more messages: {str(e)}")
+
+    def _get_more_messages_sync(self, offset: int, limit: int) -> List[Dict]:
+        """Get paginated messages"""
+        messages = Message.objects.filter(
+            Q(sender=self.user) | Q(receiver=self.user)
+        ).select_related(
+            'sender', 'receiver'
+        ).order_by(
+            '-created_at'
+        )[offset:offset+limit]
+        
+        return MessageSerializer(messages, many=True).data
 
     async def _invalidate_cache(self):
         """Invalidate cached initial data"""
-        cache_key = f"ws_initial_data_{self.user.id}"
-        await cache.adelete(cache_key)
-
-    async def _send_initial_data(self, data: Dict):
-        """Send initial data to client with enhanced error handling"""
         try:
-            # First validate the data can be serialized
-            test_data = {
-                "type": "initial_data",
-                "payload": data
-            }
-            json.dumps(test_data, cls=UUIDEncoder)
-            
-            # If successful, send the actual data
-            await self.send_json(test_data, cls=UUIDEncoder)
-        except TypeError as e:
-            # Handle specific serialization errors
-            error_msg = f"Data serialization error: {str(e)}"
-            print(error_msg)
-            await self._send_error(error_msg)
+            cache_key = f"ws_initial_data_{self.user.id}"
+            await cache.adelete(cache_key)
         except Exception as e:
-            # Handle other unexpected errors
-            error_msg = f"Unexpected error sending initial data: {str(e)}"
-            print(error_msg)
-            await self._send_error(error_msg)
+            logger.error(f"Cache invalidation error: {str(e)}")
 
     async def _send_error(self, message: str):
         """Send error message to client"""
-        await self.send_json({
-            "type": "error",
-            "payload": {"message": message}
-        })
+        try:
+            await self.send_json({
+                "type": "error",
+                "payload": {"message": message}
+            })
+        except Exception as e:
+            logger.error(f"Error sending error message: {str(e)}")
 
     # Event handlers for different message types
     async def booking_update(self, event: Dict):
         """Handle booking update events"""
-        await self._send_event("booking_update", event)
+        try:
+            await self.send_json({
+                "type": "booking_update",
+                "payload": event.get("data", {})
+            }, encoder=UUIDEncoder)
+        except Exception as e:
+            logger.error(f"Error sending booking update: {str(e)}")
 
-    async def new_message(self, event: Dict):
+    async def message_new(self, event: Dict):
         """Handle new message events"""
-        await self._send_event("new_message", event)
+        try:
+            await self.send_json({
+                "type": "new_message",
+                "payload": event.get("data", {})
+            }, encoder=UUIDEncoder)
+        except Exception as e:
+            logger.error(f"Error sending new message: {str(e)}")
 
-    async def new_notification(self, event: Dict):
+    async def notification_new(self, event: Dict):
         """Handle new notification events"""
-        await self._send_event("new_notification", event)
-
-    async def _send_event(self, event_type: str, payload: Dict):
-        """Generic event sender"""
-        await self.send_json({
-            "type": event_type,
-            "payload": payload
-        })
+        try:
+            await self.send_json({
+                "type": "new_notification",
+                "payload": event.get("data", {})
+            }, encoder=UUIDEncoder)
+        except Exception as e:
+            logger.error(f"Error sending new notification: {str(e)}")

@@ -6,17 +6,47 @@ from apps.authentication.models import User
 from django.db import close_old_connections
 import jwt
 from channels.db import database_sync_to_async
+import logging
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 class JWTAuthMiddleware:
+    """
+    Custom JWT authentication middleware for Django Channels
+    """
     def __init__(self, inner):
         self.inner = inner
 
     async def __call__(self, scope, receive, send):
-        query_string = parse_qs(scope["query_string"].decode())
-        token = query_string.get("token", [None])[0]
+        close_old_connections()
         
-        # If not in query string, check cookies
-        if not token and "headers" in scope:
+        scope["user"] = AnonymousUser()
+        
+        token = self._extract_token(scope)
+        
+        if token:
+            try:
+                user_id = self._get_user_id_from_token(token)
+                if user_id:
+                    user = await self.get_user(user_id)
+                    if user:
+                        scope["user"] = user
+                        logger.debug(f"Authenticated WebSocket connection for user {user_id}")
+            except Exception as e:
+                logger.error(f"Error authenticating WebSocket connection: {str(e)}")
+        
+        return await self.inner(scope, receive, send)
+    
+    def _extract_token(self, scope):
+        """Extract JWT token from query string or cookies"""
+        query_string = scope.get("query_string", b"").decode()
+        if query_string:
+            query_params = parse_qs(query_string)
+            if "token" in query_params:
+                return query_params["token"][0]
+        
+        if "headers" in scope:
             cookies = {}
             for name, value in scope.get("headers", []):
                 if name == b"cookie":
@@ -24,25 +54,46 @@ class JWTAuthMiddleware:
                     cookies = {
                         c.split("=")[0]: c.split("=")[1]
                         for c in cookie_string.split("; ")
+                        if "=" in c
                     }
-                    break
-            token = cookies.get("access")
+                    return cookies.get("access") or cookies.get("token")
         
-        user = AnonymousUser()
-        if token:
+        return None
+    
+    def _get_user_id_from_token(self, token):
+        """Validate JWT token and extract user ID"""
+        try:
             try:
-                decoded_data = AccessToken(token)
-                user = await self.get_user(decoded_data["user_id"])
-            except (jwt.ExpiredSignatureError, jwt.DecodeError, User.DoesNotExist):
-                user = AnonymousUser()
-
-        close_old_connections()
-        scope["user"] = user
-        return await self.inner(scope, receive, send)
+                access_token = AccessToken(token)
+                return access_token["user_id"]
+            except Exception:
+                decoded_token = jwt.decode(
+                    token,
+                    settings.SECRET_KEY,
+                    algorithms=["HS256"],
+                    options={"verify_signature": True}
+                )
+                return decoded_token.get("user_id") or decoded_token.get("sub")
+        except jwt.ExpiredSignatureError:
+            logger.warning("Expired JWT token")
+        except jwt.InvalidTokenError:
+            logger.warning("Invalid JWT token")
+        except Exception as e:
+            logger.error(f"Error decoding JWT token: {str(e)}")
+        
+        return None
 
     @database_sync_to_async
     def get_user(self, user_id):
-        return User.objects.get(id=user_id)
+        """Get user from database asynchronously"""
+        try:
+            return User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return None
+        except Exception as e:
+            logger.error(f"Error retrieving user {user_id}: {str(e)}")
+            return None
 
 def JWTAuthMiddlewareStack(inner):
+    """Convenience function to wrap with JWT auth and standard auth"""
     return JWTAuthMiddleware(AuthMiddlewareStack(inner))
