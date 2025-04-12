@@ -7,6 +7,7 @@ import MapboxMap from "@/components/global/mapBox";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import BookingCard from "@/components/global/cards/booking-card";
 
 export const ExperiencePageContent = ({ id }: { id: string }) => {
   const { data } = useGetExperienceQuery(id);
@@ -111,26 +112,7 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
           </div>
         </div>
 
-        <div className="border rounded-xl p-6 h-fit sticky top-6 space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold">
-              {data?.price_per_person} {data?.currency}
-              <span className="text-sm font-normal text-gray-500"> / person</span>
-            </h3>
-            <div className="flex items-center gap-1">
-              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span>{data?.rating}</span>
-            </div>
-          </div>
-          
-          <Button className="w-full bg-primary hover:bg-primary/90">
-            Book Now
-          </Button>
-          
-          <div className="text-center text-sm text-gray-500">
-            You won&apos;t be charged yet
-          </div>
-        </div>
+      <BookingCard id={id} data={data} placeType="experience" />
       </div>
 
       <div className="space-y-2">

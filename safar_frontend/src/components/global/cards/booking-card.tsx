@@ -48,7 +48,7 @@ export default function BookingCard({ id, data, placeType }: BookingCardProps) {
 
   // Get currency based on place type
   const getCurrency = () => {
-    return data.currency || "USD"
+    return data?.currency || "USD"
   }
 
   // Calculate total price
