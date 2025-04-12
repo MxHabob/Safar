@@ -1,7 +1,6 @@
 import uuid
 
 def generate_unique_username(self, email):
-    # Current implementation could lead to long usernames
     base_username = email.split('@')[0][:20]
     base_username = ''.join(c for c in base_username if c.isalnum())
     username = base_username.lower()

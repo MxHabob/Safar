@@ -26,6 +26,7 @@ rest_api_urlpatterns = [
     path('api/auth/', include('apps.authentication.urls')),
     path('api/', include('apps.safar.urls')),
     path('api/', include('apps.geographic_data.urls')),
+    path('api/', include('apps.marketing.urls')),
     path('health/', health_check, name='health_check'),
 ]
 

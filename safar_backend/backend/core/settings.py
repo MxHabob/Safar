@@ -102,6 +102,7 @@ INSTALLED_APPS = [
     "apps.real_time",
     "apps.geographic_data",
     "apps.core_apps",
+    'apps.marketing',
 ]
 
 MIDDLEWARE = [
@@ -114,6 +115,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.authentication.middleware.UserActivityMiddleware",
+    "apps.authentication.middleware.UserLoginTracker",
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -372,7 +375,6 @@ TWILIO_ACCOUNT_SID = env("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = env("TWILIO_AUTH_TOKEN")
 TWILIO_FROM_NUMBER = env("TWILIO_FROM_NUMBER")
 
-
 # ======================
 #  LOGGING CONFIGURATION
 # ======================
@@ -439,8 +441,16 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Domain and site settings
 DOMAIN = env("DOMAIN", default="localhost:3000")
+
+# Notification Settings
+NOTIFICATION_RETENTION_DAYS = 90
+ENABLE_EMAIL_RATE_LIMITING = True
+ENABLE_SMS_RATE_LIMITING = True
 SITE_NAME = env("SITE_NAME", default="Safer")
 SITE_URL = env("SITE_URL", default="http://localhost:3000")
+
+# Firebase settings
+FIREBASE_CREDENTIALS_PATH = env("FIREBASE_CREDENTIALS_PATH", default="./firebase-credentials.json")
 
 # Cities light settings
 CITIES_LIGHT_TRANSLATION_LANGUAGES = []

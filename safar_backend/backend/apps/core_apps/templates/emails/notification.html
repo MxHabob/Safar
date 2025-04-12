@@ -3,93 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Safar Notification</title>
-    <style type="text/css">
-        /* Base styles */
+    <title>{{ subject }}</title>
+    <style>
         body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             color: #333;
             margin: 0;
             padding: 0;
-            background-color: #f7f9fc;
+            background-color: #f9f9f9;
         }
-        
-        /* Container */
         .container {
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
             background-color: #ffffff;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
-        
-        /* Header */
         .header {
             text-align: center;
             padding: 20px 0;
-            border-bottom: 1px solid #eaeaea;
+            border-bottom: 1px solid #eee;
         }
-        
         .logo {
-            color: #2d3748;
-            font-size: 24px;
-            font-weight: bold;
-            text-decoration: none;
+            max-height: 60px;
+            margin-bottom: 10px;
         }
-        
-        .logo span {
-            color: #4a6ee0;
-        }
-        
-        /* Content */
         .content {
-            padding: 30px 20px;
+            padding: 20px 0;
         }
-        
-        h1 {
-            color: #2d3748;
-            font-size: 22px;
-            margin-top: 0;
-        }
-        
-        p {
+        .message {
             margin-bottom: 20px;
-            font-size: 16px;
         }
-        
-        .button {
+        .cta-button {
             display: inline-block;
             padding: 12px 24px;
-            background-color: #4a6ee0;
-            color: white !important;
+            background-color: #4CAF50;
+            color: white;
             text-decoration: none;
             border-radius: 4px;
             font-weight: bold;
             margin: 20px 0;
         }
-        
-        /* Footer */
         .footer {
             text-align: center;
-            padding: 20px;
-            font-size: 14px;
-            color: #718096;
-            border-top: 1px solid #eaeaea;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #777;
+        }
+        .social-links {
+            margin: 15px 0;
+        }
+        .social-link {
+            display: inline-block;
+            margin: 0 10px;
         }
         
-        .social-links {
+        /* Campaign specific styles */
+        .campaign-container {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 15px;
             margin: 20px 0;
         }
-        
-        .social-links a {
-            margin: 0 10px;
-            text-decoration: none;
+        .campaign-image {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .campaign-headline {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .campaign-message {
+            margin-bottom: 15px;
+        }
+        .discount-code {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 18px;
+            text-align: center;
+            margin: 15px 0;
+            border: 1px dashed #ccc;
         }
         
-        /* Responsive */
-        @media only screen and (max-width: 600px) {
+        /* Responsive styles */
+        @media screen and (max-width: 600px) {
             .container {
                 width: 100%;
                 border-radius: 0;
@@ -100,48 +107,70 @@
 <body>
     <div class="container">
         <div class="header">
-            <a href="{{ site_url }}" class="logo">Safar<span>.</span></a>
+            <img src="{{ site_url }}/static/images/logo.png" alt="{{ site_name }}" class="logo">
+            <h2>{{ subject }}</h2>
         </div>
         
         <div class="content">
-            <h1>{{ subject }}</h1>
-            
-            <p>Hello {{ user.first_name|default:"there" }},</p>
-            
-            <p>{{ message|linebreaksbr }}</p>
-            
-            {% if action_url %}
-            <p>
-                <a href="{{ action_url }}" class="button">
-                    {% if notification_type == 'Booking Update' %}View Booking{% else %}View Details{% endif %}
-                </a>
-            </p>
+            {% if campaign %}
+                <div class="campaign-container">
+                    {% if campaign.image_url %}
+                        <img src="{{ campaign.image_url }}" alt="{{ campaign.headline }}" class="campaign-image">
+                    {% endif %}
+                    
+                    <h3 class="campaign-headline">{{ campaign.headline }}</h3>
+                    
+                    <div class="campaign-message">
+                        {{ campaign.message }}
+                    </div>
+                    
+                    {% if discount_codes %}
+                        <div class="discount-code">
+                            {{ discount_codes.0 }}
+                        </div>
+                    {% endif %}
+                    
+                    {% if campaign.call_to_action %}
+                        <a href="{{ campaign.deep_link|default:action_url }}" class="cta-button">
+                            {{ campaign.call_to_action }}
+                        </a>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="message">
+                    <p>Hello {% if user.first_name %}{{ user.first_name }}{% else %}there{% endif %},</p>
+                    
+                    <p>{{ message }}</p>
+                    
+                    {% if action_url %}
+                        <div style="text-align: center;">
+                            <a href="{{ action_url }}" class="cta-button">
+                                View Details
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
             {% endif %}
             
-            {% if notification_type == 'Booking Update' %}
-            <p>Need help with your booking? <a href="{{ site_url }}/contact">Contact our support team</a>.</p>
-            {% endif %}
-            
-            <p>Happy travels,<br>The Safar Team</p>
+            <p>Thank you for using {{ site_name }}!</p>
         </div>
         
         <div class="footer">
             <div class="social-links">
-                <a href="{{ site_url }}/facebook">Facebook</a>
-                <a href="{{ site_url }}/instagram">Instagram</a>
-                <a href="{{ site_url }}/twitter">Twitter</a>
+                <a href="https://facebook.com/{{ site_name }}" class="social-link">Facebook</a>
+                <a href="https://twitter.com/{{ site_name }}" class="social-link">Twitter</a>
+                <a href="https://instagram.com/{{ site_name }}" class="social-link">Instagram</a>
             </div>
             
-            <p>© {{ current_year }} Safar. All rights reserved.</p>
             <p>
-                <a href="{{ site_url }}/privacy">Privacy Policy</a> | 
-                <a href="{{ site_url }}/terms">Terms of Service</a>
+                &copy; {{ current_year }} {{ site_name }}. All rights reserved.<br>
+                If you have any questions, please contact our support team at support@example.com
             </p>
             
             <p>
                 <small>
-                    You're receiving this email because you're a registered Safar user.
-                    <a href="{{ unsubscribe_url }}">Unsubscribe</a> from these notifications.
+                    You're receiving this email because you have an account with {{ site_name }}.<br>
+                    If you'd like to unsubscribe, <a href="{{ site_url }}/notifications">update your notification preferences</a>.
                 </small>
             </p>
         </div>

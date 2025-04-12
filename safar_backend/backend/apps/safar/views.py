@@ -12,7 +12,9 @@ from apps.safar.models import (
     Category, Discount, Place, Experience,
     Flight, Box, Booking, Wishlist, Review, Payment, Message, Notification
 )
-from apps.core_apps.generation_algorithm import BoxGenerator
+from apps.core_apps.algorithms_engines.recommendation_engine import RecommendationEngine
+from apps.core_apps.algorithms_engines.box_generator import BoxGenerator
+import logging
 from apps.safar.serializers import (
     CategorySerializer,
     DiscountSerializer, PlaceSerializer, ExperienceSerializer, FlightSerializer,
@@ -20,9 +22,11 @@ from apps.safar.serializers import (
     PaymentSerializer, MessageSerializer, NotificationSerializer
 )
 
+logger = logging.getLogger(__name__)
+
 class BaseViewSet(viewsets.ModelViewSet):
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly] 
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter] 
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     pagination_class = GENPagination
     
     def get_queryset(self):
@@ -34,7 +38,6 @@ class BaseViewSet(viewsets.ModelViewSet):
 class CategoryViewSet(BaseViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     search_fields = ['name']
     ordering_fields = ['name', 'created_at']
     
@@ -59,6 +62,135 @@ class DiscountViewSet(BaseViewSet):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [permissions.IsAdminUser()]
         return [permissions.IsAuthenticated()]
+
+@action(detail=False, methods=['get'])
+def my_discounts(self, request):
+    """Get discounts available to the current user"""
+    if not request.user.is_authenticated:
+        return Response(
+            {'error': 'Authentication required to view your discounts'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+    
+    now = timezone.now()
+    
+    # Get discounts specifically targeted to this user
+    targeted_discounts = Discount.objects.filter(
+        target_users=request.user,
+        is_active=True,
+        valid_from__lte=now,
+        valid_to__gte=now
+    )
+    
+    # Get general discounts (not targeted to specific users)
+    general_discounts = Discount.objects.filter(
+        Q(target_users__isnull=True) | ~Q(target_users__in=[request.user]),
+        is_active=True,
+        valid_from__lte=now,
+        valid_to__gte=now
+    )
+    
+    # Combine both sets
+    all_discounts = list(targeted_discounts) + list(general_discounts)
+    serializer = self.get_serializer(all_discounts, many=True)
+    
+    return Response(serializer.data)
+
+@action(detail=False, methods=['post'])
+def validate(self, request):
+    """Validate a discount code for the current user"""
+    if not request.user.is_authenticated:
+        return Response(
+            {'error': 'Authentication required to validate discount codes'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+    
+    code = request.data.get('code')
+    entity_type = request.data.get('entity_type')
+    entity_id = request.data.get('entity_id')
+    amount = request.data.get('amount')
+    
+    if not code:
+        return Response(
+            {'error': 'Discount code is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        discount = Discount.objects.get(code=code, is_active=True)
+        
+        if not discount.is_valid():
+            return Response(
+                {'valid': False, 'error': 'This discount code has expired or is no longer valid'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+        if not discount.is_applicable_to_user(request.user):
+            return Response(
+                {'valid': False, 'error': 'This discount code is not applicable to your account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if entity is applicable (if specified)
+        if entity_type and entity_id:
+            entity = None
+            if entity_type == 'place':
+                entity = Place.objects.get(id=entity_id)
+            elif entity_type == 'experience':
+                entity = Experience.objects.get(id=entity_id)
+            elif entity_type == 'flight':
+                entity = Flight.objects.get(id=entity_id)
+            elif entity_type == 'box':
+                entity = Box.objects.get(id=entity_id)
+            
+            if entity and not discount.is_applicable_to_entity(entity):
+                return Response(
+                    {'valid': False, 'error': f'This discount code is not applicable to this {entity_type}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Check minimum purchase amount
+        if amount and discount.min_purchase_amount and float(amount) < float(discount.min_purchase_amount):
+            return Response(
+                {
+                    'valid': False, 
+                    'error': f'This discount requires a minimum purchase of ${discount.min_purchase_amount}'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Calculate discount amount if original amount provided
+        discount_amount = None
+        discounted_price = None
+        if amount:
+            discount_amount = discount.calculate_discount_amount(float(amount))
+            discounted_price = float(amount) - discount_amount
+        
+        return Response({
+            'valid': True,
+            'discount': {
+                'id': discount.id,
+                'code': discount.code,
+                'discount_type': discount.discount_type,
+                'amount': float(discount.amount),
+                'discount_amount': discount_amount,
+                'discounted_price': discounted_price,
+                'valid_until': discount.valid_to
+            }
+        })
+        
+    except Discount.DoesNotExist:
+        return Response(
+            {'valid': False, 'error': 'Invalid discount code'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        logger.error(f"Error validating discount code: {str(e)}", exc_info=True)
+        return Response(
+            {'valid': False, 'error': 'An error occurred while validating the discount code'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
     
     @action(detail=False, methods=['get'])
     def active(self, request):
@@ -77,7 +209,7 @@ class DiscountViewSet(BaseViewSet):
         """Apply discount to a booking"""
         discount = self.get_object()
         booking_id = request.data.get('booking_id')
-        # discount application logic
+
         return Response({'status': 'Discount applied'})
 
 class PlaceViewSet(BaseViewSet):
@@ -100,42 +232,21 @@ class PlaceViewSet(BaseViewSet):
             queryset = queryset.filter(price__lte=max_price)
             
         return queryset
-    
     @action(detail=False, methods=['get'])
-    def search(self, request):
-        """
-        Enhanced search that also generates personalized boxes
-        """
-        query = request.query_params.get('q', '')
-        location = request.query_params.get('location')
-        
-        # Convert location if provided
-        geo_location = None
-        if location:
-            try:
-                geo_location = GEOSGeometry(location)
-            except:
-                pass
-        
-        places = self.filter_queryset(self.get_queryset())
-        places = self.paginate_queryset(places)
-        serializer = self.get_serializer(places, many=True)
-        
-        box = None
-        if request.user.is_authenticated:
-            generator = BoxGenerator(
-                user=request.user,
-                search_query=query,
-                location=geo_location
+    def recommended(self, request):
+        if not request.user.is_authenticated:
+            return Response(
+                {'error': 'Authentication required for recommendations'},
+                status=status.HTTP_401_UNAUTHORIZED
             )
-            box = generator.generate_personalized_box()
         
-        response_data = {
-            'results': serializer.data,
-            'personalized_box': BoxSerializer(box).data if box else None
-        }
+        limit = int(request.query_params.get('limit', 5))
+
+        recommendation_engine = RecommendationEngine(request.user)
+        places = recommendation_engine.recommend_places(limit=limit)
         
-        return Response(response_data)
+        serializer = self.get_serializer(places, many=True)
+        return Response(serializer.data)
     
     @action(detail=True, methods=['get'])
     def similar(self, request, pk=None):
@@ -155,7 +266,27 @@ class ExperienceViewSet(BaseViewSet):
     filterset_fields = ['place', 'is_available']
     search_fields = ['title', 'description']
     ordering_fields = ['rating', 'price_per_person', 'duration']
-    
+
+    @action(detail=False, methods=['get'])
+    def recommended(self, request):
+        if not request.user.is_authenticated:
+            return Response(
+                {'error': 'Authentication required for recommendations'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        limit = int(request.query_params.get('limit', 5))
+
+        filters = {
+            'is_available': True
+        }
+        
+        recommendation_engine = RecommendationEngine(request.user)
+        experiences = recommendation_engine.recommend_experiences(limit=limit, filters=filters)
+        
+        serializer = self.get_serializer(experiences, many=True)
+        return Response(serializer.data)
+
     @action(detail=True, methods=['get'])
     def availability(self, request, pk=None):
         """Check availability for specific dates"""
@@ -195,170 +326,6 @@ class BoxViewSet(BaseViewSet):
     filterset_fields = ['country', 'city']
     search_fields = ['name', 'description']
     ordering_fields = ['total_price', 'created_at']
-
-    @action(detail=False, methods=['post'], url_path='test-generator')
-    def test_generator(self, request):
-        """
-        Custom endpoint to test BoxGenerator functionality
-        
-        Parameters:
-        - location (optional): "lat,lng" string
-        - search_query (optional): search query
-        - debug (optional): boolean to return debug info
-        
-        Returns:
-        - Generated box
-        - Status
-        """
-        
-        location = request.data.get('location')
-        search_query = request.data.get('search_query', '')
-        debug = request.data.get('debug', False)
-
-        geo_location = None
-        if location:
-            try:
-                lat, lng = map(float, location.split(','))
-                geo_location = Point(lng, lat)
-            except:
-                return Response(
-                    {'error': 'Invalid location format. Use "lat,lng"'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-        
-        try:
-            generator = BoxGenerator(
-                user=request.user,
-                location=geo_location,
-                search_query=search_query
-            )
-            
-            box = generator.generate_personalized_box()
-            
-            response_data = {
-                'status': 'success',
-                'box': BoxSerializer(box).data if box else None,
-                'generated_at': timezone.now().isoformat()
-            }
-            
-            if debug:
-                response_data['debug'] = {
-                    'user_cluster': generator.user_cluster,
-                    'trending_destinations': generator.trending_destinations,
-                    'search_results': generator.search_results,
-                    'generation_time': generator.generation_time
-                }
-            
-            return Response(response_data)
-            
-        except Exception as e:
-            return Response(
-                {'error': str(e), 'status': 'failed'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-    @action(detail=False, methods=['post'], url_path='test-generator-bulk')
-    def test_generator_bulk(self, request):
-        """
-        Generate multiple test boxes with different parameters
-        
-        Parameters:
-        - locations: list of "lat,lng" strings
-        - queries: list of search queries
-        - count: number of boxes to generate per combination
-        
-        Returns:
-        - Generated boxes
-        - Status
-        """
-        
-        locations = request.data.get('locations', [])
-        queries = request.data.get('queries', [])
-        count = int(request.data.get('count', 1))
-        
-        results = []
-        for loc in locations:
-            for q in queries:
-                try:
-
-                    geo_location = None
-                    if loc:
-                        try:
-                            lat, lng = map(float, loc.split(','))
-                            geo_location = Point(lng, lat)
-                        except:
-                            continue
-                    
-                    for i in range(count):
-                        generator = BoxGenerator(
-                            user=request.user,
-                            location=geo_location,
-                            search_query=q
-                        )
-                        
-                        box = generator.generate_personalized_box()
-                        results.append({
-                            'location': loc,
-                            'query': q,
-                            'box': BoxSerializer(box).data if box else None,
-                            'success': box is not None
-                        })
-                        
-                except Exception as e:
-                    results.append({
-                        'location': loc,
-                        'query': q,
-                        'error': str(e),
-                        'success': False
-                    })
-        
-        return Response({
-            'results': results,
-            'generated_at': timezone.now().isoformat()
-        })
-
-    @action(detail=False, methods=['get'], url_path='test-generator-defaults')
-    def test_generator_defaults(self, request):
-        """
-        Generate test boxes with default parameters
-        
-        Returns:
-        - Generated boxes
-        - Status
-        """
-        scenarios = [
-            {'name': 'Default', 'params': {}},
-            {'name': 'Beach', 'params': {'search_query': 'beach vacation'}},
-            {'name': 'Mountain', 'params': {'search_query': 'mountain retreat'}},
-            {'name': 'City', 'params': {'search_query': 'city break'}}
-        ]
-        
-        results = []
-        for scenario in scenarios:
-            try:
-                generator = BoxGenerator(
-                    user=request.user,
-                    **scenario['params']
-                )
-                
-                box = generator.generate_personalized_box()
-                results.append({
-                    'scenario': scenario['name'],
-                    'box': BoxSerializer(box).data if box else None,
-                    'success': box is not None
-                })
-                
-            except Exception as e:
-                results.append({
-                    'scenario': scenario['name'],
-                    'error': str(e),
-                    'success': False
-                })
-        
-        return Response({
-            'results': results,
-            'generated_at': timezone.now().isoformat()
-        })
 
     @action(detail=True, methods=['get'])
     def itinerary(self, request, pk=None):
@@ -448,7 +415,6 @@ class ReviewViewSet(BaseViewSet):
         'user', 'place', 'experience', 'flight'
     )
     serializer_class = ReviewSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filterset_fields = ['rating']
     ordering_fields = ['rating', 'created_at']
     
@@ -570,4 +536,68 @@ class NotificationViewSet(BaseViewSet):
         return Response({'status': f'{updated} notifications marked as read'})
 
 
+class BoxGenerationViewSet(BaseViewSet):
 
+    
+    @action(detail=False, methods=['post'])
+    def generate(self, request):
+        """
+        Generate a custom box based on user preferences
+        """
+        try:
+            user = request.user
+            destination_id = request.data.get('destination_id')
+            destination_type = request.data.get('destination_type')  # 'city', 'region', 'country'
+            duration_days = int(request.data.get('duration_days', 3))
+            budget = request.data.get('budget')
+            theme = request.data.get('theme')
+            start_date = request.data.get('start_date')
+            
+            # Get destination object
+            destination = self._get_destination(destination_id, destination_type)
+            
+            # Generate box
+            generator = BoxGenerator(user)
+            box = generator.generate_box(
+                destination=destination,
+                duration_days=duration_days,
+                budget=budget,
+                start_date=start_date,
+                theme=theme
+            )
+            
+            return Response(
+                BoxSerializer(box).data,
+                status=status.HTTP_201_CREATED
+            )
+            
+        except ValueError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Box generation failed: {str(e)}")
+            return Response(
+                {'error': 'Could not generate box'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def _get_destination(self, destination_id, destination_type):
+        """Get destination model instance"""
+        from apps.geographic_data.models import City, Region, Country
+        
+        model_map = {
+            'city': City,
+            'region': Region,
+            'country': Country
+        }
+        
+        if destination_type not in model_map:
+            raise ValueError("Invalid destination type")
+            
+        model = model_map[destination_type]
+        try:
+            return model.objects.get(id=destination_id, is_deleted=False)
+        except model.DoesNotExist:
+            raise ValueError(f"{destination_type.capitalize()} not found")

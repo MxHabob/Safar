@@ -7,7 +7,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 
 django_asgi_app = get_asgi_application()
 
-from apps.authentication.middleware import JWTAuthMiddlewareStack
+from apps.real_time.middleware import JWTAuthMiddlewareStack
 from apps.real_time import urls
 
 application = ProtocolTypeRouter({

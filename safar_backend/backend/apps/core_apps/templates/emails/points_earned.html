@@ -1,0 +1,25 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<div style="padding: 20px; background-color: #f9f9f9; border-radius: 5px;">
+  <h2 style="color: #4CAF50;">Points Earned!</h2>
+  
+  <p>Hello {{ user.first_name }},</p>
+  
+  <p>You've earned <strong>{{ points_awarded }} points</strong> for {{ action_description }}.</p>
+  
+  <p>Your current points balance is now <strong>{{ current_points }} points</strong>.</p>
+  
+  {% if next_level %}
+  <div style="background-color: #e8f5e9; padding: 15px; border-radius: 5px; margin-top: 20px;">
+    <p style="margin: 0;">
+      <strong>Level Up Progress:</strong> You're only {{ points_to_next_level }} points away from {{ next_level }} membership!
+    </p>
+  </div>
+  {% endif %}
+  
+  <div style="margin-top: 30px;">
+    <a href="{{ site_url }}/account/points" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Your Points History</a>
+  </div>
+</div>
+{% endblock %}

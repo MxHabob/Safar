@@ -12,10 +12,7 @@ logger = logging.getLogger(__name__)
 @shared_task(bind=True, max_retries=3)
 def send_email_task(self, subject, message, recipient_list, html_message=None, from_email=None, context=None):
     """
-    Enhanced email task with:
-    - Better retry logic
-    - Context support
-    - Improved logging
+    Task for sending emails asynchronously
     """
     try:
         success = NotificationService.send_email(
@@ -31,15 +28,14 @@ def send_email_task(self, subject, message, recipient_list, html_message=None, f
         return True
     except Exception as e:
         logger.error(f"Email task failed for {recipient_list}: {str(e)}", exc_info=True)
+        # Exponential backoff with max of 1 hour
         self.retry(exc=e, countdown=min(60 * (2 ** self.request.retries), 3600))
         return False
 
 @shared_task(bind=True, max_retries=3)
 def send_sms_task(self, to_number, message):
     """
-    Enhanced SMS task with:
-    - Number validation
-    - Better retry logic
+    Task for sending SMS asynchronously
     """
     try:
         if not to_number or not message:
@@ -55,15 +51,14 @@ def send_sms_task(self, to_number, message):
         return True
     except Exception as e:
         logger.error(f"SMS task failed for {to_number}: {str(e)}", exc_info=True)
+        # Exponential backoff with max of 1 hour
         self.retry(exc=e, countdown=min(60 * (2 ** self.request.retries), 3600))
         return False
 
 @shared_task(bind=True, max_retries=3)
-def send_push_notification_task(self, user_id, title, message, data=None):
+def send_push_notification_task(self, user_id, title, message, data=None, image_url=None):
     """
-    Enhanced push notification task with:
-    - User validation
-    - Better error handling
+    Task for sending push notifications asynchronously
     """
     try:
         user = User.objects.get(id=user_id)
@@ -71,7 +66,8 @@ def send_push_notification_task(self, user_id, title, message, data=None):
             user=user,
             title=title,
             message=message,
-            data=data
+            data=data,
+            image_url=image_url
         )
         if not success:
             raise Exception("Push notification reported failure")
@@ -81,64 +77,73 @@ def send_push_notification_task(self, user_id, title, message, data=None):
         return False
     except Exception as e:
         logger.error(f"Push task failed for user {user_id}: {str(e)}", exc_info=True)
+        # Exponential backoff with max of 1 hour
         self.retry(exc=e, countdown=min(60 * (2 ** self.request.retries), 3600))
         return False
 
-@shared_task
-def process_notification(notification_id):
+@shared_task(bind=True, max_retries=3)
+def process_notification(self, notification_id):
     """
-    Enhanced notification processing with:
-    - Better state management
-    - Comprehensive logging
-    - Error recovery
+    Process a notification by sending it through all appropriate channels
     """
     from apps.safar.models import Notification
     
     try:
-        notification = Notification.objects.get(id=notification_id)
-        user = notification.user
-        
-        if notification.is_read:
-            logger.info(f"Notification {notification_id} already processed")
-            return True
+        with transaction.atomic():
+            notification = Notification.objects.select_for_update().get(id=notification_id)
             
-        notification.processing_started = timezone.now()
-        notification.save()
+            # Skip if already processed
+            if notification.processed_at or notification.status in ['sent', 'failed']:
+                logger.info(f"Notification {notification_id} already processed")
+                return True
+                
+            # Mark as processing
+            notification.processing_started = timezone.now()
+            notification.status = 'processing'
+            notification.save()
         
-        context = {
-            'notification': notification,
-            'user': user,
-            'action_url': notification.metadata.get('deep_link', settings.SITE_URL)
-        }
-        
+        user = notification.user
         results = {}
         
-        if user.email:
+        # Send email if user has email and wants email notifications
+        if user.email and getattr(user.profile, 'wants_email_notifications', True):
+            context = {
+                'notification': notification,
+                'user': user,
+                'action_url': notification.metadata.get('deep_link', settings.SITE_URL)
+            }
+            
             results['email'] = send_email_task.delay(
-                subject=f"Notification: {notification.type}",
+                subject=f"{settings.SITE_NAME}: {notification.type}",
                 message=notification.message,
                 recipient_list=[user.email],
                 context=context
-            )
+            ).get()  # Wait for result
             
-        if hasattr(user, 'profile') and user.profile.phone_number:
+        # Send SMS if user has phone number and wants SMS notifications
+        if hasattr(user, 'profile') and user.profile.phone_number and getattr(user.profile, 'wants_sms_notifications', False):
             results['sms'] = send_sms_task.delay(
                 to_number=str(user.profile.phone_number),
                 message=f"{notification.type}: {notification.message[:120]}..."
-            )
+            ).get()  # Wait for result
             
-        if hasattr(user, 'profile') and user.profile.notification_push_token:
+        # Send push notification if user has push token and wants push notifications
+        if hasattr(user, 'profile') and user.profile.notification_push_token and getattr(user.profile, 'wants_push_notifications', True):
             results['push'] = send_push_notification_task.delay(
-                user_id=user.id,
+                user_id=str(user.id),
                 title=notification.type,
                 message=notification.message,
-                data=notification.metadata
-            )
+                data=notification.metadata,
+                image_url=notification.metadata.get('image_url')
+            ).get()  # Wait for result
         
-        notification.is_read = True
-        notification.processed_at = timezone.now()
-        notification.channels = [k for k, v in results.items() if v]
-        notification.save()
+        # Update notification status
+        with transaction.atomic():
+            notification.refresh_from_db()
+            notification.status = 'sent' if any(results.values()) else 'failed'
+            notification.channels = [k for k, v in results.items() if v]
+            notification.processed_at = timezone.now()
+            notification.save()
         
         return True
         
@@ -147,152 +152,113 @@ def process_notification(notification_id):
         return False
     except Exception as e:
         logger.error(f"Failed to process notification {notification_id}: {str(e)}", exc_info=True)
-        return False
-
-@shared_task(bind=True, max_retries=3)
-def generate_trending_boxes(self):
-    """
-    Enhanced box generation with:
-    - Better progress tracking
-    - Improved error handling
-    - Resource management
-    """
-    from apps.core_apps.generation_algorithm import BoxGenerator
-    from apps.core_apps.helper_algorithm import (
-        calculate_trending_destinations,
-        get_user_preference_clusters
-    )
-    
-    try:
-        logger.info("Starting trending box generation")
-        destinations = cache.get('trending_destinations')
-        
-        if not destinations:
-            logger.info("Calculating fresh trending destinations")
-            destinations = calculate_trending_destinations()
-            cache.set('trending_destinations', destinations, timeout=3600)
-        
-        user_clusters = get_user_preference_clusters()
-        if not user_clusters:
-            logger.warning("No user clusters found - using default")
-            user_clusters = {'general': User.objects.filter(is_active=True)[:100]}
-        
-        
-        for i, ((city, country), score) in enumerate(destinations[:10], 1):
-            try:
-                with transaction.atomic():
-                    self._process_destination(
-                        city, country, score, user_clusters
-                    )
-                    
-            except Exception as e:
-                logger.error(f"Error processing {city}: {str(e)}", exc_info=True)
-                continue
-                
-        return True
-        
-    except Exception as e:
-        logger.error(f"Critical error in box generation: {str(e)}", exc_info=True)
-
+        # Retry with exponential backoff
         self.retry(exc=e, countdown=min(60 * (2 ** self.request.retries), 3600))
         return False
 
-def _process_destination(self, city, country, score, user_clusters, log_entry):
-    """Process a single destination for box generation"""
-    from apps.safar.models import Place
+@shared_task
+def send_bulk_notifications(user_ids, notification_type, message, data=None):
+    """
+    Send the same notification to multiple users
+    """
+    from apps.authentication.models import User
     
-    logger.info(f"Processing {city}, {country} with score {score}")
+    success_count = 0
+    failure_count = 0
     
-    places = Place.objects.filter(
-        city=city,
-        country=country,
-        is_available=True
-    ).select_related('city', 'country').prefetch_related('media')[:5]
-
-    if not places:
-        logger.debug(f"No available places for {city}, {country}")
-        return
-
-    location = places[0].location
-    place_categories = {p.category.name.lower() for p in places}
-    
-    for cluster_name, users in user_clusters.items():
-        if self._should_skip_cluster(cluster_name, place_categories):
-            continue
+    for user_id in user_ids:
+        try:
+            user = User.objects.get(id=user_id)
+            success = NotificationService.send_notification(
+                user=user,
+                notification_type=notification_type,
+                message=message,
+                data=data,
+                immediate=False
+            )
             
-        for user in users[:50]:
-            try:
-                box = self._generate_user_box(user, location, city, cluster_name)
-                if box:
-                    self._send_box_notification(user, box, cluster_name, city)
-                    log_entry.boxes_created += 1
-                    log_entry.save()
-            except Exception as e:
-                logger.error(f"Failed for user {user.id}: {str(e)}")
-                continue
-
-def _generate_user_box(self, user, location, city, cluster_name):
-    """Generate a box for a specific user with timeout"""
-    from apps.core_apps.generation_algorithm import BoxGenerator
-    import signal
+            if success:
+                success_count += 1
+            else:
+                failure_count += 1
+                
+        except User.DoesNotExist:
+            logger.error(f"User {user_id} not found for bulk notification")
+            failure_count += 1
+        except Exception as e:
+            logger.error(f"Failed to send bulk notification to user {user_id}: {str(e)}")
+            failure_count += 1
     
-    class TimeoutException(Exception):
-        pass
-        
-    def timeout_handler(signum, frame):
-        raise TimeoutException("Box generation timed out")
-    
-    try:
-        signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(30) 
-        
-        generator = BoxGenerator(
-            user=user,
-            location=location,
-            query=f"{cluster_name.title()} experience in {city}"
-        )
-        box = generator.generate_personalized_box()
-        
-        signal.alarm(0)
-        return box
-        
-    except TimeoutException:
-        logger.warning(f"Box generation timeout for user {user.id}")
-        return None
-    finally:
-        signal.alarm(0)
+    logger.info(f"Bulk notification complete: {success_count} succeeded, {failure_count} failed")
+    return {'success': success_count, 'failure': failure_count}
 
-def _send_box_notification(self, user, box, cluster_name, city):
-    """Send enhanced box notification with tracking"""
+@shared_task
+def clean_old_notifications():
+    """
+    Clean up old notifications to prevent database bloat
+    """
     from apps.safar.models import Notification
     
-    notification = Notification.objects.create(
-        user=user,
-        box=box,
-        type="Personalized Box",
-        message=f"We've created a {cluster_name}-themed box for {city}!",
-        metadata={
-            "box_id": str(box.id),
-            "cluster": cluster_name,
-            "destination": city,
-            "deep_link": f"/boxes/{box.id}",
-            "image_url": box.media.first().url if box.media.exists() else None
-        }
-    )
+    # Delete notifications older than the retention period
+    retention_days = getattr(settings, 'NOTIFICATION_RETENTION_DAYS', 90)
+    cutoff_date = timezone.now() - timezone.timedelta(days=retention_days)
     
-    process_notification.delay(notification.id)
+    try:
+        count, _ = Notification.objects.filter(created_at__lt=cutoff_date).delete()
+        logger.info(f"Deleted {count} old notifications")
+        return count
+    except Exception as e:
+        logger.error(f"Failed to clean old notifications: {str(e)}")
+        return 0
 
-def _should_skip_cluster(self, cluster_name, place_categories):
-    """Enhanced cluster skipping logic"""
-    cluster_name = cluster_name.lower()
+@shared_task
+def notify_expiring_discounts():
+    """
+    Notify users about their discounts that are about to expire
+    """
+    from apps.safar.models import Discount
     
-    skip_rules = {
-        'beach': {'ski', 'snow', 'winter', 'cold'},
-        'ski': {'beach', 'summer', 'tropical', 'warm'},
-        'luxury': {'hostel', 'budget', 'cheap'},
-        'adventure': {'spa', 'resort', 'relax'},
-        'family': {'adult', 'party', 'nightclub'}
-    }
-    
-    forbidden_categories = skip_rules.get(cluster_name, set())
-    return not place_categories.isdisjoint(forbidden_categories)
+    try:
+        # Find discounts expiring in the next 48 hours
+        now = timezone.now()
+        expiry_threshold = now + timedelta(hours=48)
+        
+        expiring_discounts = Discount.objects.filter(
+            is_active=True,
+            valid_to__gt=now,
+            valid_to__lte=expiry_threshold
+        )
+        
+        for discount in expiring_discounts:
+            # For targeted discounts, notify target users
+            if discount.target_users.exists():
+                for user in discount.target_users.all():
+                    # Skip if we've already notified this user about this discount
+                    cache_key = f"notified_expiring_discount:{user.id}:{discount.id}"
+                    if cache.get(cache_key):
+                        continue
+                    
+                    # Calculate hours remaining
+                    hours_remaining = int((discount.valid_to - now).total_seconds() / 3600)
+                    
+                    # Send notification
+                    send_notification.delay(
+                        user_id=user.id,
+                        notification_type="Discount Expiring Soon",
+                        message=f"Your discount code {discount.code} expires in {hours_remaining} hours! Use it before it's gone.",
+                        data={
+                            'discount_id': str(discount.id),
+                            'code': discount.code,
+                            'expires_in_hours': hours_remaining,
+                            'deep_link': f"/discounts/{discount.code}"
+                        }
+                    )
+                    
+                    # Mark as notified
+                    cache.set(cache_key, True, timeout=86400)  # 24 hours
+        
+        return len(expiring_discounts)
+        
+    except Exception as e:
+        logger.error(f"Failed to notify about expiring discounts: {str(e)}", exc_info=True)
+        return 0

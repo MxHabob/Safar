@@ -3,7 +3,5 @@ from django.apps import AppConfig
 
 class AuthenticationConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.authentication'
-
-    # def ready(self):
-    #     import apps.authentication.signals
+    name = 'apps.marketing'
+    verbose_name = 'Marketing Data Management'

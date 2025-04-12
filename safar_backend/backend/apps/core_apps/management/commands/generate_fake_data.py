@@ -1,12 +1,13 @@
 import random
+import logging
 from datetime import timedelta
 from django.utils import timezone
 from django.core.management.base import BaseCommand
 from django.contrib.gis.geos import Point
-from django.utils import timezone
+from django.db import transaction
 from faker import Faker
 from phonenumber_field.phonenumber import PhoneNumber
-from apps.authentication.models import User, UserProfile
+from apps.authentication.models import User, UserProfile, UserInteraction
 from apps.geographic_data.models import City, Country, Region
 from apps.safar.models import (
     Category, Media, Discount, Message, Notification, 
@@ -14,6 +15,7 @@ from apps.safar.models import (
     Review, Wishlist, Box, BoxItineraryDay, BoxItineraryItem
 )
 
+logger = logging.getLogger(__name__)
 fake = Faker()
 
 class Command(BaseCommand):
@@ -27,89 +29,104 @@ class Command(BaseCommand):
         parser.add_argument('--boxes', type=int, default=5, help='Number of fake travel boxes to create')
         parser.add_argument('--bookings', type=int, default=30, help='Number of fake bookings to create')
         parser.add_argument('--clear', action='store_true', help='Clear existing data before generation')
+        parser.add_argument('--seed', type=int, help='Random seed for reproducible data generation')
 
     def handle(self, *args, **options):
+        # Set random seed if provided
+        if options.get('seed'):
+            random.seed(options['seed'])
+            fake.seed_instance(options['seed'])
+            self.stdout.write(self.style.SUCCESS(f"Using random seed: {options['seed']}"))
+        
         if options['clear']:
             self.clear_existing_data()
         
         self.stdout.write(self.style.SUCCESS('Starting data generation...'))
         
-        # 1. First create essential base data with proper validation
-        try:
-            categories = self.create_categories()
-            country, region, cities = self.ensure_geographic_data()
-            
-            # 2. Create users - ensure we have owners for places/experiences
-            users = self.create_users(options['users'], cities)
-            if not users:
-                raise Exception("Failed to create users - cannot proceed")
-            
-            # 3. Create media items
-            media_items = self.create_media(users, count=100)
-            
-            # 4. Create places with proper validation
-            places = self.create_places(
-                options['places'], 
-                categories, 
-                users, 
-                media_items, 
-                cities
-            )
-            
-            # 5. Create experiences with proper validation
-            experiences = self.create_experiences(
-                options['experiences'], 
-                categories, 
-                users, 
-                media_items, 
-                places, 
-                cities
-            )
-            
-            # 6. Create flights with proper city handling
-            flights = self.create_flights(options['flights'], cities)
-            
-            # 7. Create boxes only if we have places and experiences
-            boxes = []
-            if places and experiences:
-                boxes = self.create_boxes(
-                    options['boxes'], 
+        # Use transaction to ensure data consistency
+        with transaction.atomic():
+            try:
+                # 1. First create essential base data with proper validation
+                categories = self.create_categories()
+                country, region, cities = self.ensure_geographic_data()
+                
+                # 2. Create users - ensure we have owners for places/experiences
+                users = self.create_users(options['users'], cities)
+                if not users:
+                    raise Exception("Failed to create users - cannot proceed")
+                
+                # 3. Create media items
+                media_items = self.create_media(users, count=100)
+                
+                # 4. Create places with proper validation
+                places = self.create_places(
+                    options['places'], 
+                    categories, 
+                    users, 
+                    media_items, 
+                    cities
+                )
+                
+                # 5. Create experiences with proper validation
+                experiences = self.create_experiences(
+                    options['experiences'], 
                     categories, 
                     users, 
                     media_items, 
                     places, 
-                    experiences, 
                     cities
                 )
-            
-            # 8. Create bookings only if we have bookable entities
-            bookings = []
-            if places or experiences or flights or boxes:
-                bookings = self.create_bookings(
-                    options['bookings'], 
-                    users, 
-                    places, 
-                    experiences, 
-                    flights, 
-                    boxes
+                
+                # 6. Create flights with proper city handling
+                flights = self.create_flights(options['flights'], cities)
+                
+                # 7. Create boxes only if we have places and experiences
+                boxes = []
+                if places and experiences:
+                    boxes = self.create_boxes(
+                        options['boxes'], 
+                        categories, 
+                        users, 
+                        media_items, 
+                        places, 
+                        experiences, 
+                        cities
+                    )
+                
+                # 8. Create bookings only if we have bookable entities
+                bookings = []
+                if places or experiences or flights or boxes:
+                    bookings = self.create_bookings(
+                        options['bookings'], 
+                        users, 
+                        places, 
+                        experiences, 
+                        flights, 
+                        boxes
+                    )
+                
+                # Create supporting entities
+                discounts = self.create_discounts(places, experiences, flights, boxes)
+                payments = self.create_payments(bookings) if bookings else []
+                reviews = self.create_reviews(users, places, experiences, flights)
+                
+                # Create user interactions based on reviews and bookings
+                interactions = self.create_user_interactions(users, places, experiences, reviews, bookings)
+                
+                messages = self.create_messages(users, bookings)
+                notifications = self.create_notifications(users, bookings)
+                wishlists = self.create_wishlists(users, places, experiences, flights, boxes)
+                
+                self.display_summary(
+                    users, places, experiences, flights, boxes,
+                    bookings, discounts, payments, reviews,
+                    messages, notifications, wishlists, interactions
                 )
-            
-            # Create supporting entities
-            discounts = self.create_discounts(places, experiences, flights, boxes)
-            payments = self.create_payments(bookings) if bookings else []
-            reviews = self.create_reviews(users, places, experiences, flights, boxes)
-            messages = self.create_messages(users, bookings)
-            notifications = self.create_notifications(users, bookings)
-            wishlists = self.create_wishlists(users, places, experiences, flights, boxes)
-            
-            self.display_summary(
-                users, places, experiences, flights, boxes,
-                bookings, discounts, payments, reviews,
-                messages, notifications, wishlists
-            )
-            
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f'Data generation failed: {str(e)}'))
+                
+            except Exception as e:
+                logger.error(f'Data generation failed: {str(e)}', exc_info=True)
+                self.stdout.write(self.style.ERROR(f'Data generation failed: {str(e)}'))
+                # Transaction will be rolled back automatically
 
     def clear_existing_data(self):
         """Clear existing data from all models"""
@@ -117,14 +134,15 @@ class Command(BaseCommand):
             Wishlist, Review, Payment, Booking, 
             BoxItineraryItem, BoxItineraryDay, Box,
             Flight, Experience, Place, Discount,
-            Media, Category, Message, Notification,
+            Media, UserInteraction, Message, Notification,
             UserProfile, User
         ]
         
         self.stdout.write(self.style.WARNING('Clearing existing data...'))
         for model in models_to_clear:
+            count = model.objects.count()
             model.objects.all().delete()
-            self.stdout.write(f'Cleared {model.__name__}')
+            self.stdout.write(f'Cleared {count} {model.__name__} records')
 
     def ensure_geographic_data(self):
         """Ensure we have basic geographic data that matches the actual model structure"""
@@ -133,6 +151,7 @@ class Command(BaseCommand):
             # Create sample country if none exists
             country = Country.objects.create(
                 name="United States",
+                code="US",
                 phone_code="+1",
                 currency="USD",
                 languages=["en"]
@@ -193,12 +212,15 @@ class Command(BaseCommand):
         
         created = []
         for name, desc in categories:
-            obj, _ = Category.objects.get_or_create(
+            obj, created_new = Category.objects.get_or_create(
                 name=name,
                 defaults={'description': desc}
             )
             created.append(obj)
-            self.stdout.write(f'Created category: {name}')
+            if created_new:
+                self.stdout.write(f'Created category: {name}')
+            else:
+                self.stdout.write(f'Using existing category: {name}')
         
         return created
 
@@ -212,30 +234,7 @@ class Command(BaseCommand):
         users = []
         created_count = 0
         attempt_limit = count * 2  # Allow some retries for uniqueness
-        fake = Faker()    
 
-        accessibility_options = [
-                "wheelchair_access",
-                "visual_impairment_support",
-                "hearing_impairment_support",
-                "none"
-            ]
-            
-        dietary_options = [
-            "vegetarian",
-            "vegan",
-            "gluten_free",
-            "kosher",
-            "halal",
-            "nut_allergy",
-            "none"
-        ]
-        
-        time_preferences = [
-            "morning_person",
-            "night_owl",
-            "flexible"
-        ]
         for _ in range(attempt_limit):
             if created_count >= count:
                 break
@@ -261,6 +260,7 @@ class Command(BaseCommand):
                 try:
                     self.create_user_profile(user, city)
                 except Exception as profile_error:
+                    logger.error(f'Profile creation failed for {email}: {str(profile_error)}', exc_info=True)
                     self.stdout.write(self.style.WARNING(f'Profile creation failed for {email}: {str(profile_error)}'))
                     # Delete user if profile fails
                     user.delete()
@@ -271,10 +271,7 @@ class Command(BaseCommand):
                 self.stdout.write(f'Created {role} user: {email}')
                 
             except Exception as e:
-                self.stdout.write(self.style.WARNING(f'Duplicate email skipped: {email}'))
-                continue
-            except Exception as e:
-                self.stdout.write(self.style.WARNING(f'Error creating user: {str(e)}'))
+                logger.warning(f'Error creating user: {str(e)}')
                 continue
         
         if created_count < count:
@@ -287,70 +284,48 @@ class Command(BaseCommand):
         try:
             phone_number = PhoneNumber.from_string(
                 fake.phone_number(),
-                region=city.country.code if city.country else 'US'
+                region=city.country.code if hasattr(city.country, 'code') else 'US'
             )
-        except:
+        except Exception:
             phone_number = None
 
-        accessibility_options = [
-            "wheelchair_access",
-            "visual_impairment_support",
-            "hearing_impairment_support",
-            "none"
-        ]
-        
-        dietary_options = [
-            "vegetarian",
-            "vegan",
-            "gluten_free",
-            "kosher",
-            "halal",
-            "nut_allergy",
-            "none"
-        ]
-        
-        time_preferences = [
-            "morning_person",
-            "night_owl",
-            "flexible"
-        ]
 
-        # Generate compliant metadata
-        metadata = {
-            "accessibility_needs": random.sample(accessibility_options, random.randint(1, 2)),
-            "dietary_restrictions": random.sample(dietary_options, random.randint(1, 2)),
-            "preferred_times": random.choice(time_preferences)
-        }
-        
-        # Remove 'none' if other options are selected
-        if len(metadata["accessibility_needs"]) > 1 and "none" in metadata["accessibility_needs"]:
-            metadata["accessibility_needs"].remove("none")
-        if len(metadata["dietary_restrictions"]) > 1 and "none" in metadata["dietary_restrictions"]:
-            metadata["dietary_restrictions"].remove("none")
 
         travel_interests = random.sample([
             "adventure", "culture", "beach", "food", 
             "history", "shopping", "nature", "luxury"
         ], k=random.randint(2, 5))
 
-  
-        UserProfile.objects.update_or_create(
-            user=user,
-            bio=fake.text(max_nb_chars=300),
-            phone_number=phone_number,
-            location=Point(float(fake.longitude()), float(fake.latitude())),
-            country=city.country,
-            region=city.region,
-            city=city,
-            postal_code=fake.postcode(),
-            address=fake.street_address(),
-            date_of_birth=fake.date_of_birth(minimum_age=18, maximum_age=80),
-            gender=random.choice(["male", "female", "prefer_not_to_say"]),
-            travel_interests=travel_interests,
-            privacy_consent=True,
-            consent_date=timezone.now(),
-            metadata=metadata
+        # Create random point near the city
+        city_point = city.geometry
+        # Add small random offset (approximately within 10km)
+        random_lat_offset = random.uniform(-0.05, 0.05)
+        random_lon_offset = random.uniform(-0.05, 0.05)
+        location = Point(
+            city_point.x + random_lon_offset,
+            city_point.y + random_lat_offset
         )
+
+        profile, created = UserProfile.objects.update_or_create(
+            user=user,
+            defaults={
+                'bio': fake.text(max_nb_chars=300),
+                'phone_number': phone_number,
+                'location': location,
+                'country': city.country,
+                'region': city.region,
+                'city': city,
+                'postal_code': fake.postcode(),
+                'address': fake.street_address(),
+                'date_of_birth': fake.date_of_birth(minimum_age=18, maximum_age=80),
+                'gender': random.choice(["male", "female", "prefer_not_to_say"]),
+                'travel_interests': travel_interests,
+                'privacy_consent': True,
+                'consent_date': timezone.now(),
+            }
+        )
+        
+        return profile
 
     def create_media(self, users, count):
         """Generate media items with realistic types"""
@@ -373,13 +348,13 @@ class Command(BaseCommand):
                 media_item = Media.objects.create(
                     url=f"https://example.com/media/{fake.uuid4()}",
                     type=media_type,
-                    uploaded_by=random.choice(users),
-                    file=None  # Would be handled in real uploads
+                    uploaded_by=random.choice(users)
                 )
                 media.append(media_item)
             except Exception as e:
-                self.stdout.write(self.style.WARNING(f'Error creating media: {str(e)}'))
+                logger.warning(f'Error creating media: {str(e)}')
         
+        self.stdout.write(f'Created {len(media)} media items')
         return media
 
     def create_places(self, count, categories, users, media_items, cities):
@@ -392,8 +367,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR('No place categories found'))
             return places
         
-        owners = User.objects.filter(role__in=["owner", "organization"])
-        if not owners.exists():
+        if not owners:
             self.stdout.write(self.style.ERROR('No owner users found'))
             return places
        
@@ -407,12 +381,26 @@ class Command(BaseCommand):
                     'workspace', 'laundry'
                 ], k=random.randint(3, 6))
                 
+                # Create a point near the city center
+                city_point = city.geometry
+                # Add small random offset (approximately within city limits)
+                random_lat_offset = random.uniform(-0.03, 0.03)
+                random_lon_offset = random.uniform(-0.03, 0.03)
+                location = Point(
+                    city_point.x + random_lon_offset,
+                    city_point.y + random_lat_offset
+                )
+                
+                # Generate opening hours
+                opening_hour = random.randint(6, 10)
+                closing_hour = random.randint(17, 22)
+                
                 place = Place.objects.create(
                     category=category,
                     owner=random.choice(owners),
-                    name=f"{category.name} {fake.company_suffix()}",
+                    name=f"{fake.company()} {category.name}",
                     description='\n'.join(fake.paragraphs(nb=2)),
-                    location=city.geometry,
+                    location=location,
                     country=city.country,
                     region=city.region,
                     city=city,
@@ -423,7 +411,13 @@ class Command(BaseCommand):
                     metadata={
                         'amenities': amenities,
                         'capacity': random.randint(1, 8),
-                        'rooms': random.randint(1, 5)
+                        'rooms': random.randint(1, 5),
+                        'opening_hours': [opening_hour, closing_hour],
+                        'average_visit_duration': random.choice([60, 90, 120, 180]),
+                        'activity_type': random.choice(['cultural', 'leisure', 'outdoor']),
+                        'tags': random.sample(['family', 'luxury', 'budget', 'business', 'romantic'], k=2),
+                        'popularity_score': round(random.uniform(0.1, 1.0), 2),
+                        'is_indoor': random.choice([True, False])
                     }
                 )
                 
@@ -435,6 +429,7 @@ class Command(BaseCommand):
                 self.stdout.write(f'Created {category.name}: {place.name}')
                 
             except Exception as e:
+                logger.error(f'Error creating place: {str(e)}', exc_info=True)
                 self.stdout.write(self.style.ERROR(f'Error creating place: {str(e)}'))
         
         return places
@@ -445,6 +440,10 @@ class Command(BaseCommand):
         owners = [u for u in users if u.role in ["owner", "organization"]]
         experiences = []
         
+        if not experience_categories or not owners:
+            self.stdout.write(self.style.ERROR('Missing required data for experiences'))
+            return experiences
+        
         for _ in range(count):
             try:
                 city = random.choice(cities)
@@ -454,12 +453,22 @@ class Command(BaseCommand):
                     k=random.randint(1, 5)
                 )
                 
+                # Create a point near the city center
+                city_point = city.geometry
+                # Add small random offset (approximately within city limits)
+                random_lat_offset = random.uniform(-0.03, 0.03)
+                random_lon_offset = random.uniform(-0.03, 0.03)
+                location = Point(
+                    city_point.x + random_lon_offset,
+                    city_point.y + random_lat_offset
+                )
+                
                 experience = Experience.objects.create(
                     category=category,
                     owner=random.choice(owners),
                     title=f"{category.name} Experience: {fake.catch_phrase()}",
                     description='\n'.join(fake.paragraphs(nb=3)),
-                    location=city.geometry,
+                    location=location,
                     price_per_person=round(random.uniform(25, 300), 2),
                     currency='USD',
                     duration=random.choice([60, 90, 120, 180, 240]),
@@ -485,6 +494,7 @@ class Command(BaseCommand):
                 self.stdout.write(f'Created experience: {experience.title}')
                 
             except Exception as e:
+                logger.error(f'Error creating experience: {str(e)}', exc_info=True)
                 self.stdout.write(self.style.ERROR(f'Error creating experience: {str(e)}'))
         
         return experiences
@@ -511,16 +521,16 @@ class Command(BaseCommand):
                 duration = random.randint(60, 720)  # 1-12 hours
                 arrival_time = departure_time + timedelta(minutes=duration)
                 
-                # Make datetime objects timezone-aware using timezone.get_current_timezone()
-                departure_time = timezone.make_aware(departure_time, timezone.get_current_timezone())
-                arrival_time = timezone.make_aware(arrival_time, timezone.get_current_timezone())
+                # Make datetime objects timezone-aware
+                departure_time = timezone.make_aware(departure_time)
+                arrival_time = timezone.make_aware(arrival_time)
                 
                 # Create the flight
                 flight = Flight.objects.create(
                     airline=airline,
                     flight_number=f"{code}{random.randint(1000, 9999)}",
-                    departure_airport=departure_city.name[:3].upper(),  # Assuming 'name' is the correct field
-                    arrival_airport=arrival_city.name[:3].upper(),      # Assuming 'name' is the correct field
+                    departure_airport=departure_city.name[:3].upper(),
+                    arrival_airport=arrival_city.name[:3].upper(),
                     airline_url=url,
                     arrival_city=arrival_city.name,
                     departure_time=departure_time,
@@ -539,11 +549,11 @@ class Command(BaseCommand):
                 self.stdout.write(f'Created flight: {flight.airline} {flight.flight_number}')
             
             except Exception as e:
+                logger.error(f'Error creating flight: {str(e)}', exc_info=True)
                 self.stdout.write(self.style.ERROR(f'Error creating flight: {str(e)}'))
         
         return flights
 
-# In the create_boxes method:
     def create_boxes(self, count, categories, users, media_items, places, experiences, cities):
         """Generate curated travel boxes/packages"""
         boxes = []
@@ -553,40 +563,52 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR('Package category not found - skipping boxes'))
             return boxes
         
-        owners = User.objects.filter(role__in=["owner", "organization"])
-        if not owners.exists():
+        owners = [u for u in users if u.role in ["owner", "organization"]]
+        if not owners:
             self.stdout.write(self.style.ERROR('No owner users found - skipping boxes'))
             return boxes
         
         for _ in range(count):
             try:
                 city = random.choice(cities)
-                available_places = Place.objects.filter(city=city) if city else Place.objects.all()
-                available_experiences = Experience.objects.filter(city=city) if city else Experience.objects.all()
+                available_places = [p for p in places if p.city == city]
+                available_experiences = [e for e in experiences if e.place and e.place.city == city]
+                
+                if not available_places or not available_experiences:
+                    self.stdout.write(self.style.WARNING(f'Not enough places/experiences in {city.name} - skipping box'))
+                    continue
                 
                 # Calculate dates for the box
                 start_date = fake.future_date(end_date="+60d")
-                end_date = start_date + timedelta(days=random.randint(3, 10))
+                duration_days = random.randint(3, 10)
+                end_date = start_date + timedelta(days=duration_days - 1)
                 
                 box = Box.objects.create(
-                    category=box_category,  # Fixed: Use the box_category directly
-                    name=f"Travel Package: {fake.city()} Adventure",
+                    category=box_category,
+                    name=f"{city.name} {random.choice(['Adventure', 'Getaway', 'Experience', 'Journey'])}",
                     description='\n'.join(fake.paragraphs(nb=3)),
                     total_price=round(random.uniform(500, 5000), 2),
                     currency='USD',
                     country=city.country,
                     city=city,
-                    duration_days=random.randint(3, 10),
-                    duration_hours=random.randint(0, 23),  # Added
-                    start_date=start_date,  # Added
-                    end_date=end_date,  # Added
+                    duration_days=duration_days,
+                    duration_hours=random.randint(0, 23),
+                    start_date=start_date,
+                    end_date=end_date,
                     is_customizable=random.choice([True, False]),
                     max_group_size=random.choice([2, 4, 6, 8]),
-                    tags=random.sample(["adventure", "luxury", "family", "romantic", "budget"], k=2)  # Added
+                    tags=random.sample(["adventure", "luxury", "family", "romantic", "budget"], k=2),
+                    metadata={
+                        'theme': random.choice(['adventure', 'relaxation', 'cultural', 'family', 'budget']),
+                        'difficulty': random.choice(['easy', 'moderate', 'challenging']),
+                        'recommended_age': random.choice(['all', 'adults', 'seniors', 'children']),
+                        'generated': True,
+                        'generation_date': timezone.now().isoformat()
+                    }
                 )
                 
                 # Create itinerary
-                self.create_box_itinerary(box, places, experiences, start_date)
+                self.create_box_itinerary(box, available_places, available_experiences, start_date)
                 
                 # Attach media
                 if media_items:
@@ -596,24 +618,25 @@ class Command(BaseCommand):
                 self.stdout.write(f'Created travel box: {box.name}')
                 
             except Exception as e:
+                logger.error(f'Error creating box: {str(e)}', exc_info=True)
                 self.stdout.write(self.style.ERROR(f'Error creating box: {str(e)}'))
         
         return boxes
 
-# Update the create_box_itinerary method:
     def create_box_itinerary(self, box, places, experiences, start_date):
         """Create detailed itinerary for a travel box"""
-        available_places = list(places.filter(city=box.city)) if box.city else list(places)
-        available_experiences = list(experiences.filter(city=box.city)) if box.city else list(experiences)
+        if not places or not experiences:
+            self.stdout.write(self.style.WARNING(f'Not enough places/experiences for box {box.id} itinerary'))
+            return
         
         for day_num in range(1, box.duration_days + 1):
             day_date = start_date + timedelta(days=day_num - 1)
             itinerary_day = BoxItineraryDay.objects.create(
                 box=box,
                 day_number=day_num,
-                date=day_date,  # Added
+                date=day_date,
                 description=f"Day {day_num}: {fake.sentence()}",
-                estimated_hours=random.uniform(6, 12)  # Added
+                estimated_hours=random.uniform(6, 12)
             )
             
             # Create 2-4 items per day
@@ -621,33 +644,45 @@ class Command(BaseCommand):
                 start_hour = random.randint(8, 16)
                 duration = random.choice([60, 90, 120, 180])
                 
+                # Format times properly
+                start_time = time(start_hour, 0)
+                
+                # Calculate end time
+                end_hour = start_hour + (duration // 60)
+                end_minute = duration % 60
+                if end_hour >= 24:
+                    end_hour = 23
+                    end_minute = 59
+                end_time = time(end_hour, end_minute)
+                
                 # Alternate between places and experiences
-                if item_num % 2 == 0 and available_places:
-                    place = random.choice(available_places)
+                if item_num % 2 == 0 and places:
+                    place = random.choice(places)
                     BoxItineraryItem.objects.create(
                         itinerary_day=itinerary_day,
                         place=place,
-                        start_time=f"{start_hour}:00",
-                        end_time=f"{start_hour + duration//60}:{duration%60:02d}",
+                        start_time=start_time,
+                        end_time=end_time,
                         duration_minutes=duration,
                         order=item_num,
                         notes=fake.sentence(),
-                        estimated_cost=place.price * 1.2,  # Add some margin
-                        is_optional=random.choice([True, False])  # Added
+                        estimated_cost=place.price,
+                        is_optional=random.choice([True, False])
                     )
-                elif available_experiences:
-                    experience = random.choice(available_experiences)
+                elif experiences:
+                    experience = random.choice(experiences)
                     BoxItineraryItem.objects.create(
                         itinerary_day=itinerary_day,
                         experience=experience,
-                        start_time=f"{start_hour}:00",
-                        end_time=f"{start_hour + duration//60}:{duration%60:02d}",
+                        start_time=start_time,
+                        end_time=end_time,
                         duration_minutes=duration,
                         order=item_num,
                         notes=fake.sentence(),
                         estimated_cost=experience.price_per_person,
-                        is_optional=random.choice([True, False])  # Added
+                        is_optional=random.choice([True, False])
                     )
+
     def create_bookings(self, count, users, places, experiences, flights, boxes):
         """Generate realistic bookings"""
         status_choices = ["Pending", "Confirmed", "Cancelled"]
@@ -661,43 +696,55 @@ class Command(BaseCommand):
                     weights=[40, 30, 20, 10]
                 )[0]
                 
+                # Create booking date in the past
+                booking_date = timezone.make_aware(
+                    fake.date_time_between(start_date="-30d", end_date="now")
+                )
+                
                 booking_data = {
                     'user': user,
                     'status': random.choice(status_choices),
                     'payment_status': random.choice(["Pending", "Completed"]),
-                    'booking_date': fake.date_time_between(start_date="-30d", end_date="now")
+                    'booking_date': booking_date,
+                    'group_size': random.randint(1, 4)
                 }
                 
                 if entity_type == 'place' and places:
                     place = random.choice(places)
+                    # Create check-in date in the future
+                    check_in = fake.future_date(end_date="+60d")
+                    # Stay between 1-7 days
+                    check_out = check_in + timedelta(days=random.randint(1, 7))
+                    
                     booking_data.update({
                         'place': place,
-                        'check_in': fake.future_date(end_date="+60d"),
-                        'check_out': fake.future_date(end_date="+90d"),
-                        'total_price': place.price * random.randint(1, 3),
+                        'check_in': check_in,
+                        'check_out': check_out,
+                        'total_price': place.price * (check_out - check_in).days * booking_data['group_size'],
                         'currency': place.currency
                     })
                 elif entity_type == 'experience' and experiences:
                     experience = random.choice(experiences)
                     booking_data.update({
                         'experience': experience,
-                        'total_price': experience.price_per_person * random.randint(1, 4),
+                        'total_price': experience.price_per_person * booking_data['group_size'],
                         'currency': experience.currency
                     })
                 elif entity_type == 'flight' and flights:
                     flight = random.choice(flights)
                     booking_data.update({
                         'flight': flight,
-                        'total_price': flight.price * random.randint(1, 2),
+                        'total_price': flight.price * booking_data['group_size'],
                         'currency': flight.currency
                     })
                 elif entity_type == 'box' and boxes:
                     box = random.choice(boxes)
                     booking_data.update({
                         'box': box,
-                        'total_price': box.total_price,
+                        'total_price': box.total_price * booking_data['group_size'],
                         'currency': box.currency,
-                        'check_in': fake.future_date(end_date="+60d")
+                        'check_in': box.start_date,
+                        'check_out': box.end_date
                     })
                 else:
                     continue
@@ -707,6 +754,7 @@ class Command(BaseCommand):
                 self.stdout.write(f'Created booking for {entity_type} by {user.email}')
                 
             except Exception as e:
+                logger.error(f'Error creating booking: {str(e)}', exc_info=True)
                 self.stdout.write(self.style.ERROR(f'Error creating booking: {str(e)}'))
         
         return bookings
@@ -720,12 +768,16 @@ class Command(BaseCommand):
                 discount_type = random.choice(["Percentage", "Fixed"])
                 amount = round(random.uniform(5, 20), 2) if discount_type == "Percentage" else round(random.uniform(10, 50), 2)
                 
+                # Create valid dates
+                valid_from = timezone.now()
+                valid_to = valid_from + timedelta(days=random.randint(30, 90))
+                
                 discount = Discount.objects.create(
-                    code=f"SAVE{i+1}",
+                    code=f"SAVE{i+1}{fake.random_letter().upper()}{fake.random_letter().upper()}",
                     discount_type=discount_type,
                     amount=amount,
-                    valid_from=timezone.now(),
-                    valid_to=timezone.now() + timedelta(days=30),
+                    valid_from=valid_from,
+                    valid_to=valid_to,
                     is_active=True
                 )
                 
@@ -740,9 +792,10 @@ class Command(BaseCommand):
                     discount.applicable_boxes.set(random.sample(list(boxes), min(1, len(boxes))))
                 
                 discounts.append(discount)
-                self.stdout.write(f'Created discount code: {discount.code}')
+                self.stdout.write(f'Created discount code: {discount.code} ({discount.amount} {discount.discount_type})')
                 
             except Exception as e:
+                logger.error(f'Error creating discount: {str(e)}', exc_info=True)
                 self.stdout.write(self.style.ERROR(f'Error creating discount: {str(e)}'))
         
         return discounts
@@ -750,10 +803,14 @@ class Command(BaseCommand):
     def create_payments(self, bookings):
         """Generate payment records for bookings"""
         payments = []
-        methods = ["Credit Card", "PayPal", "Bank Transfer", "Apple Pay"]
+        methods = ["Credit Card", "PayPal", "Bank Transfer", "Apple Pay", "Google Pay"]
         
         for booking in bookings:
             try:
+                # Only create payment for confirmed bookings
+                if booking.status != "Confirmed":
+                    continue
+                    
                 payment = Payment.objects.create(
                     user=booking.user,
                     booking=booking,
@@ -764,43 +821,212 @@ class Command(BaseCommand):
                     transaction_id=fake.uuid4()
                 )
                 payments.append(payment)
+                
+                # Update booking payment status
+                booking.payment_status = "Completed"
+                booking.save()
+                
                 self.stdout.write(f'Created payment for booking {booking.id}')
             except Exception as e:
+                logger.error(f'Error creating payment: {str(e)}', exc_info=True)
                 self.stdout.write(self.style.ERROR(f'Error creating payment: {str(e)}'))
         
         return payments
 
-    def create_reviews(self, users, places, experiences, flights, boxes):
+    def create_reviews(self, users, places, experiences, flights):
         """Generate user reviews for various entities"""
         reviews = []
         
         # Review places
         for place in random.sample(list(places), min(10, len(places))):
             try:
-                review = Review.objects.create(
-                    user=random.choice(users),
-                    place=place,
-                    rating=random.randint(3, 5),
-                    review_text='\n'.join(fake.paragraphs(nb=1))
-                )
-                reviews.append(review)
+                # Create 1-3 reviews per place
+                for _ in range(random.randint(1, 3)):
+                    user = random.choice(users)
+                    rating = random.randint(3, 5)
+                    review = Review.objects.create(
+                        user=user,
+                        place=place,
+                        rating=rating,
+                        review_text='\n'.join(fake.paragraphs(nb=1))
+                    )
+                    reviews.append(review)
+                    
+                    # Update place rating
+                    place_reviews = Review.objects.filter(place=place)
+                    avg_rating = place_reviews.aggregate(models.Avg('rating'))['rating__avg']
+                    place.rating = round(avg_rating, 1)
+                    place.save()
+                    
+                    self.stdout.write(f'Created review for place {place.name} by {user.email}')
             except Exception as e:
+                logger.error(f'Error creating place review: {str(e)}', exc_info=True)
                 self.stdout.write(self.style.ERROR(f'Error creating place review: {str(e)}'))
         
         # Review experiences
         for experience in random.sample(list(experiences), min(8, len(experiences))):
             try:
-                review = Review.objects.create(
-                    user=random.choice(users),
-                    experience=experience,
-                    rating=random.randint(3, 5),
-                    review_text='\n'.join(fake.paragraphs(nb=1))
-                )
-                reviews.append(review)
+                # Create 1-3 reviews per experience
+                for _ in range(random.randint(1, 3)):
+                    user = random.choice(users)
+                    rating = random.randint(3, 5)
+                    review = Review.objects.create(
+                        user=user,
+                        experience=experience,
+                        rating=rating,
+                        review_text='\n'.join(fake.paragraphs(nb=1))
+                    )
+                    reviews.append(review)
+                    
+                    # Update experience rating
+                    exp_reviews = Review.objects.filter(experience=experience)
+                    avg_rating = exp_reviews.aggregate(models.Avg('rating'))['rating__avg']
+                    experience.rating = round(avg_rating, 1)
+                    experience.save()
+                    
+                    self.stdout.write(f'Created review for experience {experience.title} by {user.email}')
             except Exception as e:
+                logger.error(f'Error creating experience review: {str(e)}', exc_info=True)
                 self.stdout.write(self.style.ERROR(f'Error creating experience review: {str(e)}'))
         
         return reviews
+
+    def create_user_interactions(self, users, places, experiences, reviews, bookings):
+        """Generate user interaction data for analytics"""
+        interactions = []
+        
+        # Create view interactions
+        for place in places:
+            for _ in range(random.randint(5, 20)):
+                try:
+                    user = random.choice(users)
+                    interaction = UserInteraction.objects.create(
+                        user=user,
+                        content_type=ContentType.objects.get_for_model(Place),
+                        object_id=place.id,
+                        interaction_type='view_place',
+                        metadata={
+                            'duration': random.randint(10, 300),
+                            'source': random.choice(['search', 'recommendation', 'direct'])
+                        },
+                        session_id=fake.uuid4(),
+                        device_type=random.choice(['mobile', 'desktop', 'tablet'])
+                    )
+                    interactions.append(interaction)
+                except Exception as e:
+                    logger.warning(f'Error creating place view interaction: {str(e)}')
+        
+        # Create interactions based on reviews
+        for review in reviews:
+            try:
+                if review.place:
+                    interaction_type = 'rating_given'
+                    content_type = ContentType.objects.get_for_model(Place)
+                    object_id = review.place.id
+                elif review.experience:
+                    interaction_type = 'rating_given'
+                    content_type = ContentType.objects.get_for_model(Experience)
+                    object_id = review.experience.id
+                else:
+                    continue
+                
+                interaction = UserInteraction.objects.create(
+                    user=review.user,
+                    content_type=content_type,
+                    object_id=object_id,
+                    interaction_type=interaction_type,
+                    metadata={
+                        'rating': review.rating,
+                        'has_review': True
+                    },
+                    session_id=fake.uuid4(),
+                    device_type=random.choice(['mobile', 'desktop', 'tablet'])
+                )
+                interactions.append(interaction)
+                
+                # Also create a review_added interaction
+                interaction = UserInteraction.objects.create(
+                    user=review.user,
+                    content_type=content_type,
+                    object_id=object_id,
+                    interaction_type='review_added',
+                    metadata={
+                        'review_length': len(review.review_text)
+                    },
+                    session_id=fake.uuid4(),
+                    device_type=random.choice(['mobile', 'desktop', 'tablet'])
+                )
+                interactions.append(interaction)
+            except Exception as e:
+                logger.warning(f'Error creating review interaction: {str(e)}')
+        
+        # Create booking interactions
+        for booking in bookings:
+            try:
+                if booking.place:
+                    content_type = ContentType.objects.get_for_model(Place)
+                    object_id = booking.place.id
+                elif booking.experience:
+                    content_type = ContentType.objects.get_for_model(Experience)
+                    object_id = booking.experience.id
+                elif booking.flight:
+                    content_type = ContentType.objects.get_for_model(Flight)
+                    object_id = booking.flight.id
+                elif booking.box:
+                    content_type = ContentType.objects.get_for_model(Box)
+                    object_id = booking.box.id
+                else:
+                    continue
+                
+                # Create booking_start interaction
+                interaction = UserInteraction.objects.create(
+                    user=booking.user,
+                    content_type=content_type,
+                    object_id=object_id,
+                    interaction_type='booking_start',
+                    metadata={
+                        'group_size': booking.group_size
+                    },
+                    session_id=fake.uuid4(),
+                    device_type=random.choice(['mobile', 'desktop', 'tablet'])
+                )
+                interactions.append(interaction)
+                
+                # Create booking_complete interaction for confirmed bookings
+                if booking.status == 'Confirmed':
+                    interaction = UserInteraction.objects.create(
+                        user=booking.user,
+                        content_type=content_type,
+                        object_id=object_id,
+                        interaction_type='booking_complete',
+                        metadata={
+                            'total_price': float(booking.total_price),
+                            'currency': booking.currency
+                        },
+                        session_id=fake.uuid4(),
+                        device_type=random.choice(['mobile', 'desktop', 'tablet'])
+                    )
+                    interactions.append(interaction)
+                
+                # Create booking_abandon interaction for cancelled bookings
+                if booking.status == 'Cancelled':
+                    interaction = UserInteraction.objects.create(
+                        user=booking.user,
+                        content_type=content_type,
+                        object_id=object_id,
+                        interaction_type='booking_abandon',
+                        metadata={
+                            'reason': random.choice(['price', 'changed_mind', 'found_alternative', 'technical_issue'])
+                        },
+                        session_id=fake.uuid4(),
+                        device_type=random.choice(['mobile', 'desktop', 'tablet'])
+                    )
+                    interactions.append(interaction)
+            except Exception as e:
+                logger.warning(f'Error creating booking interaction: {str(e)}')
+        
+        self.stdout.write(f'Created {len(interactions)} user interactions')
+        return interactions
 
     def create_messages(self, users, bookings):
         """Generate communication messages"""
@@ -819,14 +1045,20 @@ class Command(BaseCommand):
                     is_read=random.choice([True, False])
                 )
                 messages.append(message)
+                self.stdout.write(f'Created message from {sender.email} to {receiver.email}')
             except Exception as e:
+                logger.error(f'Error creating message: {str(e)}', exc_info=True)
                 self.stdout.write(self.style.ERROR(f'Error creating message: {str(e)}'))
         
         # Booking-related messages
         for booking in random.sample(list(bookings), min(10, len(bookings))):
             try:
                 sender = booking.user
-                receiver = random.choice([u for u in users if u != sender and u.role in ["owner", "organization"]])
+                # Find an owner user
+                owners = [u for u in users if u.role in ["owner", "organization"]]
+                if not owners:
+                    continue
+                receiver = random.choice(owners)
                 
                 message = Message.objects.create(
                     sender=sender,
@@ -836,30 +1068,65 @@ class Command(BaseCommand):
                     is_read=random.choice([True, False])
                 )
                 messages.append(message)
+                self.stdout.write(f'Created booking message for booking {booking.id}')
             except Exception as e:
+                logger.error(f'Error creating booking message: {str(e)}', exc_info=True)
                 self.stdout.write(self.style.ERROR(f'Error creating booking message: {str(e)}'))
         
         return messages
 
     def create_notifications(self, users, bookings):
         """Generate user notifications"""
-        types = [
-            "Booking Confirmation", "Payment Received",
-            "New Message", "Upcoming Trip", "Special Offer"
+        notification_types = [
+            "Booking Update", "Payment", "New Box", 
+            "Personalized Box", "Discount", "Message", "General"
         ]
         notifications = []
         
+        # General notifications for random users
         for user in random.sample(list(users), min(15, len(users))):
             try:
+                notification_type = random.choice(notification_types)
+                
                 notification = Notification.objects.create(
                     user=user,
-                    type=random.choice(types),
+                    type=notification_type,
                     message=fake.sentence(),
-                    is_read=random.choice([True, False])
+                    is_read=random.choice([True, False]),
+                    status=random.choice(['pending', 'sent', 'delivered']),
+                    channels=random.sample(["app", "email", "sms"], k=random.randint(1, 2)),
+                    metadata={
+                        'priority': random.choice(['high', 'medium', 'low']),
+                        'action_url': f"https://example.com/{fake.uri_path()}" if random.choice([True, False]) else None
+                    }
                 )
                 notifications.append(notification)
+                self.stdout.write(f'Created {notification_type} notification for {user.email}')
             except Exception as e:
+                logger.error(f'Error creating notification: {str(e)}', exc_info=True)
                 self.stdout.write(self.style.ERROR(f'Error creating notification: {str(e)}'))
+        
+        # Booking-related notifications
+        for booking in random.sample(list(bookings), min(10, len(bookings))):
+            try:
+                notification = Notification.objects.create(
+                    user=booking.user,
+                    type="Booking Update",
+                    message=f"Your booking #{booking.id} has been {booking.status.lower()}",
+                    is_read=random.choice([True, False]),
+                    status='delivered',
+                    channels=["app", "email"],
+                    metadata={
+                        'booking_id': str(booking.id),
+                        'status': booking.status,
+                        'deep_link': f"http://localhost:3000/booking/{booking.id}"
+                    }
+                )
+                notifications.append(notification)
+                self.stdout.write(f'Created booking notification for booking {booking.id}')
+            except Exception as e:
+                logger.error(f'Error creating booking notification: {str(e)}', exc_info=True)
+                self.stdout.write(self.style.ERROR(f'Error creating booking notification: {str(e)}'))
         
         return notifications
 
@@ -869,21 +1136,53 @@ class Command(BaseCommand):
         
         for user in random.sample(list(users), min(10, len(users))):
             try:
-                wishlist = Wishlist.objects.create(user=user)
-                
-                # Add random items
-                if places and random.choice([True, False]):
-                    wishlist.place = random.choice(places)
-                if experiences and random.choice([True, False]):
-                    wishlist.experience = random.choice(experiences)
-                if flights and random.choice([True, False]):
-                    wishlist.flight = random.choice(flights)
-                if boxes and random.choice([True, False]):
-                    wishlist.box = random.choice(boxes)
-                
-                wishlist.save()
-                wishlists.append(wishlist)
+                # Create 1-3 wishlist items per user
+                for _ in range(random.randint(1, 3)):
+                    wishlist_data = {'user': user}
+                    
+                    # Choose one entity type to add
+                    entity_type = random.choice(['place', 'experience', 'flight', 'box'])
+                    
+                    if entity_type == 'place' and places:
+                        wishlist_data['place'] = random.choice(places)
+                    elif entity_type == 'experience' and experiences:
+                        wishlist_data['experience'] = random.choice(experiences)
+                    elif entity_type == 'flight' and flights:
+                        wishlist_data['flight'] = random.choice(flights)
+                    elif entity_type == 'box' and boxes:
+                        wishlist_data['box'] = random.choice(boxes)
+                    else:
+                        continue
+                    
+                    wishlist = Wishlist.objects.create(**wishlist_data)
+                    wishlists.append(wishlist)
+                    
+                    # Create wishlist_add interaction
+                    if 'place' in wishlist_data:
+                        content_type = ContentType.objects.get_for_model(Place)
+                        object_id = wishlist_data['place'].id
+                    elif 'experience' in wishlist_data:
+                        content_type = ContentType.objects.get_for_model(Experience)
+                        object_id = wishlist_data['experience'].id
+                    elif 'flight' in wishlist_data:
+                        content_type = ContentType.objects.get_for_model(Flight)
+                        object_id = wishlist_data['flight'].id
+                    elif 'box' in wishlist_data:
+                        content_type = ContentType.objects.get_for_model(Box)
+                        object_id = wishlist_data['box'].id
+                    
+                    UserInteraction.objects.create(
+                        user=user,
+                        content_type=content_type,
+                        object_id=object_id,
+                        interaction_type='wishlist_add',
+                        session_id=fake.uuid4(),
+                        device_type=random.choice(['mobile', 'desktop', 'tablet'])
+                    )
+                    
+                    self.stdout.write(f'Created wishlist item for {user.email}')
             except Exception as e:
+                logger.error(f'Error creating wishlist: {str(e)}', exc_info=True)
                 self.stdout.write(self.style.ERROR(f'Error creating wishlist: {str(e)}'))
         
         return wishlists
@@ -902,11 +1201,15 @@ class Command(BaseCommand):
             ("Reviews", args[8]),
             ("Messages", args[9]),
             ("Notifications", args[10]),
-            ("Wishlists", args[11])
+            ("Wishlists", args[11]),
+            ("User Interactions", args[12])
         ]
         
-        self.stdout.write(self.style.SUCCESS("\nData Generation Complete!\n"))
+        self.stdout.write(self.style.SUCCESS("\n=== Data Generation Complete! ===\n"))
         self.stdout.write(self.style.SUCCESS("Summary of Created Data:"))
         
         for name, items in entities:
-            self.stdout.write(f"{name}: {len(items)}")
+            count = len(items) if items else 0
+            self.stdout.write(f"{name}: {count}")
+        
+        self.stdout.write(self.style.SUCCESS("\nYou can now use this data for testing and development."))

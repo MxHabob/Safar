@@ -64,31 +64,85 @@ class Media(BaseModel):
         ]
 
 # Discount on reservations for places, boxes, experiences, flights, etc., provided that the discount is used once.
-class Discount(BaseModel):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    code = models.CharField( max_length=50, unique=True, verbose_name="Discount Code", db_index=True, default=generate_unique_code)
-    discount_type = models.CharField(
-        max_length=10,
-        choices=[("Percentage", "Percentage"), ("Fixed", "Fixed")],
-        default="Percentage",
-        verbose_name="Discount Type",
-    )
-    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Discount Amount")
-    valid_from = models.DateTimeField(verbose_name="Valid From", db_index=True)
-    valid_to = models.DateTimeField(verbose_name="Valid To", db_index=True)
-    is_active = models.BooleanField(default=True, verbose_name="Is Active", db_index=True)
-    applicable_places = models.ManyToManyField("Place", blank=True, related_name="discounts", verbose_name="Applicable Places")
-    applicable_experiences = models.ManyToManyField("Experience", blank=True, related_name="discounts", verbose_name="Applicable Experiences")
-    applicable_flights = models.ManyToManyField("Flight", blank=True, related_name="discounts", verbose_name="Applicable Flights")
-    applicable_boxes = models.ManyToManyField("Box", blank=True, related_name="discounts", verbose_name="Applicable Boxes")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created At", db_index=True)
-
+class Discount(models.Model):
+    # Existing fields
+    code = models.CharField(max_length=20, unique=True)
+    discount_type = models.CharField(max_length=20, choices=[("Percentage", "Percentage"), ("Fixed", "Fixed")])
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    valid_from = models.DateTimeField()
+    valid_to = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+    
+    # Relationships to applicable entities
+    applicable_places = models.ManyToManyField('Place', blank=True, related_name='discounts')
+    applicable_experiences = models.ManyToManyField('Experience', blank=True, related_name='discounts')
+    applicable_flights = models.ManyToManyField('Flight', blank=True, related_name='discounts')
+    applicable_boxes = models.ManyToManyField('Box', blank=True, related_name='discounts')
+    
+    # New fields for enhanced functionality
+    target_users = models.ManyToManyField('authentication.User', blank=True, related_name='targeted_discounts')
+    min_purchase_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    max_discount_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    max_uses = models.PositiveIntegerField(null=True, blank=True)
+    uses_count = models.PositiveIntegerField(default=0)
+    created_by = models.ForeignKey('authentication.User', null=True, blank=True, on_delete=models.SET_NULL, related_name='created_discounts')
+    metadata = models.JSONField(default=dict, blank=True)
+    
+    # Add methods for discount functionality
+    def is_valid(self):
+        """Check if discount is valid (active and within date range)"""
+        now = timezone.now()
+        return (
+            self.is_active and 
+            self.valid_from <= now <= self.valid_to and
+            (self.max_uses is None or self.uses_count < self.max_uses)
+        )
+    
+    def is_applicable_to_entity(self, entity):
+        """Check if discount applies to a specific entity"""
+        if isinstance(entity, Place):
+            return self.applicable_places.filter(id=entity.id).exists()
+        elif isinstance(entity, Experience):
+            return self.applicable_experiences.filter(id=entity.id).exists()
+        elif isinstance(entity, Flight):
+            return self.applicable_flights.filter(id=entity.id).exists()
+        elif isinstance(entity, Box):
+            return self.applicable_boxes.filter(id=entity.id).exists()
+        return False
+    
+    def is_applicable_to_user(self, user):
+        """Check if discount is applicable to a specific user"""
+        # If no target users specified, discount is for everyone
+        if not self.target_users.exists():
+            return True
+        # Otherwise, check if user is in target users
+        return self.target_users.filter(id=user.id).exists()
+    
+    def calculate_discount_amount(self, original_price):
+        """Calculate the discount amount based on original price"""
+        if self.discount_type == "Percentage":
+            discount_amount = original_price * (self.amount / 100)
+        else:  # Fixed
+            discount_amount = self.amount
+        
+        # Apply max discount if specified
+        if self.max_discount_amount and discount_amount > self.max_discount_amount:
+            discount_amount = self.max_discount_amount
+            
+        return discount_amount
+    
+    def apply_discount(self, original_price):
+        """Apply discount to original price"""
+        discount_amount = self.calculate_discount_amount(original_price)
+        return original_price - discount_amount
+    
+    def increment_usage(self):
+        """Increment the usage count"""
+        self.uses_count += 1
+        self.save(update_fields=['uses_count'])
+    
     def __str__(self):
-        return f"{self.code} - {self.amount} ({self.discount_type})"
-
-    class Meta:
-        verbose_name = "Discount"
-        verbose_name_plural = "Discounts"
+        return f"{self.code} - {self.amount}{'%' if self.discount_type == 'Percentage' else ''}"
 
 # Place such as hotels - villas - apartments - museums - restaurants - museums - churches etc.
 class Place(BaseModel):
@@ -195,7 +249,6 @@ class Box(BaseModel):
     max_group_size = models.PositiveIntegerField(default=10, verbose_name="Maximum Group Size")
     tags = models.JSONField(default=list, blank=True)
     
-
     def __str__(self):
         return self.name
 
@@ -344,6 +397,57 @@ class Message(BaseModel):
         ]
 
 
+
+class SmsLog(models.Model):
+    """
+    Log of SMS messages sent through the system
+    """
+    to_number = models.CharField(max_length=20)
+    message = models.TextField()
+    status = models.CharField(max_length=20, choices=[
+        ('pending', 'Pending'),
+        ('success', 'Success'),
+        ('failed', 'Failed')
+    ])
+    provider = models.CharField(max_length=20, default='twilio')
+    provider_message_id = models.CharField(max_length=100, null=True, blank=True)
+    error_message = models.CharField(max_length=255, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "SMS Log"
+        verbose_name_plural = "SMS Logs"
+        ordering = ['-created_at']
+        
+    def __str__(self):
+        return f"SMS to {self.to_number} ({self.status})"
+
+class PushNotificationLog(models.Model):
+    """
+    Log of push notifications sent through the system
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    title = models.CharField(max_length=100)
+    message = models.TextField()
+    data = models.TextField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=[
+        ('pending', 'Pending'),
+        ('success', 'Success'),
+        ('failed', 'Failed')
+    ])
+    provider = models.CharField(max_length=20, default='firebase')
+    provider_message_id = models.CharField(max_length=100, null=True, blank=True)
+    error_message = models.CharField(max_length=255, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Push Notification Log"
+        verbose_name_plural = "Push Notification Logs"
+        ordering = ['-created_at']
+        
+    def __str__(self):
+        return f"Push to {self.user.email} ({self.status})"
+
 class Notification(BaseModel):
     NOTIFICATION_TYPES = [
         ("Booking Update", "Booking Update"),
@@ -365,16 +469,8 @@ class Notification(BaseModel):
     type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES, default="General", verbose_name="Type", db_index=True)
     message = models.TextField(verbose_name="Message")
     metadata = models.JSONField(default=dict, blank=True)
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='pending',
-        db_index=True
-    )
-    channels = models.JSONField(
-        default=list,
-        help_text="List of channels used to send this notification"
-    )
+    status = models.CharField( max_length=20,choices=STATUS_CHOICES,default='pending', db_index=True)
+    channels = models.JSONField(default=list,null=True, blank=True ,help_text="List of channels used to send this notification")
     processing_started = models.DateTimeField(null=True, blank=True)
     processed_at = models.DateTimeField(null=True, blank=True)
     is_read = models.BooleanField(default=False, verbose_name="Is Read", db_index=True)
