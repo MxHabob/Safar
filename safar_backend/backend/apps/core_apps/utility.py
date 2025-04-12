@@ -19,9 +19,3 @@ def generate_unique_code():
         code = uuid.uuid4().hex[:8].upper()
         if not Discount.objects.filter(code=code).exists():
             return code
-
-
-def validate_metadata(value):
-    allowed_keys = {'accessibility_needs', 'dietary_restrictions', 'preferred_times'}
-    if not all(key in allowed_keys for key in value.keys()):
-        raise ValidationError("Metadata contains invalid keys")

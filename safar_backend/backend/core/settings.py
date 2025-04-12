@@ -1,9 +1,9 @@
+import os
 from pathlib import Path
 import environ
 from django.core.management.utils import get_random_secret_key
 from django.core.exceptions import ImproperlyConfigured
 from datetime import timedelta
-
 # Initialize environment variables
 env = environ.Env(
     DEBUG=(bool, False),
@@ -124,7 +124,7 @@ ROOT_URLCONF = "core.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": [BASE_DIR / "apps/core_apps/templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -184,7 +184,7 @@ USE_TZ = True
 #  STATIC & MEDIA FILES CONFIGURATION
 # ======================
 # Base directories
-STATIC_DIR = BASE_DIR / 'staticfiles'
+STATIC_DIR = env("STATIC_DIR", default="/app/static")
 STATICFILES_DIR = BASE_DIR / 'staticfiles'
 MEDIA_DIR = BASE_DIR / 'media'
 
@@ -223,9 +223,9 @@ else:
     else:
         STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 
-STATICFILES_DIRS = [
-   BASE_DIR / 'static',
-]
+STATICFILES_DIRS = [STATIC_DIR]
+
+print("STATICFILES_DIRS : ", STATICFILES_DIRS)
 
 # Static files finders
 STATICFILES_FINDERS = [
@@ -450,11 +450,7 @@ SITE_NAME = env("SITE_NAME", default="Safer")
 SITE_URL = env("SITE_URL", default="http://localhost:3000")
 
 # Firebase settings
-FIREBASE_CREDENTIALS_PATH = env("FIREBASE_CREDENTIALS_PATH", default="./firebase-credentials.json")
-
-# Cities light settings
-CITIES_LIGHT_TRANSLATION_LANGUAGES = []
-CITIES_LIGHT_INCLUDE_CITY_TYPES = ["PPL", "PPLA", "PPLA2", "PPLC"]
+FIREBASE_CREDENTIALS_PATH = env("FIREBASE_CREDENTIALS_PATH", default="/app/safar-firebase-credentials.json")
 
 # Phone number field settings
 PHONENUMBER_DEFAULT_REGION = "YE"

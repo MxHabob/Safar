@@ -1,9 +1,10 @@
+
 import uuid
 from django.db import models
+from django.utils import timezone
 from django.contrib.gis.db import models as gis_models
 from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator
 from apps.core_apps.general import BaseModel
-from apps.core_apps.utility import generate_unique_code
 from apps.authentication.models import User
 from apps.geographic_data.models import Country, Region, City
 from django.core.validators import FileExtensionValidator
@@ -80,12 +81,12 @@ class Discount(models.Model):
     applicable_boxes = models.ManyToManyField('Box', blank=True, related_name='discounts')
     
     # New fields for enhanced functionality
-    target_users = models.ManyToManyField('authentication.User', blank=True, related_name='targeted_discounts')
+    target_users = models.ManyToManyField(User, blank=True, related_name='targeted_discounts')
     min_purchase_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     max_discount_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     max_uses = models.PositiveIntegerField(null=True, blank=True)
     uses_count = models.PositiveIntegerField(default=0)
-    created_by = models.ForeignKey('authentication.User', null=True, blank=True, on_delete=models.SET_NULL, related_name='created_discounts')
+    created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='created_discounts')
     metadata = models.JSONField(default=dict, blank=True)
     
     # Add methods for discount functionality

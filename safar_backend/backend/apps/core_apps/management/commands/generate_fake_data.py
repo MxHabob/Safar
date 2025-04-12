@@ -1,11 +1,13 @@
 import random
 import logging
-from datetime import timedelta
+from datetime import time, timedelta
 from django.utils import timezone
 from django.core.management.base import BaseCommand
 from django.contrib.gis.geos import Point
 from django.db import transaction
 from faker import Faker
+from django.contrib.contenttypes.models import ContentType
+from django.db import models
 from phonenumber_field.phonenumber import PhoneNumber
 from apps.authentication.models import User, UserProfile, UserInteraction
 from apps.geographic_data.models import City, Country, Region
@@ -26,7 +28,7 @@ class Command(BaseCommand):
         parser.add_argument('--places', type=int, default=20, help='Number of fake places to create')
         parser.add_argument('--experiences', type=int, default=15, help='Number of fake experiences to create')
         parser.add_argument('--flights', type=int, default=10, help='Number of fake flights to create')
-        parser.add_argument('--boxes', type=int, default=5, help='Number of fake travel boxes to create')
+        parser.add_argument('--boxes', type=int, default=0, help='Number of fake travel boxes to create')
         parser.add_argument('--bookings', type=int, default=30, help='Number of fake bookings to create')
         parser.add_argument('--clear', action='store_true', help='Clear existing data before generation')
         parser.add_argument('--seed', type=int, help='Random seed for reproducible data generation')

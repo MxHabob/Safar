@@ -29,6 +29,7 @@ venv
 *.sw?
 
 backend/media
+safar-firbase-credentials.*
 backend/staticfiles
 backend/logs
 staticfiles
