@@ -18,10 +18,7 @@ interface PlaceCardProps {
 
 export const PlaceCard =({ place}: PlaceCardProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [internalFavorite, setInternalFavorite] = useState(false)
   
-  // Use external favorite state if provided, otherwise use internal state
-  const isFavorite = externalFavorite !== undefined ? externalFavorite : internalFavorite
 
   // Safely access images array with fallbacks
   const images = place.media || []
@@ -72,7 +69,7 @@ export const PlaceCard =({ place}: PlaceCardProps) => {
           <WishlistButton 
            itemId={place.id} 
            itemType={"place"} 
-           isFavorite={isFavorite} 
+           isInwishlist={place.is_in_wishlist || false} 
            className="absolute top-3 right-3 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200"
            size="default"
            variant="outline"

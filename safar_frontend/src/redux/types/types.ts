@@ -236,6 +236,7 @@ export interface Place extends BaseModel {
   currency: string;
   metadata?: Record<string, unknown>;
   experiences?: Experience[];
+  is_in_wishlist?: boolean
 }
 
 // Experience Types
@@ -254,6 +255,7 @@ export interface Experience extends BaseModel {
   media: Media[];
   rating: number;
   is_available: boolean;
+  is_in_wishlist?: boolean | false
 }
 
 // Flight Types
@@ -270,6 +272,7 @@ export interface Flight extends BaseModel {
   currency: string;
   duration: number;
   baggage_policy: Record<string, unknown>;
+  is_in_wishlist?: boolean | false
 }
 
 // Box Itinerary Types
@@ -314,6 +317,7 @@ export interface Box extends BaseModel {
   max_group_size: number;
   tags: any[];
   itinerary_days?: BoxItineraryDay;
+  is_in_wishlist?: boolean | false
 }
 
 // Booking Types

@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import Image from "next/image"
 import { MapPin, Calendar } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -14,7 +13,6 @@ interface BoxCardProps {
 }
 
 export const BoxCard = ({ box }: BoxCardProps) => {
-  const [isFavorite] = useState(false)
 
   const formattedPrice = (box?.total_price ?? 0).toLocaleString()
 
@@ -51,7 +49,7 @@ export const BoxCard = ({ box }: BoxCardProps) => {
         <WishlistButton 
           itemId={box.id} 
           itemType={"box"} 
-          isFavorite={isFavorite} 
+          isInwishlist={box.is_in_wishlist || false} 
           className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200"
           size="default"
           variant="outline"

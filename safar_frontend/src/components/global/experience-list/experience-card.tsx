@@ -15,15 +15,10 @@ import InteractionLink from "../interaction-link"
 
 interface ExperienceCardProps {
   experience: Experience
-  onFavorite?: (id: string) => void
-  isFavorited?: boolean
 }
 
-export const ExperienceCard =({ experience, isFavorited: externalFavorite }: ExperienceCardProps) =>{
+export const ExperienceCard =({ experience }: ExperienceCardProps) =>{
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [internalFavorite] = useState(false)
-
-  const isFavorite = externalFavorite !== undefined ? externalFavorite : internalFavorite
 
   const images = experience.media || []
   const hasMultipleImages = images.length > 1
@@ -81,7 +76,7 @@ export const ExperienceCard =({ experience, isFavorited: externalFavorite }: Exp
         <WishlistButton 
           itemId={experience.id} 
           itemType={"experience"} 
-          isFavorite={isFavorite} 
+          isInwishlist={experience.is_in_wishlist || false} 
           className="absolute top-3 right-3 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200"
           size="default"
           variant="outline"
