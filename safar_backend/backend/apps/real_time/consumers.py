@@ -1,10 +1,8 @@
-from typing import Dict, List, Literal, TypedDict, Optional, Any, Union
-from dataclasses import dataclass
+from typing import Dict, List, Any
 import json
-import logging
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from channels.db import database_sync_to_async
-from django.db.models import Q, Prefetch
+from django.db.models import Q
 from apps.safar.models import Booking, Message, Notification
 from apps.safar.serializers import (
     BookingSerializer,
@@ -13,23 +11,21 @@ from apps.safar.serializers import (
 )
 from django.core.cache import cache
 from uuid import UUID
-from datetime import datetime
+import logging
 
 logger = logging.getLogger(__name__)
 
 class UUIDEncoder(json.JSONEncoder):
-    """Enhanced JSON encoder that handles UUIDs, datetimes, and other complex types"""
+    """JSON encoder that handles UUIDs and other complex types"""
     def default(self, obj):
         if isinstance(obj, UUID):
-            return str(obj)
-        if isinstance(obj, datetime):
-            return obj.isoformat()
+            return str(obj)  # Convert UUID to string
         if hasattr(obj, '__dict__'):
             return vars(obj)
         return super().default(obj)
 
 class SafariConsumer(AsyncJsonWebsocketConsumer):
-    """Enhanced WebSocket consumer with better error handling and performance"""
+    """WebSocket consumer with proper JSON encoding for UUIDs"""
     
     # Group prefixes for different notification types
     BOOKING_GROUP = 'bookings_'
@@ -40,17 +36,15 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = None
-        self.groups: List[str] = []
+        self.groups = []
         self.cache_timeout = 300  # 5 minutes
-        self.connection_id = None
 
     async def connect(self):
         """Handle WebSocket connection with JWT authentication"""
         self.user = self.scope["user"]
-        self.connection_id = self.scope.get("client", ["unknown"])[0]
         
         if self.user.is_anonymous:
-            logger.warning(f"Rejected anonymous WebSocket connection from {self.connection_id}")
+            logger.warning(f"Rejected anonymous WebSocket connection")
             await self.close(code=4001)
             return
 
@@ -65,18 +59,19 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
         for group in self.groups:
             await self.channel_layer.group_add(group, self.channel_name)
         
-        logger.info(f"WebSocket connection established for user {self.user.id} from {self.connection_id}")
+        logger.info(f"WebSocket connection established for user {self.user.id}")
         await self.accept()
         
-        # Send initial data with error handling
+        # Send initial data with proper JSON encoding
         try:
             initial_data = await self._get_cached_initial_data()
-            await self.send_json({
+            # Use json.dumps with the custom encoder first, then send the pre-encoded JSON
+            encoded_data = {
                 "type": "initial_data",
                 "payload": initial_data
-            }, encoder=UUIDEncoder)
-   
-            # await self._update_user_online_status(True)
+            }
+            json_data = json.dumps(encoded_data, cls=UUIDEncoder)
+            await self.send(text_data=json_data)
             
         except Exception as e:
             logger.error(f"Error sending initial data: {str(e)}", exc_info=True)
@@ -86,19 +81,13 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
         """Clean up on WebSocket disconnect"""
         if self.user and not self.user.is_anonymous:
             try:
+                # Remove from all groups
                 for group in self.groups:
                     await self.channel_layer.group_discard(group, self.channel_name)
-                
-                # await self._update_user_online_status(False)
                 
                 logger.info(f"WebSocket connection closed for user {self.user.id} with code {close_code}")
             except Exception as e:
                 logger.error(f"Error during disconnect: {str(e)}")
-
-    async def _update_user_online_status(self, is_online: bool):
-        """Update user's online status"""
-    
-        pass
 
     async def _get_cached_initial_data(self) -> Dict:
         """Get initial data with Redis caching for performance"""
@@ -110,8 +99,10 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             if cached_data:
                 return json.loads(cached_data)
             
+            # If not cached, fetch fresh data
             data = await self._fetch_initial_data()
             
+            # Cache the serialized data
             serialized_data = json.dumps(data, cls=UUIDEncoder)
             await cache.aset(cache_key, serialized_data, timeout=self.cache_timeout)
             
@@ -119,7 +110,7 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             
         except Exception as e:
             logger.error(f"Cache error: {str(e)}")
- 
+            # Fall back to fetching fresh data
             return await self._fetch_initial_data()
 
     async def _fetch_initial_data(self) -> Dict:
@@ -132,8 +123,7 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             return {
                 "bookings": bookings,
                 "messages": messages,
-                "notifications": notifications,
-                "timestamp": datetime.now().isoformat()
+                "notifications": notifications
             }
         except Exception as e:
             logger.error(f"Error fetching initial data: {str(e)}", exc_info=True)
@@ -141,6 +131,7 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
 
     def _get_initial_data_sync(self) -> tuple:
         """Synchronous method to fetch all initial data with optimized queries"""
+        # Get recent bookings with prefetched relations
         bookings = BookingSerializer(
             Booking.objects.filter(user=self.user)
             .select_related('place', 'experience', 'flight', 'box')
@@ -148,6 +139,7 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             many=True
         ).data
         
+        # Get recent messages with prefetched relations
         messages = MessageSerializer(
             Message.objects.filter(
                 Q(sender=self.user) | Q(receiver=self.user)
@@ -157,6 +149,7 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             many=True
         ).data
         
+        # Get unread notifications
         notifications = NotificationSerializer(
             Notification.objects.filter(
                 user=self.user,
@@ -178,6 +171,7 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
                 await self._send_error("Missing 'action' field")
                 return
                 
+            # Map actions to handler methods
             handlers = {
                 "mark_message_read": self._handle_mark_message_read,
                 "mark_notification_read": self._handle_mark_notification_read,
@@ -200,12 +194,19 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
 
     async def _handle_ping(self, payload: Dict):
         """Handle ping messages to keep connection alive"""
-        await self.send_json({
+        # Use the custom JSON encoding approach
+        response = {
             "type": "pong",
             "payload": {
-                "timestamp": datetime.now().isoformat()
+                "timestamp": self._get_timestamp()
             }
-        })
+        }
+        await self.send(text_data=json.dumps(response, cls=UUIDEncoder))
+
+    def _get_timestamp(self):
+        """Get current timestamp in ISO format"""
+        from datetime import datetime
+        return datetime.now().isoformat()
 
     async def _handle_mark_message_read(self, payload: Dict):
         """Mark a message as read"""
@@ -218,17 +219,18 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             success = await database_sync_to_async(self._mark_message_read_sync)(message_id)
             if success:
                 await self._invalidate_cache()
-                await self.send_json({
+                response = {
                     "type": "message_marked_read",
                     "payload": {"message_id": message_id}
-                })
+                }
+                await self.send(text_data=json.dumps(response, cls=UUIDEncoder))
             else:
                 await self._send_error("Message not found or not authorized")
         except Exception as e:
             logger.error(f"Error marking message read: {str(e)}")
             await self._send_error(f"Failed to mark message as read: {str(e)}")
 
-    def _mark_message_read_sync(self, message_id: Union[int, str]) -> bool:
+    def _mark_message_read_sync(self, message_id) -> bool:
         """Sync version of mark message read with better error handling"""
         try:
             result = Message.objects.filter(
@@ -252,17 +254,18 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             success = await database_sync_to_async(self._mark_notification_read_sync)(notification_id)
             if success:
                 await self._invalidate_cache()
-                await self.send_json({
+                response = {
                     "type": "notification_marked_read",
                     "payload": {"notification_id": notification_id}
-                })
+                }
+                await self.send(text_data=json.dumps(response, cls=UUIDEncoder))
             else:
                 await self._send_error("Notification not found or not authorized")
         except Exception as e:
             logger.error(f"Error marking notification read: {str(e)}")
             await self._send_error(f"Failed to mark notification as read: {str(e)}")
 
-    def _mark_notification_read_sync(self, notification_id: Union[int, str]) -> bool:
+    def _mark_notification_read_sync(self, notification_id) -> bool:
         """Sync version of mark notification read with better error handling"""
         try:
             result = Notification.objects.filter(
@@ -280,10 +283,11 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
         try:
             count = await database_sync_to_async(self._mark_all_notifications_read_sync)()
             await self._invalidate_cache()
-            await self.send_json({
+            response = {
                 "type": "all_notifications_marked_read",
                 "payload": {"count": count}
-            })
+            }
+            await self.send(text_data=json.dumps(response, cls=UUIDEncoder))
         except Exception as e:
             logger.error(f"Error marking all notifications read: {str(e)}")
             await self._send_error(f"Failed to mark all notifications as read: {str(e)}")
@@ -307,14 +311,15 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             
             messages = await database_sync_to_async(self._get_more_messages_sync)(offset, limit)
             
-            await self.send_json({
+            response = {
                 "type": "more_messages",
                 "payload": {
                     "messages": messages,
                     "offset": offset,
                     "limit": limit
                 }
-            }, encoder=UUIDEncoder)
+            }
+            await self.send(text_data=json.dumps(response, cls=UUIDEncoder))
             
         except ValueError:
             await self._send_error("Invalid pagination parameters")
@@ -322,7 +327,7 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             logger.error(f"Error fetching more messages: {str(e)}")
             await self._send_error(f"Failed to fetch more messages: {str(e)}")
 
-    def _get_more_messages_sync(self, offset: int, limit: int) -> List[Dict]:
+    def _get_more_messages_sync(self, offset: int, limit: int) -> List:
         """Get paginated messages"""
         messages = Message.objects.filter(
             Q(sender=self.user) | Q(receiver=self.user)
@@ -345,10 +350,11 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
     async def _send_error(self, message: str):
         """Send error message to client"""
         try:
-            await self.send_json({
+            error_message = {
                 "type": "error",
                 "payload": {"message": message}
-            })
+            }
+            await self.send(text_data=json.dumps(error_message, cls=UUIDEncoder))
         except Exception as e:
             logger.error(f"Error sending error message: {str(e)}")
 
@@ -356,29 +362,32 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
     async def booking_update(self, event: Dict):
         """Handle booking update events"""
         try:
-            await self.send_json({
+            message = {
                 "type": "booking_update",
                 "payload": event.get("data", {})
-            }, encoder=UUIDEncoder)
+            }
+            await self.send(text_data=json.dumps(message, cls=UUIDEncoder))
         except Exception as e:
             logger.error(f"Error sending booking update: {str(e)}")
 
     async def message_new(self, event: Dict):
         """Handle new message events"""
         try:
-            await self.send_json({
+            message = {
                 "type": "new_message",
                 "payload": event.get("data", {})
-            }, encoder=UUIDEncoder)
+            }
+            await self.send(text_data=json.dumps(message, cls=UUIDEncoder))
         except Exception as e:
             logger.error(f"Error sending new message: {str(e)}")
 
     async def notification_new(self, event: Dict):
         """Handle new notification events"""
         try:
-            await self.send_json({
+            message = {
                 "type": "new_notification",
                 "payload": event.get("data", {})
-            }, encoder=UUIDEncoder)
+            }
+            await self.send(text_data=json.dumps(message, cls=UUIDEncoder))
         except Exception as e:
             logger.error(f"Error sending new notification: {str(e)}")
