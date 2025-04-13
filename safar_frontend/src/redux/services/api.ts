@@ -20,6 +20,7 @@ import type {
   UserInteraction
 } from '@/redux/types/types';
 import { logout } from '../features/auth/auth-slice';
+import { RootState } from '../store';
 
 const mutex = new Mutex()
 
@@ -27,10 +28,12 @@ const mutex = new Mutex()
 const baseQuery = fetchBaseQuery({
   baseUrl: `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api`,
   credentials: "include",
-  prepareHeaders: (headers, { arg }) => {
-    const url = typeof arg === 'object' && 'url' in arg ? arg.url : undefined;
-    if (process.env.NEXT_PUBLIC_API_KEY && url && !url.startsWith('/auth/')) {
-      headers.set("Authorization", `Api-Key ${process.env.NEXT_PUBLIC_API_KEY}`);
+  prepareHeaders: (headers, { getState }) => {
+    const state = getState() as RootState;
+    const token = state.auth.accessToken;
+    
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
     }
 
     const csrfToken = document.cookie
@@ -46,44 +49,48 @@ const baseQuery = fetchBaseQuery({
 });
 
 // Enhanced query with token refresh logic
+// api.ts
 export const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
   args,
   api,
   extraOptions,
 ) => {
-  // Wait if a refresh is already in progress
   await mutex.waitForUnlock()
-
   let result = await baseQuery(args, api, extraOptions)
 
   if (result.error?.status === 401) {
-    // Try to get a new token only if another refresh isn't in progress
     if (!mutex.isLocked()) {
       const release = await mutex.acquire()
+      const state = api.getState() as RootState
+      const refreshToken = state.auth.refreshToken
 
       try {
-        // Try to refresh the token
         const refreshResult = await baseQuery(
-          { url: "/auth/jwt/refresh/", method: "POST", credentials: "include" },
+          { 
+            url: "/auth/jwt/refresh/", 
+            method: "POST", 
+            body: { refresh: refreshToken } 
+          },
           api,
           extraOptions,
         )
 
         if (refreshResult.data) {
-          // Retry the original request with the new token
+          // Store the new tokens
+          api.dispatch(authSlice.actions.setTokens({
+            access: (refreshResult.data as { access: string }).access,
+            refresh: refreshToken // or get new refresh if your API provides it
+          }))
+          // Retry the original request with new access token
           result = await baseQuery(args, api, extraOptions)
         } else {
-          // If refresh fails, log the user out
           api.dispatch(logout())
         }
       } finally {
-        // Release the mutex
         release()
       }
     } else {
-      // Wait for the mutex to be released (another refresh is in progress)
       await mutex.waitForUnlock()
-      // Retry the request
       result = await baseQuery(args, api, extraOptions)
     }
   }
@@ -123,6 +130,17 @@ export const api = createApi({
         body: credentials,
       }),
       invalidatesTags: ["Auth"],
+      async onQueryStarted(args, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          dispatch(authSlice.actions.setTokens({
+            access: data.access,
+            refresh: data.refresh
+          }));
+        } catch (error) {
+          // Handle error
+        }
+      },
     }),
       
     register: builder.mutation<User, Partial<User>>({

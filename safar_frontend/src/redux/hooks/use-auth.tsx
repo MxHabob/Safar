@@ -47,28 +47,35 @@ export const useAuth = () => {
   });
 
 
-  const login = useCallback(
-    async (credentials: { email: string; password: string }) => {
-      try {
-        dispatch(loginStart());
-        await toast.promise(loginApi(credentials).unwrap(), {
-          loading: "Logging in...",
-          success: "Logged in successfully!",
-          error: (error) => error.data?.detail || "Login failed",
-        });
-        const user = await fetchUser().unwrap();
-        dispatch(loginSuccess(user));
-        router.push("/");
-        return { success: true };
-      } catch (error: any) {
-        const errorMessage = error.data?.detail || "Login failed";
-        dispatch(loginFailure(errorMessage));
-        toast.error(errorMessage);
-        return { success: false, error: errorMessage };
-      }
-    },
-    [dispatch, loginApi, fetchUser, router],
-  );
+// useAuth.ts
+const login = useCallback(
+  async (credentials: { email: string; password: string }) => {
+    try {
+      dispatch(loginStart());
+      const response = await toast.promise(loginApi(credentials).unwrap(), {
+        loading: "Logging in...",
+        success: "Logged in successfully!",
+        error: (error) => error.data?.detail || "Login failed",
+      });
+      
+      const user = await fetchUser().unwrap();
+      dispatch(loginSuccess({
+        user,
+        access: response.access,
+        refresh: response.refresh
+      }));
+      
+      router.push("/");
+      return { success: true };
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || "Login failed";
+      dispatch(loginFailure(errorMessage));
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  },
+  [dispatch, loginApi, fetchUser, router],
+);
 
   const register = useCallback(async (userData: Partial<RegisterUser>) => {
     try {
