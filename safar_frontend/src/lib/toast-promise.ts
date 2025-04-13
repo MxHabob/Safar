@@ -6,9 +6,6 @@ type PromiseOptions<T> = {
   error: string | ((error: any) => string)
 }
 
-/**
- * Wraps a promise with Sonner toast notifications for loading, success, and error states
- */
 export function toastPromise<T>(promise: Promise<T>, options: PromiseOptions<T>): Promise<T> {
   return toast.promise(promise, {
     loading: options.loading,

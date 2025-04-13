@@ -1,6 +1,6 @@
 "use client"
 
-import { useRealtimeBookings } from "@/redux/hooks/realtime/use-realtime-bookings"
+import { useRealtimeBookings } from "@/core/hooks/realtime/use-realtime-bookings"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 

@@ -10,7 +10,6 @@ interface AmadeusToken {
 let tokenCache: AmadeusToken | null = null
 
 export async function getAmadeusToken(): Promise<string> {
-  // Return cached token if it's still valid (with 5 min buffer)
   if (tokenCache && tokenCache.expires_at > Date.now() + 300000) {
     return tokenCache.access_token
   }
@@ -42,7 +41,6 @@ export async function getAmadeusToken(): Promise<string> {
 
     const data = await response.json()
 
-    // Cache the token with expiration time
     tokenCache = {
       access_token: data.access_token,
       expires_at: Date.now() + data.expires_in * 1000,
@@ -73,14 +71,10 @@ export const getAmadeusClient = cache(async () => {
       max?: number
     }) {
       const searchParams = new URLSearchParams()
-
-      // Add required parameters
       searchParams.append("originLocationCode", params.originLocationCode)
       searchParams.append("destinationLocationCode", params.destinationLocationCode)
       searchParams.append("departureDate", params.departureDate)
       searchParams.append("adults", params.adults.toString())
-
-      // Add optional parameters if provided
       if (params.returnDate) searchParams.append("returnDate", params.returnDate)
       if (params.children) searchParams.append("children", params.children.toString())
       if (params.infants) searchParams.append("infants", params.infants.toString())
@@ -96,7 +90,7 @@ export const getAmadeusClient = cache(async () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          next: { revalidate: 0 }, // Don't cache this request
+          next: { revalidate: 0 },
         },
       )
 
@@ -117,7 +111,7 @@ export const getAmadeusClient = cache(async () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          next: { revalidate: 3600 }, // Cache for 1 hour
+          next: { revalidate: 3600 },
         },
       )
 
