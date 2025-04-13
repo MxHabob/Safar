@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useAuth } from "@/redux/hooks/usee-auth"
+import { useAuth } from "@/redux/hooks/use-auth"
 import { Calendar, LogOut, Settings, User2, MessageSquare, Bell, Home, UserPlus } from "lucide-react"
 
 interface UserAvatarProps {
@@ -22,7 +22,7 @@ interface UserAvatarProps {
 
 export function UserAvatar({ className, showName = false, showDropdown = true }: UserAvatarProps) {
   const router = useRouter()
-  const { user, isAuthenticated, isLoading, logout } = useAuth()
+  const { user:userData, isAuthenticated, isLoading, logout } = useAuth()
 
   if (isLoading) {
     return (
@@ -42,11 +42,11 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
   }
 
   const avatarContent =
-    isAuthenticated && user ? (
+    isAuthenticated && userData ? (
       <Avatar className={className}>
-        <AvatarImage src={user.profile?.avatar} alt={user.first_name || "User avatar"} />
+        <AvatarImage src={userData.profile?.avatar} alt={userData.first_name || "User avatar"} />
         <AvatarFallback>
-          {user.first_name?.charAt(0).toUpperCase() || user.username?.charAt(0).toUpperCase()}
+          {userData.first_name?.charAt(0).toUpperCase() || userData.username?.charAt(0).toUpperCase()}
         </AvatarFallback>
       </Avatar>
     ) : (
@@ -61,8 +61,8 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
     return (
       <div className="flex items-center gap-2">
         {avatarContent}
-        {showName && isAuthenticated && user && (
-          <span className="font-medium">{user.first_name || user.email?.split("@")[0]}</span>
+        {showName && isAuthenticated && userData && (
+          <span className="font-medium">{userData.first_name || userData.email?.split("@")[0]}</span>
         )}
       </div>
     )
@@ -76,12 +76,12 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
-        {isAuthenticated && user ? (
+        {isAuthenticated && userData ? (
           <>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user.first_name || "User"}</p>
-                <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                <p className="text-sm font-medium leading-none">{userData.username || "User"}</p>
+                <p className="text-xs leading-none text-muted-foreground">{userData.email}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -101,7 +101,7 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
               <Bell className="mr-2 h-4 w-4" />
               Notifications
             </DropdownMenuItem>
-            {user.role && user.role !== "guest" && (
+            {userData.role && userData.role !== "guest" && (
               <DropdownMenuItem onClick={() => router.push("/owner")}>
                 <Home className="mr-2 h-4 w-4" />
                 Owner Page

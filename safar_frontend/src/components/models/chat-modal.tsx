@@ -16,7 +16,7 @@ import { toastPromise } from "@/lib/toast-promise"
 import { Send, Loader2 } from "lucide-react"
 import { formatDate } from "@/lib/utils/date-formatter"
 import type { Message, User } from "@/redux/types/types"
-import { useAuth } from "@/redux/hooks/usee-auth"
+import { useAuth } from "@/redux/hooks/use-auth"
 
 export default function ChatModal() {
   const dispatch = useDispatch()

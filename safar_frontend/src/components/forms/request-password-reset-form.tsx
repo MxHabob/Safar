@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle } from "lucide-react"
-import { useAuth } from "@/redux/hooks/usee-auth"
+import { useAuth } from "@/redux/hooks/use-auth"
 import { Spinner } from "../ui/spinner"
 import { resetPasswordSchema } from "@/lib/validations/auth"
 

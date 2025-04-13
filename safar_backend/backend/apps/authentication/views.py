@@ -14,7 +14,6 @@ from rest_framework_api_key.permissions import HasAPIKey
 from apps.core_apps.general import BaseViewSet
 
 class CustomProviderAuthView(ProviderAuthView):
-    permission_classes = [HasAPIKey]
     
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -45,8 +44,7 @@ class CustomProviderAuthView(ProviderAuthView):
         return response
 
 class CustomTokenObtainPairView(TokenObtainPairView):
-    permission_classes = [HasAPIKey]
-    
+
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
 
@@ -76,7 +74,6 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         return response
 
 class CustomTokenRefreshView(TokenRefreshView):
-    permission_classes = [HasAPIKey]
     
     def post(self, request, *args, **kwargs):
         refresh_token = request.COOKIES.get('refresh')
@@ -102,7 +99,6 @@ class CustomTokenRefreshView(TokenRefreshView):
         return response
 
 class CustomTokenVerifyView(TokenVerifyView):
-    permission_classes = [HasAPIKey]
     
     def post(self, request, *args, **kwargs):
         access_token = request.COOKIES.get('access')
@@ -113,26 +109,29 @@ class CustomTokenVerifyView(TokenVerifyView):
         return super().post(request, *args, **kwargs)
 
 class LogoutView(APIView):
-    # permission_classes = [HasAPIKey]
-    
+ 
     def post(self, request, *args, **kwargs):
         response = Response({"detail": "Logged out successfully."}, status=status.HTTP_200_OK)
         response.delete_cookie(
             'access',
             path=settings.AUTH_COOKIE_PATH,
+            domain=settings.AUTH_COOKIE_DOMAIN,
+            secure=settings.AUTH_COOKIE_SECURE,
+            httponly=settings.AUTH_COOKIE_HTTP_ONLY,
             samesite=settings.AUTH_COOKIE_SAMESITE
         )
+        
         response.delete_cookie(
             'refresh',
             path=settings.AUTH_COOKIE_PATH,
+            domain=settings.AUTH_COOKIE_DOMAIN,
+            secure=settings.AUTH_COOKIE_SECURE,
+            httponly=settings.AUTH_COOKIE_HTTP_ONLY,
             samesite=settings.AUTH_COOKIE_SAMESITE
         )
         return response
 
 class UserInteractionListView(BaseViewSet):
-    """
-    Endpoint for listing and creating user interactions
-    """
     serializer_class = UserInteractionSerializer
     
     def get_queryset(self):

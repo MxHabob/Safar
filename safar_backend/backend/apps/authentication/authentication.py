@@ -7,6 +7,7 @@ class CustomJWTAuthentication(JWTAuthentication):
         try:
             header = self.get_header(request)
             raw_token = self.get_raw_token(header) if header else request.COOKIES.get(settings.AUTH_COOKIE)
+            
             if raw_token is None:
                 return None
             validated_token = self.get_validated_token(raw_token)

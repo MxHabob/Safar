@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { useAuth } from "@/redux/hooks/usee-auth"
+import { useAuth } from "@/redux/hooks/use-auth"
 import { Spinner } from "../ui/spinner"
 import { registerSchema } from "@/lib/validations/auth"
 

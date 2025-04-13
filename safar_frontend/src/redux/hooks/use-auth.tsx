@@ -16,7 +16,7 @@ import {
   useConfirmPasswordResetMutation,
   api,
 } from '@/redux/services/api';
-import { RootState } from '@/redux/store';
+import { persistor, RootState } from '@/redux/store';
 import { 
   loginStart, 
   loginSuccess, 
@@ -42,37 +42,33 @@ export const useAuth = () => {
   const [requestPasswordResetApi, { isLoading: isRequestPasswordResetLoading }] = useRequestPasswordResetMutation();
   const [confirmPasswordResetApi, { isLoading: isConfirmPasswordResetLoading }] = useConfirmPasswordResetMutation();
   
-  const { data: userData, refetch: fetchUser, isLoading: isUserLoading } = useGetUserQuery();
+  const { data: userData, refetch: fetchUser,isLoading:isUserLoading } = useGetUserQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
 
 
   const login = useCallback(
     async (credentials: { email: string; password: string }) => {
       try {
-        dispatch(loginStart())
-
-        // First, login to get the tokens (stored in cookies)
+        dispatch(loginStart());
         await toast.promise(loginApi(credentials).unwrap(), {
           loading: "Logging in...",
           success: "Logged in successfully!",
           error: (error) => error.data?.detail || "Login failed",
-        })
-
-        // Then fetch the user data
-        const user = await fetchUser().unwrap()
-        console.log("user : " , user)
-        dispatch(loginSuccess(user))
-
-        router.push("/")
-        return { success: true }
+        });
+        const user = await fetchUser().unwrap();
+        dispatch(loginSuccess(user));
+        router.push("/");
+        return { success: true };
       } catch (error: any) {
-        const errorMessage = error.data?.detail || "Login failed"
-        dispatch(loginFailure(errorMessage))
-        toast.error(errorMessage)
-        return { success: false, error: errorMessage }
+        const errorMessage = error.data?.detail || "Login failed";
+        dispatch(loginFailure(errorMessage));
+        toast.error(errorMessage);
+        return { success: false, error: errorMessage };
       }
     },
     [dispatch, loginApi, fetchUser, router],
-  )
+  );
 
   const register = useCallback(async (userData: Partial<RegisterUser>) => {
     try {
@@ -108,8 +104,9 @@ export const useAuth = () => {
     } catch (error) {
       toast.error('Failed to logout');
     } finally {
-      dispatch(logoutAction());
       dispatch(api.util.resetApiState());
+      await persistor.purge();
+      dispatch(logoutAction());
       router.push('/login');
     }
   }, [dispatch, logoutApi, router]);

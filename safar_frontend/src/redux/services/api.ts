@@ -27,23 +27,23 @@ const mutex = new Mutex()
 const baseQuery = fetchBaseQuery({
   baseUrl: `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api`,
   credentials: "include",
-  prepareHeaders: (headers) => {
-    // Add API key if needed
-    if (process.env.NEXT_PUBLIC_API_KEY) {
-      headers.set("Authorization", `Api-Key ${process.env.NEXT_PUBLIC_API_KEY}`)
+  prepareHeaders: (headers, { arg }) => {
+    const url = typeof arg === 'object' && 'url' in arg ? arg.url : undefined;
+    if (process.env.NEXT_PUBLIC_API_KEY && url && !url.startsWith('/auth/')) {
+      headers.set("Authorization", `Api-Key ${process.env.NEXT_PUBLIC_API_KEY}`);
     }
 
     const csrfToken = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("csrftoken="))
-    ?.split("=")[1]
+      .split("; ")
+      .find((row) => row.startsWith("csrftoken="))
+      ?.split("=")[1];
 
-  if (csrfToken) {
-    headers.set("X-CSRFToken", csrfToken)
-  }
-    return headers
+    if (csrfToken) {
+      headers.set("X-CSRFToken", csrfToken);
+    }
+    return headers;
   },
-})
+});
 
 // Enhanced query with token refresh logic
 export const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
@@ -112,7 +112,6 @@ export const api = createApi({
     'Message',
     'Notification',
     'Auth',
-    'User',
     'UserInteraction'
   ],
   endpoints: (builder) => ({
@@ -123,7 +122,7 @@ export const api = createApi({
         method: "POST",
         body: credentials,
       }),
-      invalidatesTags: ["User"],
+      invalidatesTags: ["Auth"],
     }),
       
     register: builder.mutation<User, Partial<User>>({
@@ -188,14 +187,14 @@ export const api = createApi({
           url: "/auth/logout/",
           method: "POST",
         }),
-        invalidatesTags: ["User"],
+        invalidatesTags: ["Auth"],
       }),
       
       getUser: builder.query<User, void>({
         query: () => ({
           url: "/auth/users/me/",
         }),
-        providesTags: ["User"],
+        providesTags: ["Auth"],
       }),
       
       updateUser: builder.mutation<User, Partial<User>>({
@@ -204,7 +203,7 @@ export const api = createApi({
           method: "PATCH",
           body: userData,
         }),
-        invalidatesTags: ["User"],
+        invalidatesTags: ["Auth"],
       }),
       
       deleteUser: builder.mutation<void, { current_password: string }>({
@@ -213,7 +212,7 @@ export const api = createApi({
           method: 'DELETE',
           body: data,
         }),
-        invalidatesTags: ['User'],
+        invalidatesTags: ['Auth'],
       }),
       
       socialAuth: builder.mutation<LoginResponse, { provider: string; code: string }>({
@@ -226,7 +225,7 @@ export const api = createApi({
             "Content-Type": "application/json",
           },
         }),
-        invalidatesTags: ["User"],
+        invalidatesTags: ["Auth"],
       }),
       getUserInteractions: builder.query<PaginatedResponse<UserInteraction>, { 
         page?: number; 
