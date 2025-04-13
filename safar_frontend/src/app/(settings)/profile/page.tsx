@@ -1,50 +1,40 @@
-import { ProfilePageContent } from "@/components/section/settings/profile";
+"use client"
 
-const mockUser = {
-  id: "1",
-  created_at: "2023-01-01T00:00:00Z",
-  updated_at: "2023-01-01T00:00:00Z",
-  is_deleted: false,
-  email: "angel.john@example.com",
-  first_name: "Angel",
-  last_name: "John",
-  language: "en",
-  timezone: "America/Phoenix",
-  preferred_language: "en",
-  preferred_currency: "USD",
-  is_online: true,
-  is_active: true,
-  is_staff: false,
-  is_2fa_enabled: false,
-  role: "guest" as const,
-  is_profile_public: true,
-  following: [],
-  points: 88,
-  membership_level: "gold" as const,
-  profile: {
-    id: "1",
-    created_at: "2023-01-01T00:00:00Z",
-    updated_at: "2023-01-01T00:00:00Z",
-    is_deleted: false,
-    user: "1",
-    avatar: "/placeholder.svg?height=96&width=96",
-    bio: "Travel enthusiast and explorer",
-    gender: "prefer_not_to_say" as const,
-    travel_history: [],
-    travel_interests: [],
-    language_proficiency: {},
-    preferred_countries: [],
-    privacy_consent: true,
-    wants_push_notifications: true,
-    wants_sms_notifications: false,
-  },
-}
+import { useEffect } from "react"
+import { useWebSocket } from "@/redux/hooks/realtime/use-websocket"
+import NotificationCenter from "@/components/globals/notification-center"
+import BookingUpdates from "@/components/booking-updates"
 
-  export default async function ProfilePage() {
-    return (
-      <main className="min-h-screen">
-      <ProfilePageContent user={mockUser} />
-    </main>
-  );
+export default function Dashboard() {
+  const { status, connect } = useWebSocket()
+
+  // Ensure WebSocket is connected when dashboard loads
+  useEffect(() => {
+    if (status !== "open") {
+      connect()
+    }
+  }, [status, connect])
+
+  return (
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <div className="flex items-center gap-2">
+          <div className="text-sm">
+            WebSocket:{" "}
+            <span className={`font-medium ${status === "open" ? "text-green-500" : "text-red-500"}`}>
+              {status === "open" ? "Connected" : status}
+            </span>
+          </div>
+          <NotificationCenter />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <BookingUpdates />
+
+        <div className="space-y-6">{/* Other dashboard components can go here */}</div>
+      </div>
+    </div>
+  )
 }
- 

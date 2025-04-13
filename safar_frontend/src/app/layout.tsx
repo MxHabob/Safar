@@ -6,6 +6,7 @@ import ReduxProvider from "@/components/providers/redux-provider";
 import { Toaster } from "sonner";
 import { Nav } from "@/components/section/header/nav";
 import { ModalProvider } from "@/components/providers/modal-provider";
+import { WebSocketProvider } from "@/components/providers/websocket-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,6 +34,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased custom-scrollbar`}
       >
       <ReduxProvider>
+      <WebSocketProvider>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <main className="min-h-screen flex flex-col">
          <Nav />
@@ -41,6 +43,7 @@ export default function RootLayout({
         <ModalProvider />
         <Toaster position={"bottom-left"} closeButton/>
       </ThemeProvider>
+      </WebSocketProvider>
       </ReduxProvider>
       </body>
     </html>
