@@ -155,12 +155,6 @@ DATABASES = {
 }
 
 
-# # Do not expose your Neon credentials to the browser
-
-# PGHOST='ep-ancient-surf-a56f08va-pooler.us-east-2.aws.neon.tech'
-# PGDATABASE='neondb'
-# PGUSER='neondb_owner'
-# PGPASSWORD='npg_CBZcD95AoiMk'
 # ======================
 #  AUTHENTICATION
 # ======================
