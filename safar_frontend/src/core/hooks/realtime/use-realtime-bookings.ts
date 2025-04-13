@@ -2,8 +2,8 @@
 
 import { useMemo } from "react"
 import { useSelector } from "react-redux"
-import type { RootState } from "@/redux/store"
-import type { Booking } from "@/redux/types"
+import type { RootState } from "@/core/store"
+import type { Booking } from "@/core/types"
 
 export function useRealtimeBookings() {
   const bookings = useSelector((state: RootState) => state.realtime.bookings)

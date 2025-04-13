@@ -1,10 +1,9 @@
-import { ListBox } from "@/components/global/box-list";
-import { ListExperience } from "@/components/global/experience-list";
-import { ListPlaces } from "@/components/global/place-list";
-import { HeaderFilters } from "@/components/section/header/header-filters";
-import { Nav } from "@/components/section/header/nav";
+import { HeaderFilters } from "@/components/layout/header/header-filters";
+import { MSearch } from "@/components/layout/header/Serch";
+import { ListBox } from "@/components/main/box/box-list";
+import { ListExperience } from "@/components/main/experience/experience-list";
+import { ListPlaces } from "@/components/main/place/place-list";
 
-import { MSearch } from "@/components/section/header/Serch";
 
 export default function Home() {
   return (

@@ -18,8 +18,8 @@ import type {
   PaginatedResponse,
   InteractionType,
   UserInteraction
-} from '@/redux/types';
-import { logout } from "@/components/features/auth/auth-slice";
+} from '@/core/types';
+import { authSlice, logout } from "@/core/features/auth/auth-slice";
 import { RootState } from "@/core/store";
 
 const mutex = new Mutex()
@@ -79,7 +79,7 @@ export const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, Fetch
           // Store the new tokens
           api.dispatch(authSlice.actions.setTokens({
             access: (refreshResult.data as { access: string }).access,
-            refresh: refreshToken // or get new refresh if your API provides it
+            refresh: refreshToken || '' // Provide a fallback empty string if refreshToken is null
           }))
           // Retry the original request with new access token
           result = await baseQuery(args, api, extraOptions)
@@ -138,7 +138,7 @@ export const api = createApi({
             refresh: data.refresh
           }));
         } catch (error) {
-          // Handle error
+          console.log(error)
         }
       },
     }),

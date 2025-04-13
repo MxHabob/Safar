@@ -5,7 +5,7 @@ import {
   useGetNotificationsQuery,
   useMarkNotificationAsReadMutation,
   useMarkAllNotificationsAsReadMutation,
-} from "@/redux/services/api";
+} from "@/core/services/api";
 import { NotificationActions } from "./notification-actions";
 import { NotificationFilters } from "./notification-filters";
 import { NotificationsList } from "./notifications-list";

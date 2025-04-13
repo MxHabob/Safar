@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useAuth } from "@/redux/hooks/use-auth"
+import { useAuth } from "@/core/hooks/use-auth"
 import { Calendar, LogOut, Settings, User2, MessageSquare, Bell, Home, UserPlus } from "lucide-react"
 
 interface UserAvatarProps {

@@ -1,11 +1,11 @@
 "use client"
 
 import { useDispatch, useSelector } from "react-redux"
-import { RootState } from "@/redux/store"
+import { RootState } from "@/core/store"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle } from 'lucide-react'
 import { Modal } from "../global/modal"
-import { closeModal } from "@/redux/features/ui/modal-slice"
+import { closeModal } from "@/core/features/ui/modal-slice"
 
 export default function SuccessOrFailureModal() {
   const dispatch = useDispatch()

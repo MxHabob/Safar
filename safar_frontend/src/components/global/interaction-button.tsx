@@ -2,9 +2,9 @@
 
 import type React from "react"
 import { Button } from "@/components/ui/button"
-import type { InteractionType } from "@/redux/types/types"
 import { cn } from "@/lib/utils"
-import { useLogInteractionMutation } from "@/redux/services/api"
+import { useLogInteractionMutation } from "@/core/services/api"
+import { InteractionType } from "@/core/types"
 
 export interface InteractionButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   interactionType: InteractionType

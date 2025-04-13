@@ -4,9 +4,9 @@ import "./globals.css";
 import { ThemeProvider } from "@/core/providers/theme-provider";
 import ReduxProvider from "@/core/providers/redux-provider";
 import { Toaster } from "sonner";
-import { Nav } from "@/components/layout/";
 import { ModalProvider } from "@/core/providers/modal-provider";
 import { WebSocketProvider } from "@/core/providers/websocket-provider";
+import { Nav } from "@/components/layout/header/nav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

@@ -5,7 +5,7 @@ import "swiper/css/bundle";
 import { SwiperProps, SwiperSlide } from "swiper/react";
 import { Slider } from "../slider";
 import { ListItem } from "./list-item";
-import { Category } from "@/redux/types/types";
+import { Category } from "@/core/types";
 
 type Props = {
   items: Category[];

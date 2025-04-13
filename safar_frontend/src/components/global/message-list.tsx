@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRealtimeMessages } from "@/redux/hooks/realtime/use-realtime-messages"
-import { usePresence } from "@/redux/hooks/realtime/use-presence"
-import type { Message, User } from "@/redux/types/types"
+import { useRealtimeMessages } from "@/core/hooks/realtime/use-realtime-messages"
+import { usePresence } from "@/core/hooks/realtime/use-presence"
+import type { Message, User } from "@/core/types"
 
 interface MessageListProps {
   userId: string

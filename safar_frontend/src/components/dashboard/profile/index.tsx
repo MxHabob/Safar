@@ -1,15 +1,15 @@
 "use client"
 
-import { useState } from "react"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { CheckCircle, MapPin } from "lucide-react"
-import type { User, UserProfile } from "@/redux/types/types"
-import StatsCard from "@/components/section/settings/profile/stats-card"
-import AboutSection from "@/components/section/settings/profile/about-section"
-import TravelHistory from "@/components/section/settings/profile/travel-history"
-import ExperiencesSection from "@/components/section/settings/profile/experiences-section"
-import { useAuth } from "@/redux/hooks/use-auth"
+// import type { User, UserProfile } from "@/core/types"
+// import StatsCard from "@/components/section/settings/profile/stats-card"
+// import AboutSection from "@/components/section/settings/profile/about-section"
+// import TravelHistory from "@/components/section/settings/profile/travel-history"
+import { useAuth } from "@/core/hooks/use-auth"
+import ExperiencesSection from "./experiences-section"
+
 
 // Mock data based on the provided interfaces
 

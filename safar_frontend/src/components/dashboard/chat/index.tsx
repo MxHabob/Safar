@@ -1,17 +1,16 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { useGetMessagesQuery } from "@/redux/services/api"
-import type { Message, User } from "@/redux/types/types"
+import { useGetMessagesQuery } from "@/core/services/api"
+import type { Message, User } from "@/core/types"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { MessageSquare, Wifi, WifiOff } from "lucide-react"
-import { useRealTime } from "@/redux/hooks/use-real-time"
-import { useModal } from "@/redux/hooks/use-modal"
-import { useAuth } from "@/redux/hooks/use-auth"
-import { NewMessagePayload } from "@/redux/types/real-time"
+import { useModal } from "@/core/hooks/use-modal"
+import { useAuth } from "@/core/hooks/use-auth"
+
 
 interface Conversation {
   id: string

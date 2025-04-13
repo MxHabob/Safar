@@ -2,7 +2,7 @@
 
 import { Bell } from "lucide-react";
 import { NotificationItem } from "./notification-item";
-import type { Notification } from "@/redux/types/types";
+import type { Notification } from "@/core/types";
 import type { NotificationsFilters } from "./types";
 
 interface NotificationsListProps {

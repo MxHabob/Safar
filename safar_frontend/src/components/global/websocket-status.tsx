@@ -1,5 +1,5 @@
 "use client"
-import { useRealTime } from "@/redux/hooks/use-real-time"
+import { useRealTime } from "@/core/hooks/realtime"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Wifi, WifiOff } from "lucide-react"

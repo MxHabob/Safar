@@ -4,9 +4,9 @@ import { Heart } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { toast } from 'sonner'
-import { useAddToWishlistMutation, useRemoveFromWishlistMutation } from '@/redux/services/api'
+import { useAddToWishlistMutation, useRemoveFromWishlistMutation } from '@/core/services/api'
 import InteractionButton from './interaction-button'
-import { InteractionType } from '@/redux/types/types'
+import { InteractionType } from '@/core/types'
 
 type WishlistItemType = 'place' | 'experience' | 'flight' | 'box'
 

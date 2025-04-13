@@ -5,8 +5,6 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useDispatch, useSelector } from "react-redux"
-import type { RootState } from "@/redux/store"
-import { closeModal, openModal } from "@/redux/features/ui/modal-slice"
 import { Modal } from "@/components/global/modal"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -16,7 +14,7 @@ import { toastPromise } from "@/lib/toast-promise"
 import { CalendarIcon, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { formatDate } from "@/lib/utils/date-formatter"
-import { useUpdateBookingMutation } from "@/redux/services/api"
+import { RootState } from "@/core/store"
 
 const formSchema = z.object({
   check_in: z.date().optional(),
@@ -176,3 +174,15 @@ export default function BookingModificationModal() {
     </Modal>
   )
 }
+function useUpdateBookingMutation(): [any] {
+  throw new Error("Function not implemented.")
+}
+
+function closeModal(): any {
+  throw new Error("Function not implemented.")
+}
+
+function openModal(arg0: { type: string; data: { Booking: any; success: boolean; message: string } }): any {
+  throw new Error("Function not implemented.")
+}
+

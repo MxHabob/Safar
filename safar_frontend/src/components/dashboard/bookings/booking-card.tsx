@@ -5,7 +5,7 @@ import { MapPin, Calendar, Clock, Plane, Package, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import type { Booking } from "@/redux/types/types"
+import type { Booking } from "@/core/types"
 import Image from "next/image"
 
 interface BookingCardProps {

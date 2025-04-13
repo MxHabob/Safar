@@ -2,15 +2,13 @@
 
 import { useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import type { RootState } from "@/redux/store"
-
 import { Button } from "@/components/ui/button"
-
 import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
-import { useCancelBookingMutation, useConfirmBookingMutation } from "@/redux/services/api"
-import { closeModal, openModal } from "@/redux/features/ui/modal-slice"
 import { Modal } from "../global/modal"
 import { toastPromise } from "@/lib/toast-promise"
+import { closeModal, openModal } from "@/core/features/ui/modal-slice"
+import { useConfirmBookingMutation, useCancelBookingMutation } from "@/core/services/api"
+import { RootState } from "@reduxjs/toolkit/query"
 
 export default function BookingConfirmationOrCancellationModal() {
   const dispatch = useDispatch()

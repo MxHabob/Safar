@@ -1,4 +1,4 @@
-import type { Notification } from "@/redux/types/types";
+import type { Notification } from "@/core/types";
 
 export type NotificationType = "All" | "Booking Update" | "Payment" | "Discount" | "Message" | "General";
 export type ReadStatus = "All" | "Read" | "Unread";

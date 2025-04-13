@@ -4,17 +4,18 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import { RootState } from "@/core/store"
 import { useDispatch, useSelector } from "react-redux"
-import type { RootState } from "@/redux/store"
-import { closeModal } from "@/redux/features/ui/modal-slice"
 import { Modal } from "@/components/global/modal"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { useCreateExperienceMutation, useUpdateExperienceMutation } from "@/redux/services/api"
 import { toastPromise } from "@/lib/toast-promise"
 import { Loader2 } from "lucide-react"
+import { closeModal } from "@/core/features/ui/modal-slice"
+import { useCreateExperienceMutation, useUpdateExperienceMutation } from "@/core/services/api"
+
 
 const formSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),

@@ -1,14 +1,14 @@
 "use client"
 
 import { useDispatch, useSelector } from "react-redux"
-import type { RootState } from "@/redux/store"
-import { closeModal, openModal } from "@/redux/features/ui/modal-slice"
 import { Modal } from "@/components/global/modal"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { CalendarDays, Clock, DollarSign, MapPin, User } from "lucide-react"
 import { formatDate } from "@/lib/utils/date-formatter"
 import { formatCurrency } from "@/lib/utils"
+import { closeModal, openModal } from "@/core/features/ui/modal-slice"
+import { RootState } from "@reduxjs/toolkit/query"
 
 export default function BookingDetailsModal() {
   const dispatch = useDispatch()

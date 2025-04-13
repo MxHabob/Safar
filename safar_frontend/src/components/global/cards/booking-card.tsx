@@ -4,14 +4,14 @@ import { useState } from "react"
 import { format } from "date-fns"
 import { CalendarIcon, Minus, Plus, Star } from "lucide-react"
 import { toast } from "sonner"
-import { useCreateBookingMutation } from "@/redux/services/api"
+import { useCreateBookingMutation } from "@/core/services/api"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
-import type { Box, Experience, Place } from "@/redux/types/types"
+import type { Box, Experience, Place } from "@/core/types"
 
 export interface BookingCardProps {
   id: string

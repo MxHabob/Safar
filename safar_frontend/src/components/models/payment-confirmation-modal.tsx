@@ -2,12 +2,12 @@
 
 import { useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import type { RootState } from "@/redux/store"
+import type { RootState } from "@/core/store"
 import { Button } from "@/components/ui/button"
 
 import { CreditCard, Loader2 } from "lucide-react"
-import { useMarkPaymentAsPaidMutation } from "@/redux/services/api"
-import { closeModal, openModal } from "@/redux/features/ui/modal-slice"
+import { useMarkPaymentAsPaidMutation } from "@/core/services/api"
+import { closeModal, openModal } from "@/core/features/ui/modal-slice"
 import { Modal } from "../global/modal"
 import { toastPromise } from "@/lib/toast-promise"
 import { formatCurrency } from "@/lib/utils"

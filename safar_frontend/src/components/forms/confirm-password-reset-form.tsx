@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Spinner } from "../ui/spinner"
-import { useAuth } from "@/redux/hooks/use-auth"
+import { useAuth } from "@/core/hooks/use-auth"
 import { confirmPasswordResetSchema } from "@/lib/validations/auth"
 
 

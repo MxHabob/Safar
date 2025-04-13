@@ -1,10 +1,10 @@
 "use client"
 
-import type { InteractionType } from "@/redux/types/types"
+import type { InteractionType } from "@/core/types"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { forwardRef } from "react"
-import { useLogInteractionMutation } from "@/redux/services/api"
+import { useLogInteractionMutation } from "@/core/services/api"
 
 export interface InteractionLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   interactionType: InteractionType

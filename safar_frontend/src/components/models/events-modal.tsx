@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import type { RootState } from "@/redux/store"
-import { closeModal } from "@/redux/features/ui/modal-slice"
+import type { RootState } from "@/core/store"
+import { closeModal } from "@/core/features/ui/modal-slice"
 import { Modal } from "@/components/global/modal"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"

@@ -4,19 +4,21 @@ import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import type { RootState } from "@/redux/store"
-import { closeModal } from "@/redux/features/ui/modal-slice"
+
 import { Modal } from "@/components/global/modal"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { useSendMessageMutation } from "@/redux/services/api"
 import { toastPromise } from "@/lib/toast-promise"
 import { Send, Loader2 } from "lucide-react"
 import { formatDate } from "@/lib/utils/date-formatter"
-import type { Message, User } from "@/redux/types/types"
-import { useAuth } from "@/redux/hooks/use-auth"
+import { closeModal } from "@/core/features/ui/modal-slice"
+import { useAuth } from "@/core/hooks/use-auth"
+import { useSendMessageMutation } from "@/core/services/api"
+import { User } from "@/core/types"
+import { RootState } from "@/core/store"
+import { Message } from "react-hook-form"
 
 export default function ChatModal() {
   const dispatch = useDispatch()
