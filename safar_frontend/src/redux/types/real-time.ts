@@ -1,4 +1,4 @@
-import { Booking, Message ,Notification, User} from "./types";
+import { Booking, Message ,Notification} from "./types";
 
 // real-time/types.ts
 export type WebSocketMessageType = 

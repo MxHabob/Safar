@@ -2,11 +2,10 @@
 
 import { useState } from "react"
 import { useFormState } from "react-dom"
-import { searchFlights, searchAirports } from "@/app/actions/flight-actions"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -16,7 +15,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { format } from "date-fns"
 import { CalendarIcon, Loader2, Plane, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useDebounce } from "@/hooks/use-mobile"
+import { useDebounce } from "@/redux/hooks/use-debounce"
+
 
 interface Airport {
   id: string
@@ -334,7 +334,7 @@ export default function FlightSearchForm() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="travelClass">Cabin Class</Label>
               <RadioGroup defaultValue="ECONOMY" name="travelClass" className="flex flex-wrap gap-6">
                 <div className="flex items-center space-x-2">
@@ -354,7 +354,7 @@ export default function FlightSearchForm() {
                   <Label htmlFor="first">First Class</Label>
                 </div>
               </RadioGroup>
-            </div>
+            </div> */}
 
             <div className="flex items-center space-x-2">
               <Checkbox id="directFlights" name="directFlights" />
@@ -370,3 +370,11 @@ export default function FlightSearchForm() {
     </Card>
   )
 }
+function searchAirports(debouncedOriginSearch: string) {
+  throw new Error("Function not implemented.")
+}
+
+function searchFlights(state: { error: null }): { error: null } | Promise<{ error: null }> {
+  throw new Error("Function not implemented.")
+}
+

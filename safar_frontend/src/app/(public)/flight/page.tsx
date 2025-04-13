@@ -1,5 +1,6 @@
+import FlightSearchForm from "@/components/section/flights/flight-search-form"
 import type { Metadata } from "next"
-import FlightSearchForm from "@/components/flights/flight-search-form"
+
 
 export const metadata: Metadata = {
   title: "Flight Search | Safar",

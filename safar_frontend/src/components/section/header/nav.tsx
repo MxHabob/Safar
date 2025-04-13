@@ -28,9 +28,6 @@ export function Nav() {
     </nav>
     <div className="flex items-center space-x-4">
       <ModeToggle/>
-      {/* <Button className="rounded-full p-2 ">
-        <Globe className="h-6 w-5" />
-      </Button> */}
       {/* <WebSocketStatus/> */}
       <div className="flex items-center rounded-full ">
           <UserAvatar className=" w-9 h-9" />

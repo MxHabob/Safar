@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react"
 import { useGetMessagesQuery } from "@/redux/services/api"
 import type { Message, User } from "@/redux/types/types"
-import { formatDistanceToNow } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -11,35 +10,33 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { MessageSquare, Wifi, WifiOff } from "lucide-react"
 import { useRealTime } from "@/redux/hooks/use-real-time"
 import { useModal } from "@/redux/hooks/use-modal"
-<<<<<<< HEAD
-import { useAuth } from "@/redux/hooks/usee-auth"
-import { NewMessagePayload } from "@/redux/types/real-time"
-=======
 import { useAuth } from "@/redux/hooks/use-auth"
->>>>>>> 77b4ed997afdaa7bab9e8ba55da69d420558ee3d
+import { NewMessagePayload } from "@/redux/types/real-time"
 
 interface Conversation {
   id: string
   otherUser: User
   lastMessage: Message
   unreadCount: number
-  messages: Message[] // Ensure this is correctly typed as an array of Message
+  messages: Message[]
 }
 
 export const ChatInbox = () => {
   const { data: messagesData, isLoading } = useGetMessagesQuery({ page_size: 100 })
   const { user, isAuthenticated } = useAuth()
-<<<<<<< HEAD
-  console.log("messagedata:" ,messagesData)
   const { connectionState, unreadCount, markMessageAsRead } = useRealTime({
     onNewMessage: (data: NewMessagePayload) => {
       const message: Message = {
         ...data,
-        is_read: false, // Default value or map appropriately
-        updated_at: new Date().toISOString(), // Default value or map appropriately
-        is_deleted: false, // Default value or map appropriately
+        is_read: false,
+        updated_at: new Date().toISOString(),
+        is_deleted: false,
+        // sender: undefined,
+        // receiver: undefined,
+        message_text: "",
+        id: "",
+        created_at: ""
       };
-      // Add new message to conversations
       setConversations((prev) => {
         const conversationId = getConversationId(message.sender.id, message.receiver.id)
         const existingConversation = prev.find((c) => c.id === conversationId)
@@ -50,14 +47,13 @@ export const ChatInbox = () => {
               return {
                 ...c,
                 lastMessage: message,
-                unreadCount: c.unreadCount + 1,
+                unreadCount: c.unreadCount + (message.sender.id !== user?.id && !message.is_read ? 1 : 0),
                 messages: [...c.messages, message],
               }
             }
             return c
           })
         } else {
-          // Create new conversation
           const otherUser = user?.id === message.sender.id ? message.receiver : message.sender
           return [
             ...prev,
@@ -65,7 +61,7 @@ export const ChatInbox = () => {
               id: conversationId,
               otherUser,
               lastMessage: message,
-              unreadCount: 1,
+              unreadCount: message.sender.id !== user?.id && !message.is_read ? 1 : 0,
               messages: [message],
             },
           ]
@@ -73,9 +69,7 @@ export const ChatInbox = () => {
       })
     },
   })
-=======
-  const { connectionState, markMessageAsRead } = useRealTime()
->>>>>>> 77b4ed997afdaa7bab9e8ba55da69d420558ee3d
+
   const [conversations, setConversations] = useState<Conversation[]>([])
   const { onOpen } = useModal()
 
@@ -84,54 +78,10 @@ export const ChatInbox = () => {
     return [user1Id, user2Id].sort().join("-")
   }, [])
 
-  // Handle new messages from WebSocket
-  const handleNewMessage = useCallback((message: Message) => {
-    if (!user?.id) return
-
-    setConversations((prev) => {
-      const currentUserId = user.id
-      const conversationId = getConversationId(message.sender.id, message.receiver.id)
-      const existingConversation = prev.find((c) => c.id === conversationId)
-
-      if (existingConversation) {
-        return prev.map((c) => {
-          if (c.id === conversationId) {
-            const isUnread = message.sender.id !== currentUserId && !message.is_read
-            return {
-              ...c,
-              lastMessage: message,
-              unreadCount: isUnread ? c.unreadCount + 1 : c.unreadCount,
-              messages: [...c.messages, message],
-            }
-          }
-          return c
-        })
-      } else {
-        const otherUser = currentUserId === message.sender.id ? message.receiver : message.sender
-        const isUnread = message.sender.id !== currentUserId && !message.is_read
-        return [
-          ...prev,
-          {
-            id: conversationId,
-            otherUser,
-            lastMessage: message,
-            unreadCount: isUnread ? 1 : 0,
-            messages: [message],
-          },
-        ]
-      }
-    })
-  }, [user?.id, getConversationId])
-
   // Initialize conversations from API data
   useEffect(() => {
-<<<<<<< HEAD
-    if (messagesData?.results) {
-      const currentUserId = user?.id || "";
-=======
     if (messagesData?.results && user?.id) {
       const currentUserId = user.id
->>>>>>> 77b4ed997afdaa7bab9e8ba55da69d420558ee3d
       const conversationMap = new Map<string, Conversation>()
 
       messagesData.results.forEach((message) => {
@@ -169,12 +119,8 @@ export const ChatInbox = () => {
     }
   }, [messagesData, user?.id, getConversationId])
 
-
   const handleOpenChat = useCallback((conversation: Conversation) => {
     if (!user?.id) return
-
-    conversation.messages.forEach((message) => {
-      if (!message.is_read && message.sender.id !== user?.id) {
 
     const unreadMessages = conversation.messages.filter(
       (message) => !message.is_read && message.sender.id !== user.id
@@ -185,7 +131,6 @@ export const ChatInbox = () => {
         markMessageAsRead(message.id)
       })
 
-      // Optimistically update UI
       setConversations((prev) =>
         prev.map((c) =>
           c.id === conversation.id ? { ...c, unreadCount: 0 } : c
@@ -259,7 +204,7 @@ export const ChatInbox = () => {
                       {conversation.otherUser.first_name} {conversation.otherUser.last_name}
                     </h3>
                     <span className="text-xs text-muted-foreground">
-                      {/* {formatDistanceToNow(new Date(conversation.lastMessage.created_at), { addSuffix: true })} */}
+                      {new Date(conversation.lastMessage.created_at).toLocaleTimeString()}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">

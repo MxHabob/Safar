@@ -26,14 +26,14 @@ export default function WebSocketStatus() {
     },
     onNewMessage: (data) => {
       toast.info("New Message", {
-        description: `From: ${data.sender.first_name}: ${data.message_text.substring(0, 30)}${
-          data.message_text.length > 30 ? "..." : ""
+        description: `From: ${data.message.sender.first_name}: ${data.message.message_text.substring(0, 30)}${
+          data.message.message_text.length > 30 ? "..." : ""
         }`,
       })
     },
     onNewNotification: (data) => {
       toast.info("New Notification", {
-        description: data.message,
+        description: data.notification.message,
       })
     },
   })
@@ -54,8 +54,8 @@ export default function WebSocketStatus() {
 
       {connectionState === "connected" && (
         <>
-          {unreadCount.messages > 0 && <Badge className="bg-blue-500">{unreadCount.messages}</Badge>}
-          {unreadCount.notifications > 0 && <Badge className="bg-amber-500">{unreadCount.notifications}</Badge>}
+          {/* {unreadCount > 0 && <Badge className="bg-blue-500">{unreadCount}</Badge>}
+          {unreadCount > 0 && <Badge className="bg-amber-500">{unreadCount}</Badge>} */}
         </>
       )}
     </div>

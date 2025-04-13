@@ -1,7 +1,8 @@
 // real-time/hook.ts
-import { useEffect, useState, useCallback } from 'react';
-import RealTimeService from '@/redux/services/real-time';
-import { WebSocketEventHandlers, ConnectionState } from '@/redux/types/real-time';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+
+import { WebSocketEventHandlers, ConnectionState, NewMessagePayload, NewNotificationPayload } from '@/redux/types/real-time';
+import { RealTimeService } from '../services/real-time';
 
 export const useRealTime = (handlers: WebSocketEventHandlers = {}) => {
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
@@ -15,13 +16,13 @@ export const useRealTime = (handlers: WebSocketEventHandlers = {}) => {
   })[0];
 
   // Enhanced handlers with state management
-  const enhancedHandlers: WebSocketEventHandlers = {
+  const enhancedHandlers = useMemo(() => ({
     ...handlers,
-    onNewMessage: (payload) => {
+    onNewMessage: (payload: NewMessagePayload) => {
       setUnreadCounts(prev => ({ ...prev, messages: prev.messages + 1 }));
       handlers.onNewMessage?.(payload);
     },
-    onNewNotification: (payload) => {
+    onNewNotification: (payload: NewNotificationPayload) => {
       setUnreadCounts(prev => ({ ...prev, notifications: prev.notifications + 1 }));
       handlers.onNewNotification?.(payload);
     },
@@ -34,7 +35,7 @@ export const useRealTime = (handlers: WebSocketEventHandlers = {}) => {
       setConnectionId(null);
       handlers.onDisconnect?.();
     },
-  };
+  }), [handlers, realTimeService]);
 
   // Connection state sync
   useEffect(() => {
@@ -67,7 +68,7 @@ export const useRealTime = (handlers: WebSocketEventHandlers = {}) => {
     return () => {
       realTimeService.disconnect();
     };
-  }, [realTimeService]);
+  }, [enhancedHandlers, realTimeService]);
 
   // Action methods
   const markMessageAsRead = useCallback((id: string) => {
