@@ -8,23 +8,17 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { ChevronLeft, ChevronRight, Grid } from "lucide-react"
 import { useModal } from "@/core/hooks/use-modal"
+import { Media } from "@/core/types"
 
-export interface MediaItem {
-  file: string
-  url?: string
-  type?: "image" | "video"
-  id?: string
-}
 
 export interface MediaGalleryProps {
-  media: MediaItem[]
+  media: Media[]
   variant?: "default" | "grid" | "carousel" | "compact"
   maxDisplay?: number
   aspectRatio?: "square" | "video" | "wide"
   className?: string
   showViewAll?: boolean
   viewAllText?: string
-  onViewAll?: () => void
   priority?: boolean
 }
 
@@ -36,8 +30,7 @@ export const MediaGallery = ({
   className,
   showViewAll = true,
   viewAllText = "Show all photos",
-  onViewAll,
-  priority = false,
+  priority = false
 }: MediaGalleryProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const { onOpen } = useModal()
@@ -65,22 +58,10 @@ export const MediaGallery = ({
   const displayMedia = media.slice(0, displayCount)
   const hasMoreMedia = media.length > displayCount
 
-  const handleViewAll = (e?: React.MouseEvent) => {
-    e?.preventDefault()
-    e?.stopPropagation()
-
-    if (onViewAll) {
-      onViewAll()
-    } else {
-      onOpen("MediaModel", { media: { file: media[0].file, type: "image" }, mediaArray: media })
-    }
-  }
-
   const handleImageClick = (index: number, e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    onOpen("MediaModel", {
-      media: { file: media[index].file, type: "image" },
+    onOpen("MediaModal", {
       mediaArray: media,
       initialIndex: index,
     })
@@ -128,7 +109,6 @@ export const MediaGallery = ({
           variant="secondary"
           size="sm"
           className="absolute bottom-2 right-2 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background/90"
-          onClick={handleViewAll}
         >
           <Grid className="h-4 w-4 mr-1" />
           <span className="text-xs">{media.length}</span>
@@ -189,7 +169,6 @@ export const MediaGallery = ({
         <Button
           variant="secondary"
           className="absolute bottom-3 right-3 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background/90"
-          onClick={handleViewAll}
         >
           <Grid className="h-4 w-4 mr-2" />
           <span>{viewAllText}</span>
@@ -235,7 +214,6 @@ export const MediaGallery = ({
         <Button
           variant="secondary"
           className="absolute bottom-3 right-3 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background/90"
-          onClick={handleViewAll}
         >
           <Grid className="h-4 w-4 mr-2" />
           <span>{viewAllText}</span>
@@ -309,7 +287,6 @@ export const MediaGallery = ({
         <Button
           variant="secondary"
           className="absolute bottom-3 right-3 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background/90"
-          onClick={handleViewAll}
         >
           <Grid className="h-4 w-4 mr-2" />
           <span>{viewAllText}</span>

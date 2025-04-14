@@ -216,7 +216,7 @@ export interface Media extends BaseModel {
   url: string;
   file:string;
   type: 'image' | 'video';
-  uploaded_by?: string;
+  uploaded_by: User;
 }
 
 // Place Types

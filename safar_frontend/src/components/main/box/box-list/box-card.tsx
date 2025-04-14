@@ -16,7 +16,7 @@ export const BoxCard = ({ box }: BoxCardProps) => {
 
   return (
     <InteractionLink
-      href={`/box/${box.id}`}
+      href={`/boxes/${box.id}`}
       className="block"
       interactionType={InteractionType.VIEW_PLACE}
       contentType={"box"}
@@ -36,7 +36,7 @@ export const BoxCard = ({ box }: BoxCardProps) => {
             itemId={box.id}
             itemType={"box"}
             isInwishlist={box.is_in_wishlist || false}
-            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200"
+             className="absolute top-3 right-3 opacity-0 group-hover:opacity-100  transition-all duration-200"
             size="default"
             variant="outline"
           />

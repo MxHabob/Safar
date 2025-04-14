@@ -1,5 +1,5 @@
 "use client"
-import Image from "next/image"
+
 import { MapPin, Clock, Users } from "lucide-react"
 import { InteractionType, type Experience } from "@/core/types"
 import { Badge } from "@/components/ui/badge"
@@ -7,13 +7,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { WishlistButton } from "@/components/global/wishlist-button"
 import InteractionLink from "@/components/global/interaction-link"
 import { MediaGallery } from "@/components/global//media-gallery"
+import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar"
 
 interface ExperienceCardProps {
   experience: Experience
 }
 
 export const ExperienceCard = ({ experience }: ExperienceCardProps) => {
-  // Format price with proper currency
   const formattedPrice = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: experience.currency || "USD",
@@ -33,7 +33,7 @@ export const ExperienceCard = ({ experience }: ExperienceCardProps) => {
 
   return (
     <InteractionLink
-      href={`/experience/${experience.id}`}
+      href={`/experiences/${experience.id}`}
       className="block"
       interactionType={InteractionType.VIEW_EXPERIENCE}
       contentType={"experience"}
@@ -41,7 +41,7 @@ export const ExperienceCard = ({ experience }: ExperienceCardProps) => {
     >
       <div className="relative w-full rounded-3xl bg-card shadow-md overflow-hidden group min-w-sm max-w-sm transition-all hover:shadow-lg">
         <div className="relative aspect-[4/3] w-full overflow-hidden">
-          <MediaGallery media={experience.media || []} variant="carousel" aspectRatio="video" priority />
+          <MediaGallery media={experience.media || []} variant={"carousel"} aspectRatio={"video"} showViewAll />
 
           <Badge className="absolute top-3 left-3 px-2 py-1 border-none">
             {experience?.category?.name || "Experience"}
@@ -51,32 +51,24 @@ export const ExperienceCard = ({ experience }: ExperienceCardProps) => {
             itemId={experience.id}
             itemType={"experience"}
             isInwishlist={experience.is_in_wishlist || false}
-            className="absolute top-3 right-3 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200"
+            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100  transition-all duration-200"
             size="default"
-            variant="outline"
+            variant={"secondary"}
           />
 
           <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <div className="relative w-8 h-8 rounded-full overflow-hidden border-2 border-white bg-gray-200">
-                {experience.owner?.profile?.avatar ? (
-                  <Image
-                    src={experience.owner.profile.avatar || "/placeholder.svg"}
-                    alt={experience.owner.username || "Host"}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-primary/20 text-primary text-xs font-bold">
-                    {experience.owner?.username?.charAt(0)?.toUpperCase() || "H"}
-                  </div>
-                )}
-              </div>
-              <span className="text-xs font-medium text-white drop-shadow-md">
-                by {experience.owner?.username || "Host"}
+            <div className="flex items-center gap-2 text-center">
+              <Avatar className="h-4 w-4 bg-background dark:bg-accent-foreground rounded-full">
+                <AvatarImage src={experience.owner?.profile?.avatar} alt={experience.owner?.first_name || "User avatar"} />
+                <AvatarFallback>
+                  {experience.owner?.first_name?.charAt(0).toUpperCase() || experience.owner?.username?.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="font-medium">
+                {experience.owner?.username || `${experience.owner.first_name} ${experience.owner.last_name}`}
               </span>
             </div>
-            <Badge className="px-2 py-1 bg-black/70 text-white border-none">
+            <Badge className="px-2 py-1 border-none">
               {getDurationText(experience.duration)}
             </Badge>
           </div>

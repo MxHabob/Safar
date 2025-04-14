@@ -11,7 +11,7 @@ interface WebSocketProviderProps {
 
 export function WebSocketProvider({ children }: WebSocketProviderProps) {
   const [status, setStatus] = useState<WebSocketStatus>(websocketService.getStatus())
-  const isAuthenticated = useSelector((state: RootState) => !!state.auth.token)
+  const isAuthenticated = useSelector((state: RootState) => !!state.auth.isAuthenticated)
 
   // Connect to WebSocket when authenticated
   useEffect(() => {

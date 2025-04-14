@@ -1,4 +1,5 @@
-import { PlacePageContant } from "@/components/main/place";
+import { PlacePageContent } from "@/components/main/place";
+
 
 type Props = {
 	params: Promise<{ id: string}>
@@ -8,7 +9,7 @@ type Props = {
     const id = (await params).id
     return (
       <div className="">
-        <PlacePageContant id={id} />
+        <PlacePageContent id={id} />
       </div>
         );
 }

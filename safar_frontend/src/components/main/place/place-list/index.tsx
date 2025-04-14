@@ -10,11 +10,9 @@ import { Place } from "@/core/types"
 type Props = {
   overlay?: boolean
   selected?: string
-  favorites?: string[]
-  onFavoriteToggle?: (id: string) => void
 }
 
-export const ListPlaces = ({ selected, favorites = [], onFavoriteToggle }: Props) => {
+export const ListPlaces = ({ selected }: Props) => {
   const [page, setPage] = useState(1)
   const [allFetchedPlaces, setAllFetchedPlaces] = useState<Place[]>([])
 
@@ -88,7 +86,7 @@ export const ListPlaces = ({ selected, favorites = [], onFavoriteToggle }: Props
           >
             {isFetching ? (
               <>
-                <Spinner className="mr-2 h-4 w-4" />
+                <Spinner size={"lg"} />
               </>
             ) : (
               "More"

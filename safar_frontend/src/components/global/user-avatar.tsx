@@ -89,11 +89,11 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
               <User2 className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push("/booking")}>
+            <DropdownMenuItem onClick={() => router.push("/bookings")}>
               <Calendar className="mr-2 h-4 w-4" />
               My Bookings
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push("/chat")}>
+            <DropdownMenuItem onClick={() => router.push("/messages")}>
               <MessageSquare className="mr-2 h-4 w-4" />
               Chat
             </DropdownMenuItem>

@@ -22,7 +22,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import type { Booking } from "@/core/types"
-import { useCancelBookingMutation, useGetBookingsQuery, useGetUpcomingBookingsQuery } from "@/redux/services/api"
+import { useCancelBookingMutation, useGetBookingsQuery, useGetUpcomingBookingsQuery } from "@/core/services/api"
 import { BookingCard } from "./booking-card"
 
 type BookingType = "All" | "Place" | "Experience" | "Flight" | "Box"

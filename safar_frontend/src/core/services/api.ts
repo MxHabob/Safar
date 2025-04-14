@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { BaseQueryFn, createApi, FetchArgs, fetchBaseQuery, FetchBaseQueryError } from '@reduxjs/toolkit/query/react';
 import { Mutex } from 'async-mutex';
 import type {
@@ -19,88 +20,96 @@ import type {
   InteractionType,
   UserInteraction
 } from '@/core/types';
-import { authSlice, logout } from "@/core/features/auth/auth-slice";
-import { RootState } from "@/core/store";
+import { setTokens, logout } from "@/core/features/auth/auth-slice";
+import type { RootState } from "@/core/store";
 
-const mutex = new Mutex()
+const mutex = new Mutex();
 
-// Base query with the API URL
 const baseQuery = fetchBaseQuery({
   baseUrl: `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api`,
   credentials: "include",
-  prepareHeaders: (headers, { getState }) => {
-    const state = getState() as RootState;
-    const token = state.auth.accessToken;
-    
+  prepareHeaders: (headers, { getState, arg }) => {
+    const state = getState() as RootState
+    const token = state.auth.accessToken
+
+    const url = typeof arg === "object" && "url" in arg ? arg.url : undefined
+    const apiKey = process.env.NEXT_PUBLIC_API_KEY
+    if (apiKey && url && !url.startsWith("/auth/")) {
+      headers.set("Authorization", `Api-Key ${apiKey}`)
+    }
+
     if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
+      headers.set("Authorization", `Bearer ${token}`)
     }
 
-    const csrfToken = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("csrftoken="))
-      ?.split("=")[1];
+    if (typeof document !== "undefined") {
+      const csrfToken = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("csrftoken="))
+        ?.split("=")[1]
 
-    if (csrfToken) {
-      headers.set("X-CSRFToken", csrfToken);
+      if (csrfToken) {
+        headers.set("X-CSRFToken", csrfToken)
+      }
     }
-    return headers;
+
+    return headers
   },
-});
+})
 
-// Enhanced query with token refresh logic
-// api.ts
 export const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
   args,
   api,
   extraOptions,
 ) => {
-  await mutex.waitForUnlock()
-  let result = await baseQuery(args, api, extraOptions)
+  await mutex.waitForUnlock();
+  let result = await baseQuery(args, api, extraOptions);
 
   if (result.error?.status === 401) {
     if (!mutex.isLocked()) {
-      const release = await mutex.acquire()
-      const state = api.getState() as RootState
-      const refreshToken = state.auth.refreshToken
+      const release = await mutex.acquire();
+      const state = api.getState() as RootState;
+      const refreshToken = state.auth.refreshToken;
 
       try {
-        const refreshResult = await baseQuery(
-          { 
-            url: "/auth/jwt/refresh/", 
-            method: "POST", 
-            body: { refresh: refreshToken } 
-          },
-          api,
-          extraOptions,
-        )
+        if (refreshToken) {
+          const refreshResult = await baseQuery(
+            { 
+              url: "/auth/jwt/refresh/", 
+              method: "POST", 
+              body: { refresh: refreshToken } 
+            },
+            api,
+            extraOptions,
+          );
 
-        if (refreshResult.data) {
-          // Store the new tokens
-          api.dispatch(authSlice.actions.setTokens({
-            access: (refreshResult.data as { access: string }).access,
-            refresh: refreshToken || '' // Provide a fallback empty string if refreshToken is null
-          }))
-          // Retry the original request with new access token
-          result = await baseQuery(args, api, extraOptions)
+          if (refreshResult.data) {
+            api.dispatch(setTokens({
+              access: (refreshResult.data as { access: string }).access,
+              refresh: refreshToken
+            }));
+            result = await baseQuery(args, api, extraOptions);
+          } else {
+            api.dispatch(logout());
+          }
         } else {
-          api.dispatch(logout())
+          api.dispatch(logout());
         }
       } finally {
-        release()
+        release();
       }
     } else {
-      await mutex.waitForUnlock()
-      result = await baseQuery(args, api, extraOptions)
+      await mutex.waitForUnlock();
+      result = await baseQuery(args, api, extraOptions);
     }
   }
 
   if (result.error?.status === 403) {
-    api.dispatch(logout())
+    api.dispatch(logout());
   }
 
-  return result
-}
+  return result;
+};
 
 export const api = createApi({
   reducerPath: 'api',
@@ -130,17 +139,6 @@ export const api = createApi({
         body: credentials,
       }),
       invalidatesTags: ["Auth"],
-      async onQueryStarted(args, { dispatch, queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
-          dispatch(authSlice.actions.setTokens({
-            access: data.access,
-            refresh: data.refresh
-          }));
-        } catch (error) {
-          console.log(error)
-        }
-      },
     }),
       
     register: builder.mutation<User, Partial<User>>({
@@ -185,119 +183,123 @@ export const api = createApi({
       }),
     }),
       
-    refreshToken: builder.mutation<void, void>({
-      query: () => ({
+    refreshToken: builder.mutation<{ access: string }, { refresh: string }>({
+      query: (data) => ({
         url: "/auth/jwt/refresh/",
         method: "POST",
+        body: data,
       }),
     }),
       
-      verifyToken: builder.mutation<void, { token: string }>({
-        query: (token) => ({
-          url: '/auth/jwt/verify/',
-          method: 'POST',
-          body: token,
-        }),
+    verifyToken: builder.mutation<void, { token: string }>({
+      query: (token) => ({
+        url: '/auth/jwt/verify/',
+        method: 'POST',
+        body: token,
       }),
+    }),
       
-      logout: builder.mutation<void, void>({
-        query: () => ({
-          url: "/auth/logout/",
-          method: "POST",
-        }),
-        invalidatesTags: ["Auth"],
+    logout: builder.mutation<void, void>({
+      query: () => ({
+        url: "/auth/logout/",
+        method: "POST",
       }),
+      invalidatesTags: ["Auth"],
+    }),
       
-      getUser: builder.query<User, void>({
-        query: () => ({
-          url: "/auth/users/me/",
-        }),
-        providesTags: ["Auth"],
+    getUser: builder.query<User, void>({
+      query: () => ({
+        url: "/auth/users/me/",
       }),
+      providesTags: ["Auth"],
+    }),
       
-      updateUser: builder.mutation<User, Partial<User>>({
-        query: (userData) => ({
-          url: "/auth/users/me/",
-          method: "PATCH",
-          body: userData,
-        }),
-        invalidatesTags: ["Auth"],
+    updateUser: builder.mutation<User, Partial<User>>({
+      query: (userData) => ({
+        url: "/auth/users/me/",
+        method: "PATCH",
+        body: userData,
       }),
+      invalidatesTags: ["Auth"],
+    }),
       
-      deleteUser: builder.mutation<void, { current_password: string }>({
-        query: (data) => ({
-          url: '/auth/users/me/',
-          method: 'DELETE',
-          body: data,
-        }),
-        invalidatesTags: ['Auth'],
+    deleteUser: builder.mutation<void, { current_password: string }>({
+      query: (data) => ({
+        url: '/auth/users/me/',
+        method: 'DELETE',
+        body: data,
       }),
+      invalidatesTags: ['Auth'],
+    }),
       
-      socialAuth: builder.mutation<LoginResponse, { provider: string; code: string }>({
-        query: ({ provider, code }) => ({
-          url: `/auth/o/${provider}/`,
-          method: "POST",
-          body: { code },
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-        }),
-        invalidatesTags: ["Auth"],
+    socialAuth: builder.mutation<LoginResponse, { provider: string; code: string }>({
+      query: ({ provider, code }) => ({
+        url: `/auth/o/${provider}/`,
+        method: "POST",
+        body: { code },
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
       }),
-      getUserInteractions: builder.query<PaginatedResponse<UserInteraction>, { 
-        page?: number; 
-        page_size?: number;
-        interaction_type?: InteractionType;
-        content_type?: string;
-      }>({
-        query: (params) => ({
-          url: '/interactions/',
-          params
-        }),
-        providesTags: ['UserInteraction']
-      }),
-      
-      getUserInteraction: builder.query<UserInteraction, string>({
-        query: (id) => `/interactions/${id}/`,
-        providesTags: (result, error, id) => [{ type: 'UserInteraction', id }]
-      }),
-      
-      createUserInteraction: builder.mutation<UserInteraction, Partial<UserInteraction>>({
-        query: (body) => ({
-          url: '/interactions/',
-          method: 'POST',
-          body
-        }),
-        invalidatesTags: ['UserInteraction']
-      }),
-      
-      logInteraction: builder.mutation<UserInteraction, {
-        content_type: string;
-        object_id: string;
-        interaction_type: InteractionType;
-        metadata?: Record<string, never>;
-        device_type?: 'mobile' | 'desktop' | 'tablet';
-      }>({
-        query: (body) => ({
-          url: '/interactions/',
-          method: 'POST',
-          body
-        }),
-        invalidatesTags: ['UserInteraction']
-      }),
+      invalidatesTags: ["Auth"],
+    }),
 
-      getCategories: builder.query<PaginatedResponse<Category>, { page?: number; page_size?: number }>({
-        query: (params) => ({
-          url: '/categories/',
-          params
-        }),
-        providesTags: ['Category']
+    // User Interactions endpoints
+    getUserInteractions: builder.query<PaginatedResponse<UserInteraction>, { 
+      page?: number; 
+      page_size?: number;
+      interaction_type?: InteractionType;
+      content_type?: string;
+    }>({
+      query: (params) => ({
+        url: '/interactions/',
+        params
       }),
-      getCategory: builder.query<Category, string>({
-        query: (id) => `/categories/${id}/`,
-        providesTags: (result, error, id) => [{ type: 'Category', id }]
+      providesTags: ['UserInteraction']
+    }),
+      
+    getUserInteraction: builder.query<UserInteraction, string>({
+      query: (id) => `/interactions/${id}/`,
+      providesTags: (result, error, id) => [{ type: 'UserInteraction', id }]
+    }),
+      
+    createUserInteraction: builder.mutation<UserInteraction, Partial<UserInteraction>>({
+      query: (body) => ({
+        url: '/interactions/',
+        method: 'POST',
+        body
       }),
+      invalidatesTags: ['UserInteraction']
+    }),
+      
+    logInteraction: builder.mutation<UserInteraction, {
+      content_type: string;
+      object_id: string;
+      interaction_type: InteractionType;
+      metadata?: Record<string, any>;
+      device_type?: 'mobile' | 'desktop' | 'tablet';
+    }>({
+      query: (body) => ({
+        url: '/interactions/',
+        method: 'POST',
+        body
+      }),
+      invalidatesTags: ['UserInteraction']
+    }),
+
+    // Category endpoints
+    getCategories: builder.query<PaginatedResponse<Category>, { page?: number; page_size?: number }>({
+      query: (params) => ({
+        url: '/categories/',
+        params
+      }),
+      providesTags: ['Category']
+    }),
+    getCategory: builder.query<Category, string>({
+      query: (id) => `/categories/${id}/`,
+      providesTags: (result, error, id) => [{ type: 'Category', id }]
+    }),
 
     createCategory: builder.mutation<Category, Partial<Category>>({
       query: (body) => ({
@@ -307,7 +309,7 @@ export const api = createApi({
       }),
       invalidatesTags: ['Category']
     }),
-    updateCategory: builder.mutation<Category, Partial<Category>>({
+    updateCategory: builder.mutation<Category, Partial<Category> & { id: string }>({
       query: ({ id, ...patch }) => ({
         url: `/categories/${id}/`,
         method: 'PATCH',
@@ -387,7 +389,7 @@ export const api = createApi({
       }),
       invalidatesTags: ['Place']
     }),
-    updatePlace: builder.mutation<Place, Partial<Place>>({
+    updatePlace: builder.mutation<Place, Partial<Place> & { id: string }>({
       query: ({ id, ...patch }) => ({
         url: `/places/${id}/`,
         method: 'PATCH',
@@ -430,7 +432,7 @@ export const api = createApi({
       }),
       invalidatesTags: ['Experience']
     }),
-    updateExperience: builder.mutation<Experience, Partial<Experience>>({
+    updateExperience: builder.mutation<Experience, Partial<Experience> & { id: string }>({
       query: ({ id, ...patch }) => ({
         url: `/experiences/${id}/`,
         method: 'PATCH',
@@ -521,7 +523,7 @@ export const api = createApi({
       }),
       invalidatesTags: ['Booking']
     }),
-    updateBooking: builder.mutation<Booking, Partial<Booking>>({
+    updateBooking: builder.mutation<Booking, Partial<Booking> & { id: string }>({
       query: ({ id, ...patch }) => ({
         url: `/bookings/${id}/`,
         method: 'PATCH',
@@ -598,7 +600,7 @@ export const api = createApi({
       }),
       invalidatesTags: ['Review']
     }),
-    updateReview: builder.mutation<Review, Partial<Review>>({
+    updateReview: builder.mutation<Review, Partial<Review> & { id: string }>({
       query: ({ id, ...patch }) => ({
         url: `/reviews/${id}/`,
         method: 'PATCH',

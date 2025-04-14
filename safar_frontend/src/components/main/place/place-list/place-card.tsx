@@ -21,7 +21,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
 
   return (
     <InteractionLink
-      href={`/place/${place.id}`}
+      href={`/places/${place.id}`}
       className="block"
       interactionType={InteractionType.VIEW_PLACE}
       contentType={"place"}
@@ -39,7 +39,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
             itemId={place.id}
             itemType={"place"}
             isInwishlist={place.is_in_wishlist || false}
-            className="absolute top-3 right-3 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200"
+            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100  transition-all duration-200"
             size="default"
             variant="outline"
           />

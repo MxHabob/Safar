@@ -3,6 +3,7 @@ import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, 
 import { combineReducers } from "redux"
 import { api } from "@/core/services/api"
 import authReducer from "@/core/features/auth/auth-slice"
+import realtimeReducer from "@/core/features/realtime/realtime-slice"
 import modalReducer from "@/core/features/ui/modal-slice"
 import scrollReducer from "@/core/features/ui/infinite-scroll-slice"
 import storage from "@/lib/redux-persist-storage"
@@ -10,6 +11,7 @@ import storage from "@/lib/redux-persist-storage"
 const rootReducer = combineReducers({
   [api.reducerPath]: api.reducer,
   auth: authReducer,
+  realtime:realtimeReducer,
   modal: modalReducer,
   scroll: scrollReducer,
 })

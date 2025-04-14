@@ -49,132 +49,126 @@ class DiscountViewSet(BaseViewSet):
             return [permissions.IsAdminUser()]
         return [permissions.IsAuthenticated()]
 
-@action(detail=False, methods=['get'])
-def my_discounts(self, request):
-    """Get discounts available to the current user"""
-    if not request.user.is_authenticated:
-        return Response(
-            {'error': 'Authentication required to view your discounts'},
-            status=status.HTTP_401_UNAUTHORIZED
+    @action(detail=False, methods=['get'])
+    def my_discounts(self, request):
+        """Get discounts available to the current user"""
+        if not request.user.is_authenticated:
+            return Response(
+                {'error': 'Authentication required to view your discounts'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        now = timezone.now()
+    
+        targeted_discounts = Discount.objects.filter(
+            target_users=request.user,
+            is_active=True,
+            valid_from__lte=now,
+            valid_to__gte=now
+        )
+        
+        general_discounts = Discount.objects.filter(
+            Q(target_users__isnull=True) | ~Q(target_users__in=[request.user]),
+            is_active=True,
+            valid_from__lte=now,
+            valid_to__gte=now
         )
     
-    now = timezone.now()
-    
-    # Get discounts specifically targeted to this user
-    targeted_discounts = Discount.objects.filter(
-        target_users=request.user,
-        is_active=True,
-        valid_from__lte=now,
-        valid_to__gte=now
-    )
-    
-    # Get general discounts (not targeted to specific users)
-    general_discounts = Discount.objects.filter(
-        Q(target_users__isnull=True) | ~Q(target_users__in=[request.user]),
-        is_active=True,
-        valid_from__lte=now,
-        valid_to__gte=now
-    )
-    
-    # Combine both sets
-    all_discounts = list(targeted_discounts) + list(general_discounts)
-    serializer = self.get_serializer(all_discounts, many=True)
-    
-    return Response(serializer.data)
+        all_discounts = list(targeted_discounts) + list(general_discounts)
+        serializer = self.get_serializer(all_discounts, many=True)
+        
+        return Response(serializer.data)
 
-@action(detail=False, methods=['post'])
-def validate(self, request):
-    """Validate a discount code for the current user"""
-    if not request.user.is_authenticated:
-        return Response(
-            {'error': 'Authentication required to validate discount codes'},
-            status=status.HTTP_401_UNAUTHORIZED
-        )
-    
-    code = request.data.get('code')
-    entity_type = request.data.get('entity_type')
-    entity_id = request.data.get('entity_id')
-    amount = request.data.get('amount')
-    
-    if not code:
-        return Response(
-            {'error': 'Discount code is required'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    try:
-        discount = Discount.objects.get(code=code, is_active=True)
-        
-        if not discount.is_valid():
+    @action(detail=False, methods=['post'])
+    def validate(self, request):
+        """Validate a discount code for the current user"""
+        if not request.user.is_authenticated:
             return Response(
-                {'valid': False, 'error': 'This discount code has expired or is no longer valid'},
-                status=status.HTTP_400_BAD_REQUEST
+                {'error': 'Authentication required to validate discount codes'},
+                status=status.HTTP_401_UNAUTHORIZED
             )
-    
-        if not discount.is_applicable_to_user(request.user):
+        
+        code = request.data.get('code')
+        entity_type = request.data.get('entity_type')
+        entity_id = request.data.get('entity_id')
+        amount = request.data.get('amount')
+        
+        if not code:
             return Response(
-                {'valid': False, 'error': 'This discount code is not applicable to your account'},
+                {'error': 'Discount code is required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Check if entity is applicable (if specified)
-        if entity_type and entity_id:
-            entity = None
-            if entity_type == 'place':
-                entity = Place.objects.get(id=entity_id)
-            elif entity_type == 'experience':
-                entity = Experience.objects.get(id=entity_id)
-            elif entity_type == 'flight':
-                entity = Flight.objects.get(id=entity_id)
-            elif entity_type == 'box':
-                entity = Box.objects.get(id=entity_id)
+        try:
+            discount = Discount.objects.get(code=code, is_active=True)
             
-            if entity and not discount.is_applicable_to_entity(entity):
+            if not discount.is_valid():
                 return Response(
-                    {'valid': False, 'error': f'This discount code is not applicable to this {entity_type}'},
+                    {'valid': False, 'error': 'This discount code has expired or is no longer valid'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
         
-        # Check minimum purchase amount
-        if amount and discount.min_purchase_amount and float(amount) < float(discount.min_purchase_amount):
+            if not discount.is_applicable_to_user(request.user):
+                return Response(
+                    {'valid': False, 'error': 'This discount code is not applicable to your account'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if entity_type and entity_id:
+                entity = None
+                if entity_type == 'place':
+                    entity = Place.objects.get(id=entity_id)
+                elif entity_type == 'experience':
+                    entity = Experience.objects.get(id=entity_id)
+                elif entity_type == 'flight':
+                    entity = Flight.objects.get(id=entity_id)
+                elif entity_type == 'box':
+                    entity = Box.objects.get(id=entity_id)
+                
+                if entity and not discount.is_applicable_to_entity(entity):
+                    return Response(
+                        {'valid': False, 'error': f'This discount code is not applicable to this {entity_type}'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            if amount and discount.min_purchase_amount and float(amount) < float(discount.min_purchase_amount):
+                return Response(
+                    {
+                        'valid': False, 
+                        'error': f'This discount requires a minimum purchase of ${discount.min_purchase_amount}'
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            discount_amount = None
+            discounted_price = None
+            if amount:
+                discount_amount = discount.calculate_discount_amount(float(amount))
+                discounted_price = float(amount) - discount_amount
+            
+            return Response({
+                'valid': True,
+                'discount': {
+                    'id': discount.id,
+                    'code': discount.code,
+                    'discount_type': discount.discount_type,
+                    'amount': float(discount.amount),
+                    'discount_amount': discount_amount,
+                    'discounted_price': discounted_price,
+                    'valid_until': discount.valid_to
+                }
+            })
+            
+        except Discount.DoesNotExist:
             return Response(
-                {
-                    'valid': False, 
-                    'error': f'This discount requires a minimum purchase of ${discount.min_purchase_amount}'
-                },
+                {'valid': False, 'error': 'Invalid discount code'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        # Calculate discount amount if original amount provided
-        discount_amount = None
-        discounted_price = None
-        if amount:
-            discount_amount = discount.calculate_discount_amount(float(amount))
-            discounted_price = float(amount) - discount_amount
-        
-        return Response({
-            'valid': True,
-            'discount': {
-                'id': discount.id,
-                'code': discount.code,
-                'discount_type': discount.discount_type,
-                'amount': float(discount.amount),
-                'discount_amount': discount_amount,
-                'discounted_price': discounted_price,
-                'valid_until': discount.valid_to
-            }
-        })
-        
-    except Discount.DoesNotExist:
-        return Response(
-            {'valid': False, 'error': 'Invalid discount code'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    except Exception as e:
-        logger.error(f"Error validating discount code: {str(e)}", exc_info=True)
-        return Response(
-            {'valid': False, 'error': 'An error occurred while validating the discount code'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        except Exception as e:
+            logger.error(f"Error validating discount code: {str(e)}", exc_info=True)
+            return Response(
+                {'valid': False, 'error': 'An error occurred while validating the discount code'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
     
@@ -278,7 +272,6 @@ class ExperienceViewSet(BaseViewSet):
         """Check availability for specific dates"""
         experience = self.get_object()
         date = request.query_params.get('date')
-        # Add availability checking logic
         return Response({'available': True, 'capacity': experience.capacity})
 
 class FlightViewSet(BaseViewSet):
@@ -333,10 +326,8 @@ class BoxViewSet(BaseViewSet):
             theme = request.data.get('theme')
             start_date = request.data.get('start_date')
             
-            # Get destination object
             destination = self._get_destination(destination_id, destination_type)
             
-            # Generate box
             generator = BoxGenerator(user)
             box = generator.generate_box(
                 destination=destination,

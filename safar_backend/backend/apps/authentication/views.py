@@ -10,7 +10,7 @@ from rest_framework_simplejwt.views import (
 )
 from apps.authentication.serializers import UserInteractionSerializer
 from apps.authentication.models import UserInteraction
-from rest_framework_api_key.permissions import HasAPIKey
+from django.contrib.contenttypes.models import ContentType
 from apps.core_apps.general import BaseViewSet
 
 class CustomProviderAuthView(ProviderAuthView):
@@ -134,10 +134,40 @@ class LogoutView(APIView):
 class UserInteractionListView(BaseViewSet):
     serializer_class = UserInteractionSerializer
     
-    def get_queryset(self):
-        return UserInteraction.objects.filter(user=self.request.user).select_related(
-            'content_type'
-        ).order_by('-created_at')
+    
     
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+class UserInteractionViewSet(BaseViewSet):
+    queryset = UserInteraction.objects.all()
+    serializer_class = UserInteractionSerializer
+
+    def get_queryset(self):
+            return UserInteraction.objects.filter(user=self.request.user).select_related(
+                'content_type'
+            ).order_by('-created_at')
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        
+        try:
+            app_label, model = data['content_type'].split('.')
+            content_type = ContentType.objects.get(app_label=app_label, model=model)
+            
+            interaction = UserInteraction.objects.create(
+                user=request.user,
+                content_type=content_type,
+                object_id=data['object_id'],
+                interaction_type=data['interaction_type'],
+                metadata=data.get('metadata', {}),
+                device_type=data.get('device_type', 'desktop')
+            )
+            
+            serializer = self.get_serializer(interaction)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )

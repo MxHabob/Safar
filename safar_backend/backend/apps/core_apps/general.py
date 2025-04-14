@@ -3,7 +3,7 @@ from django.db import models
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated
 from rest_framework_api_key.permissions import HasAPIKey
 from rest_framework import viewsets
 
@@ -34,7 +34,7 @@ class BaseModel(models.Model):
 
 class BaseViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter] 
-    permission_classes = [IsAuthenticatedOrReadOnly and HasAPIKey]
+    permission_classes = [IsAuthenticated or HasAPIKey]
     pagination_class = GENPagination
     
     def get_queryset(self):

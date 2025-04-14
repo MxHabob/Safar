@@ -13,6 +13,7 @@ import DiscountDetailsModal from "@/components/models/discount-details-modal";
 import SuccessOrFailureModal from "@/components/models/success-or-failure-modal";
 import PaymentConfirmationModal from "@/components/models/payment-confirmation-modal";
 import EventsModal from "@/components/models/events-modal";
+import { MediaModal } from "@/components/models/media-model";
 
 export const ModalProvider = () => {
   const [isMounted, setIsMounted] = useState(false);
@@ -34,6 +35,7 @@ export const ModalProvider = () => {
       <BookingDetailsModal />
       <BookingConfirmationOrCancellationModal />
       {/* <BookingModificationModal /> */}
+      <MediaModal/>
       <SuccessOrFailureModal />
       <PaymentConfirmationModal />
       <EventsModal />

@@ -112,7 +112,7 @@ export class WebSocketService {
 
   private getAuthToken(): string | null {
     const state = store.getState()
-    return state.auth.token || null
+    return state.auth.accessToken || null
   }
 
   private handleOpen(): void {
