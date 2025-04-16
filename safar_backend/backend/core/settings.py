@@ -198,17 +198,22 @@ if env("USE_S3", default=False):
     AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY")
     AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME")
     AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="us-east-1")
-    AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+    
+    AWS_S3_CUSTOM_DOMAIN = None
+    
     AWS_S3_OBJECT_PARAMETERS = {
         "CacheControl": "max-age=86400",
-        "ACL": "public-read"
     }
-    AWS_DEFAULT_ACL = "public-read"
+    
+    AWS_DEFAULT_ACL = None
+    
+    # Storage settings
     AWS_LOCATION = "static"
     STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-    STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/"
     DEFAULT_FILE_STORAGE = "core.storage_backends.MediaStorage"
-    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
+    
+    STATIC_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/static/"
+    MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/media/"
     
     STATIC_ROOT = STATICFILES_DIR
     
