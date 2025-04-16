@@ -7,6 +7,7 @@ import { Toaster } from "sonner";
 import { ModalProvider } from "@/core/providers/modal-provider";
 import { WebSocketProvider } from "@/core/providers/websocket-provider";
 import { Nav } from "@/components/layout/header/nav";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,10 +37,13 @@ export default function RootLayout({
       <ReduxProvider>
       <WebSocketProvider>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <SidebarProvider>
       <main className="min-h-screen flex flex-col">
          <Nav />
+         <SidebarTrigger />
         {children}
       </main>
+      </SidebarProvider>
         <ModalProvider />
         <Toaster position={"bottom-left"} closeButton/>
       </ThemeProvider>
