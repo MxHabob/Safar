@@ -10,7 +10,8 @@ export default function DashboardLayout({ children, sidebar, content }: Dashboar
   return (
     <div className="flex min-h-screen flex-col">
       <div className="flex flex-1">
-        <aside className="hidden w-64 border-r bg-muted/40 md:block">{sidebar}</aside>
+        {/* Remove the hidden class and let the sidebar component handle its own responsive behavior */}
+        {sidebar}
         <main className="flex-1">
           {content}
           {children}
