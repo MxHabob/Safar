@@ -28,7 +28,7 @@ class UserSerializer(serializers.ModelSerializer):
             'username', 'is_online', 'is_active',
             'created_at', 'updated_at', 'last_login', 
             'profile', 'membership_level',
-            'preferred_language', 'preferred_currency'
+            'preferred_language', 'preferred_currency','points'
         ]
         read_only_fields = [
             'id', 'is_active', 'last_login', 

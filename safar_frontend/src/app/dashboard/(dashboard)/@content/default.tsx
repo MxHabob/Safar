@@ -8,14 +8,17 @@ import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar, CreditCard, DollarSign, Bell, ArrowRight, Search, Map, ChevronRight, Star, Clock, Heart } from 'lucide-react'
+import { useAuth } from "@/core/hooks/use-auth"
 
 export default function DashboardContent() {
+  const { user } = useAuth();
+  console.log(user)
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6">
       {/* User header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Welcome back, Obaidullah</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Welcome back, {user?.username}</h1>
           <p className="text-muted-foreground">Here&apos;s what&apos;s happening with your travel plans</p>
         </div>
         <div className="flex items-center space-x-4">
@@ -28,12 +31,14 @@ export default function DashboardContent() {
             />
           </div>
           <div className="flex flex-col items-end">
-            <span className="text-sm font-medium">Obaidullah Al-Qurashi</span>
-            <span className="text-xs text-muted-foreground">example@gmail.com</span>
+            <span className="text-sm font-medium">{user?.first_name} {user?.last_name}</span>
+            <span className="text-xs text-muted-foreground">{user?.email}</span>
           </div>
           <Avatar className="h-9 w-9">
-            <AvatarImage src="/placeholder.svg" alt="Obaidullah Al-Qurashi" />
-            <AvatarFallback className="bg-primary text-primary-foreground">OA</AvatarFallback>
+            <AvatarImage src="/placeholder.svg" alt={`${user?.first_name} ${user?.last_name}`} />
+            <AvatarFallback className="bg-primary text-primary-foreground">
+              {user?.first_name?.[0]}{user?.last_name?.[0]}
+            </AvatarFallback>
           </Avatar>
         </div>
       </div>
@@ -164,7 +169,7 @@ export default function DashboardContent() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-0 flex flex-col items-center">
-            <div className="text-xl font-bold mb-2">Platinum</div>
+            <div className="text-xl font-bold mb-2">{user?.membership_level}</div>
             <StatusCircle value={287} maxValue={500} />
             <div className="mt-2 text-xs text-muted-foreground">213 points until Diamond status</div>
           </CardContent>
