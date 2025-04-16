@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.contrib.gis.admin import OSMGeoAdmin
+
 from apps.safar.models import (
     Category, Media, Discount, Place, Experience, Flight, Box,
     BoxItineraryDay, BoxItineraryItem, Booking, Wishlist, Review,
@@ -37,7 +37,7 @@ class MediaInline(admin.TabularInline):
     verbose_name_plural = "Media"
 
 @admin.register(Place)
-class PlaceAdmin(OSMGeoAdmin):
+class PlaceAdmin(admin.ModelAdmin):
     list_display = ('name', 'category', 'owner', 'country', 'city', 'rating', 'price', 'is_available')
     list_filter = ('category', 'country', 'city', 'rating', 'is_available')
     search_fields = ('name', 'description', 'owner__email')
@@ -48,7 +48,7 @@ class PlaceAdmin(OSMGeoAdmin):
     default_zoom = 2
 
 @admin.register(Experience)
-class ExperienceAdmin(OSMGeoAdmin):
+class ExperienceAdmin(admin.ModelAdmin):
     list_display = ('title', 'category', 'owner', 'price_per_person', 'duration', 'rating', 'is_available')
     list_filter = ('category', 'rating', 'is_available')
     search_fields = ('title', 'description', 'owner__email')
