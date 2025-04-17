@@ -23,7 +23,6 @@ export const ListExperience = ({ overlay, selected, ...rest }: Props) => {
     )
   }
 
-
   return (
     <Slider
       slidesPerView="auto"
