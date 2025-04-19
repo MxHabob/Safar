@@ -306,19 +306,11 @@ class PointsTransaction(BaseModel):
     """
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='points_transactions')
     action = models.CharField(max_length=50, db_index=True)
-    points = models.IntegerField()  # Can be positive (earned) or negative (spent/deducted)
+    points = models.IntegerField()
     metadata = models.JSONField(default=dict, blank=True)
     
-    # Optional reference to the interaction that generated the points
-    interaction = models.ForeignKey(
-        UserInteraction, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True,
-        related_name='points_transactions'
-    )
+    interaction = models.ForeignKey( UserInteraction, on_delete=models.SET_NULL,  null=True,  blank=True, related_name='points_transactions')
     
-    # Balance after this transaction
     balance_after = models.PositiveIntegerField(default=0)
     
     class Meta:
@@ -338,23 +330,17 @@ class PointsTransaction(BaseModel):
             return f"{self.user.email} spent {abs(self.points)} points for {self.action}"
     
     def save(self, *args, **kwargs):
-        # Calculate balance after transaction if not set
         if self.balance_after == 0 and self.user:
-            # Get current user points
             current_points = self.user.points
-            
-            # If this is a new transaction, the balance would be current points
-            # If updating an existing transaction, we need to adjust
+  
             if self.pk:
                 try:
                     old_transaction = PointsTransaction.objects.get(pk=self.pk)
-                    # Adjust for the difference
                     point_diff = self.points - old_transaction.points
                     self.balance_after = current_points
                 except PointsTransaction.DoesNotExist:
                     self.balance_after = current_points
             else:
-                # New transaction
                 self.balance_after = current_points
         
         super().save(*args, **kwargs)

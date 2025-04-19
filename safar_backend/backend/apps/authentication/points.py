@@ -14,12 +14,10 @@ class PointsManager:
     Awards points for various user actions and handles membership upgrades.
     """
     
-    # Cache keys
     POINTS_CONFIG_CACHE_KEY = 'points_config'
     DAILY_POINTS_PREFIX = 'daily_points:'
     
-    # Cache duration
-    CACHE_DURATION = 60 * 60 * 24  # 24 hours
+    CACHE_DURATION = 60 * 60 * 24
     
     @classmethod
     def get_points_config(cls, refresh=False):
@@ -33,12 +31,10 @@ class PointsManager:
             dict: Points configuration
         """
         if not refresh:
-            # Try to get from cache first
             config = cache.get(cls.POINTS_CONFIG_CACHE_KEY)
             if config:
                 return config
         
-        # Build config from database
         config = {}
         try:
             interaction_types = InteractionType.objects.filter(is_active=True)
@@ -51,7 +47,6 @@ class PointsManager:
                     'category': interaction_type.category
                 }
             
-            # Add default fallback values for common actions
             default_values = {
                 'booking_complete': {'points': 100, 'daily_limit': 0},
                 'booking_value': {'points': 0.01, 'daily_limit': 0},
@@ -67,7 +62,6 @@ class PointsManager:
                 'search_perform': {'points': 1, 'daily_limit': 5},
             }
             
-            # Add defaults for any missing actions
             for action, values in default_values.items():
                 if action not in config:
                     config[action] = {
@@ -77,7 +71,6 @@ class PointsManager:
                         'category': 'general'
                     }
             
-            # Cache the config
             cache.set(cls.POINTS_CONFIG_CACHE_KEY, config, cls.CACHE_DURATION)
             
             return config
@@ -117,7 +110,6 @@ class PointsManager:
             logger.error(f"Invalid interaction object provided: {interaction}")
             return 0, 0
         
-        # Map interaction types to point actions
         interaction_to_action = {
             'view_place': 'view_place',
             'view_experience': 'view_experience',
@@ -133,52 +125,41 @@ class PointsManager:
             'booking_value': 'booking_value',
         }
         
-        # Get the corresponding action
         action = interaction_to_action.get(interaction.interaction_type, interaction.interaction_type)
         
-        # Check if this interaction type earns points
         config = cls.get_points_config()
         if action not in config:
             logger.debug(f"No points configuration for action '{action}'")
             return 0, 0
         
-        # Check daily limits
         daily_limit = config[action]['daily_limit']
         if daily_limit > 0:
-            # Get count of this action today for this user
             today = timezone.now().date().isoformat()
             cache_key = f"{cls.DAILY_POINTS_PREFIX}{interaction.user.id}:{action}:{today}"
             
-            # Try to get from cache first
             count = cache.get(cache_key)
             if count is None:
-                # Not in cache, query database
                 count = PointsTransaction.objects.filter(
                     user=interaction.user,
                     action=action,
                     created_at__date=timezone.now().date()
                 ).count()
                 
-                # Store in cache
                 cache.set(cache_key, count, cls.CACHE_DURATION)
             
             if count >= daily_limit:
                 logger.debug(f"Daily limit reached for user {interaction.user.id} and action {action}")
                 return 0, interaction.user.points
-        
-        # Calculate points to award
+
         points_to_award = config[action]['points']
-        
-        # Special case for booking_value which is based on amount
+   
         if action == 'booking_value' and interaction.metadata and 'amount' in interaction.metadata:
             try:
                 amount = Decimal(interaction.metadata['amount'])
                 currency = interaction.metadata.get('currency', 'USD')
                 
-                # Convert to default currency if needed
                 if currency != settings.DEFAULT_CURRENCY:
-                    # This is a placeholder - implement actual currency conversion
-                    amount = amount  # Replace with conversion logic
+                    amount = amount
                     
                 points_to_award = int(amount * Decimal(points_to_award))
             except (ValueError, TypeError) as e:
@@ -215,50 +196,39 @@ class PointsManager:
         if not isinstance(user, User):
             logger.error(f"Invalid user object provided to award_points: {user}")
             return 0, 0
-        
-        # Get points configuration
+
         config = cls.get_points_config()
         
-        # Check if action exists in config
         if action not in config and points is None:
             logger.warning(f"Unknown action '{action}' in award_points and no points override provided")
             return 0, 0
         
         try:
-            # Calculate points to award
             if points is None:
                 points_to_award = config[action]['points'] * quantity
             else:
                 points_to_award = points * quantity
             
-            # No points if the amount is zero or negative
             if points_to_award <= 0:
                 return 0, user.points
             
-            # Award the points and check for membership upgrade
             with transaction.atomic():
-                # Refresh user from database to avoid race conditions
                 user = User.objects.select_for_update().get(id=user.id)
                 
-                # Store old membership level for comparison
                 old_membership = user.membership_level
                 old_points = user.points
                 
-                # Add points
                 user.points += points_to_award
                 
-                # Check if user should be upgraded
                 new_membership = cls._check_membership_upgrade(user.points)
                 if new_membership != old_membership:
                     user.membership_level = new_membership
                     membership_upgraded = True
                 else:
                     membership_upgraded = False
-                
-                # Save changes
+            
                 user.save(update_fields=['points', 'membership_level'])
-                
-                # Record the points transaction
+
                 transaction = PointsTransaction.objects.create(
                     user=user,
                     action=action,
@@ -268,18 +238,12 @@ class PointsManager:
                     balance_after=user.points
                 )
                 
-                # Update daily count in cache
                 if action in config and config[action]['daily_limit'] > 0:
                     today = timezone.now().date().isoformat()
                     cache_key = f"{cls.DAILY_POINTS_PREFIX}{user.id}:{action}:{today}"
-                    
-                    # Get current count
                     count = cache.get(cache_key, 0)
-                    
-                    # Increment and store
                     cache.set(cache_key, count + 1, cls.CACHE_DURATION)
-                
-                # Send notifications if enabled
+    
                 if notify:
                     cls._send_points_notification(
                         user=user,
@@ -289,7 +253,6 @@ class PointsManager:
                         transaction=transaction
                     )
                     
-                    # Send membership upgrade notification if applicable
                     if membership_upgraded:
                         from apps.authentication.signals import notify_membership_change
                         notify_membership_change(user, old_membership, new_membership)
@@ -330,17 +293,13 @@ class PointsManager:
         
         try:
             with transaction.atomic():
-                # Refresh user from database to avoid race conditions
                 user = User.objects.select_for_update().get(id=user.id)
                 
-                # Store old membership level for comparison
                 old_membership = user.membership_level
                 
-                # Deduct points (don't go below zero)
                 points_to_deduct = min(points, user.points)
                 user.points -= points_to_deduct
                 
-                # Check if membership level should be downgraded
                 new_membership = cls._check_membership_upgrade(user.points)
                 if new_membership != old_membership:
                     user.membership_level = new_membership
@@ -348,10 +307,8 @@ class PointsManager:
                 else:
                     membership_changed = False
                 
-                # Save changes
                 user.save(update_fields=['points', 'membership_level'])
                 
-                # Record the points transaction
                 transaction = PointsTransaction.objects.create(
                     user=user,
                     action=f"deduct:{reason}",
@@ -360,7 +317,6 @@ class PointsManager:
                     balance_after=user.points
                 )
                 
-                # Send notifications if enabled
                 if notify and points_to_deduct > 0:
                     cls._send_points_deduction_notification(
                         user=user,
@@ -369,8 +325,7 @@ class PointsManager:
                         metadata=metadata,
                         transaction=transaction
                     )
-                    
-                    # Send membership change notification if applicable
+
                     if membership_changed:
                         from apps.authentication.signals import notify_membership_change
                         notify_membership_change(user, old_membership, new_membership)
@@ -404,7 +359,6 @@ class PointsManager:
         """
         query = PointsTransaction.objects.filter(user=user)
         
-        # Apply filters
         if action_filter:
             query = query.filter(action=action_filter)
         
@@ -427,7 +381,6 @@ class PointsManager:
         Returns:
             dict: Summary of points by category
         """
-        # Get positive points by action
         earned_points = PointsTransaction.objects.filter(
             user=user,
             points__gt=0
@@ -435,15 +388,13 @@ class PointsManager:
             total=Sum('points')
         ).order_by('-total')
         
-        # Get negative points by action
         spent_points = PointsTransaction.objects.filter(
             user=user,
             points__lt=0
         ).values('action').annotate(
             total=Sum('points')
-        ).order_by('total')  # Note: ordering is different because values are negative
+        ).order_by('total') 
         
-        # Get points by category
         config = cls.get_points_config()
         points_by_category = {}
         
@@ -455,23 +406,20 @@ class PointsManager:
                     points_by_category[category] = 0
                 points_by_category[category] += item['total']
         
-        # Get next level info
         next_level = cls._get_next_membership_level(user.points)
         points_to_next_level = cls._get_points_to_next_level(user.points)
         
-        # Get membership progress percentage
         if next_level:
             thresholds = cls.get_membership_thresholds()
             current_level = cls._check_membership_upgrade(user.points)
             current_threshold = thresholds[current_level]
             next_threshold = thresholds[next_level]
             
-            # Calculate progress percentage
             total_needed = next_threshold - current_threshold
             current_progress = user.points - current_threshold
             progress_percentage = min(100, int((current_progress / total_needed) * 100))
         else:
-            progress_percentage = 100  # Already at max level
+            progress_percentage = 100
         
         return {
             'total_points': user.points,
@@ -520,18 +468,15 @@ class PointsManager:
         """
         current_level = cls._check_membership_upgrade(points)
         thresholds = cls.get_membership_thresholds()
-        
-        # Get all levels sorted by threshold
+
         sorted_levels = sorted(thresholds.items(), key=lambda x: x[1])
-        
-        # Find current level index
+  
         for i, (level, threshold) in enumerate(sorted_levels):
             if level == current_level:
-                # Check if there's a next level
                 if i < len(sorted_levels) - 1:
                     return sorted_levels[i + 1][0]
                 else:
-                    return None  # Already at max level
+                    return None
         
         return None
     
@@ -552,7 +497,7 @@ class PointsManager:
         if next_level:
             return thresholds[next_level] - points
         else:
-            return 0  # Already at max level
+            return 0 
     
     @classmethod
     def _send_points_notification(cls, user, action, points_awarded, metadata=None, transaction=None):
@@ -567,12 +512,12 @@ class PointsManager:
             transaction: PointsTransaction object
         """
         try:
-            # Get human-readable action description
+    
             config = cls.get_points_config()
             if action in config:
                 action_desc = config[action]['name']
             else:
-                # Fallback descriptions
+
                 action_descriptions = {
                     'booking_complete': 'completing a booking',
                     'booking_value': 'your booking value',
@@ -589,17 +534,14 @@ class PointsManager:
                 }
                 action_desc = action_descriptions.get(action, action.replace('_', ' '))
             
-            # Create notification message
             message = f"You earned {points_awarded} points for {action_desc}!"
             
-            # Add info about next level if close
             points_to_next = cls._get_points_to_next_level(user.points)
             next_level = cls._get_next_membership_level(user.points)
             
             if next_level and points_to_next <= 500:
                 message += f" You're only {points_to_next} points away from {next_level} membership!"
             
-            # Prepare notification data
             data = {
                 "deep_link": "/account/points",
                 "points_awarded": points_awarded,
@@ -610,18 +552,16 @@ class PointsManager:
                 "transaction_id": str(transaction.id) if transaction else None
             }
             
-            # Add metadata if provided
             if metadata:
                 data.update({"context": metadata})
             
-            # Send notification
             from apps.core_apps.services import NotificationService
             NotificationService.send_notification(
                 user=user,
                 notification_type="Points Earned",
                 message=message,
                 data=data,
-                immediate=False  # Don't need immediate delivery for points
+                immediate=False
             )
             
         except Exception as e:
@@ -640,10 +580,8 @@ class PointsManager:
             transaction: PointsTransaction object
         """
         try:
-            # Create notification message
             message = f"{points_deducted} points have been deducted from your account for {reason}."
-            
-            # Prepare notification data
+
             data = {
                 "deep_link": "/account/points",
                 "points_deducted": points_deducted,
@@ -652,11 +590,9 @@ class PointsManager:
                 "transaction_id": str(transaction.id) if transaction else None
             }
             
-            # Add metadata if provided
             if metadata:
                 data.update({"context": metadata})
             
-            # Send notification
             from apps.core_apps.services import NotificationService
             NotificationService.send_notification(
                 user=user,

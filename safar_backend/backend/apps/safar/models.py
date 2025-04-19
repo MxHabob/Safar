@@ -456,6 +456,7 @@ class Notification(BaseModel):
         ("New Box", "New Box"),
         ("Personalized Box", "Personalized Box"),
         ("Discount", "Discount"),
+        ("Points", "Points Deducted"),
         ("Message", "Message"),
         ("General", "General"),
     ]

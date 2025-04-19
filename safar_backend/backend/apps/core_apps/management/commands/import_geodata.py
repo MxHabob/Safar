@@ -14,7 +14,6 @@ from apps.geographic_data.models import Country, Region, City
 class Command(BaseCommand):
     help = 'Import geographic data from Natural Earth or other sources'
     
-    # Updated download URLs with more reliable sources
     NATURAL_EARTH_SOURCES = [
         {
             'name': 'Natural Earth Latest',
@@ -45,18 +44,29 @@ class Command(BaseCommand):
         }
     ]
     
-    # Download settings
     MAX_RETRIES = 3
-    RETRY_DELAY = 5  # seconds
-    REQUEST_TIMEOUT = 30  # seconds
+    RETRY_DELAY = 5 
+    REQUEST_TIMEOUT = 30
 
     def handle(self, *args, **options):
         self.stdout.write("Starting geographic data import...")
         try:
-            self.import_countries()
-            self.import_regions()
-            self.import_cities()
-            self.stdout.write(self.style.SUCCESS("Successfully imported geographic data"))
+            if not Country.objects.exists():
+                self.import_countries()
+            else:
+                self.stdout.write("Countries already exist in database, skipping import")
+            
+            if not Region.objects.exists():
+                self.import_regions()
+            else:
+                self.stdout.write("Regions already exist in database, skipping import")
+            
+            if not City.objects.exists():
+                self.import_cities()
+            else:
+                self.stdout.write("Cities already exist in database, skipping import")
+                
+            self.stdout.write(self.style.SUCCESS("Geographic data import completed"))
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Import failed: {str(e)}"))
             raise
@@ -72,7 +82,6 @@ class Command(BaseCommand):
                     local_filename = os.path.join(tempfile.gettempdir(), url.split('/')[-1])
                     self.stdout.write(f"Attempt {attempt + 1} to download {file_type} from {source['name']} ({url})")
                     
-                    # Skip if we've already downloaded this file
                     if os.path.exists(local_filename):
                         self.stdout.write(f"Using cached file: {local_filename}")
                         return local_filename
@@ -90,7 +99,7 @@ class Command(BaseCommand):
                                     progress = (downloaded / total_size) * 100
                                     self.stdout.write(f"\rDownload progress: {progress:.1f}%", ending='')
                     
-                    self.stdout.write("")  # New line after progress
+                    self.stdout.write("")
                     return local_filename
                 except requests.exceptions.RequestException as e:
                     errors.append(f"{source['name']}: {str(e)}")
@@ -98,7 +107,6 @@ class Command(BaseCommand):
                         time.sleep(self.RETRY_DELAY)
                     continue
         
-        # If all attempts fail, try to use a local fallback if available
         local_fallback = os.path.join(os.path.dirname(__file__), 'data', f"ne_10m_populated_places.zip")
         if file_type == 'cities' and os.path.exists(local_fallback):
             self.stdout.write(self.style.WARNING("Using local fallback data for cities"))
@@ -263,7 +271,6 @@ class Command(BaseCommand):
                         self.stderr.write(f"Invalid geometry for city {name}: {e}")
                         continue        
 
-                    # Handle potentially long fields
                     timezone = (feat.get('TIMEZONE') or '')[:50]
                     elevation = feat.get('ELEVATION') if 'ELEVATION' in feat else None
                     feature_code = (feat.get('FEATURECLA') or '')[:10]    
