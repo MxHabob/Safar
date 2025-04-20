@@ -45,7 +45,7 @@ export const ListPlaces = ({ selected }: Props) => {
 
   return (
     <div className="flex flex-col w-full mt-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-12 w-full overflow-x-auto pb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-12 w-full overflow-x-auto pb-4">
       {allFetchedPlaces.length > 0 ? (
           allFetchedPlaces.map((place) => (
             <div
@@ -74,8 +74,6 @@ export const ListPlaces = ({ selected }: Props) => {
           </div>
         )}
       </div>
-
-      {/* Load more button */}
       {hasMorePlaces && (
         <div className="my-8 w-full flex justify-center">
           <Button 
