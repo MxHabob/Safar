@@ -243,7 +243,7 @@ export interface Place extends BaseModel {
 export interface Experience extends BaseModel {
   category?:Category;
   place?: Place;
-  owner: User;
+  owner?: User;
   title: string;
   description?: string;
   location: string;
@@ -252,7 +252,7 @@ export interface Experience extends BaseModel {
   duration: number;
   capacity: number;
   schedule: Record<string, unknown>[];
-  media: Media[];
+  media?: Media;
   rating: number;
   is_available: boolean;
   is_in_wishlist?: boolean | false

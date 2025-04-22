@@ -55,13 +55,6 @@ export function BookingSummaryCard({
       .replace("$", currency)
   }
 
-  const getNights = () => {
-    const diffTime = Math.abs(checkOutDate.getTime() - checkInDate.getTime())
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  }
-
-  const nights = getNights()
-
   return (
     <CardContainer variant="elevated" className={cn("overflow-hidden", className)} {...props}>
       {isRareFind && (

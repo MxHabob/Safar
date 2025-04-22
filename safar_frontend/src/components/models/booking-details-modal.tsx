@@ -8,7 +8,7 @@ import { CalendarDays, Clock, DollarSign, MapPin, User } from "lucide-react"
 import { formatDate } from "@/lib/utils/date-formatter"
 import { formatCurrency } from "@/lib/utils"
 import { closeModal, openModal } from "@/core/features/ui/modal-slice"
-import { RootState } from "@reduxjs/toolkit/query"
+import { RootState } from "@/core/store"
 
 export default function BookingDetailsModal() {
   const dispatch = useDispatch()

@@ -13,7 +13,6 @@ import { CalendarDays, Clock, MapPin } from "lucide-react"
 import { formatDate } from "@/lib/utils/date-formatter"
 import { toast } from "sonner"
 
-// Mock events data - replace with actual API call
 const mockEvents = [
   {
     id: "1",
@@ -60,14 +59,14 @@ export default function EventsModal() {
     (event) => selectedDate && event.date.toDateString() === selectedDate.toDateString(),
   )
 
-  const handleBookEvent = async (eventId: string) => {
+  const handleBookEvent = async (id: string) => {
     setIsLoading(true)
 
     try {
       // Replace with actual booking API call
       await toast.promise(new Promise((resolve) => setTimeout(resolve, 1500)), {
         loading: "Booking event...",
-        success: "Event booked successfully!",
+        success: `Event booked successfully! 🎉 ${id}`,
         error: "Failed to book event",
       })
       onClose()
@@ -97,7 +96,7 @@ export default function EventsModal() {
 
           <div className="space-y-2">
             <h3 className="text-sm font-medium">
-              Events on {selectedDate ? formatDate(selectedDate) : "selected date"}
+              Events on {selectedDate ? formatDate(selectedDate.toISOString()) : "selected date"}
             </h3>
 
             {filteredEvents.length === 0 ? (
@@ -158,7 +157,7 @@ export default function EventsModal() {
                   <div className="mt-2 grid gap-2">
                     <div className="flex items-center text-sm text-muted-foreground">
                       <CalendarDays className="mr-2 h-4 w-4" />
-                      {formatDate(event.date)}
+                      {formatDate(event.date.toISOString())}
                     </div>
                     <div className="flex items-center text-sm text-muted-foreground">
                       <Clock className="mr-2 h-4 w-4" />

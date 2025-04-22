@@ -8,7 +8,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, sidebar }: DashboardLayoutProps) {
   return (
-    // <ProtectedRoute>
+    <ProtectedRoute>
     <div className="flex min-h-screen flex-col">
       <div className="flex flex-1">
         {sidebar}
@@ -17,6 +17,6 @@ export default function DashboardLayout({ children, sidebar }: DashboardLayoutPr
         </main>
       </div>
     </div>
-    // {/* </ProtectedRoute> */}
+   </ProtectedRoute>
   )
 }

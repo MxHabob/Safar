@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { toast } from "sonner"
 
 type PromiseOptions<T> = {
@@ -6,8 +8,11 @@ type PromiseOptions<T> = {
   error: string | ((error: any) => string)
 }
 
-export function toastPromise<T>(promise: Promise<T>, options: PromiseOptions<T>): Promise<T> {
-  return toast.promise(promise, {
+export function toastPromise<T>(
+  promise: Promise<T>, 
+  options: PromiseOptions<T>
+): Promise<T> {
+  const toastResult = toast.promise<T>(promise, {
     loading: options.loading,
     success: (data) => {
       return typeof options.success === "function" ? options.success(data) : options.success
@@ -15,5 +20,7 @@ export function toastPromise<T>(promise: Promise<T>, options: PromiseOptions<T>)
     error: (error) => {
       return typeof options.error === "function" ? options.error(error) : options.error
     },
-  })
+  });
+  
+  return promise;
 }

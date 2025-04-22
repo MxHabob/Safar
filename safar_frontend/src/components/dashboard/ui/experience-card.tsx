@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Heart, Star } from "lucide-react"
 import type { Experience } from "@/core/types"
-
+import Image from "next/image"
 interface ExperienceCardProps {
   experience: Experience
 }
@@ -13,8 +13,8 @@ export function ExperienceCard({ experience }: ExperienceCardProps) {
   return (
     <Card className="overflow-hidden">
       <div className="relative h-[150px]">
-        <img
-          src={experience.media.file || "/placeholder.svg"}
+        <Image
+          src={ "/placeholder.svg"}
           alt={experience.title}
           className="w-full h-full object-cover"
         />

@@ -7,8 +7,8 @@ import { useGetBoxQuery } from "@/core/services/api";
 import { Spinner } from "@/components/ui/spinner";
 
 export default function BoxPageContent({id}:{id:string}) {
-  const [visitedPlaces, setVisitedPlaces] = useState<Set<string>>(new Set());
-  const { data: box, isLoading, error } = useGetBoxQuery(id, { skip: !id});
+  const [visitedPlaces] = useState<Set<string>>(new Set());
+  const { isLoading, error } = useGetBoxQuery(id, { skip: !id});
   
   if (!id) {
     return (
@@ -48,10 +48,8 @@ export default function BoxPageContent({id}:{id:string}) {
     <div className="flex flex-col lg:flex-row h-screen md:h-[50vh] ">
       <div className="h-screen md:h-[90vh] md:w-1/2 ">
         <MapView 
-          // itinerary={[]} 
           visitedPlaces={visitedPlaces}
-          onMapReady={()=>{}}
-          // activeDay={[]}
+          onMapReady={() => { } } itinerary={undefined} activeDay={null}
         />
       </div>
     </div>

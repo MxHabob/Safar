@@ -23,12 +23,12 @@ export default function MessageList({ userId }: MessageListProps) {
   useEffect(() => {
     if (conversation) {
       conversation.messages.forEach((message) => {
-        if (!message.is_read && message.receiver === currentUser.id) {
+        if (!message.is_read && message.receiver === currentUser) {
           markAsRead(message.id)
         }
       })
     }
-  }, [conversation, currentUser.id, markAsRead])
+  }, [conversation, currentUser, markAsRead])
 
   const handleSendMessage = () => {
     if (messageText.trim()) {
@@ -61,7 +61,7 @@ export default function MessageList({ userId }: MessageListProps) {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {conversation?.messages.map((message) => (
-          <MessageBubble key={message.id} message={message} isOwnMessage={message.sender === currentUser.id} />
+          <MessageBubble key={message.id} message={message} isOwnMessage={message.sender === currentUser} />
         ))}
 
         {!conversation?.messages.length && (

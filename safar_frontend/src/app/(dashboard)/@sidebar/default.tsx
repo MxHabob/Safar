@@ -12,12 +12,9 @@ import {
   User,
   HelpCircle,
   Settings,
-  Globe,
   Compass,
   PlaneTakeoff,
   Hotel,
-  Utensils,
-  Ticket,
   Menu,
   X,
 } from "lucide-react"
@@ -169,7 +166,7 @@ function NavItem({
       {isCollapsed && badge && (
         <Badge
           variant="secondary"
-          className="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 w-4 h-4 p-0 flex items-center justify-center text-[10px] md:block hidden"
+          className="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 w-4 h-4 p-0 flex items-center justify-center text-[10px] md:block"
         >
           {badge}
         </Badge>

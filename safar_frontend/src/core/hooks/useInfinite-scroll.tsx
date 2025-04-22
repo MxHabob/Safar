@@ -4,7 +4,7 @@ import { RootState } from '@/core/store';
 import { fetchStart, fetchSuccess, fetchFailure } from '@/core/features/ui/infinite-scroll-slice';
 
 export const useInfiniteScroll = (fetchFunction: (page: number, limit: number) => Promise<{
-  data: unknown[];
+  data: { id: number; name: string }[];
   hasMore: boolean;
 }>, limit = 10) => {
   const dispatch = useDispatch();

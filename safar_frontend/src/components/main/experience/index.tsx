@@ -44,7 +44,7 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
           </Button>
         </div>
       </div>
-      <MediaGallery media={data?.media || []} variant="carousel" aspectRatio="video" priority />
+      <MediaGallery media={Array.isArray(data?.media) ? data.media : []} variant="carousel" aspectRatio="video" priority />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-6">
           <div className="flex items-center gap-4 p-4 border rounded-lg">
@@ -110,7 +110,7 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
           </div>
         </div>
 
-      <BookingCard id={id} data={data} placeType="experience" />
+      {data && <BookingCard id={id} data={data} placeType="experience" />}
       </div>
 
       <div className="space-y-2">

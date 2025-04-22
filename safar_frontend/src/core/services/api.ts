@@ -364,7 +364,7 @@ export const api = createApi({
     // Place endpoints
     getPlaces: builder.query<PaginatedResponse<Place>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/places/',
+        url: '/places/recommended/',
         params
       }),
       providesTags: ['Place']
@@ -408,7 +408,7 @@ export const api = createApi({
     // Experience endpoints
     getExperiences: builder.query<PaginatedResponse<Experience>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/experiences/',
+        url: '/experiences/recommended/',
         params
       }),
       providesTags: ['Experience']

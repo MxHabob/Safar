@@ -89,7 +89,7 @@ export default function DiscountDetailsModal() {
               <div className="flex items-center gap-2">
                 <CalendarDays className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">
-                  Valid from {formatDate(new Date(discount.valid_from))} to {formatDate(new Date(discount.valid_to))}
+                  Valid from {formatDate(new Date(discount.valid_from).toISOString())} to {formatDate(new Date(discount.valid_to).toISOString())}
                 </span>
               </div>
             </div>

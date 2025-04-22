@@ -1,7 +1,11 @@
-export default async function BoxDetailsPage({ params }: { params: { id: string } }) {
+type Props = {
+	params: Promise<{ id: string}>
+}
+
+export default async function BoxDetailsPage({ params }: Props) {
     const id = (await params).id
     return (
-      <></>
+      <h1>{id}</h1>
     );
 }
  

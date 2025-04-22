@@ -41,7 +41,7 @@ export const ExperienceCard = ({ experience }: ExperienceCardProps) => {
     >
       <div className="relative w-full rounded-3xl bg-card shadow-md overflow-hidden group min-w-sm max-w-sm transition-all hover:shadow-lg">
         <div className="relative aspect-[4/3] w-full overflow-hidden">
-          <MediaGallery media={experience.media || []} variant={"carousel"} aspectRatio={"video"} showViewAll />
+          <MediaGallery media={Array.isArray(experience?.media) ? experience.media : []} variant={"carousel"} aspectRatio={"video"} showViewAll />
 
           <Badge className="absolute top-3 left-3 px-2 py-1 border-none">
             {experience?.category?.name || "Experience"}
@@ -65,7 +65,7 @@ export const ExperienceCard = ({ experience }: ExperienceCardProps) => {
                 </AvatarFallback>
               </Avatar>
               <span className="font-medium">
-                {experience.owner?.username || `${experience.owner.first_name} ${experience.owner.last_name}`}
+                {experience.owner?.username || `${experience?.owner?.first_name} ${experience?.owner?.last_name}`}
               </span>
             </div>
             <Badge className="px-2 py-1 border-none">

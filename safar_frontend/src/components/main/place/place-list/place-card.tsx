@@ -24,7 +24,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
       href={`/places/${place.id}`}
       className="block"
       interactionType={InteractionType.VIEW_PLACE}
-      contentType={"place"}
+      contentType={"safar_place"}
       objectId={place.id}
     >
       <div className="relative w-full min-w-52 min-h-52 rounded-3xl bg-card shadow-md overflow-hidden group transition-all hover:shadow-lg">

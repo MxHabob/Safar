@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { useRef, useEffect, useState } from "react"
+import { useRef, useEffect, useState, useCallback } from "react"
 import mapboxgl from "mapbox-gl"
 import "mapbox-gl/dist/mapbox-gl.css"
 
@@ -36,7 +37,7 @@ interface Itinerary {
 }
 
 interface MapViewProps {
-  itinerary: Itinerary
+  itinerary?: Itinerary
   visitedPlaces: Set<string>
   onMapReady: () => void
   activeDay: number | null
@@ -49,16 +50,16 @@ export default function MapView({ itinerary, visitedPlaces, onMapReady, activeDa
   const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({})
   const pathLayerRef = useRef<string | null>(null)
 
-  const getActivities = () => {
+  const getActivities = useCallback(() => {
     if (!activeDay) {
-      return itinerary.days.flatMap((day) => day.activities)
+      return itinerary?.days.flatMap((day) => day.activities) || []
     }
 
-    const activeItineraryDay = itinerary.days.find((day) => day.day_number === activeDay)
+    const activeItineraryDay = itinerary?.days.find((day) => day.day_number === activeDay)
     return activeItineraryDay ? activeItineraryDay.activities : []
-  }
+  }, [activeDay, itinerary?.days])
 
-  const getInitialCenter = () => {
+  const getInitialCenter = useCallback((): [number, number] => {
     const activities = getActivities()
 
     for (const activity of activities) {
@@ -68,7 +69,7 @@ export default function MapView({ itinerary, visitedPlaces, onMapReady, activeDa
     }
 
     return [0, 0]
-  }
+  }, [getActivities])
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return
@@ -78,7 +79,7 @@ export default function MapView({ itinerary, visitedPlaces, onMapReady, activeDa
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/streets-v12",
-      center: initialCenter || [],
+      center: initialCenter,
       zoom: 10,
     })
 
@@ -91,7 +92,7 @@ export default function MapView({ itinerary, visitedPlaces, onMapReady, activeDa
       map.current?.remove()
       map.current = null
     }
-  }, [])
+  }, [getInitialCenter, onMapReady])
 
   // Update markers and path when data changes
   useEffect(() => {

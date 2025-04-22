@@ -7,7 +7,6 @@ import CreateOrEditExperienceModal from "@/components/models/create-or-edit-expe
 import DeleteExperienceModal from "@/components//models/delete-experience-modal";
 import BookingDetailsModal from "@/components/models/booking-details-modal";
 import BookingConfirmationOrCancellationModal from "@/components/models/booking-confirmation-or-cancellation-modal";
-import ChatModal from "@/components/models/chat-modal";
 import DiscountDetailsModal from "@/components/models/discount-details-modal";
 // import BookingModificationModal from "@/components/models/booking-modification-modal";
 import SuccessOrFailureModal from "@/components/models/success-or-failure-modal";
@@ -39,7 +38,6 @@ export const ModalProvider = () => {
       <SuccessOrFailureModal />
       <PaymentConfirmationModal />
       <EventsModal />
-      <ChatModal />
       <DiscountDetailsModal />
     </>
   )

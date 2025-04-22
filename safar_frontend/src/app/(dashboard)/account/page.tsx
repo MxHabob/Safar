@@ -5,7 +5,6 @@ import { MainContentGrid } from "@/components/dashboard/sections/main-content-gr
 import { RecommendedExperiences } from "@/components/dashboard/sections/recommended-experiences"
 import { StatsRow } from "@/components/dashboard/sections/stats-row"
 import { useAuth } from "@/core/hooks/use-auth"
-import type { ReactNode } from "react"
 
 
 
@@ -16,7 +15,7 @@ export default function DashboardPage() {
     <DashboardHeader user={user} />
     <StatsRow />
     <MainContentGrid user={user} />
-    {/* {user.role || null === 'admin' ? <RecommendedExperiences /> : ""} */}
+    {user && user.role === 'admin' ? <RecommendedExperiences /> : ""}
   </div>
   )
 }

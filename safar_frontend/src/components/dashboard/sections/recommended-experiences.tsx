@@ -3,24 +3,13 @@
 import { Button } from "@/components/ui/button"
 import { ChevronRight } from "lucide-react"
 import { ExperienceCard } from "../ui/experience-card"
-import type { Experience, Media } from "@/core/types"
+import type { Experience } from "@/core/types"
 
 export function RecommendedExperiences() {
   const experiences: Experience[] = [
     {
       title: "Desert Safari",
-      media: [
-        {
-            url: "/placeholder.svg?height=150&width=300",
-            file: "",
-            type: "video",
-            uploaded_by: undefined,
-            id: "",
-            created_at: "",
-            updated_at: "",
-            is_deleted: false
-        }
-      ],
+      
       price_per_person: 89,
       rating: 4.8,
       location: "",
@@ -33,25 +22,11 @@ export function RecommendedExperiences() {
       created_at: "",
       updated_at: "",
       is_deleted: false,
-      owner: undefined
     },
     {
       title: "Yacht Cruise",
-      media: [
-        {
-            url: "/placeholder.svg?height=150&width=300",
-            file: "",
-            type: "video",
-            uploaded_by: undefined,
-            id: "",
-            created_at: "",
-            updated_at: "",
-            is_deleted: false
-        }
-      ],
       price_per_person: 199,
       rating: 4.9,
-      reviews: 86,
       location: "",
       currency: "",
       duration: 0,
@@ -62,22 +37,9 @@ export function RecommendedExperiences() {
       created_at: "",
       updated_at: "",
       is_deleted: false,
-      owner: undefined
     },
     {
       title: "Cultural Tour",
-      media: [
-        {
-            url: "/placeholder.svg?height=150&width=300",
-            file: "",
-            type: "video",
-            uploaded_by: undefined,
-            id: "",
-            created_at: "",
-            updated_at: "",
-            is_deleted: false
-        }
-      ],
       price_per_person: 45,
       rating: 4.7,
       location: "",
@@ -94,18 +56,6 @@ export function RecommendedExperiences() {
     },
     {
       title: "Skydiving Experience",
-      media: [
-        {
-            url: "/placeholder.svg?height=150&width=300",
-            file: "",
-            type: "video",
-            uploaded_by: undefined,
-            id: "",
-            created_at: "",
-            updated_at: "",
-            is_deleted: false
-        }
-      ],
       price_per_person: 299,
       rating: 5.0,
       location: "",

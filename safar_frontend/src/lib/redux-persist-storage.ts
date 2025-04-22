@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import createWebStorage from "redux-persist/lib/storage/createWebStorage"
 
 const createNoopStorage = () => {

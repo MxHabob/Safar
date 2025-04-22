@@ -1,7 +1,10 @@
 import MessageList from "@/components/global/message-list";
+type Props = {
+	params: Promise<{ userId: string}>
+}
 
-export default function MessageDetailPage({ params }: { params: { userId: string } }) {
-   const userId = params.userId
+export default async function MessageDetailPage({ params }: Props ) {
+    const userId = (await params).userId
     return(
         <><MessageList userId={userId} /></>
     )

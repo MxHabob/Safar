@@ -8,7 +8,7 @@ import { Modal } from "../global/modal"
 import { toastPromise } from "@/lib/toast-promise"
 import { closeModal, openModal } from "@/core/features/ui/modal-slice"
 import { useConfirmBookingMutation, useCancelBookingMutation } from "@/core/services/api"
-import { RootState } from "@reduxjs/toolkit/query"
+import { RootState } from "@/core/store"
 
 export default function BookingConfirmationOrCancellationModal() {
   const dispatch = useDispatch()

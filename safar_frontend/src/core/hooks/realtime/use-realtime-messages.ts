@@ -20,7 +20,7 @@ export function useRealtimeMessages() {
 
   // Get unread messages count
   const unreadCount = useMemo(() => {
-    return messagesList.filter((msg) => !msg.is_read && msg.receiver === currentUser?.id).length
+    return messagesList.filter((msg) => !msg.is_read && msg.receiver === currentUser).length
   }, [messagesList, currentUser])
 
   // Get conversations grouped by the other user
@@ -30,7 +30,7 @@ export function useRealtimeMessages() {
     const conversationMap = new Map<string, Message[]>()
 
     messagesList.forEach((message) => {
-      const otherUserId = message.sender === currentUser.id ? message.receiver : message.sender
+      const otherUserId = message.sender === currentUser ? message.receiver.id : message.sender.id
 
       if (!conversationMap.has(otherUserId)) {
         conversationMap.set(otherUserId, [])
@@ -45,7 +45,7 @@ export function useRealtimeMessages() {
         userId,
         messages: messages.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
         lastMessage: messages[0],
-        unreadCount: messages.filter((m) => !m.is_read && m.receiver === currentUser.id).length,
+        unreadCount: messages.filter((m) => !m.is_read && m.receiver === currentUser).length,
       }))
       .sort((a, b) => new Date(b.lastMessage.created_at).getTime() - new Date(a.lastMessage.created_at).getTime())
   }, [messagesList, currentUser])
