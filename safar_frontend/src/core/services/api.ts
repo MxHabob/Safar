@@ -63,7 +63,7 @@ const baseQueryWithReauth: BaseQueryFn = async (args, api, extraOptions) => {
   let result = await baseQuery(args, api, extraOptions);
   console.log('Initial request result', result);
 
-  if (result.error?.status === 401) {
+  if (result.error?.status === 402) {
     console.log('401 error detected, attempting refresh');
     if (!mutex.isLocked()) {
       const release = await mutex.acquire();
