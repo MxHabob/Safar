@@ -37,7 +37,6 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
     try {
       await logout()
     } catch {
-      // Handle error silently
     }
   }
 
@@ -85,7 +84,7 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/profile")}>
+            <DropdownMenuItem onClick={() => router.push("/account/profile")}>
               <User2 className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>
