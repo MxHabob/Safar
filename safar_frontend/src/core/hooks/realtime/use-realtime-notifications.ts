@@ -12,19 +12,16 @@ export function useRealtimeNotifications() {
   const { send } = useWebSocket()
   const notifications = useSelector((state: RootState) => state.realtime.notifications)
 
-  // Convert notifications object to array and sort by date
   const notificationsList = useMemo(() => {
     return Object.values(notifications).sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     )
   }, [notifications])
 
-  // Get unread notifications count
   const unreadCount = useMemo(() => {
     return notificationsList.filter((notification) => !notification.is_read).length
   }, [notificationsList])
 
-  // Group notifications by type
   const groupedNotifications = useMemo(() => {
     const groups: Record<string, Notification[]> = {}
 
@@ -39,7 +36,6 @@ export function useRealtimeNotifications() {
     return groups
   }, [notificationsList])
 
-  // Mark a notification as read
   const markAsRead = useCallback(
     (notificationId: string) => {
       send("mark_notification_read", { notification_id: notificationId })
@@ -48,7 +44,6 @@ export function useRealtimeNotifications() {
     [dispatch, send],
   )
 
-  // Mark all notifications as read
   const markAllAsRead = useCallback(() => {
     send("mark_all_notifications_read", {})
     dispatch(markAllNotificationsRead())

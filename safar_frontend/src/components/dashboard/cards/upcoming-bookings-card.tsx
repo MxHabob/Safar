@@ -5,39 +5,10 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BookingItem } from "../ui/booking-item"
+import { useRealtimeBookings } from "@/core/hooks/realtime/use-realtime-bookings"
 
 export function UpcomingBookingsCard() {
-  const upcomingBookings = [
-    {
-      title: "Desert Safari Adventure",
-      location: "Dubai Desert Conservation Reserve",
-      date: "May 15, 2025",
-      status: "Pending",
-    },
-    {
-      title: "Luxury Beach Resort",
-      location: "Palm Jumeirah",
-      date: "June 3, 2025",
-      status: "Confirmed",
-    },
-  ]
-
-  const pastBookings = [
-    {
-      title: "City Sightseeing Tour",
-      location: "Downtown Dubai",
-      date: "April 10, 2025",
-      status: "Completed",
-      rating: 4.5,
-    },
-    {
-      title: "Mountain Hiking Experience",
-      location: "Hatta Mountains",
-      date: "March 22, 2025",
-      status: "Completed",
-      rating: 5,
-    },
-  ]
+    const { upcomingBookings } = useRealtimeBookings()
 
   return (
     <Card className="col-span-1 row-span-1">
@@ -60,32 +31,30 @@ export function UpcomingBookingsCard() {
             {upcomingBookings.map((booking, index) => (
               <BookingItem
                 key={index}
-                title={booking.title}
-                location={booking.location}
-                date={booking.date}
+                title={
+                  booking.place
+                    ? `${booking.place.name} in ${booking.place.city} - ${booking.place.country}`
+                    : `Live the experience with ${booking.experience?.owner?.first_name} - ${booking.experience?.location}`
+                    || `Trip to ${booking.flight?.arrival_city} in ${booking.flight?.departure_time}`
+                }
+                location={
+                  booking.place
+                  ? `${booking.place.location}`
+                  : `${booking.experience?.location}`
+                  || `${booking.flight?.arrival_city} to ${booking.flight?.departure_airport}`
+               }  
+                date={booking?.check_in || ""}
                 status={booking.status}
                 actions={
-                  <div className="flex gap-2 mt-2">
-                    <Button variant="outline" size="sm" className="h-7 text-xs">
-                      Check in
+                  <div className="flex gap-2 items-center justify-between">
+                    <Button variant="outline" size="lg" className="text-xl">
+                    {booking?.check_in || ""}
                     </Button>
-                    <Button variant="outline" size="sm" className="h-7 text-xs">
-                      Check out
+                    <Button variant="outline" size="lg" className="text-xl">
+                    {booking?.check_out || ""}
                     </Button>
                   </div>
                 }
-              />
-            ))}
-          </TabsContent>
-          <TabsContent value="past" className="space-y-1">
-            {pastBookings.map((booking, index) => (
-              <BookingItem
-                key={index}
-                title={booking.title}
-                location={booking.location}
-                date={booking.date}
-                status={booking.status}
-                rating={booking.rating}
               />
             ))}
           </TabsContent>

@@ -2,28 +2,14 @@
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Bell } from "lucide-react"
 import { NotificationItem } from "../ui/notification-item"
+import { useRealtimeNotifications } from "@/core/hooks/realtime/use-realtime-notifications"
+import Link from "next/link"
 
 export function NotificationsCard() {
-  const notifications = [
-    {
-      title: "Booking Update",
-      description: "Your booking has been created and is pending confirmation.",
-      time: "2 hours ago",
-    },
-    {
-      title: "Booking Update",
-      description: "Your booking has been created and is pending confirmation.",
-      time: "3 hours ago",
-    },
-    {
-      title: "Booking Update",
-      description: "Your booking has been created and is pending confirmation.",
-      time: "5 hours ago",
-    },
-  ]
+    const { notifications } = useRealtimeNotifications()
+    console.log("NotificationsCard notifications", notifications)
 
   return (
     <Card className="col-span-1 row-span-2">
@@ -41,17 +27,17 @@ export function NotificationsCard() {
             <NotificationItem
               key={index}
               icon={<Bell className="h-4 w-4" />}
-              title={notification.title}
-              description={notification.description}
-              time={notification.time}
+              type={notification.type}
+              message={notification.message}
+              updated_at={notification.updated_at}
             />
           ))}
         </div>
       </CardContent>
       <CardFooter className="p-4 pt-0">
-        <Button variant="ghost" size="sm" className="w-full text-xs">
+        <Link href={"/notifications"} className="w-full text-xs">
           View all notifications
-        </Button>
+        </Link>
       </CardFooter>
     </Card>
   )

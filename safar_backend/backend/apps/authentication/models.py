@@ -257,7 +257,6 @@ class UserLoginLog(BaseModel):
     login_status = models.CharField(max_length=20, default="success")
     session_id = models.CharField(max_length=100, blank=True, null=True)
     
-    # Location data (if available)
     country = models.CharField(max_length=100, blank=True)
     city = models.CharField(max_length=100, blank=True)
     
@@ -275,7 +274,6 @@ class UserLoginLog(BaseModel):
         return f"{self.user.get_full_name()} login at {self.created_at}"
     
     def save(self, *args, **kwargs):
-        # Set device type based on user agent
         if not self.device_type and self.user_agent:
             self.device_type = self._get_device_type(self.user_agent)
         
