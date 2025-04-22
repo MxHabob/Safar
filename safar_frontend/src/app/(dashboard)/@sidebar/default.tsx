@@ -17,10 +17,11 @@ import {
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { useRealtimeNotifications } from "@/core/hooks/realtime/use-realtime-notifications"
 
 export default function DashboardSidebar() {
   const [isOpen, setIsOpen] = useState(false)
-
+  const {  unreadCount } = useRealtimeNotifications()
   const toggleSidebar = () => {
     setIsOpen(!isOpen)
   }
@@ -54,13 +55,13 @@ export default function DashboardSidebar() {
                 href="/messages"
                 icon={<MessageSquare className="h-5 w-5" />}
                 label="Messages"
-                badge="3"
+                badge={unreadCount > 0 ? unreadCount : undefined}
               />
               <NavItem
                 href="/notifications"
                 icon={<Bell className="h-5 w-5" />}
                 label="Notifications"
-                badge="5"
+                badge={unreadCount > 0 ? unreadCount : undefined}
               />
               <NavItem
                 href="/dashboard/wishlist"
@@ -105,7 +106,7 @@ function NavItem({
   icon: React.ReactNode
   label: string
   isActive?: boolean
-  badge?: string
+  badge?: number
 }) {
   return (
     <Link

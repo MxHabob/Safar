@@ -1,8 +1,9 @@
-import BookingUpdates from "@/components/global/booking-updates";
+import BookingsPageContent from "@/components/dashboard/bookings";
+
   export default async function BookingsPage() {
     return (
       <div >
-      <BookingUpdates/>
+      <BookingsPageContent/>
       </div>
   );
 }
