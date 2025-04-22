@@ -3,9 +3,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BookingItem } from "../ui/booking-item"
 import { useRealtimeBookings } from "@/core/hooks/realtime/use-realtime-bookings"
+import Link from "next/link"
 
 export function UpcomingBookingsCard() {
     const { upcomingBookings } = useRealtimeBookings()
@@ -16,18 +16,12 @@ export function UpcomingBookingsCard() {
         <CardTitle className="text-sm font-medium flex justify-between">
           <span>Upcoming Bookings</span>
           <Button variant="ghost" size="sm" className="h-auto p-0">
-            <span className="text-xs">View all</span>
+            <Link href={"/bookings"} className="text-xs">View all</Link>
             <ArrowRight className="ml-1 h-3 w-3" />
           </Button>
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-0">
-        <Tabs defaultValue="upcoming" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-            <TabsTrigger value="past">Past</TabsTrigger>
-          </TabsList>
-          <TabsContent value="upcoming" className="space-y-1">
+      <CardContent className="p-0 space-y-1">
             {upcomingBookings.map((booking, index) => (
               <BookingItem
                 key={index}
@@ -57,8 +51,6 @@ export function UpcomingBookingsCard() {
                 }
               />
             ))}
-          </TabsContent>
-        </Tabs>
       </CardContent>
     </Card>
   )
