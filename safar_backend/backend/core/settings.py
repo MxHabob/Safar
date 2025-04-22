@@ -190,10 +190,7 @@ STATIC_DIR = env("STATIC_DIR", default="/app/static")
 STATICFILES_DIR = BASE_DIR / 'staticfiles'
 MEDIA_DIR = BASE_DIR / 'media'
 
-if env.bool("USE_S3", default=False):  # Make sure to use env.bool() to properly parse boolean values
-    # ======================
-    #  AWS S3 CONFIGURATION
-    # ======================
+if env.bool("USE_S3", default=False):
     AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID")
     AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY")
     AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME")
@@ -224,9 +221,6 @@ if env.bool("USE_S3", default=False):  # Make sure to use env.bool() to properly
     STORAGES_DEBUG = True
     
 else:
-    # ======================
-    #  LOCAL STORAGE CONFIGURATION
-    # ======================
     STATIC_URL = '/static/'
     STATIC_ROOT = BASE_DIR / 'staticfiles'
     MEDIA_URL = "/media/"
@@ -237,20 +231,14 @@ else:
         STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 
 STATICFILES_DIRS = [STATIC_DIR]
-
-# Static files finders
 STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.FileSystemFinder",
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 ]
 
-# File upload permissions
 FILE_UPLOAD_PERMISSIONS = 0o644
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
 
-# ======================
-#  REST FRAMEWORK
-# ======================
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "apps.authentication.authentication.CustomJWTAuthentication",

@@ -32,14 +32,14 @@ const baseQuery = fetchBaseQuery({
     const state = getState() as RootState
     const token = state.auth.accessToken
 
-    const url = typeof arg === "object" && "url" in arg ? arg.url : undefined
-    const apiKey = process.env.NEXT_PUBLIC_API_KEY
+    const url = typeof arg === "object" && "url" in arg ? arg.url : undefined;
+    const apiKey = process.env.NEXT_PUBLIC_API_KEY;
     if (apiKey && url && !url.startsWith("/auth/")) {
-      headers.set("Authorization", `Api-Key ${apiKey}`)
+      headers.set("Authorization", `Api-Key ${apiKey}`);
     }
 
     if (token) {
-      headers.set("Authorization", `Bearer ${token}`)
+      headers.set("Authorization", `Bearer ${token}`);
     }
 
     if (typeof document !== "undefined") {
@@ -57,21 +57,21 @@ const baseQuery = fetchBaseQuery({
   },
 })
 
-export const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
-  args,
-  api,
-  extraOptions,
-) => {
+const baseQueryWithReauth: BaseQueryFn = async (args, api, extraOptions) => {
+  console.log('Starting request', args.url);
   await mutex.waitForUnlock();
   let result = await baseQuery(args, api, extraOptions);
+  console.log('Initial request result', result);
 
   if (result.error?.status === 401) {
+    console.log('401 error detected, attempting refresh');
     if (!mutex.isLocked()) {
       const release = await mutex.acquire();
-      const state = api.getState() as RootState;
-      const refreshToken = state.auth.refreshToken;
-
       try {
+        const state = api.getState() as RootState;
+        const refreshToken = state.auth.refreshToken;
+        console.log('Current refresh token', refreshToken);
+
         if (refreshToken) {
           const refreshResult = await baseQuery(
             { 
@@ -82,29 +82,35 @@ export const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, Fetch
             api,
             extraOptions,
           );
+          console.log('Refresh result', refreshResult);
 
           if (refreshResult.data) {
             api.dispatch(setTokens({
               access: (refreshResult.data as { access: string }).access,
               refresh: refreshToken
             }));
+            console.log('Tokens updated, retrying original request');
             result = await baseQuery(args, api, extraOptions);
           } else {
+            console.log('Refresh failed, logging out');
             api.dispatch(logout());
           }
         } else {
+          console.log('No refresh token available, logging out');
           api.dispatch(logout());
         }
       } finally {
         release();
       }
     } else {
+      console.log('Mutex locked, waiting...');
       await mutex.waitForUnlock();
       result = await baseQuery(args, api, extraOptions);
     }
   }
 
   if (result.error?.status === 403) {
+    console.log('403 error detected, logging out');
     api.dispatch(logout());
   }
 
