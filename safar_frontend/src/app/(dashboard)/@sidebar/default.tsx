@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import {
   Home,
   Bell,
@@ -21,29 +22,34 @@ interface NavItemProps {
   href: string
   icon: React.ReactNode
   label: string
-  isActive?: boolean
+  exact?: boolean
   badge?: number
 }
 
-const NavItem = ({ href, icon, label, isActive = false, badge }: NavItemProps) => (
-  <Link
-    href={href}
-    className={`flex items-center p-2 rounded-md group transition-colors relative ${
-      isActive 
-        ? "bg-primary/10 text-primary" 
-        : "hover:bg-muted text-muted-foreground hover:text-foreground"
-    }`}
-    prefetch={false}
-  >
-    <div className="flex items-center justify-center w-5 h-5">{icon}</div>
-    <span className="ml-3 text-sm font-medium">{label}</span>
-    {badge && (
-      <Badge variant="secondary" className="ml-auto text-xs">
-        {badge}
-      </Badge>
-    )}
-  </Link>
-)
+const NavItem = ({ href, icon, label, exact = false, badge }: NavItemProps) => {
+  const pathname = usePathname()
+  const isActive = exact ? pathname === href : pathname.startsWith(href)
+
+  return (
+    <Link
+      href={href}
+      className={`flex items-center p-2 rounded-md group transition-colors relative ${
+        isActive 
+          ? "bg-primary/10 text-primary" 
+          : "hover:bg-muted text-muted-foreground hover:text-foreground"
+      }`}
+      prefetch={false}
+    >
+      <div className="flex items-center justify-center w-5 h-5">{icon}</div>
+      <span className="ml-3 text-sm font-medium">{label}</span>
+      {badge && (
+        <Badge variant="secondary" className="ml-auto text-xs">
+          {badge}
+        </Badge>
+      )}
+    </Link>
+  )
+}
 
 export default function DashboardSidebar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -89,7 +95,7 @@ export default function DashboardSidebar() {
                 href="/account"
                 icon={<Home className="h-5 w-5" />}
                 label="Home"
-                isActive={true}
+                exact
               />
               <NavItem
                 href="/bookings"
