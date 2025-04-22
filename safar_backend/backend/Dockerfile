@@ -35,7 +35,7 @@ CMD ["sh", "-c", "\
     python manage.py makemigrations && \
     python manage.py migrate && \
     echo 'Collecting static files...' && \
-    python manage.py collectstatic --noinput && \
+    python manage.py collectstatic --noinput -v 2 && \
     echo 'Creating superuser...' && \
     python manage.py shell -c \"from apps.authentication.models import User; User.objects.filter(email='admin@safar.com').exists() or User.objects.create_superuser(email='admin@safar.com', password='admin')\" && \
     # echo 'Generate a fake data...' && \

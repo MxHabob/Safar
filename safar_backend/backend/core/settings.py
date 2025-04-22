@@ -190,7 +190,7 @@ STATIC_DIR = env("STATIC_DIR", default="/app/static")
 STATICFILES_DIR = BASE_DIR / 'staticfiles'
 MEDIA_DIR = BASE_DIR / 'media'
 
-if env("USE_S3", default=False):
+if env.bool("USE_S3", default=False):  # Make sure to use env.bool() to properly parse boolean values
     # ======================
     #  AWS S3 CONFIGURATION
     # ======================
@@ -200,27 +200,28 @@ if env("USE_S3", default=False):
     AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="us-east-1")
     AWS_S3_CUSTOM_DOMAIN = env('AWS_S3_CUSTOM_DOMAIN', default=f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com')
     
-    # S3 Object parameters
     AWS_S3_OBJECT_PARAMETERS = {
         "CacheControl": "max-age=86400",
-        "ACL": "public-read"
     }
     
     AWS_DEFAULT_ACL = None
     AWS_QUERYSTRING_AUTH = False
     AWS_S3_FILE_OVERWRITE = False
     
+    AWS_S3_ADDRESSING_STYLE = 'virtual'
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
+    
     STATIC_LOCATION = "static"
     STATICFILES_STORAGE = "core.storage_backends.StaticStorage"
     STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATIC_LOCATION}/"
-    
-    # Media files settings
+
     PUBLIC_MEDIA_LOCATION = "media"
     DEFAULT_FILE_STORAGE = "core.storage_backends.MediaStorage"
     MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{PUBLIC_MEDIA_LOCATION}/"
     
-    # Required for collectstatic
     STATIC_ROOT = STATICFILES_DIR
+    
+    STORAGES_DEBUG = True
     
 else:
     # ======================
