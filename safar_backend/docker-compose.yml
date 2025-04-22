@@ -3,7 +3,7 @@ services:
     build:
       context: ./backend
     container_name: safar_backend
-    env_file: .env
+    env_file: .env.production
     ports:
       - "8000:8000"
     depends_on:
@@ -27,7 +27,7 @@ services:
       context: ./backend
       dockerfile: ../infrastructure/celery/celery-flower/Dockerfile
     container_name: safar_celery
-    env_file: .env
+    env_file: .env.production
     depends_on:
       - db
       - redis
@@ -43,7 +43,7 @@ services:
       context: ./backend
       dockerfile: ../infrastructure/celery/celery-flower/Dockerfile
     container_name: safar_celery_flower
-    env_file: .env
+    env_file: .env.production
     ports:
       - "5555:5555"
     depends_on:

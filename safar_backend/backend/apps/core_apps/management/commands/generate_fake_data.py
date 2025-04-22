@@ -840,7 +840,6 @@ class Command(BaseCommand):
         try:
             notifications = []
             for user in users:
-                # Generate 1-5 notifications per user
                 for _ in range(random.randint(1, 5)):
                     notification_type = random.choice([
                         "Booking Update", "Payment", "New Box", "Personalized Box",
@@ -2100,7 +2099,7 @@ class Command(BaseCommand):
                 booking.currency = box.currency
             
             else:
-                # If no items available for the selected type, skip
+                
                 return None
                 
             booking.save()
@@ -2145,13 +2144,11 @@ class Command(BaseCommand):
                 }
             )
             
-            # Set created_by if users available
             if users:
                 discount.created_by = random.choice(users)
             
             discount.save()
             
-            # Add applicable entities
             if places and random.random() < 0.7:
                 discount.applicable_places.set(random.sample(places, min(3, len(places))))
             
@@ -2164,7 +2161,6 @@ class Command(BaseCommand):
             if boxes and random.random() < 0.4:
                 discount.applicable_boxes.set(random.sample(boxes, min(1, len(boxes))))
             
-            # Add target users (optional)
             if users and random.random() < 0.3:
                 discount.target_users.set(random.sample(users, min(5, len(users))))
             
@@ -2179,13 +2175,12 @@ class Command(BaseCommand):
             payment_methods = ["Credit Card", "PayPal", "Bank Transfer", "Apple Pay", "Google Pay"]
             payment_statuses = ["Pending", "Completed", "Failed", "Refunded"]
             
-            # Weight the statuses based on booking status
             if booking.status == "Confirmed":
-                status_weights = [1, 8, 1, 0]  # Mostly completed
+                status_weights = [1, 8, 1, 0]
             elif booking.status == "Cancelled":
-                status_weights = [1, 2, 2, 5]  # Mostly refunded
+                status_weights = [1, 2, 2, 5]
             else:
-                status_weights = [5, 3, 2, 0]  # Mostly pending
+                status_weights = [5, 3, 2, 0]
             
             payment = Payment(
                 user=booking.user,
@@ -2208,7 +2203,7 @@ class Command(BaseCommand):
             return []
             
         reviews = []
-        num_reviews = random.randint(1, 10)  # Create 1-10 reviews per entity
+        num_reviews = random.randint(1, 10)
         
         for _ in range(num_reviews):
             try:
