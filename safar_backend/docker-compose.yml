@@ -13,9 +13,9 @@ services:
       - mynetwork
     volumes:
       - ./backend:/app:z
-      - ./backend/static:/app/static
+      - ./static:/app/static
       - ./backend/safar_firebase_credentials.json:/app/safar_firebase_credentials.json:ro,z
-      - ./backend/staticfiles:/app/staticfiles:z
+      - ./staticfiles:/app/staticfiles:z
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
       interval: 30s

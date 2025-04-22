@@ -208,9 +208,8 @@ if env("USE_S3", default=False):
     
     AWS_DEFAULT_ACL = None
     AWS_QUERYSTRING_AUTH = False
-    AWS_S3_FILE_OVERWRITE = False  # Prevent files with same names from being overwritten
+    AWS_S3_FILE_OVERWRITE = False
     
-    # Static files settings
     STATIC_LOCATION = "static"
     STATICFILES_STORAGE = "core.storage_backends.StaticStorage"
     STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATIC_LOCATION}/"
@@ -342,7 +341,7 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
-CELERY_TASK_RESULT_EXPIRES = 3600  # 1 hour
+CELERY_TASK_RESULT_EXPIRES = 3600
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # Redis cache
@@ -444,6 +443,18 @@ LOGGING = {
             "handlers": ["console", "file"],
             "level": "DEBUG" if DEBUG else "INFO",
             "propagate": False,
+        },
+        'boto3': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'botocore': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        's3transfer': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
         },
     },
 }
