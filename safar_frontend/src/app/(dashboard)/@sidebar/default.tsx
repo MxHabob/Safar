@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import Link from "next/link"
 import {
   Home,
@@ -19,18 +17,65 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useRealtimeNotifications } from "@/core/hooks/realtime/use-realtime-notifications"
 
+interface NavItemProps {
+  href: string
+  icon: React.ReactNode
+  label: string
+  isActive?: boolean
+  badge?: number
+}
+
+const NavItem = ({ href, icon, label, isActive = false, badge }: NavItemProps) => (
+  <Link
+    href={href}
+    className={`flex items-center p-2 rounded-md group transition-colors relative ${
+      isActive 
+        ? "bg-primary/10 text-primary" 
+        : "hover:bg-muted text-muted-foreground hover:text-foreground"
+    }`}
+    prefetch={false}
+  >
+    <div className="flex items-center justify-center w-5 h-5">{icon}</div>
+    <span className="ml-3 text-sm font-medium">{label}</span>
+    {badge && (
+      <Badge variant="secondary" className="ml-auto text-xs">
+        {badge}
+      </Badge>
+    )}
+  </Link>
+)
+
 export default function DashboardSidebar() {
   const [isOpen, setIsOpen] = useState(false)
-  const {  unreadCount } = useRealtimeNotifications()
-  const toggleSidebar = () => {
-    setIsOpen(!isOpen)
-  }
+  const { unreadCount } = useRealtimeNotifications()
+  
+  const toggleSidebar = useCallback(() => {
+    setIsOpen(prev => !prev)
+  }, [])
+
+  const closeSidebar = useCallback(() => {
+    setIsOpen(false)
+  }, [])
 
   return (
     <>
-      <Button variant="ghost" size="icon" className="fixed top-4 left-4 z-50 md:hidden" onClick={toggleSidebar}>
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="fixed top-4 left-4 z-50 md:hidden" 
+        onClick={toggleSidebar}
+        aria-label="Toggle sidebar"
+        aria-expanded={isOpen}
+      >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </Button>
+
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 md:hidden z-30" 
+          onClick={closeSidebar}
+        />
+      )}
 
       <aside
         className={`fixed md:sticky top-0 h-screen z-40 transition-all duration-300 ease-in-out bg-background border-r
@@ -64,7 +109,7 @@ export default function DashboardSidebar() {
                 badge={unreadCount > 0 ? unreadCount : undefined}
               />
               <NavItem
-                href="/dashboard/wishlist"
+                href="/wishlist"
                 icon={<Heart className="h-5 w-5" />}
                 label="Wishlist"
               />
@@ -81,7 +126,6 @@ export default function DashboardSidebar() {
               href="/account/settings"
               icon={<Settings className="h-5 w-5" />}
               label="Settings"
-  
             />
             <NavItem
               href="/safar/help"
@@ -92,36 +136,5 @@ export default function DashboardSidebar() {
         </div>
       </aside>
     </>
-  )
-}
-
-function NavItem({
-  href,
-  icon,
-  label,
-  isActive = false,
-  badge,
-}: {
-  href: string
-  icon: React.ReactNode
-  label: string
-  isActive?: boolean
-  badge?: number
-}) {
-  return (
-    <Link
-      href={href}
-      className={`flex items-center p-2 rounded-md group transition-colors relative ${
-        isActive ? "bg-primary/10 text-primary" : "hover:bg-muted text-muted-foreground hover:text-foreground"
-      }`}
-    >
-      <div className="flex items-center justify-center w-5 h-5">{icon}</div>
-      <span className="ml-3 text-sm font-medium">{label}</span>
-      {badge && (
-        <Badge variant="secondary" className="ml-auto text-xs">
-          {badge}
-        </Badge>
-      )}
-    </Link>
   )
 }
