@@ -2,8 +2,8 @@
 
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { User } from "@/core/types"
+import { UserAvatar } from "@/components/global/user-avatar"
 
 interface DashboardHeaderProps {
   user: User | null
@@ -31,13 +31,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
           </span>
           <span className="text-xs text-muted-foreground">{user?.email}</span>
         </div>
-        <Avatar className="h-9 w-9">
-          <AvatarImage src="/placeholder.svg" alt={`${user?.first_name} ${user?.last_name}`} />
-          <AvatarFallback className="bg-primary text-primary-foreground">
-            {user?.first_name?.[0]}
-            {user?.last_name?.[0]}
-          </AvatarFallback>
-        </Avatar>
+        <UserAvatar className="h-9 w-9" />
       </div>
     </div>
   )

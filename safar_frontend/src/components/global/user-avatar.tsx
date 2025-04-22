@@ -45,7 +45,7 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
       <Avatar className={className}>
         <AvatarImage src={userData.profile?.avatar} alt={userData.first_name || "User avatar"} />
         <AvatarFallback>
-          {userData.first_name?.charAt(0).toUpperCase() || userData.username?.charAt(0).toUpperCase()}
+          {(((userData.first_name?.charAt(0)?.toUpperCase() ?? "") + (userData.last_name?.charAt(0)?.toUpperCase() ?? "")) || (userData.username?.charAt(0)?.toUpperCase() ?? ""))}
         </AvatarFallback>
       </Avatar>
     ) : (
