@@ -17,8 +17,10 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
 
   if (isLoading || !isAuthenticated) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex items-center justify-center h-full">
+        <div className="flex flex-col items-center justify-center h-full w-full">
         <Spinner />
+        </div>
       </div>
     )
   }
