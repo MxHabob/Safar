@@ -265,12 +265,13 @@ REST_FRAMEWORK = {
 # ======================
 
 SIMPLE_JWT = {
-     "AUTH_HEADER_TYPES": ("JWT", "Bearer"),
+    "AUTH_HEADER_TYPES": ("JWT", "Bearer"),
     'AUTH_COOKIE': 'access',
     'AUTH_COOKIE_REFRESH': 'refresh',
+    'AUTH_COOKIE_MAX_AGE': 60 * 60 * 24 * 7,
     'AUTH_COOKIE_HTTP_ONLY': True,
     'AUTH_COOKIE_SECURE': True,
-    'AUTH_COOKIE_SAMESITE': 'Lax',
+    'AUTH_COOKIE_SAMESITE': 'None',
     'AUTH_COOKIE_PATH': '/',
     'AUTH_COOKIE_DOMAIN': None,
 }
@@ -298,16 +299,16 @@ DJOSER = {
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=not DEVELOPMENT_MODE)
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SAMESITE = "None"
 
 # Auth cookie settings
 AUTH_COOKIE_DOMAIN = env("DOMAIN", default="localhost:3000")
 AUTH_COOKIE = "access"
-AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7  # 1 week
+AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 AUTH_COOKIE_SECURE = env.bool("AUTH_COOKIE_SECURE", default=not DEVELOPMENT_MODE)
 AUTH_COOKIE_HTTP_ONLY = True
 AUTH_COOKIE_PATH = "/"
-AUTH_COOKIE_SAMESITE = "Strict"
+AUTH_COOKIE_SAMESITE = "None"
 
 # ======================
 #  SOCIAL AUTH
