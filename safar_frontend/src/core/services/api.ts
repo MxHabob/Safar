@@ -36,13 +36,12 @@ const baseQuery = fetchBaseQuery({
     const url = typeof arg === "object" && "url" in arg ? arg.url : undefined
     const apiKey = process.env.NEXT_PUBLIC_API_KEY
 
-    // Check if we have a token and add it to all requests
     if (token) {
       headers.set("Authorization", `Bearer ${token}`)
       console.log("Setting auth header with token", `Bearer ${token}`)
     }
-    // If no token but we have API key and it's not an auth endpoint, use API key
-    else if (apiKey && url && !url.startsWith("/auth/")) {
+
+    else if (!token && url && !url.startsWith("/auth/")) {
       headers.set("Authorization", `Api-Key ${apiKey}`)
       console.log("Setting auth header with API key", `Api-Key ${apiKey}`)
     } else {
@@ -81,7 +80,6 @@ const baseQueryWithReauth: BaseQueryFn = async (args, api, extraOptions) => {
         console.log("Current refresh token", refreshToken ? "exists" : "missing")
 
         if (refreshToken) {
-          // Add more detailed logging
           console.log("Attempting to refresh token")
           const refreshResult = await baseQuery(
             {
