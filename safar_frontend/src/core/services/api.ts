@@ -39,19 +39,16 @@ const baseQuery = fetchBaseQuery({
     if (token) {
       headers.set("Authorization", `Bearer ${token}`)
       console.log("Setting auth header with token", `Bearer ${token}`)
-    }
-
-    else if (!token && url && !url.startsWith("/auth/")) {
-      console.log("Setting auth header with API key", `Api-Key ${apiKey}`)
-    } else {
+    } else if (!url?.startsWith("/auth/") && apiKey) {
       headers.set("Authorization", `Api-Key ${apiKey}`)
+      console.log("Setting auth header with API key", `Api-Key ${apiKey}`)
     }
 
     // CSRF token handling
     if (typeof document !== "undefined") {
       const csrfToken = document.cookie
         .split("; ")
-        .find((row) => row.startsWith("csrftoken="))
+        .find((row) => row.startsWith("csrftoken"))
         ?.split("=")[1]
 
       if (csrfToken) {
