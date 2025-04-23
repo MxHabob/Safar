@@ -32,7 +32,6 @@ const baseQuery = fetchBaseQuery({
     const state = getState() as RootState
     const token = state.auth.accessToken
 
-    // Get the URL from the argument
     const url = typeof arg === "object" && "url" in arg ? arg.url : undefined
     const apiKey = process.env.NEXT_PUBLIC_API_KEY
 
@@ -44,7 +43,6 @@ const baseQuery = fetchBaseQuery({
       console.log("Setting auth header with API key", `Api-Key ${apiKey}`)
     }
 
-    // CSRF token handling
     if (typeof document !== "undefined") {
       const csrfToken = document.cookie
         .split("; ")
@@ -97,8 +95,6 @@ const baseQueryWithReauth: BaseQueryFn = async (args, api, extraOptions) => {
                 refresh: refreshToken,
               }),
             )
-
-            // Add a small delay to ensure the store is updated
             await new Promise((resolve) => setTimeout(resolve, 100))
 
             console.log("Retrying original request with new token")
