@@ -119,9 +119,9 @@ console.log("authState : " , response)
       dispatch(api.util.resetApiState())
       await persistor.purge()
       dispatch(logoutAction())
-      router.push("/login")
+      // router.push("/login")
     }
-  }, [dispatch, logoutApi, router])
+  }, [dispatch, logoutApi])
 
   const verifyEmail = useCallback(
     async (data: { uid: string; token: string }) => {
@@ -201,17 +201,14 @@ console.log("authState : " , response)
       try {
         dispatch(loginStart())
 
-        // First get the API response without toast
         const apiPromise = socialAuthApi({ provider, code }).unwrap()
 
-        // Then wrap it in toast.promise
         toast.promise(apiPromise, {
           loading: "Logging in with social account...",
           success: "Logged in successfully!",
           error: (error) => error.data?.detail || "Social login failed",
         })
 
-        // Wait for the actual API response
         const response = await apiPromise
 
         const user = await fetchUser().unwrap()

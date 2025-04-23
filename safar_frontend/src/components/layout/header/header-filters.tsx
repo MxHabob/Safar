@@ -8,7 +8,7 @@ export function HeaderFilters() {
     const { data: categories ,isLoading} = useGetCategoriesQuery({})
   return (
 <div className="flex items-center justify-between mx-96 mb-4">
-    <ListSlider overlay route  loop={true} isLoading={isLoading} items={categories?.results || []} />
+    <ListSlider route  loop={true} isLoading={isLoading} items={categories?.results || []} />
    <div className="  items-center hidden">
     <Button className=" items-center rounded-full px-4  text-sm font-medium">
       <svg
