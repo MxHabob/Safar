@@ -33,7 +33,7 @@ const baseQuery = fetchBaseQuery({
     const token = state.auth.accessToken
 
     const url = typeof arg === "object" && "url" in arg ? arg.url : undefined
-    const apiKey = process.env.NEXT_PUBLIC_API_KEY
+    const apiKey = process.env.NEXT_PUBLIC_API_KEY || "bsH2Tlj0.J92s5soF3DAJGSFHlUiGBf0h1txviamL"
 
     if (token) {
       headers.set("Authorization", `Bearer ${token}`)
