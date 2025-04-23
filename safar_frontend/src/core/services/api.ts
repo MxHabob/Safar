@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { BaseQueryFn, createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { Mutex } from 'async-mutex';
+import { type BaseQueryFn, createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
+import { Mutex } from "async-mutex"
 import type {
   Category,
   Discount,
@@ -18,12 +18,12 @@ import type {
   User,
   PaginatedResponse,
   InteractionType,
-  UserInteraction
-} from '@/core/types';
-import { setTokens, logout } from "@/core/features/auth/auth-slice";
-import type { RootState } from "@/core/store";
+  UserInteraction,
+} from "@/core/types"
+import { setTokens, logout } from "@/core/features/auth/auth-slice"
+import type { RootState } from "@/core/store"
 
-const mutex = new Mutex();
+const mutex = new Mutex()
 
 const baseQuery = fetchBaseQuery({
   baseUrl: `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api`,
@@ -32,16 +32,24 @@ const baseQuery = fetchBaseQuery({
     const state = getState() as RootState
     const token = state.auth.accessToken
 
-    const url = typeof arg === "object" && "url" in arg ? arg.url : undefined;
-    const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-    if (apiKey && url && !url.startsWith("/auth/")) {
-      headers.set("Authorization", `Api-Key ${apiKey}`);
-    }
+    // Get the URL from the argument
+    const url = typeof arg === "object" && "url" in arg ? arg.url : undefined
+    const apiKey = process.env.NEXT_PUBLIC_API_KEY
 
+    // Check if we have a token and add it to all requests
     if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
+      headers.set("Authorization", `Bearer ${token}`)
+      console.log("Setting auth header with token", `Bearer ${token}`)
+    }
+    // If no token but we have API key and it's not an auth endpoint, use API key
+    else if (apiKey && url && !url.startsWith("/auth/")) {
+      headers.set("Authorization", `Api-Key ${apiKey}`)
+      console.log("Setting auth header with API key", `Api-Key ${apiKey}`)
+    } else {
+      console.log("No authorization credentials available for", url)
     }
 
+    // CSRF token handling
     if (typeof document !== "undefined") {
       const csrfToken = document.cookie
         .split("; ")
@@ -58,83 +66,93 @@ const baseQuery = fetchBaseQuery({
 })
 
 const baseQueryWithReauth: BaseQueryFn = async (args, api, extraOptions) => {
-  console.log('Starting request', args.url);
-  await mutex.waitForUnlock();
-  let result = await baseQuery(args, api, extraOptions);
-  console.log('Initial request result', result);
+  console.log("Starting request", args.url)
+  await mutex.waitForUnlock()
+  let result = await baseQuery(args, api, extraOptions)
+  console.log("Initial request result", result)
 
-  if (result.error?.status === 402) {
-    console.log('401 error detected, attempting refresh');
+  if (result.error?.status === 401) {
+    console.log("401 error detected, attempting refresh")
     if (!mutex.isLocked()) {
-      const release = await mutex.acquire();
+      const release = await mutex.acquire()
       try {
-        const state = api.getState() as RootState;
-        const refreshToken = state.auth.refreshToken;
-        console.log('Current refresh token', refreshToken);
+        const state = api.getState() as RootState
+        const refreshToken = state.auth.refreshToken
+        console.log("Current refresh token", refreshToken ? "exists" : "missing")
 
         if (refreshToken) {
+          // Add more detailed logging
+          console.log("Attempting to refresh token")
           const refreshResult = await baseQuery(
-            { 
-              url: "/auth/jwt/refresh/", 
-              method: "POST", 
-              body: { refresh: refreshToken } 
+            {
+              url: "/auth/jwt/refresh/",
+              method: "POST",
+              body: { refresh: refreshToken },
             },
             api,
             extraOptions,
-          );
-          console.log('Refresh result', refreshResult);
+          )
+          console.log("Refresh result status:", refreshResult.meta?.response?.status)
 
           if (refreshResult.data) {
-            api.dispatch(setTokens({
-              access: (refreshResult.data as { access: string }).access,
-              refresh: refreshToken
-            }));
-            console.log('Tokens updated, retrying original request');
-            result = await baseQuery(args, api, extraOptions);
+            const newAccessToken = (refreshResult.data as { access: string }).access
+            console.log("Token refreshed successfully, new token received")
+            api.dispatch(
+              setTokens({
+                access: newAccessToken,
+                refresh: refreshToken,
+              }),
+            )
+
+            // Add a small delay to ensure the store is updated
+            await new Promise((resolve) => setTimeout(resolve, 100))
+
+            console.log("Retrying original request with new token")
+            result = await baseQuery(args, api, extraOptions)
           } else {
-            console.log('Refresh failed, logging out');
-            api.dispatch(logout());
+            console.log("Refresh failed, logging out. Error:", refreshResult.error)
+            api.dispatch(logout())
           }
         } else {
-          console.log('No refresh token available, logging out');
-          api.dispatch(logout());
+          console.log("No refresh token available, logging out")
+          api.dispatch(logout())
         }
       } finally {
-        release();
+        release()
       }
     } else {
-      console.log('Mutex locked, waiting...');
-      await mutex.waitForUnlock();
-      result = await baseQuery(args, api, extraOptions);
+      console.log("Mutex locked, waiting...")
+      await mutex.waitForUnlock()
+      result = await baseQuery(args, api, extraOptions)
     }
   }
 
   if (result.error?.status === 403) {
-    console.log('403 error detected, logging out');
-    api.dispatch(logout());
+    console.log("403 error detected, logging out")
+    api.dispatch(logout())
   }
 
-  return result;
-};
+  return result
+}
 
 export const api = createApi({
-  reducerPath: 'api',
+  reducerPath: "api",
   baseQuery: baseQueryWithReauth,
   tagTypes: [
-    'Category',
-    'Discount',
-    'Place',
-    'Experience',
-    'Flight',
-    'Box',
-    'Booking',
-    'Wishlist',
-    'Review',
-    'Payment',
-    'Message',
-    'Notification',
-    'Auth',
-    'UserInteraction'
+    "Category",
+    "Discount",
+    "Place",
+    "Experience",
+    "Flight",
+    "Box",
+    "Booking",
+    "Wishlist",
+    "Review",
+    "Payment",
+    "Message",
+    "Notification",
+    "Auth",
+    "UserInteraction",
   ],
   endpoints: (builder) => ({
     // Authentication endpoints
@@ -146,7 +164,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Auth"],
     }),
-      
+
     register: builder.mutation<User, Partial<User>>({
       query: (userData) => ({
         url: "/auth/users/",
@@ -155,7 +173,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Auth"],
     }),
-      
+
     verifyEmail: builder.mutation<void, { uid: string; token: string }>({
       query: ({ uid, token }) => ({
         url: "/auth/users/activation/",
@@ -164,7 +182,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Auth"],
     }),
-      
+
     resendActivationEmail: builder.mutation<void, { email: string }>({
       query: (email) => ({
         url: "/auth/users/resend_activation/",
@@ -172,7 +190,7 @@ export const api = createApi({
         body: email,
       }),
     }),
-      
+
     requestPasswordReset: builder.mutation<void, { email: string }>({
       query: (email) => ({
         url: "/auth/users/reset_password/",
@@ -180,7 +198,7 @@ export const api = createApi({
         body: email,
       }),
     }),
-      
+
     confirmPasswordReset: builder.mutation<void, { uid: string; token: string; new_password: string }>({
       query: (data) => ({
         url: "/auth/users/reset_password_confirm/",
@@ -188,7 +206,7 @@ export const api = createApi({
         body: data,
       }),
     }),
-      
+
     refreshToken: builder.mutation<{ access: string }, { refresh: string }>({
       query: (data) => ({
         url: "/auth/jwt/refresh/",
@@ -196,15 +214,15 @@ export const api = createApi({
         body: data,
       }),
     }),
-      
+
     verifyToken: builder.mutation<void, { token: string }>({
       query: (token) => ({
-        url: '/auth/jwt/verify/',
-        method: 'POST',
+        url: "/auth/jwt/verify/",
+        method: "POST",
         body: token,
       }),
     }),
-      
+
     logout: builder.mutation<void, void>({
       query: () => ({
         url: "/auth/logout/",
@@ -212,14 +230,14 @@ export const api = createApi({
       }),
       invalidatesTags: ["Auth"],
     }),
-      
+
     getUser: builder.query<User, void>({
       query: () => ({
         url: "/auth/users/me/",
       }),
       providesTags: ["Auth"],
     }),
-      
+
     updateUser: builder.mutation<User, Partial<User>>({
       query: (userData) => ({
         url: "/auth/users/me/",
@@ -228,16 +246,16 @@ export const api = createApi({
       }),
       invalidatesTags: ["Auth"],
     }),
-      
+
     deleteUser: builder.mutation<void, { current_password: string }>({
       query: (data) => ({
-        url: '/auth/users/me/',
-        method: 'DELETE',
+        url: "/auth/users/me/",
+        method: "DELETE",
         body: data,
       }),
-      invalidatesTags: ['Auth'],
+      invalidatesTags: ["Auth"],
     }),
-      
+
     socialAuth: builder.mutation<LoginResponse, { provider: string; code: string }>({
       query: ({ provider, code }) => ({
         url: `/auth/o/${provider}/`,
@@ -252,451 +270,454 @@ export const api = createApi({
     }),
 
     // User Interactions endpoints
-    getUserInteractions: builder.query<PaginatedResponse<UserInteraction>, { 
-      page?: number; 
-      page_size?: number;
-      interaction_type?: InteractionType;
-      content_type?: string;
-    }>({
+    getUserInteractions: builder.query<
+      PaginatedResponse<UserInteraction>,
+      {
+        page?: number
+        page_size?: number
+        interaction_type?: InteractionType
+        content_type?: string
+      }
+    >({
       query: (params) => ({
-        url: '/interactions/',
-        params
+        url: "/interactions/",
+        params,
       }),
-      providesTags: ['UserInteraction']
+      providesTags: ["UserInteraction"],
     }),
-      
+
     getUserInteraction: builder.query<UserInteraction, string>({
       query: (id) => `/interactions/${id}/`,
-      providesTags: (result, error, id) => [{ type: 'UserInteraction', id }]
+      providesTags: (result, error, id) => [{ type: "UserInteraction", id }],
     }),
-      
+
     createUserInteraction: builder.mutation<UserInteraction, Partial<UserInteraction>>({
       query: (body) => ({
-        url: '/interactions/',
-        method: 'POST',
-        body
+        url: "/interactions/",
+        method: "POST",
+        body,
       }),
-      invalidatesTags: ['UserInteraction']
+      invalidatesTags: ["UserInteraction"],
     }),
-      
-    logInteraction: builder.mutation<UserInteraction, {
-      content_type: string;
-      object_id: string;
-      interaction_type: InteractionType;
-      metadata?: Record<string, any>;
-      device_type?: 'mobile' | 'desktop' | 'tablet';
-    }>({
+
+    logInteraction: builder.mutation<
+      UserInteraction,
+      {
+        content_type: string
+        object_id: string
+        interaction_type: InteractionType
+        metadata?: Record<string, any>
+        device_type?: "mobile" | "desktop" | "tablet"
+      }
+    >({
       query: (body) => ({
-        url: '/interactions/',
-        method: 'POST',
-        body
+        url: "/interactions/",
+        method: "POST",
+        body,
       }),
-      invalidatesTags: ['UserInteraction']
+      invalidatesTags: ["UserInteraction"],
     }),
 
     // Category endpoints
     getCategories: builder.query<PaginatedResponse<Category>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/categories/',
-        params
+        url: "/categories/",
+        params,
       }),
-      providesTags: ['Category']
+      providesTags: ["Category"],
     }),
     getCategory: builder.query<Category, string>({
       query: (id) => `/categories/${id}/`,
-      providesTags: (result, error, id) => [{ type: 'Category', id }]
+      providesTags: (result, error, id) => [{ type: "Category", id }],
     }),
 
     createCategory: builder.mutation<Category, Partial<Category>>({
       query: (body) => ({
-        url: '/categories/',
-        method: 'POST',
-        body
+        url: "/categories/",
+        method: "POST",
+        body,
       }),
-      invalidatesTags: ['Category']
+      invalidatesTags: ["Category"],
     }),
     updateCategory: builder.mutation<Category, Partial<Category> & { id: string }>({
       query: ({ id, ...patch }) => ({
         url: `/categories/${id}/`,
-        method: 'PATCH',
-        body: patch
+        method: "PATCH",
+        body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Category', id }]
+      invalidatesTags: (result, error, { id }) => [{ type: "Category", id }],
     }),
     deleteCategory: builder.mutation<void, string>({
       query: (id) => ({
         url: `/categories/${id}/`,
-        method: 'DELETE'
+        method: "DELETE",
       }),
-      invalidatesTags: (result, error, id) => [{ type: 'Category', id }]
+      invalidatesTags: (result, error, id) => [{ type: "Category", id }],
     }),
 
     // Discount endpoints
     getDiscounts: builder.query<PaginatedResponse<Discount>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/discounts/',
-        params
+        url: "/discounts/",
+        params,
       }),
-      providesTags: ['Discount']
+      providesTags: ["Discount"],
     }),
     getActiveDiscounts: builder.query<PaginatedResponse<Discount>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/discounts/active/',
-        params
+        url: "/discounts/active/",
+        params,
       }),
-      providesTags: ['Discount']
+      providesTags: ["Discount"],
     }),
     getDiscount: builder.query<Discount, string>({
       query: (id) => `/discounts/${id}/`,
-      providesTags: (result, error, id) => [{ type: 'Discount', id }]
+      providesTags: (result, error, id) => [{ type: "Discount", id }],
     }),
     createDiscount: builder.mutation<Discount, Partial<Discount>>({
       query: (body) => ({
-        url: '/discounts/',
-        method: 'POST',
-        body
+        url: "/discounts/",
+        method: "POST",
+        body,
       }),
-      invalidatesTags: ['Discount']
+      invalidatesTags: ["Discount"],
     }),
     applyDiscount: builder.mutation<Discount, { id: string; booking_id: string }>({
       query: ({ id, booking_id }) => ({
         url: `/discounts/${id}/apply/`,
-        method: 'POST',
-        body: { booking_id }
+        method: "POST",
+        body: { booking_id },
       }),
-      invalidatesTags: ['Discount', 'Booking']
+      invalidatesTags: ["Discount", "Booking"],
     }),
 
     // Place endpoints
     getPlaces: builder.query<PaginatedResponse<Place>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/places/',
-        params
+        url: "/places/",
+        params,
       }),
-      providesTags: ['Place']
+      providesTags: ["Place"],
     }),
-    
+
     getSimilarPlaces: builder.query<PaginatedResponse<Place>, { id: string; page?: number; page_size?: number }>({
       query: ({ id, ...params }) => ({
         url: `/places/${id}/similar/`,
-        params
+        params,
       }),
-      providesTags: (result, error, { id }) => [{ type: 'Place', id }]
+      providesTags: (result, error, { id }) => [{ type: "Place", id }],
     }),
     getPlace: builder.query<Place, string>({
       query: (id) => `/places/${id}/`,
-      providesTags: (result, error, id) => [{ type: 'Place', id }]
+      providesTags: (result, error, id) => [{ type: "Place", id }],
     }),
     createPlace: builder.mutation<Place, Partial<Place>>({
       query: (body) => ({
-        url: '/places/',
-        method: 'POST',
-        body
+        url: "/places/",
+        method: "POST",
+        body,
       }),
-      invalidatesTags: ['Place']
+      invalidatesTags: ["Place"],
     }),
     updatePlace: builder.mutation<Place, Partial<Place> & { id: string }>({
       query: ({ id, ...patch }) => ({
         url: `/places/${id}/`,
-        method: 'PATCH',
-        body: patch
+        method: "PATCH",
+        body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Place', id }]
+      invalidatesTags: (result, error, { id }) => [{ type: "Place", id }],
     }),
     deletePlace: builder.mutation<void, string>({
       query: (id) => ({
         url: `/places/${id}/`,
-        method: 'DELETE'
+        method: "DELETE",
       }),
-      invalidatesTags: (result, error, id) => [{ type: 'Place', id }]
+      invalidatesTags: (result, error, id) => [{ type: "Place", id }],
     }),
 
     // Experience endpoints
     getExperiences: builder.query<PaginatedResponse<Experience>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/experiences/',
-        params
+        url: "/experiences/",
+        params,
       }),
-      providesTags: ['Experience']
+      providesTags: ["Experience"],
     }),
     getExperience: builder.query<Experience, string>({
       query: (id) => `/experiences/${id}/`,
-      providesTags: (result, error, id) => [{ type: 'Experience', id }]
+      providesTags: (result, error, id) => [{ type: "Experience", id }],
     }),
-    checkExperienceAvailability: builder.query<
-      { available: boolean; capacity: number },
-      { id: string; date: string }
-    >({
+    checkExperienceAvailability: builder.query<{ available: boolean; capacity: number }, { id: string; date: string }>({
       query: ({ id, date }) => `/experiences/${id}/availability/?date=${date}`,
-      providesTags: ['Experience']
+      providesTags: ["Experience"],
     }),
     createExperience: builder.mutation<Experience, Partial<Experience>>({
       query: (body) => ({
-        url: '/experiences/',
-        method: 'POST',
-        body
+        url: "/experiences/",
+        method: "POST",
+        body,
       }),
-      invalidatesTags: ['Experience']
+      invalidatesTags: ["Experience"],
     }),
     updateExperience: builder.mutation<Experience, Partial<Experience> & { id: string }>({
       query: ({ id, ...patch }) => ({
         url: `/experiences/${id}/`,
-        method: 'PATCH',
-        body: patch
+        method: "PATCH",
+        body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Experience', id }]
+      invalidatesTags: (result, error, { id }) => [{ type: "Experience", id }],
     }),
-    
+
     deleteExperience: builder.mutation<void, string>({
       query: (id) => ({
         url: `/experiences/${id}/`,
-        method: 'DELETE'
+        method: "DELETE",
       }),
-      invalidatesTags: (result, error, id) => [{ type: 'Experience', id }]
+      invalidatesTags: (result, error, id) => [{ type: "Experience", id }],
     }),
     // Flight endpoints
     getFlights: builder.query<PaginatedResponse<Flight>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/flights/',
-        params
+        url: "/flights/",
+        params,
       }),
-      providesTags: ['Flight']
+      providesTags: ["Flight"],
     }),
     searchFlights: builder.query<
       PaginatedResponse<Flight>,
       { departure?: string; arrival?: string; date?: string; page?: number; page_size?: number }
     >({
       query: (params) => ({
-        url: '/flights/search/',
-        params
+        url: "/flights/search/",
+        params,
       }),
-      providesTags: ['Flight']
+      providesTags: ["Flight"],
     }),
     getFlight: builder.query<Flight, string>({
       query: (id) => `/flights/${id}/`,
-      providesTags: (result, error, id) => [{ type: 'Flight', id }]
+      providesTags: (result, error, id) => [{ type: "Flight", id }],
     }),
 
     // Box endpoints
     getBoxes: builder.query<PaginatedResponse<Box>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/boxes/',
-        params
+        url: "/boxes/",
+        params,
       }),
-      providesTags: ['Box']
+      providesTags: ["Box"],
     }),
     getBox: builder.query<Box, string>({
       query: (id) => `/boxes/${id}/`,
-      providesTags: (result, error, id) => [{ type: 'Box', id }]
+      providesTags: (result, error, id) => [{ type: "Box", id }],
     }),
     getBoxItinerary: builder.query<{ itinerary: string }, string>({
       query: (id) => `/boxes/${id}/itinerary/`,
-      providesTags: ['Box']
+      providesTags: ["Box"],
     }),
     createBox: builder.mutation<Box, Partial<Box>>({
       query: (body) => ({
-        url: '/boxes/',
-        method: 'POST',
-        body
+        url: "/boxes/",
+        method: "POST",
+        body,
       }),
-      invalidatesTags: ['Box']
+      invalidatesTags: ["Box"],
     }),
 
     // Booking endpoints
     getBookings: builder.query<PaginatedResponse<Booking>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/bookings/',
-        params
+        url: "/bookings/",
+        params,
       }),
-      providesTags: ['Booking']
+      providesTags: ["Booking"],
     }),
     getUpcomingBookings: builder.query<PaginatedResponse<Booking>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/bookings/upcoming/',
-        params
+        url: "/bookings/upcoming/",
+        params,
       }),
-      providesTags: ['Booking']
+      providesTags: ["Booking"],
     }),
     getBooking: builder.query<Booking, string>({
       query: (id) => `/bookings/${id}/`,
-      providesTags: (result, error, id) => [{ type: 'Booking', id }]
+      providesTags: (result, error, id) => [{ type: "Booking", id }],
     }),
     createBooking: builder.mutation<Booking, Partial<Booking>>({
       query: (body) => ({
-        url: '/bookings/',
-        method: 'POST',
-        body
+        url: "/bookings/",
+        method: "POST",
+        body,
       }),
-      invalidatesTags: ['Booking']
+      invalidatesTags: ["Booking"],
     }),
     updateBooking: builder.mutation<Booking, Partial<Booking> & { id: string }>({
       query: ({ id, ...patch }) => ({
         url: `/bookings/${id}/`,
-        method: 'PATCH',
-        body: patch
+        method: "PATCH",
+        body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Booking', id }]
+      invalidatesTags: (result, error, { id }) => [{ type: "Booking", id }],
     }),
     confirmBooking: builder.mutation<Booking, string>({
       query: (id) => ({
         url: `/bookings/${id}/confirm/`,
-        method: 'POST'
+        method: "POST",
       }),
-      invalidatesTags: ['Booking']
+      invalidatesTags: ["Booking"],
     }),
     cancelBooking: builder.mutation<Booking, string>({
       query: (id) => ({
         url: `/bookings/${id}/cancel/`,
-        method: 'POST'
+        method: "POST",
       }),
-      invalidatesTags: ['Booking']
+      invalidatesTags: ["Booking"],
     }),
 
     // Wishlist endpoints
     getWishlists: builder.query<PaginatedResponse<Wishlist>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/wishlists/',
-        params
+        url: "/wishlists/",
+        params,
       }),
-      providesTags: ['Wishlist']
+      providesTags: ["Wishlist"],
     }),
     getUserWishlist: builder.query<PaginatedResponse<Wishlist>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/wishlists/mine/',
-        params
+        url: "/wishlists/mine/",
+        params,
       }),
-      providesTags: ['Wishlist']
+      providesTags: ["Wishlist"],
     }),
     addToWishlist: builder.mutation<Wishlist, Partial<Wishlist>>({
       query: (body) => ({
-        url: '/wishlists/',
-        method: 'POST',
-        body
+        url: "/wishlists/",
+        method: "POST",
+        body,
       }),
-      invalidatesTags: ['Wishlist']
+      invalidatesTags: ["Wishlist"],
     }),
     removeFromWishlist: builder.mutation<void, string>({
       query: (id) => ({
         url: `/wishlists/${id}/`,
-        method: 'DELETE'
+        method: "DELETE",
       }),
-      invalidatesTags: ['Wishlist']
+      invalidatesTags: ["Wishlist"],
     }),
 
     // Review endpoints
     getReviews: builder.query<PaginatedResponse<Review>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/reviews/',
-        params
+        url: "/reviews/",
+        params,
       }),
-      providesTags: ['Review']
+      providesTags: ["Review"],
     }),
     getUserReviews: builder.query<PaginatedResponse<Review>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/reviews/my_reviews/',
-        params
+        url: "/reviews/my_reviews/",
+        params,
       }),
-      providesTags: ['Review']
+      providesTags: ["Review"],
     }),
     createReview: builder.mutation<Review, Partial<Review>>({
       query: (body) => ({
-        url: '/reviews/',
-        method: 'POST',
-        body
+        url: "/reviews/",
+        method: "POST",
+        body,
       }),
-      invalidatesTags: ['Review']
+      invalidatesTags: ["Review"],
     }),
     updateReview: builder.mutation<Review, Partial<Review> & { id: string }>({
       query: ({ id, ...patch }) => ({
         url: `/reviews/${id}/`,
-        method: 'PATCH',
-        body: patch
+        method: "PATCH",
+        body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Review', id }]
+      invalidatesTags: (result, error, { id }) => [{ type: "Review", id }],
     }),
 
     // Payment endpoints
     getPayments: builder.query<PaginatedResponse<Payment>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/payments/',
-        params
+        url: "/payments/",
+        params,
       }),
-      providesTags: ['Payment']
+      providesTags: ["Payment"],
     }),
     getPayment: builder.query<Payment, string>({
       query: (id) => `/payments/${id}/`,
-      providesTags: (result, error, id) => [{ type: 'Payment', id }]
+      providesTags: (result, error, id) => [{ type: "Payment", id }],
     }),
     markPaymentAsPaid: builder.mutation<Payment, string>({
       query: (id) => ({
         url: `/payments/${id}/mark_as_paid/`,
-        method: 'POST'
+        method: "POST",
       }),
-      invalidatesTags: ['Payment']
+      invalidatesTags: ["Payment"],
     }),
 
     // Message endpoints
     getMessages: builder.query<PaginatedResponse<Message>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/messages/',
-        params
+        url: "/messages/",
+        params,
       }),
-      providesTags: ['Message']
+      providesTags: ["Message"],
     }),
     getUnreadMessages: builder.query<PaginatedResponse<Message>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/messages/unread/',
-        params
+        url: "/messages/unread/",
+        params,
       }),
-      providesTags: ['Message']
+      providesTags: ["Message"],
     }),
     sendMessage: builder.mutation<Message, Partial<Message>>({
       query: (body) => ({
-        url: '/messages/',
-        method: 'POST',
-        body
+        url: "/messages/",
+        method: "POST",
+        body,
       }),
-      invalidatesTags: ['Message']
+      invalidatesTags: ["Message"],
     }),
     markMessageAsRead: builder.mutation<Message, string>({
       query: (id) => ({
         url: `/messages/${id}/mark_as_read/`,
-        method: 'POST'
+        method: "POST",
       }),
-      invalidatesTags: ['Message']
+      invalidatesTags: ["Message"],
     }),
 
     // Notification endpoints
     getNotifications: builder.query<PaginatedResponse<Notification>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/notifications/',
-        params
+        url: "/notifications/",
+        params,
       }),
-      providesTags: ['Notification']
+      providesTags: ["Notification"],
     }),
     getUnreadNotifications: builder.query<PaginatedResponse<Notification>, { page?: number; page_size?: number }>({
       query: (params) => ({
-        url: '/notifications/unread/',
-        params
+        url: "/notifications/unread/",
+        params,
       }),
-      providesTags: ['Notification']
+      providesTags: ["Notification"],
     }),
     markNotificationAsRead: builder.mutation<Notification, string>({
       query: (id) => ({
         url: `/notifications/${id}/mark_as_read/`,
-        method: 'POST'
+        method: "POST",
       }),
-      invalidatesTags: ['Notification']
+      invalidatesTags: ["Notification"],
     }),
     markAllNotificationsAsRead: builder.mutation<{ status: string }, void>({
       query: () => ({
-        url: '/notifications/mark_all_read/',
-        method: 'POST'
+        url: "/notifications/mark_all_read/",
+        method: "POST",
       }),
-      invalidatesTags: ['Notification']
-    })
-  })
-});
+      invalidatesTags: ["Notification"],
+    }),
+  }),
+})
 
 export const {
   // Authentication hooks
@@ -741,7 +762,6 @@ export const {
   useUpdatePlaceMutation,
   useDeletePlaceMutation,
 
-
   // Experience
   useGetExperiencesQuery,
   useGetExperienceQuery,
@@ -769,7 +789,7 @@ export const {
   useConfirmBookingMutation,
   useCancelBookingMutation,
   useUpdateBookingMutation,
-  
+
   // Wishlist
   useGetWishlistsQuery,
   useGetUserWishlistQuery,
@@ -797,5 +817,5 @@ export const {
   useGetNotificationsQuery,
   useGetUnreadNotificationsQuery,
   useMarkNotificationAsReadMutation,
-  useMarkAllNotificationsAsReadMutation
-} = api;
+  useMarkAllNotificationsAsReadMutation,
+} = api
