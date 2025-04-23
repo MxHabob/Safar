@@ -2,10 +2,11 @@
 import { useGetPlaceQuery } from "@/core/services/api";
 import { MediaGallery } from "@/components/global/media-gallery";
 import { Button } from "@/components/ui/button";
-import { ArrowBigLeft, Heart, Share } from "lucide-react";
+import { ArrowBigLeft, Share } from "lucide-react";
 import { GuestFavoriteBadge } from "@/components/global/cards/guest-favorite-badge";
 import MapboxMap from "@/components/global/mapBox";
 import { useRouter } from "next/navigation";
+import { WishlistButton } from "@/components/global/wishlist-button";
 
 export const PlacePageContent = ({ id }: { id: string }) => {
   const { data } = useGetPlaceQuery(id)
@@ -27,10 +28,7 @@ export const PlacePageContent = ({ id }: { id: string }) => {
             <Share className="h-5 w-5" />
             <span className="hidden sm:inline">Share</span>
           </Button>
-          <Button variant="ghost" className="flex items-center gap-2">
-            <Heart className="h-5 w-5" />
-            <span className="hidden sm:inline">Save</span>
-          </Button>
+          <WishlistButton itemId={data?.id || ""} itemType={"place"} isInwishlist={false} />
         </div>
       </div>
       <MediaGallery media={data?.media || []} className="mb-8" maxDisplay={5} />

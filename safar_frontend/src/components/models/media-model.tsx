@@ -89,7 +89,7 @@ export const MediaModal = () => {
           <div className="absolute inset-0 flex items-center justify-center">
             {isVideo ? (
               <video
-                src={currentMedia?.file}
+                src={currentMedia?.file || currentMedia?.url || ""}
                 className="rounded-lg max-h-full max-w-full"
                 controls
                 autoPlay
@@ -97,7 +97,7 @@ export const MediaModal = () => {
               />
             ) : (
               <Image
-                src={currentMedia?.file || "/placeholder.svg"}
+                src={currentMedia?.file || currentMedia?.url || ""}
                 alt="Media"
                 fill
                 className="rounded-lg object-contain"
@@ -107,7 +107,6 @@ export const MediaModal = () => {
             )}
           </div>
 
-          {/* Navigation arrows */}
           {allMedia.length > 1 && (
             <>
               <Button
@@ -167,7 +166,7 @@ export const MediaModal = () => {
                   {item.type === 'video' ? (
                     <div className="w-full h-full bg-black flex items-center justify-center">
                       <video
-                        src={item.file || ""}
+                        src={item.file || item.url || ""}
                         className="object-cover w-full h-full"
                         muted
                       />
@@ -179,7 +178,7 @@ export const MediaModal = () => {
                     </div>
                   ) : (
                     <Image
-                      src={item.file || ""}
+                      src={item.file || item.url || ""}
                       alt={`Thumbnail ${index + 1}`}
                       fill
                       className="object-cover"

@@ -69,7 +69,7 @@ export const WishlistButton = ({
 
   return (
     <InteractionButton
-     interactionType={InteractionType.WISHLIST_ADD} contentType="safar.Wishlist.wishlist" objectId={itemId}    
+     interactionType={InteractionType.WISHLIST_ADD} contentType="safar.wishlist" objectId={itemId}    
       onClick={handleWishlistToggle}
       className={cn(
         "rounded-full transition-colors",

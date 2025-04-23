@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -9,7 +8,6 @@ import { cn } from "@/lib/utils"
 import { ChevronLeft, ChevronRight, Grid } from "lucide-react"
 import { useModal } from "@/core/hooks/use-modal"
 import { Media } from "@/core/types"
-
 
 export interface MediaGalleryProps {
   media: Media[]
@@ -35,7 +33,6 @@ export const MediaGallery = ({
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const { onOpen } = useModal()
 
-  // Handle empty media array
   if (!media.length) {
     return (
       <div className={cn("relative overflow-hidden rounded-lg bg-muted", className)}>
@@ -53,7 +50,6 @@ export const MediaGallery = ({
     )
   }
 
-  // Ensure we don't try to display more images than we have
   const displayCount = Math.min(maxDisplay, media.length)
   const displayMedia = media.slice(0, displayCount)
   const hasMoreMedia = media.length > displayCount
@@ -95,7 +91,7 @@ export const MediaGallery = ({
         onClick={(e) => handleImageClick(0, e)}
       >
         <Image
-          src={displayMedia[0].file || "/placeholder.svg"}
+          src={displayMedia[0].file || displayMedia[0].url || ""}
           alt="Media"
           fill
           className="object-cover cursor-pointer"
@@ -109,6 +105,11 @@ export const MediaGallery = ({
           variant="secondary"
           size="sm"
           className="absolute bottom-2 right-2 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background/90"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            handleImageClick(0, e)
+          }}
         >
           <Grid className="h-4 w-4 mr-1" />
           <span className="text-xs">{media.length}</span>
@@ -129,14 +130,24 @@ export const MediaGallery = ({
               aspectRatio === "wide" && "aspect-[16/9] md:aspect-auto",
             )}
           >
-            <Image
-              src={displayMedia[0].file || "/placeholder.svg"}
-              alt="Main image"
-              fill
-              className="object-cover rounded-l-lg"
-              sizes="(max-width: 768px) 100vw, 50vw"
-              priority={priority}
-            />
+            {displayMedia[0].type === "video" ? (
+              <video
+                src={displayMedia[0].file || displayMedia[0].url || ""}
+                className="object-cover w-full h-full"
+                muted
+                autoPlay
+                loop
+              />
+            ) : (
+              <Image
+                src={displayMedia[0].file || displayMedia[0].url || ""}
+                alt="Main image"
+                fill
+                className="object-cover rounded-l-lg"
+                sizes="(max-width: 768px) 100vw, 50vw"
+                priority={priority}
+              />
+            )}
           </div>
         </div>
 
@@ -153,13 +164,23 @@ export const MediaGallery = ({
                 index === displayMedia.length - 2 && "rounded-br-lg",
               )}
             >
-              <Image
-                src={item.file || "/placeholder.svg"}
-                alt={`Image ${index + 2}`}
-                fill
-                className="object-cover"
-                sizes="25vw"
-              />
+              {item.type === "video" ? (
+                <video
+                  src={item.file || item.url || ""}
+                  className="object-cover w-full h-full"
+                  muted
+                  autoPlay
+                  loop
+                />
+              ) : (
+                <Image
+                  src={item.file || item.url || ""}
+                  alt={`Image ${index + 2}`}
+                  fill
+                  className="object-cover"
+                  sizes="25vw"
+                />
+              )}
             </div>
           </div>
         ))}
@@ -169,6 +190,11 @@ export const MediaGallery = ({
         <Button
           variant="secondary"
           className="absolute bottom-3 right-3 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background/90"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            handleImageClick(0, e)
+          }}
         >
           <Grid className="h-4 w-4 mr-2" />
           <span>{viewAllText}</span>
@@ -197,14 +223,24 @@ export const MediaGallery = ({
                 displayMedia.length % 2 === 0 && index === displayMedia.length - 1 && "rounded-br-lg",
               )}
             >
-              <Image
-                src={item.file || "/placeholder.svg"}
-                alt={`Image ${index + 1}`}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 50vw, 25vw"
-                priority={index === 0 && priority}
-              />
+              {item.type === "video" ? (
+                <video
+                  src={item.file || item.url || ""}
+                  className="object-cover w-full h-full"
+                  muted
+                  autoPlay
+                  loop
+                />
+              ) : (
+                <Image
+                  src={item.file || item.url || ""}
+                  alt={`Image ${index + 1}`}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                  priority={index === 0 && priority}
+                />
+              )}
             </div>
           </div>
         ))}
@@ -214,6 +250,11 @@ export const MediaGallery = ({
         <Button
           variant="secondary"
           className="absolute bottom-3 right-3 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background/90"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            handleImageClick(0, e)
+          }}
         >
           <Grid className="h-4 w-4 mr-2" />
           <span>{viewAllText}</span>
@@ -222,80 +263,112 @@ export const MediaGallery = ({
     </div>
   )
 
-  const renderCarouselVariant = () => (
-    <div className={cn("relative overflow-hidden rounded-lg", className)}>
-      <div
-        className={cn(
-          "w-full cursor-pointer",
-          aspectRatio === "square" && "aspect-square",
-          aspectRatio === "video" && "aspect-video",
-          aspectRatio === "wide" && "aspect-[16/9]",
+  const renderCarouselVariant = () => {
+    const currentMedia = displayMedia[currentImageIndex % displayMedia.length]
+    const isVideo = currentMedia.type === "video"
+
+    return (
+      <div className={cn("relative overflow-hidden rounded-lg group", className)}>
+        <div
+          className={cn(
+            "w-full cursor-pointer",
+            aspectRatio === "square" && "aspect-square",
+            aspectRatio === "video" && "aspect-video",
+            aspectRatio === "wide" && "aspect-[16/9]",
+          )}
+          onClick={(e) => handleImageClick(currentImageIndex, e)}
+        >
+          {isVideo ? (
+            <video
+              src={currentMedia.file || currentMedia.url || ""}
+              className="object-cover w-full h-full"
+              muted
+              autoPlay
+              loop
+              playsInline
+            />
+          ) : (
+            <Image
+              src={currentMedia.file || currentMedia.url || ""}
+              alt={`Image ${currentImageIndex + 1}`}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 50vw"
+              priority={priority}
+            />
+          )}
+        </div>
+
+        {displayMedia.length > 1 && (
+          <>
+            <Button
+              onClick={prevImage}
+              className="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-background/60 hover:bg-background/80 opacity-0 group-hover:opacity-100 transition-all duration-200"
+              size="icon"
+              variant="ghost"
+            >
+              <ChevronLeft className="h-5 w-5" />
+              <span className="sr-only">Previous image</span>
+            </Button>
+            <Button
+              onClick={nextImage}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-background/60 hover:bg-background/80 opacity-0 group-hover:opacity-100 transition-all duration-200"
+              size="icon"
+              variant="ghost"
+            >
+              <ChevronRight className="h-5 w-5" />
+              <span className="sr-only">Next image</span>
+            </Button>
+          </>
         )}
-        onClick={(e) => handleImageClick(currentImageIndex, e)}
-      >
-        <Image
-          src={displayMedia[currentImageIndex % displayMedia.length].file || "/placeholder.svg"}
-          alt={`Image ${currentImageIndex + 1}`}
-          fill
-          className="object-cover"
-          sizes="(max-width: 768px) 100vw, 50vw"
-          priority={priority}
-        />
-      </div>
 
-      {displayMedia.length > 1 && (
-        <>
-          <Button
-            onClick={prevImage}
-            className="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-background/60 hover:bg-background/80 opacity-0 group-hover:opacity-100 transition-all duration-200"
-            size="icon"
-            variant="ghost"
-          >
-            <ChevronLeft className="h-5 w-5" />
-            <span className="sr-only">Previous image</span>
-          </Button>
-          <Button
-            onClick={nextImage}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-background/60 hover:bg-background/80 opacity-0 group-hover:opacity-100 transition-all duration-200"
-            size="icon"
-            variant="ghost"
-          >
-            <ChevronRight className="h-5 w-5" />
-            <span className="sr-only">Next image</span>
-          </Button>
-        </>
-      )}
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+          {displayMedia.map((mediaItem, index) => {
+            const isActive = index === currentImageIndex % displayMedia.length
+            const isVideoItem = mediaItem.type === "video"
+            
+            return (
+              <button
+                key={index}
+                className={cn(
+                  "w-2 h-2 rounded-full transition-all cursor-pointer flex items-center justify-center",
+                  isActive ? "bg-white scale-125" : "bg-white/50",
+                  isVideoItem && isActive && "bg-blue-400",
+                  isVideoItem && !isActive && "bg-blue-400/50"
+                )}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setCurrentImageIndex(index)
+                }}
+                aria-label={`Go to ${isVideoItem ? 'video' : 'image'} ${index + 1}`}
+              >
+                {isActive && isVideoItem && (
+                  <span className="text-xs text-white">▶</span>
+                )}
+              </button>
+            )
+          })}
+        </div>
 
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-        {displayMedia.map((_, index) => (
-          <div
-            key={index}
-            className={cn(
-              "w-1.5 h-1.5 rounded-full transition-all cursor-pointer",
-              index === currentImageIndex % displayMedia.length ? "bg-white w-2.5" : "bg-white/50",
-            )}
+        {hasMoreMedia && showViewAll && (
+          <Button
+            variant="secondary"
+            className="absolute bottom-3 right-3 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background/90"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              setCurrentImageIndex(index)
+              handleImageClick(currentImageIndex, e)
             }}
-          />
-        ))}
+          >
+            <Grid className="h-4 w-4 mr-2" />
+            <span>{viewAllText}</span>
+          </Button>
+        )}
       </div>
+    )
+  }
 
-      {hasMoreMedia && showViewAll && (
-        <Button
-          variant="secondary"
-          className="absolute bottom-3 right-3 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background/90"
-        >
-          <Grid className="h-4 w-4 mr-2" />
-          <span>{viewAllText}</span>
-        </Button>
-      )}
-    </div>
-  )
-
-  // Render the appropriate variant
   const renderVariant = () => {
     switch (variant) {
       case "compact":
