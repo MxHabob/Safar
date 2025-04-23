@@ -42,10 +42,9 @@ const baseQuery = fetchBaseQuery({
     }
 
     else if (!token && url && !url.startsWith("/auth/")) {
-      headers.set("Authorization", `Api-Key ${apiKey}`)
       console.log("Setting auth header with API key", `Api-Key ${apiKey}`)
     } else {
-      console.log("No authorization credentials available for", url)
+      headers.set("Authorization", `Api-Key ${apiKey}`)
     }
 
     // CSRF token handling
