@@ -37,21 +37,8 @@ const baseQuery = fetchBaseQuery({
 
     if (token) {
       headers.set("Authorization", `Bearer ${token}`)
-      console.log("Setting auth header with token", `Bearer ${token}`)
     } else if (!url?.startsWith("/auth/") && apiKey) {
       headers.set("Authorization", `Api-Key ${apiKey}`)
-      console.log("Setting auth header with API key", `Api-Key ${apiKey}`)
-    }
-
-    if (typeof document !== "undefined") {
-      const csrfToken = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith("csrftoken"))
-        ?.split("=")[1]
-
-      if (csrfToken) {
-        headers.set("X-CSRFToken", csrfToken)
-      }
     }
 
     return headers
@@ -117,8 +104,7 @@ const baseQueryWithReauth: BaseQueryFn = async (args, api, extraOptions) => {
     }
   }
 
-  if (result.error?.status === 403) {
-    console.log("403 error detected, logging out")
+  if (result.error?.status === 401 || (result.error?.status === 403 && (result.error.data as { code?: string })?.code === "token_invalid")) {
     api.dispatch(logout())
   }
 

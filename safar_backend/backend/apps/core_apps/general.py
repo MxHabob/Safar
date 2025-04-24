@@ -34,7 +34,7 @@ class BaseModel(models.Model):
 
 class BaseViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter] 
-    # permission_classes = [IsAuthenticated or HasAPIKey]
+    permission_classes = [IsAuthenticated | HasAPIKey]
     pagination_class = GENPagination
     
     def get_queryset(self):
