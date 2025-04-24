@@ -333,8 +333,8 @@ export const MediaGallery = ({
                 className={cn(
                   "w-2 h-2 rounded-full transition-all cursor-pointer flex items-center justify-center",
                   isActive ? "bg-white scale-125" : "bg-white/50",
-                  isVideoItem && isActive && "bg-blue-400",
-                  isVideoItem && !isActive && "bg-blue-400/50"
+                  isVideoItem && isActive && "bg-primary",
+                  isVideoItem && !isActive && "bg-amber-50/50"
                 )}
                 onClick={(e) => {
                   e.preventDefault()
@@ -344,7 +344,7 @@ export const MediaGallery = ({
                 aria-label={`Go to ${isVideoItem ? 'video' : 'image'} ${index + 1}`}
               >
                 {isActive && isVideoItem && (
-                  <span className="text-xs text-white">▶</span>
+                  <span className="text-xs">--</span>
                 )}
               </button>
             )

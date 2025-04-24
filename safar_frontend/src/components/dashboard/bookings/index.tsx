@@ -216,7 +216,7 @@ export default function BookingsPageContent() {
           </p>
           {bookings.length === 0 && (
             <Button asChild className="mt-6">
-              <Link href="/explore">Explore Now</Link>
+              <Link href="/">Explore Now</Link>
             </Button>
           )}
         </div>
