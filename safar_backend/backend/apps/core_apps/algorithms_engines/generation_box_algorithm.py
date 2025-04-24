@@ -27,29 +27,28 @@ class BoxGenerator:
     """
 
     DEFAULT_CONSTRAINTS = {
-        'max_daily_items': 4,           # Max activities per day
-        'max_daily_hours': 10,          # Max hours of scheduled activities
-        'min_rest_hours': 8,             # Min hours for rest/overnight
-        'max_travel_time_minutes': 90,   # Max travel time between activities
-        'opening_hours': (9, 20),        # Typical opening hours (9am-8pm)
-        'max_daily_budget': None,        # Optional daily budget limit
-        'activity_weights': {            # Ideal distribution of activity types
+        'max_daily_items': 4,
+        'max_daily_hours': 10,
+        'min_rest_hours': 8,
+        'max_travel_time_minutes': 90,
+        'opening_hours': (9, 20),
+        'max_daily_budget': None,
+        'activity_weights': {
             'cultural': 0.4,
             'outdoor': 0.3,
             'leisure': 0.2,
             'shopping': 0.1
         },
-        'time_of_day_preferences': {     # When certain activities are best
+        'time_of_day_preferences': {
             'cultural': ['morning', 'afternoon'],
             'outdoor': ['morning', 'afternoon'],
             'leisure': ['afternoon', 'evening'],
             'shopping': ['afternoon']
         },
-        'min_activity_spacing_minutes': 60,  # Minimum time between activities
-        'avoid_peak_hours': True,        # Try to avoid peak hours at popular places
+        'min_activity_spacing_minutes': 60,
+        'avoid_peak_hours': True,
     }
 
-    # Time of day definitions (hour ranges)
     TIME_OF_DAY = {
         'morning': (8, 12),
         'afternoon': (12, 17),
@@ -92,16 +91,13 @@ class BoxGenerator:
             RuntimeError: If box generation fails
         """
         try:
-            # Validate inputs
+
             self._validate_inputs(destination, duration_days, budget)
             
-            # Adjust constraints based on theme
             self._apply_theme_constraints(theme)
             
-            # Calculate daily budget if total budget provided
             daily_budget = budget / duration_days if budget else None
             
-            # Create base box
             box = self._create_base_box(
                 destination=destination,
                 duration_days=duration_days,
@@ -109,13 +105,11 @@ class BoxGenerator:
                 theme=theme
             )
             
-            # Get recommendations for this box
             recommendations = self.recommendation_engine.recommend_for_box(
                 destination=destination,
                 duration_days=duration_days
             )
             
-            # Generate optimized itinerary
             itinerary = self._generate_itinerary(
                 box=box,
                 places=recommendations['places'],
@@ -123,11 +117,9 @@ class BoxGenerator:
                 daily_budget=daily_budget
             )
             
-            # Calculate and set total price
             box.total_price = self._calculate_total_price(itinerary)
             box.save()
             
-            # Add metadata about generation
             box.metadata.update({
                 'generated': True,
                 'algorithm_version': '2.0',
@@ -137,7 +129,6 @@ class BoxGenerator:
             })
             box.save()
             
-            # Create notification for the user
             self._create_box_notification(box)
             
             logger.info(f"Successfully generated box {box.id} for user {self.user.id}")
@@ -156,7 +147,6 @@ class BoxGenerator:
         Includes a deep link to the box in the metadata.
         """
         try:
-            # Generate deep link URL (assuming you have a URL named 'box-detail')
             absolute_deep_link = f"http://localhost:3000/box/{box.id}"
             
             Notification.objects.create(
@@ -178,7 +168,6 @@ class BoxGenerator:
             
         except Exception as e:
             logger.error(f"Failed to create notification for box {box.id}: {str(e)}")
-            # Don't fail the whole operation if notification fails
             pass
 
     def _validate_inputs(self, destination, duration_days, budget):
@@ -209,7 +198,7 @@ class BoxGenerator:
                 'activity_weights': {'leisure': 0.7, 'cultural': 0.2, 'shopping': 0.1},
                 'max_daily_items': 3,
                 'max_daily_hours': 6,
-                'min_activity_spacing_minutes': 120,  # More spacing between activities
+                'min_activity_spacing_minutes': 120,
                 'time_of_day_preferences': {
                     'leisure': ['morning', 'afternoon', 'evening'],
                     'cultural': ['afternoon'],
@@ -219,7 +208,7 @@ class BoxGenerator:
         elif theme == 'cultural':
             self.constraints.update({
                 'activity_weights': {'cultural': 0.7, 'outdoor': 0.2, 'leisure': 0.1},
-                'max_travel_time_minutes': 60,  # Keep activities close together
+                'max_travel_time_minutes': 60,
                 'time_of_day_preferences': {
                     'cultural': ['morning', 'afternoon'],
                     'outdoor': ['afternoon'],
@@ -229,8 +218,8 @@ class BoxGenerator:
         elif theme == 'family':
             self.constraints.update({
                 'activity_weights': {'outdoor': 0.4, 'cultural': 0.3, 'leisure': 0.2, 'shopping': 0.1},
-                'max_daily_hours': 8,  # Less tiring for kids
-                'max_travel_time_minutes': 45,  # Shorter travel times
+                'max_daily_hours': 8,
+                'max_travel_time_minutes': 45,
                 'time_of_day_preferences': {
                     'outdoor': ['morning', 'afternoon'],
                     'cultural': ['morning'],
@@ -261,7 +250,6 @@ class BoxGenerator:
             }
         }
         
-        # Set geographic fields based on destination type
         if isinstance(destination, City):
             box_data.update({
                 'city': destination,
@@ -276,7 +264,6 @@ class BoxGenerator:
         else:
             box_data['country'] = destination
             
-        # Set dates if provided
         if start_date:
             box_data.update({
                 'start_date': start_date,
@@ -312,18 +299,13 @@ class BoxGenerator:
         """
         itinerary_days = []
         
-        # Combine and prioritize all potential activities
         all_activities = self._combine_and_prioritize_activities(places, experiences)
         
-        # Group activities by geographic area for efficient routing
         clustered_activities = self._cluster_activities_by_location_ml(all_activities)
-        
-        # Check if we have weather data for the destination and dates
+
         has_weather_data = self._check_weather_data_availability(box)
         
-        # Generate each day's itinerary
         for day_num in range(1, box.duration_days + 1):
-            # Get weather for this day if available
             weather = self._get_weather_for_day(box, day_num) if has_weather_data else None
             
             day_itinerary = self._generate_day_itinerary(
@@ -335,21 +317,18 @@ class BoxGenerator:
             )
             itinerary_days.append(day_itinerary)
             
-            # Remove scheduled activities from consideration
             scheduled_ids = [
                 item.place_id or item.experience_id 
                 for item in day_itinerary.items.all() 
                 if item.place_id or item.experience_id
             ]
             
-            # Update clustered_activities to remove scheduled items
             for cluster in clustered_activities:
                 cluster['activities'] = [
                     act for act in cluster['activities'] 
                     if getattr(act, 'id', None) not in scheduled_ids
                 ]
             
-            # Remove empty clusters
             clustered_activities = [c for c in clustered_activities if c['activities']]
         
         return itinerary_days
@@ -361,12 +340,11 @@ class BoxGenerator:
         """
         activities = []
         
-        # Convert places to activity format
         for place in places:
             activities.append({
                 'type': 'place',
                 'object': place,
-                'duration': place.metadata.get('average_visit_duration', 120),  # Default 2 hours
+                'duration': place.metadata.get('average_visit_duration', 120),
                 'cost': place.price or 0,
                 'opening_hours': place.metadata.get('opening_hours'),
                 'activity_type': place.metadata.get('activity_type', 'cultural'),
@@ -374,7 +352,6 @@ class BoxGenerator:
                 'indoor': place.metadata.get('is_indoor', False)
             })
         
-        # Convert experiences to activity format
         for experience in experiences:
             activities.append({
                 'type': 'experience',
@@ -387,12 +364,11 @@ class BoxGenerator:
                 'indoor': experience.metadata.get('is_indoor', False)
             })
         
-        # Calculate personalization score for each activity
+
         for activity in activities:
             activity['personalization_score'] = self.recommendation_engine.calculate_personalization_score(activity['object'])
             activity['rating'] = getattr(activity['object'], 'rating', 3.0)
         
-        # Sort by personalization score and rating
         return sorted(
             activities,
             key=lambda x: (
@@ -416,48 +392,38 @@ class BoxGenerator:
         if not activities:
             return []
             
-        # Get only activities with locations
         located_activities = [a for a in activities if hasattr(a['object'], 'location') and a['object'].location]
         
-        # If no locations, return one cluster with all activities
         if not located_activities:
             return [{
                 'center': None,
                 'activities': [a['object'] for a in activities]
             }]
         
-        # Extract coordinates for clustering
         coordinates = []
         for activity in located_activities:
             loc = activity['object'].location
-            coordinates.append([loc.x, loc.y])  # Longitude, Latitude
+            coordinates.append([loc.x, loc.y])
         
-        # Convert to numpy array
         X = np.array(coordinates)
         
         if len(X) < 2:
-            # Not enough points for clustering
             return [{
                 'center': located_activities[0]['object'].location,
                 'activities': [a['object'] for a in located_activities]
             }]
-        
-        # Calculate epsilon in degrees (approximate conversion from km)
-        # 1 degree latitude ≈ 111 km, but longitude varies with latitude
+
         avg_lat = np.mean(X[:, 1])
         km_per_degree_lon = 111 * np.cos(np.radians(avg_lat))
         epsilon_lat = max_distance_km / 111.0
         epsilon_lon = max_distance_km / km_per_degree_lon
         
-        # Custom distance metric using Django's GIS functionality
         def gis_distance(p1, p2):
             """Calculate distance between two points using Django GIS"""
-            point1 = Point(p1[0], p1[1], srid=4326)  # WGS84 SRID
+            point1 = Point(p1[0], p1[1], srid=4326)
             point2 = Point(p2[0], p2[1], srid=4326)
-            # Convert to meters and then to kilometers
-            return point1.distance(point2) * 100  # Approximate conversion to km
-        
-        # Use DBSCAN for clustering with our custom GIS distance metric
+            return point1.distance(point2) * 100
+ 
         db = DBSCAN(
             eps=max(epsilon_lat, epsilon_lon),
             min_samples=1,
@@ -465,14 +431,12 @@ class BoxGenerator:
         ).fit(X)
         
         labels = db.labels_
-        
-        # Group activities by cluster
+ 
         clusters = []
         for label in set(labels):
             cluster_indices = np.where(labels == label)[0]
             cluster_activities = [located_activities[i]['object'] for i in cluster_indices]
-            
-            # Calculate centroid
+
             cluster_points = [act.location for act in cluster_activities]
             centroid = self._calculate_centroid(cluster_points)
             
@@ -480,8 +444,7 @@ class BoxGenerator:
                 'center': centroid,
                 'activities': cluster_activities
             })
-        
-        # Add any remaining non-located activities to a separate cluster
+
         non_located = [
             a['object'] for a in activities 
             if not (hasattr(a['object'], 'location') and a['object'].location)
@@ -505,30 +468,24 @@ class BoxGenerator:
 
     def _check_weather_data_availability(self, box):
         """Check if weather data is available for this box's location and dates"""
-        # This is a placeholder - implement based on your weather data source
         try:
             if not box.start_date:
                 return False
-                
-            # Check if we have a weather service integration
-            # and if we have data for this location and date range
-            return False  # Replace with actual implementation
+
+            return False
         except Exception as e:
             logger.warning(f"Error checking weather data: {str(e)}")
             return False
 
     def _get_weather_for_day(self, box, day_num):
         """Get weather forecast for a specific day"""
-        # This is a placeholder - implement based on your weather data source
         try:
             if not box.start_date:
                 return None
                 
             date = box.start_date + timedelta(days=day_num - 1)
-            
-            # Fetch weather data for this date and location
-            # Return None if not available
-            return None  # Replace with actual implementation
+
+            return None
         except Exception as e:
             logger.warning(f"Error fetching weather data: {str(e)}")
             return None
@@ -549,51 +506,41 @@ class BoxGenerator:
             date=box.start_date + timedelta(days=day_num - 1) if box.start_date else None
         )
         
-        # Add weather information to day metadata if available
         if weather:
             day.metadata = {'weather': weather}
             day.save()
-        
-        # Initialize scheduling parameters
+
         selected_items = []
         remaining_hours = self.constraints['max_daily_hours']
         remaining_budget = daily_budget
         activity_counts = {key: 0 for key in self.constraints['activity_weights'].keys()}
         
-        # Calculate target counts for each activity type
         target_counts = {
             key: round(val * self.constraints['max_daily_items'])
             for key, val in self.constraints['activity_weights'].items()
         }
         
-        # Adjust for weather if available
         if weather and 'condition' in weather:
             self._adjust_for_weather(target_counts, weather)
-        
-        # Initialize time slots for the day
+
         time_slots = self._initialize_time_slots(day)
-        
-        # Select a cluster for this day (geographic focus)
+
         selected_cluster = self._select_best_cluster_for_day(clustered_activities, day_num, box.duration_days)
         
         if not selected_cluster:
-            # No suitable cluster found, use all available activities
             all_activities = []
             for cluster in clustered_activities:
                 all_activities.extend(cluster['activities'])
             
             if not all_activities:
-                # No activities available
                 logger.warning(f"No activities available for day {day_num}")
                 return day
                 
-            # Sort activities by priority
             all_activities.sort(
                 key=lambda x: self._activity_priority_score(x, activity_counts, target_counts),
                 reverse=True
             )
-            
-            # Schedule activities
+
             self._schedule_activities_in_time_slots(
                 day=day,
                 activities=all_activities,
@@ -603,7 +550,6 @@ class BoxGenerator:
                 remaining_budget=remaining_budget
             )
         else:
-            # Schedule activities from the selected cluster
             self._schedule_activities_in_time_slots(
                 day=day,
                 activities=selected_cluster['activities'],
@@ -620,43 +566,36 @@ class BoxGenerator:
         condition = weather.get('condition', '').lower()
         
         if 'rain' in condition or 'snow' in condition or 'storm' in condition:
-            # Increase indoor activities, decrease outdoor
             if 'outdoor' in target_counts and 'cultural' in target_counts:
                 target_counts['outdoor'] = max(0, target_counts['outdoor'] - 1)
                 target_counts['cultural'] = target_counts['cultural'] + 1
         elif 'sunny' in condition or 'clear' in condition:
-            # Increase outdoor activities
             if 'outdoor' in target_counts and 'cultural' in target_counts:
                 target_counts['outdoor'] = target_counts['outdoor'] + 1
                 target_counts['cultural'] = max(0, target_counts['cultural'] - 1)
 
     def _initialize_time_slots(self, day):
         """Initialize time slots for scheduling activities"""
-        # Default day starts at 9:00 and ends at 20:00
         start_hour, end_hour = self.constraints['opening_hours']
         
-        # Create 30-minute time slots
         time_slots = []
-        current_time = time(start_hour, 0)  # Start at 9:00
+        current_time = time(start_hour, 0)
         
         while current_time.hour < end_hour:
-            # Create a time slot
             slot = {
                 'start_time': current_time,
                 'is_available': True,
                 'activity': None
             }
-            
-            # Calculate end time (30 minutes later)
+
             minutes = current_time.minute + 30
             hour = current_time.hour + minutes // 60
             minutes = minutes % 60
             
-            if hour < 24:  # Ensure we don't go past midnight
+            if hour < 24:
                 slot['end_time'] = time(hour, minutes)
                 time_slots.append(slot)
             
-            # Move to next slot
             current_time = slot['end_time']
         
         return time_slots
@@ -666,21 +605,17 @@ class BoxGenerator:
         if not clustered_activities:
             return None
             
-        # For single-day trips, use the highest priority cluster
         if total_days == 1:
             return max(clustered_activities, key=lambda c: sum(
                 self._get_activity_priority(a) for a in c['activities']
             ))
-        
-        # For multi-day trips, try to distribute clusters across days
-        # Sort clusters by priority
+
         sorted_clusters = sorted(
             clustered_activities,
             key=lambda c: sum(self._get_activity_priority(a) for a in c['activities']),
             reverse=True
         )
-        
-        # Distribute clusters evenly across days
+
         cluster_index = (day_num - 1) % len(sorted_clusters)
         return sorted_clusters[cluster_index]
 
@@ -692,25 +627,21 @@ class BoxGenerator:
 
     def _schedule_activities_in_time_slots(self, day, activities, time_slots, activity_counts, target_counts, remaining_budget):
         """Schedule activities in available time slots"""
-        # Sort activities by priority score
         sorted_activities = sorted(
             activities,
             key=lambda x: self._activity_priority_score(x, activity_counts, target_counts),
             reverse=True
         )
-        
-        # Track scheduled items
+
         scheduled_items = []
-        
-        # First pass: schedule activities based on time of day preferences
+
         for activity in sorted_activities:
             if len(scheduled_items) >= self.constraints['max_daily_items']:
                 break
                 
             activity_type = getattr(activity, 'metadata', {}).get('activity_type', 'cultural')
             preferred_times = self.constraints['time_of_day_preferences'].get(activity_type, ['morning', 'afternoon'])
-            
-            # Find suitable time slot
+
             suitable_slot = self._find_suitable_time_slot(
                 activity=activity,
                 time_slots=time_slots,
@@ -718,12 +649,10 @@ class BoxGenerator:
             )
             
             if suitable_slot:
-                # Check budget constraint
                 cost = self._get_activity_cost(activity)
                 if remaining_budget is not None and cost > remaining_budget:
                     continue
-                
-                # Create itinerary item
+
                 item = self._create_itinerary_item(
                     day=day,
                     activity=activity,
@@ -738,8 +667,7 @@ class BoxGenerator:
                 
                 if remaining_budget is not None:
                     remaining_budget -= cost
-        
-        # Second pass: fill any remaining slots
+
         if len(scheduled_items) < self.constraints['max_daily_items']:
             for activity in sorted_activities:
                 if activity in [item.place or item.experience for item in scheduled_items]:
@@ -747,21 +675,18 @@ class BoxGenerator:
                     
                 if len(scheduled_items) >= self.constraints['max_daily_items']:
                     break
-                
-                # Find any available time slot
+       
                 suitable_slot = self._find_suitable_time_slot(
                     activity=activity,
                     time_slots=time_slots,
-                    preferred_times=None  # Any time is fine
+                    preferred_times=None
                 )
                 
                 if suitable_slot:
-                    # Check budget constraint
                     cost = self._get_activity_cost(activity)
                     if remaining_budget is not None and cost > remaining_budget:
                         continue
                     
-                    # Create itinerary item
                     item = self._create_itinerary_item(
                         day=day,
                         activity=activity,
@@ -777,19 +702,16 @@ class BoxGenerator:
                     
                     if remaining_budget is not None:
                         remaining_budget -= cost
-        
-        # Bulk create items
+
         BoxItineraryItem.objects.bulk_create(scheduled_items)
 
     def _find_suitable_time_slot(self, activity, time_slots, preferred_times=None):
         """Find a suitable time slot for an activity"""
         duration_minutes = self._get_activity_duration(activity)
         slots_needed = max(1, duration_minutes // 30)
-        
-        # Get opening hours for the activity
+
         opening_hours = self._get_activity_opening_hours(activity)
-        
-        # Filter time slots by preferred times of day
+
         if preferred_times:
             preferred_slots = []
             for slot in time_slots:
@@ -808,20 +730,16 @@ class BoxGenerator:
         else:
             preferred_slots = [slot for slot in time_slots if slot['is_available']]
         
-        # Find consecutive available slots
         for i in range(len(preferred_slots) - slots_needed + 1):
             consecutive_slots = preferred_slots[i:i+slots_needed]
             
-            # Check if all slots are available and consecutive
             if all(slot['is_available'] for slot in consecutive_slots):
-                # Check if slots are within opening hours
                 start_time = consecutive_slots[0]['start_time']
                 end_time = consecutive_slots[-1]['end_time']
                 
                 if opening_hours and not self._is_within_opening_hours(start_time, end_time, opening_hours):
                     continue
                 
-                # Mark slots as used
                 for slot in consecutive_slots:
                     slot['is_available'] = False
                     slot['activity'] = activity
@@ -838,14 +756,12 @@ class BoxGenerator:
         if not opening_hours:
             return True
             
-        # Parse opening hours
         try:
-            open_time = time(opening_hours[0], 0)  # e.g., 9:00
-            close_time = time(opening_hours[1], 0)  # e.g., 17:00
+            open_time = time(opening_hours[0], 0)
+            close_time = time(opening_hours[1], 0)
             
             return open_time <= start_time and end_time <= close_time
         except (IndexError, TypeError):
-            # If opening hours format is invalid, assume always open
             return True
 
     def _create_itinerary_item(self, day, activity, start_time, end_time, order, cost):
@@ -862,10 +778,9 @@ class BoxGenerator:
             notes=self._generate_activity_notes(activity)
         )
         
-        # Set either place or experience
-        if hasattr(activity, 'price'):  # Place
+        if hasattr(activity, 'price'):
             item.place = activity
-        else:  # Experience
+        else: 
             item.experience = activity
         
         return item
@@ -882,29 +797,26 @@ class BoxGenerator:
         type_need = max(0, target_counts.get(activity_type, 0) - current_counts.get(activity_type, 0))
         
         personalization_score = self.recommendation_engine.calculate_personalization_score(activity)
-        rating = getattr(activity, 'rating', 3.0)  # Default to average if no rating
+        rating = getattr(activity, 'rating', 3.0)
         
-        # Calculate weather compatibility
         weather_score = 1.0
         if hasattr(activity, 'metadata') and 'is_indoor' in activity.metadata:
             is_indoor = activity.metadata['is_indoor']
-            # Weather score would be calculated based on current weather
-            # This is a placeholder
             weather_score = 1.0
         
         return (type_need * 0.4) + (personalization_score * 0.3) + (rating * 0.2) + (weather_score * 0.1)
 
     def _get_activity_duration(self, activity):
         """Get estimated duration for an activity in minutes"""
-        if hasattr(activity, 'duration'):  # Experience
+        if hasattr(activity, 'duration'):
             return activity.duration
-        return getattr(activity, 'metadata', {}).get('average_visit_duration', 120)  # Default 2 hours for places
+        return getattr(activity, 'metadata', {}).get('average_visit_duration', 120)
 
     def _get_activity_cost(self, activity):
         """Get cost for an activity"""
-        if hasattr(activity, 'price_per_person'):  # Experience
+        if hasattr(activity, 'price_per_person'):
             return activity.price_per_person
-        return getattr(activity, 'price', 0) or 0  # Place
+        return getattr(activity, 'price', 0) or 0 
 
     def _get_activity_opening_hours(self, activity):
         """Get opening hours for an activity"""
@@ -950,10 +862,8 @@ class BoxGenerator:
         """
         try:
             with transaction.atomic():
-                # Delete existing itinerary
                 box.itinerary_days.all().delete()
-                
-                # Regenerate with current recommendations
+
                 destination = box.city or box.region or box.country
                 return self.generate_box(
                     destination=destination,
@@ -980,7 +890,6 @@ class BoxGenerator:
         """
         try:
             with transaction.atomic():
-                # Create new box with modified properties
                 new_box = Box.objects.create(
                     name=f"{original_box.name} (Modified)",
                     duration_days=modifications.get('duration_days', original_box.duration_days),
@@ -998,7 +907,6 @@ class BoxGenerator:
                     }
                 )
                 
-                # Copy itinerary with adjustments
                 for old_day in original_box.itinerary_days.order_by('day_number'):
                     new_day = BoxItineraryDay.objects.create(
                         box=new_box,
