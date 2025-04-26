@@ -27,14 +27,14 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
       contentType="safar_place"
       objectId={place.id}
     >
-      <div className="flex flex-col w-full h-full rounded-3xl bg-card shadow-md overflow-hidden transition-all hover:shadow-lg">
-        <div className="relative w-full aspect-[3/4]">
+       <div className="flex flex-col w-full h-full rounded-3xl bg-card shadow-md overflow-hidden transition-all hover:shadow-lg">
           <MediaGallery
             media={place.media || []}
             variant="carousel"
             aspectRatio="video"
             priority
             showViewAll={false}
+            className="relative w-full"
           />
 
           {place?.category?.name && (
@@ -94,7 +94,6 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
             <div className="font-semibold text-base">{formattedPrice}</div>
           </div>
         </div>
-      </div>
     </InteractionLink>
   );
 };
