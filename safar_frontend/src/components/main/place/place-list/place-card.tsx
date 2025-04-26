@@ -6,14 +6,19 @@ import { WishlistButton } from "@/components/global/wishlist-button";
 import InteractionLink from "@/components/global/interaction-link";
 import { MediaGallery } from "@/components/global/media-gallery";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formattedPrice } "@/lib/utils/date-formatter";
+
 
 interface PlaceCardProps {
   place: Place
 }
 
 export const PlaceCard = ({ place }: PlaceCardProps) => {
-
+  const formattedPrice = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: place.currency || "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(place.price || 0)
   return (
  <InteractionLink
       href={`/places/${place.id}`}
@@ -75,7 +80,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
               {place.city && place.region && <span className="mr-1">,</span>}
               {place.region && <span>{place.region.name}</span>}
             </div>
-            <div className="font-semibold text-base">{formattedPrice(place.currency ,place.price )}</div>
+            <div className="font-semibold text-base">{formattedPrice}</div>
           </div>
         </div>
       </div>
