@@ -1,3 +1,16 @@
+"use client";
+import { MapPin } from "lucide-react";
+import { InteractionType, Place } from "@/core/types";
+import { Badge } from "@/components/ui/badge";
+import { WishlistButton } from "@/components/global/wishlist-button";
+import InteractionLink from "@/components/global/interaction-link";
+import { MediaGallery } from "@/components/global/media-gallery";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface PlaceCardProps {
+  place: Place
+}
+
 export const PlaceCard = ({ place }: PlaceCardProps) => {
   const formattedPrice = new Intl.NumberFormat("en-US", {
     style: "currency",
