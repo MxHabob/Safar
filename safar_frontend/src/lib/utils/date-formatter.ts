@@ -32,7 +32,7 @@ export function formatDate(dateString?: string, options?: Intl.DateTimeFormatOpt
     })
   }
   
-export function formattedPrice(currency: string = "USD", price: number = 0) {
+export const formattedPrice = (currency: string = "USD", price: number = 0) => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
