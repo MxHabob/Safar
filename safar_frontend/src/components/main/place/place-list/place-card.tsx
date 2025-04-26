@@ -27,8 +27,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
       contentType={"safar_place"}
       objectId={place.id}
     >
-    <div className="relative w-full aspect-[3/3] rounded-3xl bg-card shadow-md overflow-hidden group transition-all hover:shadow-lg">
-        <div className="relative aspect-[4/3] w-full overflow-hidden flex-shrink-0">
+    <div className="relative w-full aspect-[3/4] rounded-3xl bg-card shadow-md overflow-hidden group transition-all hover:shadow-lg">
           <MediaGallery media={place.media || []} variant="carousel" aspectRatio="video" priority showViewAll={false} />
 
           {place?.category?.name && (
@@ -83,7 +82,6 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
             <div className="font-semibold text-base">{formattedPrice}</div>
           </div>
         </div>
-      </div>
     </InteractionLink>
   )
 }
