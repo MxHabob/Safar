@@ -27,7 +27,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
       contentType={"safar_place"}
       objectId={place.id}
     >
-    <div className="relative w-full aspect-[3/4] rounded-3xl bg-card shadow-md overflow-hidden group transition-all hover:shadow-lg">
+    <div className="relative w-full aspect-[3/5] rounded-3xl bg-card shadow-md overflow-hidden group transition-all hover:shadow-lg">
         <div className="relative aspect-[4/3] w-full overflow-hidden flex-shrink-0">
           <MediaGallery media={place.media || []} variant="carousel" aspectRatio="video" priority showViewAll={false} />
 
