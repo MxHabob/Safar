@@ -45,12 +45,12 @@ export const ListPlaces = ({ selected }: Props) => {
 
   return (
     <div className="flex flex-col w-full mt-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-12 w-full overflow-x-auto pb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full pb-4">
       {allFetchedPlaces.length > 0 ? (
           allFetchedPlaces.map((place) => (
-            <div
+             <div
               key={place.id}
-              className={`transition-all duration-200 ${
+              className={`w-full transition-all duration-200 ${
                 selected === place.id ? "scale-[1.02] ring-2 ring-primary ring-offset-2 rounded-3xl" : ""
               }`}
             >
@@ -58,14 +58,14 @@ export const ListPlaces = ({ selected }: Props) => {
             </div>
           ))
         ) : !isLoading ? (
-          <div className="flex justify-center items-center p-8 text-gray-500 col-span-full">
+           <div className="flex justify-center items-center p-8 text-gray-500 col-span-full">
             <p>No places found.</p>
           </div>
         ) : null}
 
         {isLoading && isFetching && (
           <div className="flex justify-center p-6 col-span-full">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-12 w-full overflow-x-auto pb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full pb-4">
             <PlaceCard.Skeleton />
             <PlaceCard.Skeleton />
             <PlaceCard.Skeleton />

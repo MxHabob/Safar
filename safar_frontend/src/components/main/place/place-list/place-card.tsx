@@ -6,29 +6,24 @@ import { WishlistButton } from "@/components/global/wishlist-button";
 import InteractionLink from "@/components/global/interaction-link";
 import { MediaGallery } from "@/components/global/media-gallery";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formattedPrice } "@/lib/utils/date-formatter";
 
 interface PlaceCardProps {
   place: Place
 }
 
 export const PlaceCard = ({ place }: PlaceCardProps) => {
-  const formattedPrice = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: place.currency || "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(place.price || 0)
 
   return (
-    <InteractionLink
+ <InteractionLink
       href={`/places/${place.id}`}
-      className="block"
+      className="block w-full h-full"
       interactionType={InteractionType.VIEW_PLACE}
       contentType={"safar_place"}
       objectId={place.id}
     >
-      <div className="relative w-full min-w-52 min-h-52 rounded-3xl bg-card shadow-md overflow-hidden group transition-all hover:shadow-lg">
-        <div className="relative aspect-[4/3] w-full overflow-hidden">
+      <div className="relative w-full h-full min-w-0 rounded-3xl bg-card shadow-md overflow-hidden group transition-all hover:shadow-lg flex flex-col">
+        <div className="relative aspect-[4/3] w-full overflow-hidden flex-shrink-0">
           <MediaGallery media={place.media || []} variant="carousel" aspectRatio="video" priority showViewAll={false} />
 
           {place?.category?.name && (
@@ -39,7 +34,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
             itemId={place.id}
             itemType={"place"}
             isInwishlist={place.is_in_wishlist || false}
-            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100  transition-all duration-200"
+            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200"
             size="default"
             variant="outline"
           />
@@ -51,7 +46,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
           )}
         </div>
 
-        <div className="p-4">
+        <div className="p-4 flex flex-col flex-grow">
           <div className="flex justify-between items-start mb-1.5">
             <h3 className="font-semibold text-lg line-clamp-1">
               {place.name}
@@ -65,7 +60,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
             )}
           </div>
 
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2.5 line-clamp-2">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2.5 line-clamp-2 flex-grow">
             {place.description || "No description available"}
           </p>
 
@@ -80,7 +75,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
               {place.city && place.region && <span className="mr-1">,</span>}
               {place.region && <span>{place.region.name}</span>}
             </div>
-            <div className="font-semibold text-base">{formattedPrice}</div>
+            <div className="font-semibold text-base">{formattedPrice(place.currency ,place.price )}</div>
           </div>
         </div>
       </div>
