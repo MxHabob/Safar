@@ -263,111 +263,62 @@ export const MediaGallery = ({
     </div>
   )
 
-  const renderCarouselVariant = () => {
-    const currentMedia = displayMedia[currentImageIndex % displayMedia.length]
-    const isVideo = currentMedia.type === "video"
+const renderCarouselVariant = () => {
+  const currentMedia = displayMedia[currentImageIndex % displayMedia.length];
+  const isVideo = currentMedia.type === "video";
 
-    return (
-      <div className={cn("relative overflow-hidden rounded-lg group", className)}>
-        <div
-          className={cn(
-            "w-full cursor-pointer",
-            aspectRatio === "square" && "aspect-square",
-            aspectRatio === "video" && "aspect-video",
-            aspectRatio === "wide" && "aspect-[16/9]",
-          )}
-          onClick={(e) => handleImageClick(currentImageIndex, e)}
-        >
-          {isVideo ? (
-            <video
-              src={currentMedia.file || currentMedia.url || ""}
-              className="object-cover w-full h-full"
-              muted
-              autoPlay
-              loop
-              playsInline
-            />
-          ) : (
-            <Image
-              src={currentMedia.file || currentMedia.url || ""}
-              alt={`Image ${currentImageIndex + 1}`}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 50vw"
-              priority={priority}
-            />
-          )}
-        </div>
-
-        {displayMedia.length > 1 && (
-          <>
-            <Button
-              onClick={prevImage}
-              className="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-background/60 hover:bg-background/80 opacity-0 group-hover:opacity-100 transition-all duration-200"
-              size="icon"
-              variant="ghost"
-            >
-              <ChevronLeft className="h-5 w-5" />
-              <span className="sr-only">Previous image</span>
-            </Button>
-            <Button
-              onClick={nextImage}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-background/60 hover:bg-background/80 opacity-0 group-hover:opacity-100 transition-all duration-200"
-              size="icon"
-              variant="ghost"
-            >
-              <ChevronRight className="h-5 w-5" />
-              <span className="sr-only">Next image</span>
-            </Button>
-          </>
+  return (
+    <div className={cn("relative overflow-hidden rounded-lg group", className)}>
+      <div
+        className={cn(
+          "w-full",
+          aspectRatio === "square" && "aspect-square",
+          aspectRatio === "video" && "aspect-video",
+          aspectRatio === "wide" && "aspect-[16/9]"
         )}
-
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-          {displayMedia.map((mediaItem, index) => {
-            const isActive = index === currentImageIndex % displayMedia.length
-            const isVideoItem = mediaItem.type === "video"
-            
-            return (
-              <button
-                key={index}
-                className={cn(
-                  "w-2 h-2 rounded-full transition-all cursor-pointer flex items-center justify-center",
-                  isActive ? "bg-white scale-125" : "bg-white/50",
-                  isVideoItem && isActive && "bg-primary",
-                  isVideoItem && !isActive && "bg-amber-50/50"
-                )}
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  setCurrentImageIndex(index)
-                }}
-                aria-label={`Go to ${isVideoItem ? 'video' : 'image'} ${index + 1}`}
-              >
-                {isActive && isVideoItem && (
-                  <span className="text-xs">--</span>
-                )}
-              </button>
-            )
-          })}
-        </div>
-
-        {hasMoreMedia && showViewAll && (
-          <Button
-            variant="secondary"
-            className="absolute bottom-3 right-3 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background/90"
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              handleImageClick(currentImageIndex, e)
-            }}
-          >
-            <Grid className="h-4 w-4 mr-2" />
-            <span>{viewAllText}</span>
-          </Button>
+        onClick={(e) => handleImageClick(currentImageIndex, e)}
+      >
+        {isVideo ? (
+          <video
+            src={currentMedia.file || currentMedia.url || ""}
+            className="object-cover w-full h-full"
+            muted
+            autoPlay
+            loop
+          />
+        ) : (
+          <Image
+            src={currentMedia.file || currentMedia.url || ""}
+            alt={`Image ${currentImageIndex + 1}`}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 50vw"
+            priority={priority}
+          />
         )}
       </div>
-    )
-  }
+
+      {displayMedia.length > 1 && (
+        <>
+          <button
+            onClick={prevImage}
+            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-background/70 hover:bg-background/90 rounded-full p-2 backdrop-blur-sm hidden group-hover:block"
+          >
+            <ChevronLeft className="h-5 w-5 text-foreground" />
+          </button>
+
+          <button
+            onClick={nextImage}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-background/70 hover:bg-background/90 rounded-full p-2 backdrop-blur-sm hidden group-hover:block"
+          >
+            <ChevronRight className="h-5 w-5 text-foreground" />
+          </button>
+        </>
+      )}
+    </div>
+  );
+};
+
 
   const renderVariant = () => {
     switch (variant) {
