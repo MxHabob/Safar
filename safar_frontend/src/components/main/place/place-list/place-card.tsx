@@ -29,7 +29,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
     >
       <div className="relative w-full min-w-52 min-h-52 rounded-3xl bg-card shadow-md overflow-hidden group transition-all hover:shadow-lg">
         <div className="relative aspect-[4/3] w-full overflow-hidden">
-          <MediaGallery media={place.media || []} variant="carousel" aspectRatio="video" priority />
+          <MediaGallery media={place.media || []} variant="carousel" aspectRatio="video" priority showViewAll={false} />
 
           {place?.category?.name && (
             <Badge className="absolute top-3 left-3 px-2 py-1 border-none">{place.category.name}</Badge>

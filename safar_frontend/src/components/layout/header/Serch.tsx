@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 
 export function MSearch() {
   return (
-        <div className="relative mx-auto max-w-4xl ">
+        <div className="relative mx-auto max-w-4xl py-2">
           <div className="flex items-center rounded-full bg-card shadow-lg">
             <div className="flex-1 px-6 py-3">
               <div className="text-sm font-medium">Where</div>
