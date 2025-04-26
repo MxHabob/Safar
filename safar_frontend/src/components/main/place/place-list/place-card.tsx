@@ -27,41 +27,43 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
       contentType="safar_place"
       objectId={place.id}
     >
-       <div className="flex flex-col w-full h-full rounded-3xl bg-card shadow-md overflow-hidden transition-all hover:shadow-lg">
-          <MediaGallery
-            media={place.media || []}
-            variant="carousel"
-            aspectRatio="video"
-            priority
-            showViewAll={false}
-            className="relative w-full"
-          />
+      <div className="flex flex-col w-full h-full rounded-3xl bg-card shadow-md overflow-hidden transition-all hover:shadow-lg">
+        
+        {/* 🔥 REMOVE the extra div here */}
+        <MediaGallery
+          media={place.media || []}
+          variant="carousel"
+          aspectRatio="video"
+          priority
+          showViewAll={false}
+          className="relative w-full" // <-- If needed, add 'relative' directly
+        />
 
-          {place?.category?.name && (
-            <Badge className="absolute top-3 left-3 px-2 py-1 border-none">
-              {place.category.name}
-            </Badge>
-          )}
+        {/* Badges and Wishlist button */}
+        {place?.category?.name && (
+          <Badge className="absolute top-3 left-3 px-2 py-1 border-none">
+            {place.category.name}
+          </Badge>
+        )}
 
-          <WishlistButton
-            itemId={place.id}
-            itemType="place"
-            isInwishlist={place.is_in_wishlist || false}
-            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200"
-            size="default"
-            variant="outline"
-          />
+        <WishlistButton
+          itemId={place.id}
+          itemType="place"
+          isInwishlist={place.is_in_wishlist || false}
+          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200"
+          size="default"
+          variant="outline"
+        />
 
-          {!place.is_available && (
-            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-              <span className="text-white font-medium text-sm px-3 py-1.5 bg-black/40 rounded-md">
-                Not Available
-              </span>
-            </div>
-          )}
-        </div>
+        {!place.is_available && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+            <span className="text-white font-medium text-sm px-3 py-1.5 bg-black/40 rounded-md">
+              Not Available
+            </span>
+          </div>
+        )}
 
-        {/* This is the content */}
+        {/* ✨ Content section */}
         <div className="flex flex-col p-4 flex-1">
           <div className="flex justify-between items-start mb-1.5">
             <h3 className="font-semibold text-lg line-clamp-1">
@@ -94,6 +96,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
             <div className="font-semibold text-base">{formattedPrice}</div>
           </div>
         </div>
+      </div>
     </InteractionLink>
   );
 };
