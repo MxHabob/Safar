@@ -45,7 +45,7 @@ export const ListPlaces = ({ selected }: Props) => {
 
   return (
     <div className="flex flex-col w-full mt-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full pb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6 w-full pb-4">
       {allFetchedPlaces.length > 0 ? (
           allFetchedPlaces.map((place) => (
              <div
