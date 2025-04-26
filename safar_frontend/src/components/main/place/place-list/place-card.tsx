@@ -1,16 +1,3 @@
-"use client";
-import { MapPin } from "lucide-react";
-import { InteractionType, Place } from "@/core/types";
-import { Badge } from "@/components/ui/badge";
-import { WishlistButton } from "@/components/global/wishlist-button";
-import InteractionLink from "@/components/global/interaction-link";
-import { MediaGallery } from "@/components/global/media-gallery";
-import { Skeleton } from "@/components/ui/skeleton";
-
-interface PlaceCardProps {
-  place: Place
-}
-
 export const PlaceCard = ({ place }: PlaceCardProps) => {
   const formattedPrice = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -103,38 +90,38 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
 PlaceCard.Skeleton = function PlaceCardSkeleton() {
   return (
     <div className="flex flex-col w-full rounded-3xl bg-card overflow-hidden shadow-md">
-        <Skeleton className="h-full w-full rounded-none" />
+      <Skeleton className="h-60 w-full rounded-none" /> {/* Image gallery skeleton */}
+      
+      <div className="absolute top-3 left-3">
+        <Skeleton className="h-6 w-24 rounded-full" /> {/* Badge skeleton */}
+      </div>
 
-        <div className="absolute top-3 left-3">
-          <Skeleton className="h-6 w-16 rounded-full" />
-        </div>
-
-        <div className="absolute top-3 right-3">
-          <Skeleton className="h-8 w-8 rounded-full" />
-        </div>
-
+      <div className="absolute top-3 right-3">
+        <Skeleton className="h-8 w-8 rounded-full" /> {/* Wishlist button skeleton */}
+      </div>
 
       <div className="flex flex-col p-4 flex-1">
-        <div className="flex justify-between items-start mb-3">
+        <div className="flex justify-between items-start mb-1.5">
           <div className="space-y-1.5 w-full">
-            <Skeleton className="h-5 w-3/4 rounded" />
-            <Skeleton className="h-3 w-1/2 rounded" />
+            <Skeleton className="h-5 w-3/4 rounded" /> {/* Title skeleton */}
+            <Skeleton className="h-3 w-1/2 rounded" /> {/* Subtitle skeleton */}
           </div>
-          <Skeleton className="h-5 w-10 rounded-md" />
+          <Skeleton className="h-5 w-10 rounded-md" /> {/* Rating skeleton */}
         </div>
+
         <div className="space-y-2 mb-3">
-          <Skeleton className="h-3 w-full rounded" />
-          <Skeleton className="h-3 w-5/6 rounded" />
+          <Skeleton className="h-3 w-full rounded" /> {/* Description line 1 */}
+          <Skeleton className="h-3 w-5/6 rounded" /> {/* Description line 2 */}
         </div>
 
         <div className="flex items-center mb-3">
-          <Skeleton className="h-3.5 w-3.5 rounded-full mr-1" />
-          <Skeleton className="h-3 w-24 rounded" />
+          <Skeleton className="h-3.5 w-3.5 rounded-full mr-1" /> {/* Location icon */}
+          <Skeleton className="h-3 w-24 rounded" /> {/* Location text */}
         </div>
 
         <div className="flex justify-between items-center mt-auto">
-          <Skeleton className="h-4 w-32 rounded" />
-          <Skeleton className="h-5 w-20 rounded" />
+          <Skeleton className="h-4 w-32 rounded" /> {/* City/region skeleton */}
+          <Skeleton className="h-5 w-20 rounded" /> {/* Price skeleton */}
         </div>
       </div>
     </div>
