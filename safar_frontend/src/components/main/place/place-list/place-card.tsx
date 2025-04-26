@@ -103,7 +103,6 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
 PlaceCard.Skeleton = function PlaceCardSkeleton() {
   return (
     <div className="flex flex-col w-full rounded-3xl bg-card overflow-hidden shadow-md">
-
         <Skeleton className="h-full w-full rounded-none" />
 
         <div className="absolute top-3 left-3">
@@ -113,7 +112,7 @@ PlaceCard.Skeleton = function PlaceCardSkeleton() {
         <div className="absolute top-3 right-3">
           <Skeleton className="h-8 w-8 rounded-full" />
         </div>
-      </div>
+
 
       <div className="flex flex-col p-4 flex-1">
         <div className="flex justify-between items-start mb-3">
@@ -137,6 +136,7 @@ PlaceCard.Skeleton = function PlaceCardSkeleton() {
           <Skeleton className="h-4 w-32 rounded" />
           <Skeleton className="h-5 w-20 rounded" />
         </div>
+      </div>
     </div>
   );
 };
