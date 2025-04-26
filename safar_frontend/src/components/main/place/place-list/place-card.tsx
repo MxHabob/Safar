@@ -29,14 +29,13 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
     >
       <div className="flex flex-col w-full h-full rounded-3xl bg-card shadow-md overflow-hidden transition-all hover:shadow-lg">
         
-        {/* 🔥 REMOVE the extra div here */}
         <MediaGallery
           media={place.media || []}
           variant="carousel"
           aspectRatio="video"
           priority
           showViewAll={false}
-          className="relative w-full" // <-- If needed, add 'relative' directly
+          className="relative w-full"
         />
 
         {/* Badges and Wishlist button */}
@@ -104,7 +103,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
 PlaceCard.Skeleton = function PlaceCardSkeleton() {
   return (
     <div className="flex flex-col w-full rounded-3xl bg-card overflow-hidden shadow-md">
-      <div className="relative aspect-[3/4] w-full">
+
         <Skeleton className="h-full w-full rounded-none" />
 
         <div className="absolute top-3 left-3">
@@ -138,7 +137,6 @@ PlaceCard.Skeleton = function PlaceCardSkeleton() {
           <Skeleton className="h-4 w-32 rounded" />
           <Skeleton className="h-5 w-20 rounded" />
         </div>
-      </div>
     </div>
   );
 };
