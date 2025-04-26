@@ -13,7 +13,7 @@ export function MSearch() {
                 className="w-full border-none p-0 text-sm focus:outline-none focus:ring-0"
               />
             </div>
-            <Button className="absolute right-1 flex h-12 w-12 items-center justify-center rounded-full ">
+            <Button className="absolute right-2 flex h-12 w-12 items-center justify-center rounded-full ">
               <Search className="h-5 w-5" />
             </Button>
           </div>
