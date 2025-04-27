@@ -5,6 +5,9 @@ import { ListBox } from "@/components/main/box/box-list"
 import { ListExperience } from "@/components/main/experience/experience-list"
 import { ListPlaces } from "@/components/main/place/place-list"
 import { LoadingPlaceholder } from "@/components/ui/loading-placeholder"
+import { Button } from "@/components/ui/button"
+import { ArrowRight } from "lucide-react"
+import Link from "next/link"
 import { Suspense } from "react"
 
 export default function Home() {
@@ -19,17 +22,38 @@ export default function Home() {
       </div>
       <AIAssistant />
       <div className="px-2 sm:px-6 lg:px-8 md:mx-8 space-y-4">
-        <h2 className="text-2xl font-bold my-4">Picked for you Box</h2>
+        <div className="flex justify-between items-center my-4">
+          <h2 className="text-2xl font-bold">Picked for you Box</h2>
+          <Link href="/boxes">
+            <Button variant="ghost" className="flex items-center gap-1">
+              View All <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
         <Suspense fallback={<LoadingPlaceholder count={4} type="box" />}>
           <ListBox overlay={false} loop={true} />
         </Suspense>
 
-        <h2 className="text-2xl font-bold my-4">Featured Experiences</h2>
+        <div className="flex justify-between items-center my-4">
+          <h2 className="text-2xl font-bold">Featured Experiences</h2>
+          <Link href="/experiences">
+            <Button variant="ghost" className="flex items-center gap-1">
+              View All <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
         <Suspense fallback={<LoadingPlaceholder count={4} type="experience" />}>
           <ListExperience overlay={true} loop={true} />
         </Suspense>
 
-        <h2 className="text-2xl font-bold my-4">Most popular Places</h2>
+        <div className="flex justify-between items-center my-4">
+          <h2 className="text-2xl font-bold">Most popular Places</h2>
+          <Link href="/places">
+            <Button variant="ghost" className="flex items-center gap-1">
+              View All <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
         <Suspense fallback={<LoadingPlaceholder count={4} type="place" />}>
           <ListPlaces overlay={true} />
         </Suspense>
