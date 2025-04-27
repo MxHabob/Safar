@@ -42,8 +42,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
           itemId={place.id}
           itemType="place"
           isInwishlist={place.is_in_wishlist || false}
-          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100  transition-all duration-200"
-          size="default"
+          className="absolute top-2 right-3 opacity-0 group-hover:opacity-100  transition-all duration-200"
           variant={"secondary"}
         />
 
