@@ -1,5 +1,5 @@
 import { RouterBack } from "@/components/global/router-back"
-
+import { ListBox } from "@/components/main/box/box-list"
 export default function BoxesPage() {
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -15,6 +15,7 @@ export default function BoxesPage() {
         </div>
       </header>
       <section aria-label="Boxees content">
+        <ListBox/>
       </section>
     </div>
   )

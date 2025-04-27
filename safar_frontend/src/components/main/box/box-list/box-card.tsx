@@ -36,9 +36,9 @@ export const BoxCard = ({ box }: BoxCardProps) => {
             itemId={box.id}
             itemType={"box"}
             isInwishlist={box.is_in_wishlist || false}
-            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200"
+            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100  transition-all duration-200"
             size="default"
-            variant="outline"
+            variant={"secondary"}
           />
 
           <div className="absolute bottom-3 left-3 z-10">
