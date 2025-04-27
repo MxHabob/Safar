@@ -19,7 +19,7 @@ export function Nav() {
           </Link>
         </li>
         <li>
-          <Link href="/flight" className="font-medium">
+          <Link href="/flights" className="font-medium">
           Flight
           </Link>
         </li>
