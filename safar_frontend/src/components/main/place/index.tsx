@@ -1,99 +1,270 @@
 "use client"
-import { useGetPlaceQuery } from "@/core/services/api";
-import { MediaGallery } from "@/components/global/media-gallery";
-import { Button } from "@/components/ui/button";
-import { ArrowBigLeft } from "lucide-react";
-import MapboxMap from "@/components/global/mapBox";
-import { useRouter } from "next/navigation";
-import { WishlistButton } from "@/components/global/wishlist-button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ShareButton } from "@/components/global/share-button";
-
+import { useGetPlaceQuery } from "@/core/services/api"
+import { MediaGallery } from "@/components/global/media-gallery"
+import { Button } from "@/components/ui/button"
+import { ArrowLeft, MapPin } from "lucide-react"
+import MapboxMap from "@/components/global/mapBox"
+import { useRouter } from "next/navigation"
+import { WishlistButton } from "@/components/global/wishlist-button"
+import { Skeleton } from "@/components/ui/skeleton"
+import { ShareButton } from "@/components/global/share-button"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import Image  from "next/image"
 export const PlacePageContent = ({ id }: { id: string }) => {
   const { data, isLoading, error } = useGetPlaceQuery(id)
   const router = useRouter()
-  
+
   if (isLoading) {
     return <PlacePageContent.Skeleton />
   }
   if (error) {
-    return (
-      <div className="">
-        
-      </div>
-    )
+    return <></>
   }
 
-
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center justify-center">
-          <Button variant={"ghost"} onClick={() => router.back()} className="rounded-full p-4">
-            <ArrowBigLeft />
-          </Button>
-          <h1 className="text-2xl font-bold">{data?.name || ""}</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <ShareButton variant="ghost" shareText="Share" item={data} itemType="place"/>
-          <WishlistButton itemId={data?.id || ""} itemType={"place"} isInwishlist={false} />
+    <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-8 animate-in fade-in duration-500">
+      <div className="flex items-center justify-between">
+        <Button
+          variant="ghost"
+          onClick={() => router.back()}
+          className="rounded-full p-2 hover:bg-accent transition-colors"
+          aria-label="Go back"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex items-center gap-2">
+          <ShareButton
+            variant="outline"
+            shareText="Share"
+            item={data}
+            itemType="place"
+            className="rounded-full gap-2 hover:bg-accent transition-colors"
+          />
+          <WishlistButton
+            itemId={data?.id || ""}
+            itemType="place"
+            isInwishlist={false}
+            className="rounded-full hover:bg-accent transition-colors"
+          />
         </div>
       </div>
-      <MediaGallery media={data?.media || []} className="mb-8" maxDisplay={5} />
-      <div className="flex flex-col md:flex-row justify-between gap-8">
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold">
-            {data?.name}
-            {data?.country?.name && ` - ${data?.country?.name}`}
-            {data?.city?.name && ` - ${data?.city?.name}`}
-          </h2>
-          <p className="text-lg">{data?.description}</p>
+
+      <div className="space-y-4">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{data?.name || ""}</h1>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <MapPin className="h-4 w-4" />
+          <span>
+            {data?.city?.name && `${data.city.name}, `}
+            {data?.region?.name && `${data.region.name}, `}
+            {data?.country?.name}
+          </span>
         </div>
       </div>
-      <div className="max-h-[50px] mb-20">
-        <MapboxMap location={data?.location || ""} />
+
+      <div className="rounded-2xl overflow-hidden shadow-lg dark:shadow-primary/5">
+        <MediaGallery media={data?.media || []} variant="carousel" aspectRatio="video" maxDisplay={5} priority />
       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+          <Card className="overflow-hidden border-none shadow-md dark:shadow-primary/5 bg-card">
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  {data?.city?.name && (
+                    <Badge variant="secondary" className="px-3 py-1">
+                      {data.city.name}
+                    </Badge>
+                  )}
+                  {data?.region?.name && (
+                    <Badge variant="secondary" className="px-3 py-1">
+                      {data.region.name}
+                    </Badge>
+                  )}
+                  {data?.country?.name && (
+                    <Badge variant="secondary" className="px-3 py-1">
+                      {data.country.name}
+                    </Badge>
+                  )}
+                </div>
+
+                <h2 className="text-2xl font-bold">About this place</h2>
+                <p className="text-muted-foreground leading-relaxed">{data?.description}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div>
+          <div className="sticky top-4 space-y-4">
+            <Card className="border-none shadow-lg dark:shadow-primary/5 overflow-hidden">
+              <CardContent className="p-0">
+                <div className="h-[300px] w-full">
+                  <MapboxMap location={data?.location || ""} />
+                </div>
+                <div className="p-4">
+                  <h3 className="font-medium mb-2">Location</h3>
+                  <p className="text-sm text-muted-foreground">{data?.location || "Address not available"}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {data?.category && (
+              <Card className="border-none shadow-md dark:shadow-primary/5 bg-card">
+                <CardContent className="p-4">
+                  <h3 className="font-medium mb-2">Category</h3>
+                  <Badge className="px-3 py-1">{data.category.name}</Badge>
+                  {data.category.description && (
+                    <p className="text-sm text-muted-foreground mt-2">{data.category.description}</p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {data?.experiences && data.experiences.length > 0 && (
+        <div className="space-y-6">
+          <Separator />
+          <h2 className="text-2xl font-bold">Experiences at this place</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {data.experiences.map((experience, index) => (
+              <Card
+                key={index}
+                className="border-none shadow-md dark:shadow-primary/5 overflow-hidden hover:shadow-lg transition-shadow"
+              >
+                <div className="aspect-video relative overflow-hidden">
+                  {Array.isArray(experience.media) && experience.media[0] && (
+                    <Image
+                      src={experience.media[0].url || "/placeholder.svg"}
+                      alt={experience.title || "Experience"}
+                      className="object-cover w-full h-full"
+                      layout="fill"
+                      objectFit="cover"
+                    />
+                  )}
+                </div>
+                <CardContent className="p-4">
+                  <h3 className="font-bold text-lg line-clamp-1">{experience.title}</h3>
+                  <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{experience.description}</p>
+                  <div className="flex justify-between items-center mt-4">
+                    <Badge variant="outline">{experience.category?.name || "Experience"}</Badge>
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={`/experiences/${experience.id}`}>View details</a>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-PlacePageContent.Skeleton =  function PlacePageContentSkeleton(){
+PlacePageContent.Skeleton = function PlacePageContentSkeleton() {
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center justify-center gap-4">
-          <Skeleton className="h-10 w-10 rounded-full" />
-          <Skeleton className="h-8 w-48 rounded-md" />
-        </div>
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-10 w-20 rounded-md" />
+    <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-8">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-10 w-10 rounded-full" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-10 w-24 rounded-full" />
           <Skeleton className="h-10 w-10 rounded-full" />
         </div>
       </div>
-      
-      <div className="mb-8">
-        <Skeleton className="h-96 w-full rounded-xl" />
+
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-3/4 rounded-lg" />
+        <Skeleton className="h-5 w-1/2 rounded-lg" />
       </div>
-      
-      <div className="flex flex-col md:flex-row justify-between gap-8">
-        <div className="space-y-4 w-full">
-          <Skeleton className="h-8 w-3/4 rounded-md" />
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-full rounded" />
-            <Skeleton className="h-4 w-5/6 rounded" />
-            <Skeleton className="h-4 w-4/5 rounded" />
-            <Skeleton className="h-4 w-3/4 rounded" />
+
+      <Skeleton className="w-full aspect-[16/9] rounded-2xl" />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+          <Card className="overflow-hidden border-none shadow-md">
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <Skeleton className="h-6 w-20 rounded-full" />
+                  <Skeleton className="h-6 w-24 rounded-full" />
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                </div>
+
+                <Skeleton className="h-8 w-48 rounded-lg" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full rounded-lg" />
+                  <Skeleton className="h-4 w-full rounded-lg" />
+                  <Skeleton className="h-4 w-3/4 rounded-lg" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-32 rounded-lg" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <Card key={i} className="border-none shadow-md">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-6 w-6 rounded-full" />
+                      <Skeleton className="h-4 w-32 rounded-lg" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div className="space-y-4">
+            <Card className="border-none shadow-lg overflow-hidden">
+              <CardContent className="p-0">
+                <Skeleton className="h-[300px] w-full" />
+                <div className="p-4">
+                  <Skeleton className="h-5 w-24 rounded-lg mb-2" />
+                  <Skeleton className="h-4 w-full rounded-lg" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-none shadow-md">
+              <CardContent className="p-4">
+                <Skeleton className="h-5 w-24 rounded-lg mb-2" />
+                <Skeleton className="h-6 w-20 rounded-full" />
+                <Skeleton className="h-4 w-full rounded-lg mt-2" />
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
-      
-      <div className="my-4">
-        <Skeleton className="h-6 w-32 rounded-full" />
-      </div>
-      
-      <div className="mb-20">
-        <Skeleton className="h-64 w-full rounded-xl" />
+
+      <div className="space-y-6">
+        <Skeleton className="h-px w-full" />
+        <Skeleton className="h-8 w-64 rounded-lg" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i} className="border-none shadow-md overflow-hidden">
+              <Skeleton className="aspect-video w-full" />
+              <CardContent className="p-4">
+                <Skeleton className="h-6 w-3/4 rounded-lg" />
+                <Skeleton className="h-4 w-full rounded-lg mt-1" />
+                <Skeleton className="h-4 w-5/6 rounded-lg mt-1" />
+                <div className="flex justify-between items-center mt-4">
+                  <Skeleton className="h-6 w-20 rounded-full" />
+                  <Skeleton className="h-8 w-24 rounded-lg" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
-  );
-};
+  )
+}

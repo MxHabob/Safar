@@ -179,9 +179,7 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
         <div className="lg:row-start-1 lg:col-start-3">
           <div className="sticky top-4">
             {data && (
-              <Card className="border-none shadow-lg dark:shadow-primary/5 overflow-hidden">
                 <BookingCard id={id} data={data} placeType="experience" />
-              </Card>
             )}
           </div>
         </div>

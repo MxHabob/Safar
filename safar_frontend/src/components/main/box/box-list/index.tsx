@@ -1,10 +1,11 @@
 "use client"
+
 import "swiper/css/bundle"
 import { type SwiperProps, SwiperSlide } from "swiper/react"
 import { Slider } from "@/components/global/slider"
 import { useGetBoxesQuery } from "@/core/services/api"
 import { BoxCard } from "./box-card"
-import { Box } from "@/core/types"
+import type { Box } from "@/core/types"
 
 type Props = {
   overlay?: boolean
@@ -12,7 +13,7 @@ type Props = {
 } & SwiperProps
 
 export const ListBox = ({ overlay, selected, ...rest }: Props) => {
-  const { data: boxes, isLoading, error } = useGetBoxesQuery({})
+  const { data: boxes, isLoading, error } = useGetBoxesQuery({ page_size: 8 }, { refetchOnMountOrArgChange: false })
 
   if (error) {
     return (
@@ -23,14 +24,7 @@ export const ListBox = ({ overlay, selected, ...rest }: Props) => {
   }
 
   return (
-    <Slider
-      slidesPerView="auto"
-      spaceBetween={16}
-      loop={(boxes?.count ?? 0) > 3}
-      freeMode
-      overlay={overlay}
-      {...rest}
-    >
+    <Slider slidesPerView="auto" spaceBetween={16} loop={(boxes?.count ?? 0) > 3} freeMode overlay={overlay} {...rest}>
       {(boxes?.count ?? 0) > 0 ? (
         boxes?.results.map((box: Box) => (
           <SwiperSlide
@@ -50,18 +44,11 @@ export const ListBox = ({ overlay, selected, ...rest }: Props) => {
 
       {isLoading && (
         <>
-          <SwiperSlide className="content-width-slide">
-            <BoxCard.Skeleton />
-          </SwiperSlide>
-          <SwiperSlide className="content-width-slide">
-            <BoxCard.Skeleton />
-          </SwiperSlide>
-          <SwiperSlide className="content-width-slide">
-            <BoxCard.Skeleton />
-          </SwiperSlide>
-          <SwiperSlide className="content-width-slide">
-            <BoxCard.Skeleton />
-          </SwiperSlide>
+          {[1, 2, 3, 4].map((i) => (
+            <SwiperSlide key={i} className="content-width-slide">
+              <BoxCard.Skeleton />
+            </SwiperSlide>
+          ))}
         </>
       )}
     </Slider>
