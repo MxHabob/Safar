@@ -114,22 +114,6 @@ export const PlacePageContent = ({ id }: { id: string }) => {
           <div className="sticky top-4 space-y-4">
             {data && <BookingCard id={data.id} data={data} placeType="place" />}
 
-            <Card className="border-none shadow-lg dark:shadow-primary/5 overflow-hidden">
-              <CardContent className="p-0">
-                <div className="w-full">
-                  {data?.location && <MapboxMap location={data.location} height="250px" zoom={15} />}
-                </div>
-                <div className="p-4">
-                  <h3 className="font-medium mb-2">Location</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {data?.city?.name && `${data.city.name}, `}
-                    {data?.region?.name && `${data.region.name}, `}
-                    {data?.country?.name}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
             {data?.category && (
               <Card className="border-none shadow-md dark:shadow-primary/5 bg-card">
                 <CardContent className="p-4">
@@ -144,7 +128,21 @@ export const PlacePageContent = ({ id }: { id: string }) => {
           </div>
         </div>
       </div>
-
+          <Card className="border-none shadow-lg dark:shadow-primary/5 overflow-hidden">
+              <CardContent className="p-0">
+                <div className="w-full">
+                  {data?.location && <MapboxMap location={data.location} height="250px" zoom={15} />}
+                </div>
+                <div className="p-4">
+                  <h3 className="font-medium mb-2">Location</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {data?.city?.name && `${data.city.name}, `}
+                    {data?.region?.name && `${data.region.name}, `}
+                    {data?.country?.name}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
       {data?.experiences && data.experiences.length > 0 && (
         <div className="space-y-6">
           <Separator />
