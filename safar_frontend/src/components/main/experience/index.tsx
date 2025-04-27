@@ -8,13 +8,23 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import BookingCard from "@/components/global/cards/booking-card";
 import { MediaGallery } from "@/components/global/media-gallery";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const ExperiencePageContent = ({ id }: { id: string }) => {
-  const { data } = useGetExperienceQuery(id);
+  const { data , isFetching,isLoading,error } = useGetExperienceQuery(id);
   const router = useRouter();
   const scheduleDays = (data?.schedule as { days: string[] } | undefined)?.days || [];
   const firstThreeDays = scheduleDays.slice(0, 3);
   const remainingDays = scheduleDays.length - 3;
+  
+  if (isLoading || isFetching) {
+    return <ExperiencePageContent.Skeleton />;
+  }
+  if (error) {
+    return (
+      <></>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-6">
@@ -133,6 +143,78 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+
+ExperiencePageContent.Skeleton = function ExperiencePageContentSkeleton() {
+  return (
+    <div className="max-w-6xl mx-auto p-4 space-y-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-10 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-48 rounded" />
+            <Skeleton className="h-4 w-32 rounded" />
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-24 rounded-md" />
+          <Skeleton className="h-10 w-24 rounded-md" />
+        </div>
+      </div>
+      <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden">
+        <Skeleton className="h-full w-full" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="md:col-span-2 space-y-6">
+          <div className="flex items-center gap-4 p-4 border rounded-lg">
+            <Skeleton className="h-16 w-16 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-40 rounded" />
+              <Skeleton className="h-4 w-24 rounded" />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <Skeleton className="h-6 w-48 rounded" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-full rounded" />
+              <Skeleton className="h-4 w-5/6 rounded" />
+              <Skeleton className="h-4 w-4/6 rounded" />
+            </div>
+            <div className="grid grid-cols-2 gap-4 mt-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Skeleton className="h-5 w-5 rounded-full" />
+                  <div className="space-y-1">
+                    <Skeleton className="h-3 w-20 rounded" />
+                    <Skeleton className="h-4 w-24 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <Skeleton className="h-72 w-full rounded-2xl" />
+        </div>
+      </div>
+      <div className="space-y-4">
+        <Skeleton className="h-6 w-48 rounded" />
+        <Skeleton className="h-4 w-64 rounded" />
+        <Skeleton className="h-[400px] w-full rounded-2xl" />
+      </div>
+
+      <div className="space-y-4">
+        <Skeleton className="h-6 w-48 rounded" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-24 rounded-full" />
+          <Skeleton className="h-4 w-40 rounded" />
+        </div>
+      </div>
     </div>
   );
 };

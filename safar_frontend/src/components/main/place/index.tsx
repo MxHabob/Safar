@@ -7,13 +7,24 @@ import { GuestFavoriteBadge } from "@/components/global/cards/guest-favorite-bad
 import MapboxMap from "@/components/global/mapBox";
 import { useRouter } from "next/navigation";
 import { WishlistButton } from "@/components/global/wishlist-button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const PlacePageContent = ({ id }: { id: string }) => {
-  const { data } = useGetPlaceQuery(id)
+  const { data, isLoading, error } = useGetPlaceQuery(id)
   const router = useRouter()
+  
+  if (isLoading) {
+    return <PlacePageContent.Skeleton />
+  }
+  if (error) {
+    return (
+      <div className="">
+        
+      </div>
+    )
+  }
 
 
-  console.log("data : ",data)
   return (
     <div className="max-w-6xl mx-auto p-4">
       <div className="mb-6 flex items-center justify-between">
@@ -49,3 +60,44 @@ export const PlacePageContent = ({ id }: { id: string }) => {
     </div>
   )
 }
+
+PlacePageContent.Skeleton =  function PlacePageContentSkeleton(){
+  return (
+    <div className="max-w-6xl mx-auto p-4">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center justify-center gap-4">
+          <Skeleton className="h-10 w-10 rounded-full" />
+          <Skeleton className="h-8 w-48 rounded-md" />
+        </div>
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-20 rounded-md" />
+          <Skeleton className="h-10 w-10 rounded-full" />
+        </div>
+      </div>
+      
+      <div className="mb-8">
+        <Skeleton className="h-96 w-full rounded-xl" />
+      </div>
+      
+      <div className="flex flex-col md:flex-row justify-between gap-8">
+        <div className="space-y-4 w-full">
+          <Skeleton className="h-8 w-3/4 rounded-md" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full rounded" />
+            <Skeleton className="h-4 w-5/6 rounded" />
+            <Skeleton className="h-4 w-4/5 rounded" />
+            <Skeleton className="h-4 w-3/4 rounded" />
+          </div>
+        </div>
+      </div>
+      
+      <div className="my-4">
+        <Skeleton className="h-6 w-32 rounded-full" />
+      </div>
+      
+      <div className="mb-20">
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </div>
+    </div>
+  );
+};

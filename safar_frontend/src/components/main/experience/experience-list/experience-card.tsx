@@ -8,18 +8,14 @@ import { WishlistButton } from "@/components/global/wishlist-button"
 import InteractionLink from "@/components/global/interaction-link"
 import { MediaGallery } from "@/components/global//media-gallery"
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar"
+import { formattedPrice } from "@/lib/utils/date-formatter"
 
 interface ExperienceCardProps {
   experience: Experience
 }
 
 export const ExperienceCard = ({ experience }: ExperienceCardProps) => {
-  const formattedPrice = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: experience.currency || "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(experience.price_per_person || 0)
+
 
   const getDurationText = (minutes = 0) => {
     if (minutes >= 1440) {
@@ -112,7 +108,7 @@ export const ExperienceCard = ({ experience }: ExperienceCardProps) => {
               </div>
             </div>
             <div className="font-semibold text-base text-gray-900 dark:text-white">
-              {formattedPrice}
+              {formattedPrice(experience.currency || "USD",experience?.price_per_person || 0)}
               <span className="text-xs font-normal text-gray-500 dark:text-gray-400"> / person</span>
             </div>
           </div>
@@ -125,21 +121,14 @@ export const ExperienceCard = ({ experience }: ExperienceCardProps) => {
 ExperienceCard.Skeleton = function ExperienceCardSkeleton() {
   return (
     <div className="relative w-full min-w-sm max-w-sm rounded-3xl bg-card overflow-hidden">
-      {/* Image area skeleton */}
       <div className="relative aspect-[4/3] w-full">
         <Skeleton className="h-full w-full rounded-none" />
-
-        {/* Badge skeleton */}
         <div className="absolute top-3 left-3">
           <Skeleton className="h-6 w-16 rounded-full" />
         </div>
-
-        {/* Favorite button skeleton */}
         <div className="absolute top-3 right-3">
           <Skeleton className="h-8 w-8 rounded-full" />
         </div>
-
-        {/* Bottom area skeletons */}
         <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Skeleton className="h-8 w-8 rounded-full" />
@@ -148,28 +137,19 @@ ExperienceCard.Skeleton = function ExperienceCardSkeleton() {
           <Skeleton className="h-6 w-12 rounded-full" />
         </div>
       </div>
-
-      {/* Content area skeleton */}
       <div className="p-4">
-        {/* Title and rating */}
         <div className="flex justify-between items-start mb-3">
           <Skeleton className="h-5 w-3/4 rounded" />
           <Skeleton className="h-5 w-10 rounded-md" />
         </div>
-
-        {/* Description */}
         <div className="space-y-2 mb-3">
           <Skeleton className="h-3 w-full rounded" />
           <Skeleton className="h-3 w-5/6 rounded" />
         </div>
-
-        {/* Location */}
         <div className="flex items-center mb-3">
           <Skeleton className="h-3.5 w-3.5 rounded-full mr-1" />
           <Skeleton className="h-3 w-24 rounded" />
         </div>
-
-        {/* Duration, capacity, and price */}
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
             <Skeleton className="h-4 w-12 rounded" />

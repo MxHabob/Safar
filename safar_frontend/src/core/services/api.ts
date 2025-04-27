@@ -46,22 +46,17 @@ const baseQuery = fetchBaseQuery({
 })
 
 const baseQueryWithReauth: BaseQueryFn = async (args, api, extraOptions) => {
-  console.log("Starting request", args.url)
   await mutex.waitForUnlock()
   let result = await baseQuery(args, api, extraOptions)
-  console.log("Initial request result", result)
 
   if (result.error?.status === 401) {
-    console.log("401 error detected, attempting refresh")
     if (!mutex.isLocked()) {
       const release = await mutex.acquire()
       try {
         const state = api.getState() as RootState
         const refreshToken = state.auth.refreshToken
-        console.log("Current refresh token", refreshToken ? "exists" : "missing")
 
         if (refreshToken) {
-          console.log("Attempting to refresh token")
           const refreshResult = await baseQuery(
             {
               url: "/auth/jwt/refresh/",
@@ -71,11 +66,9 @@ const baseQueryWithReauth: BaseQueryFn = async (args, api, extraOptions) => {
             api,
             extraOptions,
           )
-          console.log("Refresh result status:", refreshResult.meta?.response?.status)
 
           if (refreshResult.data) {
             const newAccessToken = (refreshResult.data as { access: string }).access
-            console.log("Token refreshed successfully, new token received")
             api.dispatch(
               setTokens({
                 access: newAccessToken,
@@ -84,21 +77,17 @@ const baseQueryWithReauth: BaseQueryFn = async (args, api, extraOptions) => {
             )
             await new Promise((resolve) => setTimeout(resolve, 100))
 
-            console.log("Retrying original request with new token")
             result = await baseQuery(args, api, extraOptions)
           } else {
-            console.log("Refresh failed, logging out. Error:", refreshResult.error)
             api.dispatch(logout())
           }
         } else {
-          console.log("No refresh token available, logging out")
           api.dispatch(logout())
         }
       } finally {
         release()
       }
     } else {
-      console.log("Mutex locked, waiting...")
       await mutex.waitForUnlock()
       result = await baseQuery(args, api, extraOptions)
     }

@@ -6,18 +6,13 @@ import { WishlistButton } from "@/components/global/wishlist-button";
 import InteractionLink from "@/components/global/interaction-link";
 import { MediaGallery } from "@/components/global/media-gallery";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formattedPrice } from "@/lib/utils/date-formatter";
 
 interface PlaceCardProps {
   place: Place
 }
 
 export const PlaceCard = ({ place }: PlaceCardProps) => {
-  const formattedPrice = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: place.currency || "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(place.price || 0);
 
   return (
     <InteractionLink
@@ -27,8 +22,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
       contentType="safar_place"
       objectId={place.id}
     >
-      <div className="flex flex-col w-full h-full rounded-3xl bg-card shadow-md overflow-hidden transition-all hover:shadow-lg">
-        
+      <div className="group flex flex-col w-full h-full rounded-3xl bg-card shadow-md overflow-hidden transition-all hover:shadow-lg relative">
         <MediaGallery
           media={place.media || []}
           variant="carousel"
@@ -38,7 +32,6 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
           className="relative w-full"
         />
 
-        {/* Badges and Wishlist button */}
         {place?.category?.name && (
           <Badge className="absolute top-3 left-3 px-2 py-1 border-none">
             {place.category.name}
@@ -49,7 +42,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
           itemId={place.id}
           itemType="place"
           isInwishlist={place.is_in_wishlist || false}
-          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200"
+          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100  transition-all duration-200"
           size="default"
           variant="outline"
         />
@@ -62,7 +55,6 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
           </div>
         )}
 
-        {/* ✨ Content section */}
         <div className="flex flex-col p-4 flex-1">
           <div className="flex justify-between items-start mb-1.5">
             <h3 className="font-semibold text-lg line-clamp-1">
@@ -92,7 +84,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
               {place.city && place.region && <span className="mr-1">,</span>}
               {place.region && <span>{place.region.name}</span>}
             </div>
-            <div className="font-semibold text-base">{formattedPrice}</div>
+            <div className="font-semibold text-base">{formattedPrice(place.currency,place.price)}</div>
           </div>
         </div>
       </div>
@@ -103,38 +95,38 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
 PlaceCard.Skeleton = function PlaceCardSkeleton() {
   return (
     <div className="flex flex-col w-full rounded-3xl bg-card overflow-hidden shadow-md">
-      <Skeleton className="h-60 w-full rounded-none" /> {/* Image gallery skeleton */}
+      <Skeleton className="h-60 w-full rounded-none" />
       
       <div className="absolute top-3 left-3">
-        <Skeleton className="h-6 w-24 rounded-full" /> {/* Badge skeleton */}
+        <Skeleton className="h-6 w-24 rounded-full" />
       </div>
 
       <div className="absolute top-3 right-3">
-        <Skeleton className="h-8 w-8 rounded-full" /> {/* Wishlist button skeleton */}
+        <Skeleton className="h-8 w-8 rounded-full" />
       </div>
 
       <div className="flex flex-col p-4 flex-1">
         <div className="flex justify-between items-start mb-1.5">
           <div className="space-y-1.5 w-full">
-            <Skeleton className="h-5 w-3/4 rounded" /> {/* Title skeleton */}
-            <Skeleton className="h-3 w-1/2 rounded" /> {/* Subtitle skeleton */}
+            <Skeleton className="h-5 w-3/4 rounded" />
+            <Skeleton className="h-3 w-1/2 rounded" />
           </div>
-          <Skeleton className="h-5 w-10 rounded-md" /> {/* Rating skeleton */}
+          <Skeleton className="h-5 w-10 rounded-md" />
         </div>
 
         <div className="space-y-2 mb-3">
-          <Skeleton className="h-3 w-full rounded" /> {/* Description line 1 */}
-          <Skeleton className="h-3 w-5/6 rounded" /> {/* Description line 2 */}
+          <Skeleton className="h-3 w-full rounded" />
+          <Skeleton className="h-3 w-5/6 rounded" />
         </div>
 
         <div className="flex items-center mb-3">
-          <Skeleton className="h-3.5 w-3.5 rounded-full mr-1" /> {/* Location icon */}
-          <Skeleton className="h-3 w-24 rounded" /> {/* Location text */}
+          <Skeleton className="h-3.5 w-3.5 rounded-full mr-1" />
+          <Skeleton className="h-3 w-24 rounded" />
         </div>
 
         <div className="flex justify-between items-center mt-auto">
-          <Skeleton className="h-4 w-32 rounded" /> {/* City/region skeleton */}
-          <Skeleton className="h-5 w-20 rounded" /> {/* Price skeleton */}
+          <Skeleton className="h-4 w-32 rounded" />
+          <Skeleton className="h-5 w-20 rounded" />
         </div>
       </div>
     </div>
