@@ -108,26 +108,6 @@ export const PlacePageContent = ({ id }: { id: string }) => {
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        <div>
-          <div className="sticky top-4 space-y-4">
-            {data && <BookingCard id={data.id} data={data} placeType="place" />}
-
-            {data?.category && (
-              <Card className="border-none shadow-md dark:shadow-primary/5 bg-card">
-                <CardContent className="p-4">
-                  <h3 className="font-medium mb-2">Category</h3>
-                  <Badge className="px-3 py-1">{data.category.name}</Badge>
-                  {data.category.description && (
-                    <p className="text-sm text-muted-foreground mt-2">{data.category.description}</p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
-      </div>
           <Card className="border-none shadow-lg dark:shadow-primary/5 overflow-hidden">
               <CardContent className="p-0">
                 <div className="w-full">
@@ -143,6 +123,14 @@ export const PlacePageContent = ({ id }: { id: string }) => {
                 </div>
               </CardContent>
             </Card>
+        </div>
+
+        <div>
+          <div className="sticky top-4 space-y-4">
+            {data && <BookingCard id={data.id} data={data} placeType="place" />}
+          </div>
+        </div>
+      </div>
       {data?.experiences && data.experiences.length > 0 && (
         <div className="space-y-6">
           <Separator />
