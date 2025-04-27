@@ -9,12 +9,12 @@ export default function ExperiencesPage() {
    <div className="container mx-auto px-4 py-8">
       <div className="flex items-center gap-4 mb-6">
         <RouterBack/>
-        <div className="flex flex-col space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Discover Experiences</h1>
+      </div>
+      <div className="flex flex-col items-center justify-center my-6">
+        <h1 className="text-4xl font-bold">Experiences</h1>
           <p className="text-muted-foreground">
             Find unique activities and adventures
           </p>
-        </div>
       </div>
 
         <div className="relative w-full max-w-md">
