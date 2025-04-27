@@ -33,7 +33,7 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
       <div className="flex items-center justify-between">
         <Button 
           variant="ghost" 
-          onClick={() => router.back()} 
+          onClick={() => router.replace("/")} 
           className="rounded-full p-2 hover:bg-accent transition-colors"
           aria-label="Go back"
         >
