@@ -63,7 +63,6 @@ export default function EventsModal() {
     setIsLoading(true)
 
     try {
-      // Replace with actual booking API call
       await toast.promise(new Promise((resolve) => setTimeout(resolve, 1500)), {
         loading: "Booking event...",
         success: `Event booked successfully! 🎉 ${id}`,

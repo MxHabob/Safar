@@ -2,12 +2,12 @@
 import { useGetPlaceQuery } from "@/core/services/api";
 import { MediaGallery } from "@/components/global/media-gallery";
 import { Button } from "@/components/ui/button";
-import { ArrowBigLeft, Share } from "lucide-react";
-import { GuestFavoriteBadge } from "@/components/global/cards/guest-favorite-badge";
+import { ArrowBigLeft } from "lucide-react";
 import MapboxMap from "@/components/global/mapBox";
 import { useRouter } from "next/navigation";
 import { WishlistButton } from "@/components/global/wishlist-button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ShareButton } from "@/components/global/share-button";
 
 export const PlacePageContent = ({ id }: { id: string }) => {
   const { data, isLoading, error } = useGetPlaceQuery(id)
@@ -35,10 +35,7 @@ export const PlacePageContent = ({ id }: { id: string }) => {
           <h1 className="text-2xl font-bold">{data?.name || ""}</h1>
         </div>
         <div className="flex items-center gap-4">
-          <Button variant="ghost" className="flex items-center gap-2">
-            <Share className="h-5 w-5" />
-            <span className="hidden sm:inline">Share</span>
-          </Button>
+          <ShareButton variant="default" shareText="Share" item={data} itemType="place"/>
           <WishlistButton itemId={data?.id || ""} itemType={"place"} isInwishlist={false} />
         </div>
       </div>
@@ -53,7 +50,6 @@ export const PlacePageContent = ({ id }: { id: string }) => {
           <p className="text-lg">{data?.description}</p>
         </div>
       </div>
-      <GuestFavoriteBadge rating={0} reviewCount={0} />
       <div className="max-h-[50px] mb-20">
         <MapboxMap location={data?.location || ""} />
       </div>

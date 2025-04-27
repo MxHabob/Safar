@@ -1,7 +1,6 @@
 "use client";
 import { useGetExperienceQuery } from "@/core/services/api";
-import { ArrowBigLeft, Heart, Share, Calendar, Users, MapPin, Star } from "lucide-react";
-import { GuestFavoriteBadge } from "@/components/global/cards/guest-favorite-badge";
+import { ArrowBigLeft,Calendar, Users, MapPin, Star } from "lucide-react";
 import MapboxMap from "@/components/global/mapBox";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,8 @@ import Image from "next/image";
 import BookingCard from "@/components/global/cards/booking-card";
 import { MediaGallery } from "@/components/global/media-gallery";
 import { Skeleton } from "@/components/ui/skeleton";
+import { WishlistButton } from "@/components/global/wishlist-button";
+import { ShareButton } from "@/components/global/share-button";
 
 export const ExperiencePageContent = ({ id }: { id: string }) => {
   const { data , isFetching,isLoading,error } = useGetExperienceQuery(id);
@@ -16,7 +17,7 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
   const scheduleDays = (data?.schedule as { days: string[] } | undefined)?.days || [];
   const firstThreeDays = scheduleDays.slice(0, 3);
   const remainingDays = scheduleDays.length - 3;
-  
+
   if (isLoading || isFetching) {
     return <ExperiencePageContent.Skeleton />;
   }
@@ -44,14 +45,8 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <Button variant="ghost" className="flex items-center gap-2">
-            <Share className="h-5 w-5" />
-            <span className="hidden sm:inline">Share</span>
-          </Button>
-          <Button variant="ghost" className="flex items-center gap-2">
-            <Heart className="h-5 w-5" />
-            <span className="hidden sm:inline">Save</span>
-          </Button>
+          <ShareButton variant="default" shareText="Share" item={data} itemType="experience"/>
+          <WishlistButton itemId={data?.id || ""} itemType={"experience"} isInwishlist={false} />
         </div>
       </div>
       <MediaGallery media={Array.isArray(data?.media) ? data.media : []} variant="carousel" aspectRatio="video" priority />
@@ -74,7 +69,6 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
             </div>
             <div>
               <p className="font-medium">Hosted by {data?.owner?.first_name} {data?.owner?.last_name}</p>
-              <GuestFavoriteBadge rating={data?.rating || 0} reviewCount={0} />
             </div>
           </div>
         <div className="space-y-4">

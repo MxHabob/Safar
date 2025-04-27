@@ -23,14 +23,13 @@ export default function DiscountDetailsModal() {
   const isModalOpen = isOpen && type === "DiscountDetails"
   const booking = data.Booking
 
-  // Mock discount data - replace with actual data from your store
   const discount = {
     id: "disc_123",
     code: "SUMMER25",
     discount_type: "Percentage",
     amount: 25,
-    valid_from: new Date(Date.now() - 7 * 86400000).toISOString(), // 7 days ago
-    valid_to: new Date(Date.now() + 30 * 86400000).toISOString(), // 30 days from now
+    valid_from: new Date(Date.now() - 7 * 86400000).toISOString(),
+    valid_to: new Date(Date.now() + 30 * 86400000).toISOString(),
     is_active: true,
   }
 
