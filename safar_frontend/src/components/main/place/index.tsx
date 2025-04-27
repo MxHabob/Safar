@@ -3,9 +3,8 @@
 import { useGetPlaceQuery } from "@/core/services/api"
 import { MediaGallery } from "@/components/global/media-gallery"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, MapPin } from "lucide-react"
+import { MapPin } from "lucide-react"
 import MapboxMap from "@/components/global/mapBox"
-import { useRouter } from "next/navigation"
 import { WishlistButton } from "@/components/global/wishlist-button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ShareButton } from "@/components/global/share-button"
@@ -14,11 +13,11 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import Image from "next/image"
 import BookingCard from "@/components/global/cards/booking-card"
+import { RouterBack } from "@/components/global/router-back"
 
 
 export const PlacePageContent = ({ id }: { id: string }) => {
   const { data, isLoading, error } = useGetPlaceQuery(id)
-  const router = useRouter()
 
   if (isLoading) {
     return <PlacePageContent.Skeleton />
@@ -29,9 +28,7 @@ export const PlacePageContent = ({ id }: { id: string }) => {
       <div className="max-w-6xl mx-auto p-4 md:p-6 flex flex-col items-center justify-center h-[50vh]">
         <h2 className="text-2xl font-bold text-red-500">Error loading place</h2>
         <p className="text-muted-foreground mt-2">Please try again later</p>
-        <Button variant="outline" className="mt-4" onClick={() => router.back()}>
-          Go Back
-        </Button>
+        <RouterBack/>
       </div>
     )
   }
@@ -39,14 +36,7 @@ export const PlacePageContent = ({ id }: { id: string }) => {
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-8 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
-        <Button
-          variant="ghost"
-          onClick={() => router.push('/')}
-          className="rounded-full p-2 hover:bg-accent transition-colors"
-          aria-label="Go back"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+         <RouterBack/>
         <div className="flex items-center gap-2">
           <ShareButton
             variant="outline"

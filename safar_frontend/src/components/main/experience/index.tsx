@@ -1,9 +1,7 @@
 "use client";
 import { useGetExperienceQuery } from "@/core/services/api";
-import { ArrowLeft, Calendar, Users, MapPin, Star, Clock } from 'lucide-react';
+import { Calendar, Users, MapPin, Star, Clock } from 'lucide-react';
 import MapboxMap from "@/components/global/mapBox";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import BookingCard from "@/components/global/cards/booking-card";
 import { MediaGallery } from "@/components/global/media-gallery";
@@ -13,10 +11,10 @@ import { ShareButton } from "@/components/global/share-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { RouterBack } from "@/components/global/router-back";
 
 export const ExperiencePageContent = ({ id }: { id: string }) => {
   const { data, isFetching, isLoading, error } = useGetExperienceQuery(id);
-  const router = useRouter();
   const scheduleDays = (data?.schedule as { days: string[] } | undefined)?.days || [];
   const firstThreeDays = scheduleDays.slice(0, 3);
   const remainingDays = scheduleDays.length - 3;
@@ -31,14 +29,7 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-8 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
-        <Button 
-          variant="ghost" 
-          onClick={() => router.replace("/")} 
-          className="rounded-full p-2 hover:bg-accent transition-colors"
-          aria-label="Go back"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+         <RouterBack/>
         <div className="flex items-center gap-2">
           <ShareButton 
             variant="outline" 
