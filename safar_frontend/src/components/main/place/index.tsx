@@ -1,4 +1,5 @@
 "use client"
+
 import { useGetPlaceQuery } from "@/core/services/api"
 import { MediaGallery } from "@/components/global/media-gallery"
 import { Button } from "@/components/ui/button"
@@ -11,7 +12,10 @@ import { ShareButton } from "@/components/global/share-button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import Image  from "next/image"
+import Image from "next/image"
+import BookingCard from "@/components/global/cards/booking-card"
+
+
 export const PlacePageContent = ({ id }: { id: string }) => {
   const { data, isLoading, error } = useGetPlaceQuery(id)
   const router = useRouter()
@@ -19,8 +23,17 @@ export const PlacePageContent = ({ id }: { id: string }) => {
   if (isLoading) {
     return <PlacePageContent.Skeleton />
   }
+
   if (error) {
-    return <></>
+    return (
+      <div className="max-w-6xl mx-auto p-4 md:p-6 flex flex-col items-center justify-center h-[50vh]">
+        <h2 className="text-2xl font-bold text-red-500">Error loading place</h2>
+        <p className="text-muted-foreground mt-2">Please try again later</p>
+        <Button variant="outline" className="mt-4" onClick={() => router.back()}>
+          Go Back
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -99,14 +112,20 @@ export const PlacePageContent = ({ id }: { id: string }) => {
 
         <div>
           <div className="sticky top-4 space-y-4">
+            {data && <BookingCard id={data.id} data={data} placeType="place" />}
+
             <Card className="border-none shadow-lg dark:shadow-primary/5 overflow-hidden">
               <CardContent className="p-0">
-                <div className="h-[300px] w-full">
-                  <MapboxMap location={data?.location || ""} />
+                <div className="w-full">
+                  {data?.location && <MapboxMap location={data.location} height="250px" zoom={15} />}
                 </div>
                 <div className="p-4">
                   <h3 className="font-medium mb-2">Location</h3>
-                  <p className="text-sm text-muted-foreground">{data?.location || "Address not available"}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {data?.city?.name && `${data.city.name}, `}
+                    {data?.region?.name && `${data.region.name}, `}
+                    {data?.country?.name}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -141,9 +160,8 @@ export const PlacePageContent = ({ id }: { id: string }) => {
                     <Image
                       src={experience.media[0].url || "/placeholder.svg"}
                       alt={experience.title || "Experience"}
-                      className="object-cover w-full h-full"
-                      layout="fill"
-                      objectFit="cover"
+                      fill
+                      className="object-cover"
                     />
                   )}
                 </div>
@@ -204,29 +222,42 @@ PlacePageContent.Skeleton = function PlacePageContentSkeleton() {
               </div>
             </CardContent>
           </Card>
-
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-32 rounded-lg" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[...Array(4)].map((_, i) => (
-                <Card key={i} className="border-none shadow-md">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="h-6 w-6 rounded-full" />
-                      <Skeleton className="h-4 w-32 rounded-lg" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
         </div>
 
         <div>
           <div className="space-y-4">
+            <Card className="border-none shadow-md overflow-hidden">
+              <CardContent className="p-4">
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-6 w-24 rounded-lg" />
+                    <Skeleton className="h-6 w-16 rounded-lg" />
+                  </div>
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                  <Skeleton className="h-px w-full" />
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Skeleton className="h-4 w-32 rounded-lg" />
+                      <Skeleton className="h-4 w-16 rounded-lg" />
+                    </div>
+                    <div className="flex justify-between">
+                      <Skeleton className="h-4 w-24 rounded-lg" />
+                      <Skeleton className="h-4 w-16 rounded-lg" />
+                    </div>
+                    <div className="flex justify-between">
+                      <Skeleton className="h-5 w-16 rounded-lg" />
+                      <Skeleton className="h-5 w-20 rounded-lg" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="border-none shadow-lg overflow-hidden">
               <CardContent className="p-0">
-                <Skeleton className="h-[300px] w-full" />
+                <Skeleton className="h-[250px] w-full" />
                 <div className="p-4">
                   <Skeleton className="h-5 w-24 rounded-lg mb-2" />
                   <Skeleton className="h-4 w-full rounded-lg" />
@@ -242,27 +273,6 @@ PlacePageContent.Skeleton = function PlacePageContentSkeleton() {
               </CardContent>
             </Card>
           </div>
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        <Skeleton className="h-px w-full" />
-        <Skeleton className="h-8 w-64 rounded-lg" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(3)].map((_, i) => (
-            <Card key={i} className="border-none shadow-md overflow-hidden">
-              <Skeleton className="aspect-video w-full" />
-              <CardContent className="p-4">
-                <Skeleton className="h-6 w-3/4 rounded-lg" />
-                <Skeleton className="h-4 w-full rounded-lg mt-1" />
-                <Skeleton className="h-4 w-5/6 rounded-lg mt-1" />
-                <div className="flex justify-between items-center mt-4">
-                  <Skeleton className="h-6 w-20 rounded-full" />
-                  <Skeleton className="h-8 w-24 rounded-lg" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
         </div>
       </div>
     </div>

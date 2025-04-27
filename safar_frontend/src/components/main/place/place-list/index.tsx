@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useRef, useEffect } from "react"
+import { useState, useCallback, useRef } from "react"
 import { useGetPlacesQuery } from "@/core/services/api"
 import { Button } from "@/components/ui/button"
 import { PlaceCard } from "./place-card"
@@ -15,24 +15,28 @@ type Props = {
 export const ListPlaces = ({ selected }: Props) => {
   const [page, setPage] = useState(1)
   const placesCache = useRef<Place[]>([])
-
+  
   const { data, isLoading, isFetching, error } = useGetPlacesQuery(
     { page, page_size: 12 },
-    { refetchOnMountOrArgChange: false },
-  )
-
-  useEffect(() => {
-    if (data?.results && !isFetching && page === 1) {
-      placesCache.current = data.results
-    } else if (data?.results && !isFetching && page > 1) {
-      const newPlaces = data.results.filter(
-        (newPlace) => !placesCache.current.some((place) => place.id === newPlace.id),
-      )
-      if (newPlaces.length > 0) {
-        placesCache.current = [...placesCache.current, ...newPlaces]
+    { 
+      refetchOnMountOrArgChange: false,
+      selectFromResult: (result) => {
+        if (result.data?.results && !result.isFetching) {
+          if (page === 1) {
+            placesCache.current = result.data.results
+          } else {
+            const newPlaces = result.data.results.filter(
+              (newPlace) => !placesCache.current.some((place) => place.id === newPlace.id)
+            )
+            if (newPlaces.length > 0) {
+              placesCache.current = [...placesCache.current, ...newPlaces]
+            }
+          }
+        }
+        return result
       }
     }
-  }, [data, isFetching, page])
+  )
 
   const handleLoadMore = useCallback(() => {
     if (!isFetching) {
@@ -41,7 +45,7 @@ export const ListPlaces = ({ selected }: Props) => {
   }, [isFetching])
 
   const hasMorePlaces = data?.next !== null
-
+  
   if (error) {
     return (
       <div className="flex justify-center items-center p-8 text-red-500">
@@ -72,7 +76,7 @@ export const ListPlaces = ({ selected }: Props) => {
 
         {isLoading && page === 1 && (
           <>
-            {[1, 2, 3, 4].map((i) => (
+            {Array.from({ length: 4 }).map((_, i) => (
               <PlaceCard.Skeleton key={i} />
             ))}
           </>
@@ -81,7 +85,12 @@ export const ListPlaces = ({ selected }: Props) => {
 
       {hasMorePlaces && (
         <div className="my-8 w-full flex justify-center">
-          <Button onClick={handleLoadMore} disabled={isFetching} className="px-8" variant="outline">
+          <Button 
+            onClick={handleLoadMore} 
+            disabled={isFetching} 
+            className="px-8" 
+            variant="outline"
+          >
             {isFetching ? <Spinner size={"lg"} /> : "More"}
           </Button>
         </div>

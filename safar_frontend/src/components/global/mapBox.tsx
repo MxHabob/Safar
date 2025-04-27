@@ -1,101 +1,115 @@
-'use client'
+"use client"
 
-import { useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import { useRef, useState, useEffect } from 'react'
+import mapboxgl from 'mapbox-gl'
+import 'mapbox-gl/dist/mapbox-gl.css'
 
 interface MapboxMapProps {
-  location: string;
+  location: string
+  height?: string
+  zoom?: number
+  interactive?: boolean
 }
 
-export const MapboxMap = ({ location }:MapboxMapProps) => {
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markerRef = useRef<mapboxgl.Marker | null>(null);
-  const [isMapInitialized, setIsMapInitialized] = useState(false);
+export const MapboxMap = ({ 
+  location, 
+  height = "300px", 
+  zoom = 14, 
+  interactive = true 
+}: MapboxMapProps) => {
+  const mapContainerRef = useRef<HTMLDivElement | null>(null)
+  const mapRef = useRef<mapboxgl.Map | null>(null)
+  const markerRef = useRef<mapboxgl.Marker | null>(null)
+  const [isMapInitialized, setIsMapInitialized] = useState(false)
 
-  // Function to parse the SRID POINT string into lat/lng
   const parseLocation = (locationString: string) => {
-    if (!locationString) return null;
+    if (!locationString) return null
     
     try {
-      // Extract the coordinates part
-      const coordsString = locationString.match(/POINT \(([^)]+)\)/)?.[1];
-      if (!coordsString) return null;
+      const coordsString = locationString.match(/POINT $$([^)]+)$$/)?.[1]
+      if (!coordsString) return null
+
+      const [lng, lat] = coordsString.split(' ').map(Number)
       
-      // Split into lng and lat (order is lng lat in POINT)
-      const [lng, lat] = coordsString.split(' ').map(Number);
+      if (isNaN(lng) || isNaN(lat)) return null
       
-      // Validate coordinates
-      if (isNaN(lng) || isNaN(lat)) return null;
-      
-      return { lng, lat };
+      return { lng, lat }
     } catch (error) {
-      console.error('Error parsing location string:', error);
-      return null;
+      console.error('Error parsing location string:', error)
+      return null
     }
-  };
+  }
 
-  const initializeMap = () => {
-    if (!mapContainerRef.current || mapRef.current) return;
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current || !process.env.NEXT_PUBLIC_MAPBOX_TOKEN) return
 
-    mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
+    mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
 
-    // Parse the initial location
-    const initialCoords = parseLocation(location);
-    const defaultCenter = initialCoords || { lng: 0, lat: 0 }; // Fallback to 0,0 if parsing fails
+    const initialCoords = parseLocation(location)
+    const defaultCenter = initialCoords || { lng: 0, lat: 0 }
 
     mapRef.current = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: 'mapbox://styles/mapbox/streets-v12',
       center: [defaultCenter.lng, defaultCenter.lat],
-      zoom: 14,
-    });
+      zoom: zoom,
+      interactive: interactive,
+    })
 
-    mapRef.current.addControl(new mapboxgl.NavigationControl());
-    setIsMapInitialized(true);
+    if (interactive) {
+      mapRef.current.addControl(new mapboxgl.NavigationControl())
+    }
     
-    // Add initial marker if we have valid coordinates
-    if (initialCoords) {
-      addMarker(initialCoords.lat, initialCoords.lng);
+    setIsMapInitialized(true)
+    
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove()
+        mapRef.current = null
+      }
     }
-  };
+  }, [location, zoom, interactive])
 
-  const addMarker = (lat: number, lng: number) => {
-    if (!mapRef.current) return;
+  useEffect(() => {
+    if (!mapRef.current || !isMapInitialized) return
 
-    // Remove existing marker if it exists
+    const coords = parseLocation(location)
+    if (!coords) return
+
     if (markerRef.current) {
-      markerRef.current.remove();
+      markerRef.current.remove()
     }
 
-    // Create a new marker
-    const el = document.createElement('div');
-    el.className = 'marker';
-    el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="#3f51b5" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"></path></svg>`;
+    const el = document.createElement('div')
+    el.className = 'marker'
+    el.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#ef4444" />
+      <circle cx="12" cy="9" r="3" fill="white" />
+    </svg>`
+    el.style.width = '32px'
+    el.style.height = '32px'
+    el.style.backgroundSize = '100%'
+    el.style.cursor = 'pointer'
+    el.style.transform = 'translate(-16px, -32px)'
 
     markerRef.current = new mapboxgl.Marker(el)
-      .setLngLat([lng, lat])
-      .addTo(mapRef.current);
+      .setLngLat([coords.lng, coords.lat])
+      .addTo(mapRef.current)
 
-    // Center the map on the marker
-    mapRef.current.setCenter([lng, lat]);
-  };
+    mapRef.current.flyTo({
+      center: [coords.lng, coords.lat],
+      essential: true,
+      duration: 1000
+    })
+  }, [location, isMapInitialized])
 
-  // Initialize map when component mounts
-  if (typeof window !== 'undefined' && !isMapInitialized) {
-    initializeMap();
-  }
+  return (
+    <div 
+      ref={mapContainerRef} 
+      className="w-full rounded-lg overflow-hidden shadow-inner" 
+      style={{ height }}
+    />
+  )
+}
 
-  // Update marker when location changes
-  if (isMapInitialized && location) {
-    const coords = parseLocation(location);
-    if (coords) {
-      addMarker(coords.lat, coords.lng);
-    }
-  }
-
-  return <div ref={mapContainerRef} className="w-full h-screen" />;
-};
-
-export default MapboxMap;
+export default MapboxMap

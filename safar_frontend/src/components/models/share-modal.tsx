@@ -118,7 +118,7 @@ export default function ShareModal() {
     >
       <div className="flex flex-col space-y-6 py-4">
         <Card className="border shadow-sm dark:shadow-none">
-          <CardContent className="p-3">
+          <CardContent className="">
             <div className="flex items-center space-x-2">
               <Input
                 value={shareUrl}
@@ -153,7 +153,7 @@ export default function ShareModal() {
             <Button
               key={option.name}
               variant="outline"
-              className={`flex flex-col items-center justify-center p-3 text-white shadow-sm transition-all duration-200 ${option.color}`}
+              className={`flex flex-col items-center justify-center p-5 text-white shadow-sm transition-all duration-200 ${option.color}`}
               onClick={() => handleShare(option.url)}
             >
               {option.icon}

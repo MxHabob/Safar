@@ -32,10 +32,8 @@ export default function BookingCard({ id, data, placeType }: BookingCardProps) {
   const [groupSize, setGroupSize] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Calculate number of nights (if applicable)
   const nights = date.from && date.to ? Math.ceil((date.to.getTime() - date.from.getTime()) / (1000 * 60 * 60 * 24)) : 0
 
-  // Get price based on place type
   const getBasePrice = () => {
     if (placeType === "experience") {
       return (data as Experience)?.price_per_person || 0
@@ -47,12 +45,10 @@ export default function BookingCard({ id, data, placeType }: BookingCardProps) {
     return 0
   }
 
-  // Get currency based on place type
   const getCurrency = () => {
     return data?.currency || "USD"
   }
 
-  // Calculate total price
   const basePrice = getBasePrice()
   const totalPrice = placeType === "experience" ? basePrice * groupSize * (nights || 1) : basePrice * (nights || 1)
 
@@ -83,8 +79,7 @@ export default function BookingCard({ id, data, placeType }: BookingCardProps) {
       })
   
       console.log("Booking created:", response)
-      // Optionally redirect
-      // window.location.href = `/bookings/${response.id}`
+
     } catch (error) {
       toast.error("Failed to complete your reservation. Please try again.")
       console.error("Booking error:", error)
@@ -105,10 +100,9 @@ export default function BookingCard({ id, data, placeType }: BookingCardProps) {
   }
 
   const decrementGroupSize = () => {
-    setGroupSize((prev) => Math.max(prev - 1, 1)) // Minimum 1 person
+    setGroupSize((prev) => Math.max(prev - 1, 1))
   }
 
-  // Get title based on place type
   const getTitle = () => {
     if (placeType === "experience") {
       return (data as Experience)?.title
@@ -120,7 +114,6 @@ export default function BookingCard({ id, data, placeType }: BookingCardProps) {
     return ""
   }
 
-  // Get rating based on place type
   const getRating = () => {
     if (placeType === "experience" || placeType === "place") {
       if (placeType === "experience" || placeType === "place") {
@@ -150,7 +143,6 @@ export default function BookingCard({ id, data, placeType }: BookingCardProps) {
         <div className="text-sm font-medium">{getTitle()}</div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Date Range Picker */}
         <div className="grid gap-2">
           <Popover>
             <PopoverTrigger asChild>
@@ -184,8 +176,6 @@ export default function BookingCard({ id, data, placeType }: BookingCardProps) {
             </PopoverContent>
           </Popover>
         </div>
-
-        {/* Group Size - Only show for experiences and boxes */}
         {(placeType === "experience" || placeType === "box") && (
           <div className="space-y-2">
             <div className="font-medium">Guests</div>
@@ -223,8 +213,6 @@ export default function BookingCard({ id, data, placeType }: BookingCardProps) {
         )}
 
         <Separator className="my-4" />
-
-        {/* Price Breakdown */}
         <div className="space-y-2">
           <div className="flex justify-between">
             {placeType === "experience" ? (
