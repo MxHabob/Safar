@@ -35,7 +35,7 @@ export const PlacePageContent = ({ id }: { id: string }) => {
           <h1 className="text-2xl font-bold">{data?.name || ""}</h1>
         </div>
         <div className="flex items-center gap-4">
-          <ShareButton variant="default" shareText="Share" item={data} itemType="place"/>
+          <ShareButton variant="ghost" shareText="Share" item={data} itemType="place"/>
           <WishlistButton itemId={data?.id || ""} itemType={"place"} isInwishlist={false} />
         </div>
       </div>

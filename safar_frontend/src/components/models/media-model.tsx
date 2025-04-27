@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { ChevronLeft, ChevronRight, Menu, Share } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Menu } from 'lucide-react'
 import { useModal } from "@/core/hooks/use-modal"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Media } from "@/core/types"
 import { Modal } from "../global/modal"
+import { ShareButton } from "../global/share-button"
 
 export const MediaModal = () => {
   const { isOpen, onClose, type, data } = useModal()
@@ -77,14 +78,7 @@ export const MediaModal = () => {
             </div>
             <span className="font-medium text-sm sm:text-lg">Media Gallery</span>
           </div>
-          <Button 
-            variant="link" 
-            className="font-medium text-sm sm:text-lg p-0 sm:p-2"
-            size="sm"
-          >
-            <Share className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            Share
-          </Button>
+          <ShareButton variant="ghost" shareText="Share"/>
         </div>
 
         {/* Main content */}

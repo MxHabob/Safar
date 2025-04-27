@@ -1,11 +1,11 @@
 "use client"
-import { MapPin, Calendar } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Box, InteractionType } from "@/core/types";
-import { Skeleton } from "@/components/ui/skeleton";
-import { WishlistButton } from "@/components/global/wishlist-button";
-import InteractionLink from "@/components/global/interaction-link";
-import { MediaGallery } from "@/components/global/media-gallery";
+import { MapPin, Calendar } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { type Box, InteractionType } from "@/core/types"
+import { Skeleton } from "@/components/ui/skeleton"
+import { WishlistButton } from "@/components/global/wishlist-button"
+import InteractionLink from "@/components/global/interaction-link"
+import { MediaGallery } from "@/components/global/media-gallery"
 
 interface BoxCardProps {
   box: Box
@@ -22,7 +22,7 @@ export const BoxCard = ({ box }: BoxCardProps) => {
       contentType={"box"}
       objectId={box.id}
     >
-      <div className="relative h-[350px] w-[280px] min-w-sm rounded-3xl bg-card shadow-md overflow-hidden group transition-all hover:shadow-lg">
+      <div className="relative h-[370px] w-[280px] min-w-sm rounded-3xl bg-card shadow-md overflow-hidden group transition-all hover:shadow-lg">
         <div className="relative h-[180px]">
           <MediaGallery
             media={box.media || []}
@@ -36,7 +36,7 @@ export const BoxCard = ({ box }: BoxCardProps) => {
             itemId={box.id}
             itemType={"box"}
             isInwishlist={box.is_in_wishlist || false}
-             className="absolute top-3 right-3 opacity-0 group-hover:opacity-100  transition-all duration-200"
+            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200"
             size="default"
             variant="outline"
           />
@@ -62,7 +62,7 @@ export const BoxCard = ({ box }: BoxCardProps) => {
           </h3>
           <p className="mb-3 text-sm text-muted-foreground line-clamp-1">{box.description || "Unknown"}</p>
 
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-1">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
             {box.itinerary_days && (
               <Badge variant="outline" className="flex items-center text-sm font-normal">
                 <Calendar className="h-3 w-3 mr-1" />
@@ -96,16 +96,19 @@ BoxCard.Skeleton = function BoxCardSkeleton() {
             <Skeleton className="h-1/3 w-full" />
           </div>
         </div>
+
+        <div className="absolute bottom-3 left-3 z-10">
+          <Skeleton className="h-7 w-20 rounded-full" />
+        </div>
       </div>
       <div className="p-4">
-        <div className="mb-3 flex items-center">
+        <div className="mb-1 flex items-center">
           <Skeleton className="h-3.5 w-3.5 rounded-full mr-1" />
           <Skeleton className="h-3 w-20 rounded" />
         </div>
-        <Skeleton className="mb-2 h-5 w-3/4 rounded" />
-        <Skeleton className="mb-4 h-3 w-full rounded" />
-        <Skeleton className="mb-1 h-3 w-4/5 rounded" />
-        <div className="flex flex-wrap gap-2 mt-4">
+        <Skeleton className="mb-1 h-5 w-3/4 rounded" />
+        <Skeleton className="mb-3 h-3 w-full rounded" />
+        <div className="flex flex-wrap gap-2 mb-1">
           <Skeleton className="h-6 w-24 rounded-full" />
           <Skeleton className="h-6 w-28 rounded-full" />
         </div>
