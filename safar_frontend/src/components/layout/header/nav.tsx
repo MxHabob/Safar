@@ -8,7 +8,7 @@ export function Nav() {
     <div className="flex items-center justify-between px-6 py-4 ">
     <div className="flex items-center">
       <Link href="/" className="">
-        <span className="ml-2 text-lg font-bold">Safar</span>
+        <span className="text-lg font-bold">Safar</span>
       </Link>
     </div>
     <nav className="hidden md:block ">
