@@ -153,7 +153,7 @@ export default function ShareModal() {
             <Button
               key={option.name}
               variant="outline"
-              className={`flex flex-col items-center justify-center p-5 text-white shadow-sm transition-all duration-200 ${option.color}`}
+              className={`flex flex-col items-center justify-center p-7 text-white shadow-sm transition-all duration-200 ${option.color}`}
               onClick={() => handleShare(option.url)}
             >
               {option.icon}

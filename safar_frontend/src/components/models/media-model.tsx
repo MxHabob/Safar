@@ -60,8 +60,12 @@ export const MediaModal = () => {
       isOpen={isMediaModalOpen}
       onClose={onClose}
       className={cn(
-        "w-[95vw] h-[95vh] sm:w-[90vw] sm:h-[90vh] md:w-[85vw] md:h-[85vh] lg:w-[75vw] lg:h-[85vh]",
-        "!max-w-none !max-h-none !rounded-xl bg-card m-auto p-2 sm:p-4 md:p-6"
+        "w-[92vw] max-w-5xl h-auto max-h-[90vh]",
+        "sm:w-[90vw] md:w-[80vw] lg:w-[70vw]",
+        "rounded-2xl bg-card m-auto p-2 sm:p-4 md:p-6",
+        "overflow-hidden",
+        "box-border",
+        "pt-[calc(env(safe-area-inset-top)+1rem)] pb-[calc(env(safe-area-inset-bottom)+1rem)]",
       )}
     >
       <div className="flex flex-col h-full relative">
@@ -73,7 +77,7 @@ export const MediaModal = () => {
                 alt="Logo" 
                 width={24} 
                 height={24} 
-                className="rounded-full"
+                className="rounded-lg max-h-full max-w-full object-contain"
               />
             </div>
             <span className="font-medium text-sm sm:text-lg">Media Gallery</span>
@@ -87,7 +91,7 @@ export const MediaModal = () => {
             {isVideo ? (
               <video
                 src={currentMedia?.file || currentMedia?.url || ""}
-                className="rounded-lg max-h-full max-w-full"
+                className="rounded-lg max-h-full max-w-full object-contain"
                 controls
                 autoPlay
                 playsInline
@@ -97,7 +101,7 @@ export const MediaModal = () => {
                 src={currentMedia?.file || currentMedia?.url || ""}
                 alt="Media"
                 fill
-                className="rounded-lg object-contain"
+                className="rounded-lg max-h-full max-w-full object-contain"
                 sizes="100vw"
                 priority
               />
@@ -172,7 +176,7 @@ export const MediaModal = () => {
                     <div className="w-full h-full bg-black flex items-center justify-center">
                       <video
                         src={item.file || item.url || ""}
-                        className="object-cover w-full h-full"
+                        className="rounded-lg max-h-full max-w-full object-contain"
                         muted
                       />
                       <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
@@ -186,7 +190,7 @@ export const MediaModal = () => {
                       src={item.file || item.url || ""}
                       alt={`Thumbnail ${index + 1}`}
                       fill
-                      className="object-cover"
+                      className="rounded-lg max-h-full max-w-full object-contain"
                     />
                   )}
                 </div>
