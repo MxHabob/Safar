@@ -94,7 +94,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
 
 PlaceCard.Skeleton = function PlaceCardSkeleton() {
   return (
-    <div className="flex flex-col w-full rounded-3xl bg-card overflow-hidden shadow-md">
+    <div className="flex flex-col w-full rounded-3xl bg-card overflow-hidden shadow-md relative group">
       <Skeleton className="h-60 w-full rounded-none" />
       
       <div className="absolute top-3 left-3">
