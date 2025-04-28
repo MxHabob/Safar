@@ -74,13 +74,11 @@ class Discount(models.Model):
     valid_to = models.DateTimeField()
     is_active = models.BooleanField(default=True)
     
-    # Relationships to applicable entities
     applicable_places = models.ManyToManyField('Place', blank=True, related_name='discounts')
     applicable_experiences = models.ManyToManyField('Experience', blank=True, related_name='discounts')
     applicable_flights = models.ManyToManyField('Flight', blank=True, related_name='discounts')
     applicable_boxes = models.ManyToManyField('Box', blank=True, related_name='discounts')
     
-    # New fields for enhanced functionality
     target_users = models.ManyToManyField(User, blank=True, related_name='targeted_discounts')
     min_purchase_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     max_discount_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -89,7 +87,6 @@ class Discount(models.Model):
     created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='created_discounts')
     metadata = models.JSONField(default=dict, blank=True)
     
-    # Add methods for discount functionality
     def is_valid(self):
         """Check if discount is valid (active and within date range)"""
         now = timezone.now()
@@ -113,20 +110,17 @@ class Discount(models.Model):
     
     def is_applicable_to_user(self, user):
         """Check if discount is applicable to a specific user"""
-        # If no target users specified, discount is for everyone
         if not self.target_users.exists():
             return True
-        # Otherwise, check if user is in target users
         return self.target_users.filter(id=user.id).exists()
     
     def calculate_discount_amount(self, original_price):
         """Calculate the discount amount based on original price"""
         if self.discount_type == "Percentage":
             discount_amount = original_price * (self.amount / 100)
-        else:  # Fixed
+        else:
             discount_amount = self.amount
         
-        # Apply max discount if specified
         if self.max_discount_amount and discount_amount > self.max_discount_amount:
             discount_amount = self.max_discount_amount
             
@@ -309,8 +303,10 @@ class Booking(BaseModel):
     check_out = models.DateField(null=True, blank=True, verbose_name="Check-Out Date", db_index=True)
     booking_date = models.DateTimeField(auto_now_add=True, verbose_name="Booking Date", db_index=True)
     group_size = models.PositiveIntegerField(default=1)
+    discount = models.ForeignKey( Discount, on_delete=models.SET_NULL, null=True, blank=True,verbose_name="Applied Discount")
+    original_price = models.DecimalField( max_digits=10, decimal_places=5,verbose_name="Original Price")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Pending", verbose_name="Status", db_index=True)
-    total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Total Price", db_index=True)
+    total_price = models.DecimalField(max_digits=10, decimal_places=5, verbose_name="Total Price", db_index=True)
     currency = models.CharField(max_length=10, default="USD", verbose_name="Currency")
     payment_status = models.CharField(max_length=20, default="Pending", verbose_name="Payment Status", db_index=True)
 
