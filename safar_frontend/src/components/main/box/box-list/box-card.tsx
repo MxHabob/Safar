@@ -27,7 +27,7 @@ export const BoxCard = ({ box, className }: BoxCardProps) => {
       contentType="box"
       objectId={box.id}
     >
-      <div className="relative h-full w-full rounded-3xl bg-card shadow-md overflow-hidden transition-all hover:shadow-lg">
+       <div className="relative w-full rounded-3xl bg-card shadow-md overflow-hidden group min-w-sm max-w-sm transition-all hover:shadow-lg">
         <div className="relative h-[180px]">
           <MediaGallery
             media={box.media || []}
@@ -94,10 +94,10 @@ export const BoxCard = ({ box, className }: BoxCardProps) => {
   )
 }
 
-BoxCard.Skeleton = function BoxCardSkeleton({ className }: { className?: string }) {
+BoxCard.Skeleton = function BoxCardSkeleton() {
   return (
-    <div className={cn("relative rounded-3xl shadow-md bg-card overflow-hidden", className)}>
-      <div className="relative aspect-video">
+      <div className="relative w-full min-w-sm max-w-sm rounded-3xl bg-card overflow-hidden">
+        <div className="relative aspect-[4/3] w-full">
         <div className="grid grid-cols-3 gap-0.5 h-full w-full">
           <Skeleton className="col-span-2 row-span-2 rounded-tl-3xl" />
           <div className="flex flex-col gap-0.5">
