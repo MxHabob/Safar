@@ -89,7 +89,7 @@ class UserInteractionSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserInteraction
         fields = ['id', 'interaction_type', 'interaction_type_display', 'content_type', 
-                  'content_type_display', 'object_id', 'metadata', 'duration', 'created_at']
+                  'content_type_display', 'object_id', 'metadata', 'created_at']
     
     def get_content_type_display(self, obj):
         """
