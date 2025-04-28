@@ -304,7 +304,7 @@ class Booking(BaseModel):
     booking_date = models.DateTimeField(auto_now_add=True, verbose_name="Booking Date", db_index=True)
     group_size = models.PositiveIntegerField(default=1)
     discount = models.ForeignKey( Discount, on_delete=models.SET_NULL, null=True, blank=True,verbose_name="Applied Discount")
-    original_price = models.DecimalField( max_digits=10, decimal_places=5,verbose_name="Original Price")
+    original_price = models.DecimalField( max_digits=10, null=True,blank=True, decimal_places=5,verbose_name="Original Price")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Pending", verbose_name="Status", db_index=True)
     total_price = models.DecimalField(max_digits=10, decimal_places=5, verbose_name="Total Price", db_index=True)
     currency = models.CharField(max_length=10, default="USD", verbose_name="Currency")
