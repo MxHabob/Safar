@@ -47,7 +47,7 @@ export const WishlistButton = ({
         )
       } else {
         const wishlistItem = {
-          [itemType]: { id: itemId }
+          [itemType]: { id: Number(itemId) }
         }
         
         await toast.promise(
