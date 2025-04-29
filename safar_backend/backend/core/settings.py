@@ -104,6 +104,7 @@ INSTALLED_APPS = [
     "apps.geographic_data",
     "apps.core_apps",
     'apps.marketing',
+    'apps.languages',
 ]
 
 MIDDLEWARE = [
