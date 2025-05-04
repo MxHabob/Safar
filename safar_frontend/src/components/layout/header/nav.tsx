@@ -2,14 +2,13 @@ import Link from "next/link"
 import { UserAvatar } from "@/components/global/user-avatar"
 import { ModeToggle } from "@/components/global/mode-toggle"
 import NotificationCenter from "@/components/global/notification-center"
+import { Logo } from "@/components/global/logo"
 
 export function Nav() {
   return (
     <div className="flex items-center justify-between px-6 py-4 ">
     <div className="flex items-center">
-      <Link href="/" className="">
-        <span className="text-lg font-bold">Safar</span>
-      </Link>
+       <Logo />
     </div>
     <nav className="hidden md:block ">
       <ul className="flex space-x-6">

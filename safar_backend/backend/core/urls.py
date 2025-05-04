@@ -27,6 +27,7 @@ rest_api_urlpatterns = [
     path('api/', include('apps.safar.urls')),
     path('api/', include('apps.geographic_data.urls')),
     path('api/', include('apps.marketing.urls')),
+    path('api/languages/', include('apps.languages.urls')),
     path('health/', health_check, name='health_check'),
 ]
 

@@ -1,4 +1,5 @@
 "use client"
+
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -12,7 +13,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/core/hooks/use-auth"
-import { Calendar, LogOut, Settings, User2, MessageSquare, Bell, Home, UserPlus } from "lucide-react"
+import { Calendar, LogOut, Settings, User2, MessageSquare, Bell, Home, UserPlus } from 'lucide-react'
+import { MembershipLevel } from "@/core/types"
 
 interface UserAvatarProps {
   className?: string
@@ -20,9 +22,17 @@ interface UserAvatarProps {
   showDropdown?: boolean
 }
 
-export function UserAvatar({ className, showName = false, showDropdown = true }: UserAvatarProps) {
+// Membership level colors
+const membershipColors: Record<MembershipLevel, string> = {
+  bronze: "border-amber-600",
+  silver: "border-slate-400",
+  gold: "border-yellow-400",
+  platinum: "border-cyan-300"
+}
+
+export const UserAvatar = ({ className, showName = false, showDropdown = true }: UserAvatarProps) => {
   const router = useRouter()
-  const { user:userData, isAuthenticated, isLoading, logout } = useAuth()
+  const { user: userData, isAuthenticated, isLoading, logout } = useAuth()
 
   if (isLoading) {
     return (
@@ -37,24 +47,52 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
     try {
       await logout()
     } catch {
+      // Error handling
     }
   }
 
-  const avatarContent =
-    isAuthenticated && userData ? (
+  // Format points with K suffix for thousands
+  const formatPoints = (points: number) => {
+    if (points >= 1000) {
+      return `${(points / 1000).toFixed(1)}K`
+    }
+    return points.toString()
+  }
+
+const membershipColor = userData?.membership_level 
+  ? membershipColors[userData.membership_level as MembershipLevel] 
+  : "border-transparent";
+
+  const avatarContent = (
+    <div className="relative">
       <Avatar className={className}>
-        <AvatarImage src={userData.profile?.avatar} alt={userData.first_name || "User avatar"} />
+        <AvatarImage 
+          src={userData?.profile?.avatar || "/placeholder.svg"} 
+          alt={userData?.first_name || "User avatar"} 
+        />
         <AvatarFallback>
-          {(((userData.first_name?.charAt(0)?.toUpperCase() ?? "") + (userData.last_name?.charAt(0)?.toUpperCase() ?? "")) || (userData.username?.charAt(0)?.toUpperCase() ?? ""))}
+          {isAuthenticated && userData
+            ? (((userData.first_name?.charAt(0)?.toUpperCase() ?? "") + 
+                (userData.last_name?.charAt(0)?.toUpperCase() ?? "")) || 
+                (userData.username?.charAt(0)?.toUpperCase() ?? ""))
+            : <User2 className="h-4 w-4" />
+          }
         </AvatarFallback>
       </Avatar>
-    ) : (
-      <Avatar className={className}>
-        <AvatarFallback>
-          <User2 className="h-4 w-4" />
-        </AvatarFallback>
-      </Avatar>
-    )
+      
+      {/* Membership ring */}
+      {isAuthenticated && userData && (
+        <div className={`absolute -inset-1 rounded-full border-2 ${membershipColor}`}></div>
+      )}
+      
+      {/* Points badge */}
+      {isAuthenticated && userData && userData.points > 0 && (
+        <div className="absolute -bottom-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-bold text-primary-foreground">
+          {formatPoints(userData.points)}
+        </div>
+      )}
+    </div>
+  )
 
   if (!showDropdown) {
     return (
@@ -70,7 +108,7 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
+        <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
           {avatarContent}
         </Button>
       </DropdownMenuTrigger>
@@ -81,6 +119,18 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">{userData.username || "User"}</p>
                 <p className="text-xs leading-none text-muted-foreground">{userData.email}</p>
+                {userData.membership_level && (
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <div className={`h-2 w-2 rounded-full bg-current ${
+                      userData.membership_level === "bronze" ? "text-amber-600" :
+                      userData.membership_level === "silver" ? "text-slate-400" :
+                      userData.membership_level === "gold" ? "text-yellow-400" :
+                      "text-cyan-300"
+                    }`}></div>
+                    <span className="text-xs capitalize">{userData.membership_level} Member</span>
+                    <span className="ml-auto text-xs font-semibold text-primary">{formatPoints(userData.points)} pts</span>
+                  </div>
+                )}
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -139,4 +189,3 @@ export function UserAvatar({ className, showName = false, showDropdown = true }:
     </DropdownMenu>
   )
 }
-

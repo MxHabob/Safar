@@ -1,7 +1,7 @@
 import { Booking, Flight, Experience, Place, Message, User, Media } from '@/core/types';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export type ModalType = "CreateOrEditPlace" | "deletePlace" | "CreateOrEditExperience" | "deleteExperience" | "BookingDetails" | "BookingConfirmationOrCancellation" | "BookingModification" | "SuccessOrFailure" | "PaymentConfirmation" | "Events" | "ChatModel" | "DiscountDetails" | "MediaModal" | "ShareModal"
+export type ModalType = "CreateOrEditPlace" | "deletePlace" | "CreateOrEditExperience" | "deleteExperience" | "BookingDetails" | "BookingConfirmationOrCancellation" | "BookingModification" | "SuccessOrFailure" | "PaymentConfirmation" | "Events" | "ChatModel" | "DiscountDetails" | "MediaModal" | "ShareModal" | "LanguageSwitchingModels"
 
 export interface ModalData {
   Place?: Place;

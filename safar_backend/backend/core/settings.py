@@ -4,7 +4,7 @@ import environ
 from django.core.management.utils import get_random_secret_key
 from django.core.exceptions import ImproperlyConfigured
 from datetime import timedelta
-# Initialize environment variables
+
 env = environ.Env(
     DEBUG=(bool, False),
     DEVELOPMENT_MODE=(bool, False),
