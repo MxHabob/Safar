@@ -2,10 +2,11 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import { useAppDispatch } from '../store';
 import { loginSuccess } from '../features/auth/auth-slice';
-import { useDispatch } from "react-redux"
+
 export default function useSocialAuth(authenticate: any, provider: string) {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const router = useRouter();
   const searchParams = useSearchParams();
   const effectRan = useRef(false);
@@ -26,10 +27,10 @@ export default function useSocialAuth(authenticate: any, provider: string) {
             refresh: response.refresh
           }));
           toast.success('Successfully logged in!');
-          router.push('/');
+          router.push('/create');
         })
         .catch((error: any) => {
-          toast.error(`Authentication failed: ${error.data?.detail}`);
+          toast.error(`Authentication failed: ${ error.data?.detail }`);
           router.push('/sign-in');
         })
         .finally(() => {

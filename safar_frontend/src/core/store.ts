@@ -6,8 +6,8 @@ import authReducer from "@/core/features/auth/auth-slice";
 import realtimeReducer from "@/core/features/realtime/realtime-slice";
 import modalReducer from "@/core/features/ui/modal-slice";
 import scrollReducer from "@/core/features/ui/infinite-scroll-slice";
+import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 import { storage } from "@/lib/redux-persist-storage";
-
 const rootReducer = combineReducers({
   [api.reducerPath]: api.reducer,
   auth: authReducer,
@@ -48,6 +48,9 @@ export type AppDispatch = AppStore["dispatch"];
 
 export const store = makeStore();
 export const persistor = persistStore(store);
+
+export const useAppDispatch: () => AppDispatch = useDispatch;
+export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
 let hasInitializedAuth = false;
 
