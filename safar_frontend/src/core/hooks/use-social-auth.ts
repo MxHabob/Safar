@@ -31,7 +31,7 @@ export default function useSocialAuth(authenticate: any, provider: string) {
         })
         .catch((error: any) => {
           toast.error(`Authentication failed: ${ error.data?.detail }`);
-          router.push('/sign-in');
+          router.push('/login');
         })
         .finally(() => {
           effectRan.current = true;
