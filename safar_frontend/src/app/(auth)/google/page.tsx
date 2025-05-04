@@ -1,9 +1,11 @@
-const GoogleAuthClientWrapper = () => {
+import GoogleAuthClient from "@/components/forms/GoogleAuthClient";
+
+const GooglePage = async () => {
   return (
     <div>
-      <h1>Google Auth</h1>
+      <GoogleAuthClient />
     </div>
-    );
-};
+  );
+}
 
-export default GoogleAuthClientWrapper;
+export default GooglePage;

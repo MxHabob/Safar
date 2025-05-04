@@ -22,7 +22,6 @@ interface UserAvatarProps {
   showDropdown?: boolean
 }
 
-// Membership level colors
 const membershipColors: Record<MembershipLevel, string> = {
   bronze: "border-amber-600",
   silver: "border-slate-400",
@@ -47,11 +46,9 @@ export const UserAvatar = ({ className, showName = false, showDropdown = true }:
     try {
       await logout()
     } catch {
-      // Error handling
     }
   }
 
-  // Format points with K suffix for thousands
   const formatPoints = (points: number) => {
     if (points >= 1000) {
       return `${(points / 1000).toFixed(1)}K`
@@ -80,15 +77,15 @@ const membershipColor = userData?.membership_level
         </AvatarFallback>
       </Avatar>
       
-      {/* Membership ring */}
       {isAuthenticated && userData && (
         <div className={`absolute -inset-1 rounded-full border-2 ${membershipColor}`}></div>
       )}
       
-      {/* Points badge */}
       {isAuthenticated && userData && userData.points > 0 && (
-        <div className="absolute -bottom-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-bold text-primary-foreground">
+        <div className="absolute -bottom-1 -right-1 flex h-3 min-w-3 items-center justify-center rounded-full bg-card px-1">
+          <span className="text-xs font-bold text-primary-foreground">
           {formatPoints(userData.points)}
+           </span>
         </div>
       )}
     </div>

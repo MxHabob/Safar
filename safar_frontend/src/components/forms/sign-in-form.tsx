@@ -14,6 +14,7 @@ import { useAuth } from "@/core/hooks/use-auth"
 import { Spinner } from "../ui/spinner"
 import { User } from "lucide-react"
 import { loginSchema } from "@/lib/validations/auth"
+import { GoogleAuthButton } from "../global/google-oauth-button"
 
 
 
@@ -104,34 +105,7 @@ export function LoginForm() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <Button
-            variant="outline"
-            type="button"
-            disabled={isSocialAuthLoading && socialProvider === "google"}
-            onClick={() => handleSocialLogin("google")}
-          >
-            {isSocialAuthLoading && socialProvider === "google" ? (
-              <Spinner />
-            ) : (
-              <User className="mr-2 h-4 w-4" />
-            )}
-            Google
-          </Button>
-          <Button
-            variant="outline"
-            type="button"
-            disabled={isSocialAuthLoading && socialProvider === "facebook"}
-            onClick={() => handleSocialLogin("facebook")}
-          >
-            {isSocialAuthLoading && socialProvider === "facebook" ? (
-              <Spinner />
-            ) : (
-              <User className="mr-2 h-4 w-4" />
-            )}
-            Facebook
-          </Button>
-        </div>
+        <GoogleAuthButton />
       </CardContent>
       <CardFooter className="flex flex-col items-center justify-center space-y-2 border-t px-6 py-4">
         <div className="text-center text-sm">

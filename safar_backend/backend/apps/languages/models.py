@@ -1,5 +1,4 @@
 from django.db import models
-
 from apps.core_apps.general import BaseModel
 
 class Language(BaseModel):
