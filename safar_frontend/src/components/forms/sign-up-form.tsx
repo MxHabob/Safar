@@ -1,11 +1,9 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -21,9 +19,7 @@ import { GoogleAuthButton } from "../global/google-oauth-button"
 type RegisterFormValues = z.infer<typeof registerSchema>
 
 export function RegisterForm() {
-  const { register, socialLogin, isRegisterLoading, isSocialAuthLoading } = useAuth()
-  const [socialProvider, setSocialProvider] = useState<"google" | "facebook" | null>(null)
-
+  const { register, isRegisterLoading } = useAuth()
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -44,21 +40,6 @@ export function RegisterForm() {
       }
     } catch {
       
-    }
-  }
-
-  const handleSocialLogin = async (provider: "google" | "facebook") => {
-    setSocialProvider(provider)
-    try {
-      const code = "placeholder_auth_code"
-      const result = await socialLogin(provider, code)
-      if (!result.success) {
-        
-      }
-    } catch {
-     
-    } finally {
-      setSocialProvider(null)
     }
   }
 
@@ -155,7 +136,7 @@ export function RegisterForm() {
             </span>
           </div>
         </div>
-        <GoogleAuthButton />
+        <GoogleAuthButton isLoginLoading={isRegisterLoading}/>
       </CardContent>
       <CardFooter className="border-t px-6 py-4">
         <div className="text-center text-sm w-full">

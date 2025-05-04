@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
@@ -12,7 +11,6 @@ import { Separator } from "@/components/ui/separator"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { useAuth } from "@/core/hooks/use-auth"
 import { Spinner } from "../ui/spinner"
-import { User } from "lucide-react"
 import { loginSchema } from "@/lib/validations/auth"
 import { GoogleAuthButton } from "../global/google-oauth-button"
 
@@ -21,8 +19,7 @@ import { GoogleAuthButton } from "../global/google-oauth-button"
 type LoginFormValues = z.infer<typeof loginSchema>
 
 export function LoginForm() {
-  const { login, socialLogin, isLoginLoading, isSocialAuthLoading } = useAuth()
-  const [socialProvider, setSocialProvider] = useState<"google" | "facebook" | null>(null)
+  const { login, isLoginLoading } = useAuth()
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -40,16 +37,6 @@ export function LoginForm() {
       }
     } catch {
       
-    }
-  }
-
-  const handleSocialLogin = async (provider: "google" | "facebook") => {
-    setSocialProvider(provider)
-    try {
-      const code = "placeholder_auth_code"
-      await socialLogin(provider, code)
-    } finally {
-      setSocialProvider(null)
     }
   }
 
@@ -104,8 +91,7 @@ export function LoginForm() {
             <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
           </div>
         </div>
-
-        <GoogleAuthButton />
+        <GoogleAuthButton isLoginLoading={isLoginLoading}/>
       </CardContent>
       <CardFooter className="flex flex-col items-center justify-center space-y-2 border-t px-6 py-4">
         <div className="text-center text-sm">

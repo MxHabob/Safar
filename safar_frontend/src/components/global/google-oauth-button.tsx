@@ -6,7 +6,7 @@ import { Google } from "../icon/google";
 import { Loader } from "./loader";
 import { continueWithGoogle } from "@/lib/utils";
 
-export const GoogleAuthButton = () => {
+export const GoogleAuthButton = ({isLoginLoading}:{isLoginLoading:boolean}) => {
   const { isLoading} = useAuth()
   const handleClick = () => {
     continueWithGoogle();
@@ -17,9 +17,9 @@ export const GoogleAuthButton = () => {
       onClick={handleClick}
       className="w-full rounded-2xl flex gap-3 bg-[#09090B] border-[#27272A]"
       variant="outline"
-      disabled={isLoading}
+      disabled={isLoading && isLoginLoading}
     >
-      <Loader loading={isLoading}>
+      <Loader loading={isLoading && isLoginLoading}>
         <Google />
         Google
       </Loader>
