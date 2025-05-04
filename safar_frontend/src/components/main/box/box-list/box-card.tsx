@@ -1,24 +1,23 @@
-"use client"
+import { cn } from "@/lib/utils"
 import { MapPin, Calendar } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { type Box, InteractionType } from "@/core/types"
 import { Skeleton } from "@/components/ui/skeleton"
-import { WishlistButton } from "@/components/global/wishlist-button"
-import InteractionLink from "@/components/global/interaction-link"
+
+
+import { InteractionLink } from "@/components/global/interaction-link"
+import { InteractionType } from "@/core/types"
 import { MediaGallery } from "@/components/global/media-gallery"
-import { cn } from "@/lib/utils"
+import { WishlistButton } from "@/components/global/wishlist-button"
 import { formattedPrice } from "@/lib/utils/date-formatter"
 
 interface BoxCardProps {
-  box: Box
+  box: any
   className?: string
+  placeCount?: number
+  experienceCount?: number
 }
 
-export const BoxCard = ({ box, className }: BoxCardProps) => {
-
-  const placeCount = box.itinerary_days?.items?.place?.length || 0
-  const experienceCount = box.itinerary_days?.items?.experience?.length || 0
-
+export function BoxCard({ box, className, placeCount = 0, experienceCount = 0 }: BoxCardProps) {
   return (
     <InteractionLink
       href={`/boxes/${box.id}`}
@@ -27,8 +26,8 @@ export const BoxCard = ({ box, className }: BoxCardProps) => {
       contentType="box"
       objectId={box.id}
     >
-       <div className="relative w-full rounded-3xl bg-card shadow-md overflow-hidden group min-w-sm max-w-sm transition-all hover:shadow-lg">
-        <div className="relative h-[180px]">
+      <div className="relative w-full rounded-3xl bg-card shadow-md overflow-hidden group transition-all hover:shadow-lg hover:translate-y-[-4px] duration-300">
+        <div className="relative h-[220px]">
           <MediaGallery
             media={box.media || []}
             variant="grid"
@@ -36,54 +35,55 @@ export const BoxCard = ({ box, className }: BoxCardProps) => {
             showViewAll={false}
             className="rounded-t-3xl rounded-b-none"
             priority={true}
+            aspectRatio="wide"
           />
 
           <WishlistButton
             itemId={box.id}
             itemType="box"
             isInwishlist={box.is_in_wishlist || false}
-            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
             size="sm"
             variant="secondary"
           />
 
           {box.total_price !== undefined && (
             <div className="absolute bottom-3 left-3 z-10">
-              <div className="rounded-full px-3 py-1 bg-white/90 dark:bg-gray-800/90 shadow-md backdrop-blur-sm">
-                <span className="text-sm font-bold">{formattedPrice(box.currency || "USD",box?.total_price || 0)}</span>
+              <div className="rounded-full px-3 py-1.5 bg-white/90 dark:bg-gray-800/90 shadow-md backdrop-blur-sm">
+                <span className="text-sm font-bold">
+                  {formattedPrice(box.currency || "USD", box?.total_price || 0)}
+                </span>
               </div>
             </div>
           )}
         </div>
 
-        <div className="p-4 space-y-2">
+        <div className="p-5 space-y-3">
           <div className="flex items-center text-muted-foreground text-xs">
-            <MapPin className="mr-1 h-3.5 w-3.5 flex-shrink-0" />
+            <MapPin className="mr-1.5 h-3.5 w-3.5 flex-shrink-0" />
             <span className="truncate">
-              {[box?.country?.name, box?.city?.name].filter(Boolean).join(' - ') || 'Location not specified'}
+              {[box?.country?.name, box?.city?.name].filter(Boolean).join(" - ") || "Location not specified"}
             </span>
           </div>
 
-          <h3 className="text-lg font-semibold line-clamp-2" title={box.name}>
-            {box.name || 'Untitled Box'}
+          <h3 className="text-xl font-semibold line-clamp-2 leading-tight" title={box.name}>
+            {box.name || "Untitled Box"}
           </h3>
-          
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {box.description || 'No description available'}
-          </p>
+
+          <p className="text-sm text-muted-foreground line-clamp-2">{box.description || "No description available"}</p>
 
           {(placeCount > 0 || experienceCount > 0) && (
             <div className="flex flex-wrap gap-2 pt-1">
               {placeCount > 0 && (
-                <Badge variant="outline" className="text-xs font-normal">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  {placeCount} {placeCount === 1 ? 'Place' : 'Places'}
+                <Badge variant="outline" className="text-xs font-normal bg-background/50 backdrop-blur-sm">
+                  <MapPin className="h-3 w-3 mr-1" />
+                  {placeCount} {placeCount === 1 ? "Place" : "Places"}
                 </Badge>
               )}
               {experienceCount > 0 && (
-                <Badge variant="outline" className="text-xs font-normal">
+                <Badge variant="outline" className="text-xs font-normal bg-background/50 backdrop-blur-sm">
                   <Calendar className="h-3 w-3 mr-1" />
-                  {experienceCount} {experienceCount === 1 ? 'Experience' : 'Experiences'}
+                  {experienceCount} {experienceCount === 1 ? "Experience" : "Experiences"}
                 </Badge>
               )}
             </div>
@@ -96,28 +96,24 @@ export const BoxCard = ({ box, className }: BoxCardProps) => {
 
 BoxCard.Skeleton = function BoxCardSkeleton() {
   return (
-      <div className="relative w-full min-w-sm max-w-sm rounded-3xl bg-card overflow-hidden">
-        <div className="relative aspect-[4/3] w-full">
-        <div className="grid grid-cols-3 gap-0.5 h-full w-full">
-          <Skeleton className="col-span-2 row-span-2 rounded-tl-3xl" />
-          <div className="flex flex-col gap-0.5">
-            <Skeleton className="h-full" />
-            <Skeleton className="h-full" />
-            <Skeleton className="h-full rounded-tr-3xl" />
-          </div>
+    <div className="relative w-full rounded-3xl bg-card overflow-hidden shadow-md">
+      <div className="relative h-[220px]">
+        <div className="grid grid-cols-2 gap-0.5 h-full w-full">
+          <Skeleton className="h-full rounded-tl-3xl" />
+          <Skeleton className="h-full rounded-tr-3xl" />
         </div>
-        <Skeleton className="absolute bottom-3 left-3 h-6 w-20 rounded-full" />
+        <Skeleton className="absolute bottom-3 left-3 h-7 w-24 rounded-full" />
       </div>
-      <div className="p-4 space-y-3">
+      <div className="p-5 space-y-3">
         <div className="flex items-center space-x-2">
-          <Skeleton className="h-3 w-3 rounded-full" />
-          <Skeleton className="h-3 w-24 rounded" />
+          <Skeleton className="h-3.5 w-3.5 rounded-full" />
+          <Skeleton className="h-3.5 w-32 rounded" />
         </div>
-        <Skeleton className="h-5 w-3/4 rounded" />
+        <Skeleton className="h-6 w-4/5 rounded" />
         <Skeleton className="h-4 w-full rounded" />
         <div className="flex gap-2 pt-1">
-          <Skeleton className="h-6 w-20 rounded-full" />
           <Skeleton className="h-6 w-24 rounded-full" />
+          <Skeleton className="h-6 w-28 rounded-full" />
         </div>
       </div>
     </div>

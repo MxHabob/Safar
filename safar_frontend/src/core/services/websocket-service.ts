@@ -171,18 +171,13 @@ export class WebSocketService {
   }
 
   private handleInitialData(data: any): void {
-    // Process initial data from the server
-    // This would typically dispatch multiple actions to populate the store
     if (data.bookings) {
-      // Dispatch action to set bookings
     }
 
     if (data.messages) {
-      // Dispatch action to set messages
     }
 
     if (data.notifications) {
-      // Dispatch action to set notifications
     }
   }
 
@@ -191,7 +186,6 @@ export class WebSocketService {
     this.updateStatus("closed")
     this.clearTimers()
 
-    // Attempt to reconnect if the closure wasn't intentional
     if (event.code !== 1000) {
       this.scheduleReconnect()
     }
@@ -201,14 +195,11 @@ export class WebSocketService {
     console.error("WebSocket error:", event)
     this.updateStatus("error")
 
-    // The error event is typically followed by a close event
-    // so we don't need to schedule a reconnect here
   }
 
   private startPingInterval(): void {
     this.clearTimers()
 
-    // Send a ping every 30 seconds to keep the connection alive
     this.pingInterval = setInterval(() => {
       this.send("ping", { timestamp: new Date().toISOString() })
     }, 30000)
@@ -222,7 +213,6 @@ export class WebSocketService {
 
     this.clearTimers()
 
-    // Exponential backoff for reconnection attempts
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000)
     console.log(`Scheduling reconnect in ${delay}ms`)
 
@@ -245,7 +235,6 @@ export class WebSocketService {
   }
 }
 
-// Create a singleton instance
 export const websocketService = new WebSocketService(
   process.env.NEXT_PUBLIC_WEBSOCKET_URL || "wss://api.example.com/ws",
 )
