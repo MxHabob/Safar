@@ -5,13 +5,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 
 import { InteractionLink } from "@/components/global/interaction-link"
-import { InteractionType } from "@/core/types"
+import { Box, InteractionType } from "@/core/types"
 import { MediaGallery } from "@/components/global/media-gallery"
 import { WishlistButton } from "@/components/global/wishlist-button"
 import { formattedPrice } from "@/lib/utils/date-formatter"
 
 interface BoxCardProps {
-  box: any
+  box: Box
   className?: string
   placeCount?: number
   experienceCount?: number
