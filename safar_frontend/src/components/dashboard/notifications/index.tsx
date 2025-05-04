@@ -15,7 +15,7 @@ import { NotificationsList } from "./notifications-list";
 
 export const NotificationsPageContent = () => {
   const { notifications, unreadCount } = useRealtimeNotifications()
-  const { data: notificationsData, refetch } = useGetNotificationsQuery({});
+  const {  refetch } = useGetNotificationsQuery({});
 
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
