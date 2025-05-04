@@ -190,7 +190,7 @@ export const api = createApi({
 
     logout: builder.mutation<void, void>({
       query: () => ({
-        url: "/auth/logout/",
+        url: "/logout/",
         method: "POST",
       }),
       invalidatesTags: ["Auth"],
