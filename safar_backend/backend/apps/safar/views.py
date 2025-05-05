@@ -222,14 +222,25 @@ class PlaceViewSet(BaseViewSet):
         
         try:
             places = recommendation_engine.recommend_places(limit=limit)
+            
+            # Check if we got results
+            if not places.exists():
+                logger.warning("Recommendation engine returned empty results, using fallback")
+                places = Place.objects.filter(
+                    is_available=True, 
+                    is_deleted=False
+                ).order_by('-rating')[:limit]
+                
+                # If still empty, get any places
+                if not places.exists():
+                    places = Place.objects.all()[:limit]
+                    
             serializer = self.get_serializer(places, many=True)
             return Response(serializer.data)
         except Exception as e:
             logger.error(f"Error in place recommendations: {str(e)}", exc_info=True)
-            places = Place.objects.filter(
-                is_available=True, 
-                is_deleted=False
-            ).order_by('-rating')[:limit]
+            # Ensure we return something
+            places = Place.objects.all().order_by('-created_at')[:limit]
             serializer = self.get_serializer(places, many=True)
             return Response(serializer.data)
     
