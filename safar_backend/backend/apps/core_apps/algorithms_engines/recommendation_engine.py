@@ -59,17 +59,18 @@ class RecommendationEngine:
         self.svd_model = None
         self.kmeans_model = None
         
-    def recommend_places(self, limit=5, filters=None, boost_user_preferences=True):
+    def recommend_places(self, limit=None, filters=None, boost_user_preferences=True):
         """
         Recommend places to the user
         
         Args:
-            limit (int): Maximum number of recommendations to return
+            limit (int, optional): Maximum number of recommendations to return.
+                                  If None, returns all places with scores.
             filters (dict): Additional filters to apply to the query
             boost_user_preferences (bool): Whether to boost based on user preferences
             
         Returns:
-            QuerySet: A queryset of recommended places
+            QuerySet: A queryset of recommended places with scores
         """
         try:
             # For anonymous users, try to get from cache first
@@ -86,8 +87,16 @@ class RecommendationEngine:
                 **filters
             ).select_related('category', 'country', 'city', 'region')
             
+            # Initialize all scores with default values
+            query = query.annotate(
+                ml_score=Value(0.0, FloatField()),
+                similarity_score=Value(0.0, FloatField()),
+                personalization_score=Value(0.0, FloatField()),
+                interaction_boost=Value(0.0, FloatField()),
+                recent_popularity=Value(0.0, FloatField())
+            )
+            
             if self.is_authenticated:
-                # Apply personalized recommendations for authenticated users
                 # Build feature matrices if not already built
                 self._build_feature_matrices('place')
                 
@@ -108,16 +117,26 @@ class RecommendationEngine:
                 # Apply temporal popularity and user interaction boosts
                 query = self._apply_temporal_popularity(query)
                 query = self._boost_user_interactions(query, 'place')
-                order_fields = []
-                if 'ml_score' in query.query.annotations:
-                    order_fields.append('-ml_score')
-                if 'similarity_score' in query.query.annotations:
-                    order_fields.append('-similarity_score')
-                if 'personalization_score' in query.query.annotations:
-                    order_fields.append('-personalization_score')
-                order_fields.extend(['-interaction_boost', '-recent_popularity', '-rating'])                
-
-                results = query.order_by(*order_fields).distinct()[:limit]
+                
+                # Calculate a weighted total score for consistent ordering
+                query = query.annotate(
+                    total_score=ExpressionWrapper(
+                        F('ml_score') * Value(0.3) +
+                        F('similarity_score') * Value(0.2) +
+                        F('personalization_score') * Value(0.2) +
+                        F('interaction_boost') * Value(0.15) +
+                        F('recent_popularity') * Value(0.1) +
+                        F('rating') * Value(0.05),
+                        output_field=FloatField()
+                    )
+                )
+                
+                # Order by the total score
+                results = query.order_by('-total_score')
+                
+                # Apply limit only if specified
+                if limit is not None:
+                    results = results[:limit]
             else:
                 # For anonymous users, use popularity-based recommendations
                 results = self._get_anonymous_recommendations(query, 'place', limit)
@@ -132,7 +151,18 @@ class RecommendationEngine:
             logger.error(f"Error recommending places: {str(e)}", exc_info=True)
             return self._fallback_recommendations(Place, filters, limit)
     
-    def recommend_experiences(self, limit=5, filters=None):
+    def recommend_experiences(self, limit=None, filters=None):
+        """
+        Recommend experiences to the user
+        
+        Args:
+            limit (int, optional): Maximum number of recommendations to return.
+                                  If None, returns all experiences with scores.
+            filters (dict): Additional filters to apply to the query
+            
+        Returns:
+            QuerySet: A queryset of recommended experiences with scores
+        """
         try:
             if not self.is_authenticated:
                 cache_key = self._get_cache_key('experiences', filters, limit)
@@ -150,6 +180,15 @@ class RecommendationEngine:
                 is_deleted=False,
                 **filters
             ).select_related('category', 'place', 'owner')
+            
+            # Initialize all scores with default values
+            query = query.annotate(
+                ml_score=Value(0.0, FloatField()),
+                similarity_score=Value(0.0, FloatField()),
+                personalization_score=Value(0.0, FloatField()),
+                interaction_boost=Value(0.0, FloatField()),
+                recent_popularity=Value(0.0, FloatField())
+            )
             
             if self.is_authenticated:
                 # Build feature matrices if not already built
@@ -172,16 +211,25 @@ class RecommendationEngine:
                 query = self._apply_temporal_popularity(query)
                 query = self._boost_user_interactions(query, 'experience')
                 
-                order_fields = []
-                if 'ml_score' in query.query.annotations:
-                    order_fields.append('-ml_score')
-                if 'similarity_score' in query.query.annotations:
-                    order_fields.append('-similarity_score')
-                if 'personalization_score' in query.query.annotations:
-                    order_fields.append('-personalization_score')
-                order_fields.extend(['-interaction_boost', '-recent_popularity', '-rating'])                
-
-                results = query.order_by(*order_fields).distinct()[:limit]
+                # Calculate a weighted total score for consistent ordering
+                query = query.annotate(
+                    total_score=ExpressionWrapper(
+                        F('ml_score') * Value(0.3) +
+                        F('similarity_score') * Value(0.2) +
+                        F('personalization_score') * Value(0.2) +
+                        F('interaction_boost') * Value(0.15) +
+                        F('recent_popularity') * Value(0.1) +
+                        F('rating') * Value(0.05),
+                        output_field=FloatField()
+                    )
+                )
+                
+                # Order by the total score
+                results = query.order_by('-total_score')
+                
+                # Apply limit only if specified
+                if limit is not None:
+                    results = results[:limit]
             else:
                 # For anonymous users, use popularity-based recommendations
                 results = self._get_anonymous_recommendations(query, 'experience', limit)
@@ -196,17 +244,17 @@ class RecommendationEngine:
             logger.error(f"Error recommending experiences: {str(e)}", exc_info=True)
             return self._fallback_recommendations(Experience, filters, limit)
     
-    def _get_anonymous_recommendations(self, queryset, item_type, limit):
+    def _get_anonymous_recommendations(self, queryset, item_type, limit=None):
         """
         Get recommendations for anonymous users based on popularity and trends
         
         Args:
             queryset: Base queryset to filter from
             item_type: Type of item ('place', 'experience', etc.)
-            limit: Maximum number of items to return
+            limit: Maximum number of items to return, if None returns all items
             
         Returns:
-            QuerySet: A queryset of recommended items
+            QuerySet: A queryset of recommended items with scores
         """
         try:
             # Apply temporal popularity boost
@@ -239,10 +287,17 @@ class RecommendationEngine:
             ]
             
             if when_clauses:
-                queryset = queryset.filter(id__in=combined_ids).annotate(
+                queryset = queryset.annotate(
                     position_score=Case(
                         *when_clauses,
                         default=Value(0, FloatField()),
+                        output_field=FloatField()
+                    ),
+                    # Calculate a total score for anonymous users
+                    total_score=ExpressionWrapper(
+                        F('position_score') * Value(0.5) +
+                        F('recent_popularity') * Value(0.3) +
+                        F('rating') * Value(0.2),
                         output_field=FloatField()
                     )
                 )
@@ -258,27 +313,53 @@ class RecommendationEngine:
                 # Ensure diverse items are included
                 diverse_queryset = queryset.filter(id__in=diverse_items)
                 
-                # Combine and order results
-                return queryset.order_by(
-                    '-position_score', 
-                    '-recent_popularity', 
-                    '-rating'
-                ).distinct()[:limit]
-            else:
-                # Fallback to simple popularity-based ordering
-                return queryset.order_by('-rating', '-created_at')[:limit]
+                # Combine and order results by the total score
+                results = queryset.order_by('-total_score').distinct()
                 
+                # Apply limit only if specified
+                if limit is not None:
+                    results = results[:limit]
+                    
+                return results
+            else:
+                # Fallback to simple popularity-based ordering with a total score
+                queryset = queryset.annotate(
+                    total_score=ExpressionWrapper(
+                        F('rating') * Value(0.7) + 
+                        (datetime.now().year - F('created_at__year')) * Value(-0.3),
+                        output_field=FloatField()
+                    )
+                )
+                
+                results = queryset.order_by('-total_score')
+                
+                # Apply limit only if specified
+                if limit is not None:
+                    results = results[:limit]
+                    
+                return results
+                    
         except Exception as e:
             logger.error(f"Error getting anonymous recommendations: {str(e)}", exc_info=True)
-            return queryset.order_by('-rating', '-created_at')[:limit]
+            results = queryset.order_by('-rating', '-created_at')
+            
+            # Apply limit only if specified
+            if limit is not None:
+                results = results[:limit]
+                
+            return results
     
     def _get_cache_key(self, item_type, filters, limit):
         """Generate a cache key for recommendations"""
-        filters_str = '_'.join(f"{k}_{v}" for k, v in (filters or {}).items())
+        # Use a more efficient hash for filters
+        filters_hash = hashlib.md5(
+            json.dumps(filters or {}, sort_keys=True).encode()
+        ).hexdigest()
+        
         if self.is_authenticated:
-            return f"rec_{item_type}_{self.user.id}_{filters_str}_{limit}"
+            return f"rec_{item_type}_{self.user.id}_{filters_hash}_{limit}"
         else:
-            return f"rec_anon_{item_type}_{filters_str}_{limit}"
+            return f"rec_anon_{item_type}_{filters_hash}_{limit}"
     
     def recommend_for_box(self, destination, duration_days, limit_per_category=3):
         """

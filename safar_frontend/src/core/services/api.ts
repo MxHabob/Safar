@@ -19,6 +19,9 @@ import type {
   PaginatedResponse,
   InteractionType,
   UserInteraction,
+  City,
+  Region,
+  Country,
 } from "@/core/types"
 import { setTokens, logout } from "@/core/features/auth/auth-slice"
 import type { RootState } from "@/core/store"
@@ -118,6 +121,9 @@ export const api = createApi({
     "Notification",
     "Auth",
     "UserInteraction",
+    "Country",
+    "Region",
+    "City",
   ],
   endpoints: (builder) => ({
     // Authentication endpoints
@@ -720,6 +726,66 @@ export const api = createApi({
       }),
       invalidatesTags: ["Box"],
     }),
+        getCountries: builder.query<PaginatedResponse<Country>, { page?: number; page_size?: number }>({
+      query: (params) => ({
+        url: "/countries/",
+        params,
+      }),
+      providesTags: ["Country"],
+    }),
+
+    getRegions: builder.query<PaginatedResponse<Region>, { page?: number; page_size?: number; country_code?: string }>({
+      query: (params) => ({
+        url: "/regions/",
+        params,
+      }),
+      providesTags: ["Region"],
+    }),
+
+    getCities: builder.query<PaginatedResponse<City>, { page?: number; page_size?: number }>({
+      query: (params) => ({
+        url: "/cities/",
+        params,
+      }),
+      providesTags: ["City"],
+    }),
+
+    getNearbyCities: builder.query<PaginatedResponse<City>, { latitude: number; longitude: number; radius?: number }>({
+      query: (params) => ({
+        url: "/cities/nearby/",
+        params,
+      }),
+      providesTags: ["City"],
+    }),
+
+    searchCities: builder.query<PaginatedResponse<City>, { query: string; limit?: number }>({
+      query: (params) => ({
+        url: "/cities/search/",
+        params,
+      }),
+      providesTags: ["City"],
+    }),
+
+    getCitiesInCountry: builder.query<
+      PaginatedResponse<City>,
+      { country_code: string; page?: number; page_size?: number }
+    >({
+      query: ({ country_code, ...params }) => ({
+        url: `/countries/${country_code}/cities/`,
+        params,
+      }),
+      providesTags: ["City"],
+    }),
+
+    getCitiesInRegion: builder.query<PaginatedResponse<City>, { region_id: number; page?: number; page_size?: number }>(
+      {
+        query: ({ region_id, ...params }) => ({
+          url: `/regions/${region_id}/cities/`,
+          params,
+        }),
+        providesTags: ["City"],
+      },
+    ),
   }),
 })
 
@@ -827,4 +893,11 @@ export const {
   useGetRecommendedExperiencesQuery,
   useGetPersonalizedBoxMutation,
 
+  useGetCountriesQuery,
+  useGetRegionsQuery,
+  useGetCitiesQuery,
+  useGetNearbyCitiesQuery,
+  useSearchCitiesQuery,
+  useGetCitiesInCountryQuery,
+  useGetCitiesInRegionQuery,
 } = api

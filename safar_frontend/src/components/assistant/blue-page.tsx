@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { useGetPersonalizedBoxMutation } from "@/core/services/api"
+import { useGetPersonalizedBoxMutation, useGetCountriesQuery } from "@/core/services/api"
 import type { Box } from "@/core/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,8 +10,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { format } from "date-fns"
-import { CalendarIcon, Send } from "lucide-react"
+import { CalendarIcon, Send, Globe, MapPin, Search } from "lucide-react"
 import { BoxCard } from "../main/box/box-list/box-card"
 
 type Message = {
@@ -22,12 +24,18 @@ type Message = {
   box?: Box
 }
 
+type DestinationSelection = {
+  id: string
+  name: string
+  type: "city" | "region" | "country"
+}
+
 export const BluePage = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       content:
-        "Hi there! I'm Blue your travel assistant. Tell me about your dream destination, and I'll create a personalized travel box for you. For example, you can say: 'I want to visit Paris for 5 days in July with a budget of $2000'",
+        "Hi there! I'm Blue your travel assistant. Where would you like to travel? You can select a destination from our list or type in your dream destination.",
       sender: "assistant",
       timestamp: new Date(),
     },
@@ -35,6 +43,11 @@ export const BluePage = () => {
   const [inputValue, setInputValue] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
+  const [showDestinationDialog, setShowDestinationDialog] = useState(false)
+  const [selectedDestination, setSelectedDestination] = useState<DestinationSelection | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const { data: countriesData, isLoading: isLoadingCountries } = useGetCountriesQuery({ page_size: 100 })
   const [generateBox, { isLoading }] = useGetPersonalizedBoxMutation()
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -44,11 +57,13 @@ export const BluePage = () => {
   }, [messages])
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim()) return
+    if (!inputValue.trim() && !selectedDestination) return
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      content: inputValue,
+      content: selectedDestination
+        ? `I want to visit ${selectedDestination.name}${inputValue ? `: ${inputValue}` : ""}`
+        : inputValue,
       sender: "user",
       timestamp: new Date(),
     }
@@ -58,18 +73,28 @@ export const BluePage = () => {
     setIsTyping(true)
 
     try {
-  
-      const params = extractTravelParams(inputValue, selectedDate)
+      // If we have a selected destination, use it directly
+      let params: any = {
+        start_date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined,
+      }
+
+      if (selectedDestination) {
+        params.destination_id = selectedDestination.id
+        params.destination_type = selectedDestination.type
+      } else {
+        // Otherwise try to extract from message
+        const extractedParams = extractTravelParams(userMessage.content, selectedDate)
+        params = { ...params, ...extractedParams }
+      }
 
       if (!params.destination_id || !params.destination_type) {
-    
         setTimeout(() => {
           setMessages((prev) => [
             ...prev,
             {
               id: Date.now().toString(),
               content:
-                "Could you please specify a destination? For example, 'I want to visit Paris' or 'I'm planning a trip to Japan'.",
+                "Could you please select a destination from our list? Click the globe icon to see available destinations.",
               sender: "assistant",
               timestamp: new Date(),
             },
@@ -85,7 +110,7 @@ export const BluePage = () => {
         ...prev,
         {
           id: Date.now().toString(),
-          content: `I've created a personalized travel box for your trip to ${result.name || params.destination_id}! Here are the details:`,
+          content: `I've created a personalized travel box for your trip to ${result.name || selectedDestination?.name || params.destination_id}! Here are the details:`,
           sender: "assistant",
           timestamp: new Date(),
           box: result,
@@ -106,6 +131,7 @@ export const BluePage = () => {
     } finally {
       setIsTyping(false)
       setSelectedDate(undefined)
+      setSelectedDestination(null)
     }
   }
 
@@ -198,8 +224,18 @@ export const BluePage = () => {
     return params
   }
 
+  const handleDestinationSelect = (destination: DestinationSelection) => {
+    setSelectedDestination(destination)
+    setShowDestinationDialog(false)
+  }
+
+  const filteredCountries =
+    countriesData?.results.filter(
+      (country) => !searchQuery || country.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    ) || []
+
   return (
-    <div className="flex flex-col h-screen max-h-screen ">
+    <div className="flex flex-col h-screen max-h-screen">
       <main className="flex-1 overflow-hidden container mx-auto p-4">
         <div className="flex flex-col h-full">
           <div className="flex-1 overflow-y-auto pr-4 pb-4">
@@ -258,6 +294,59 @@ export const BluePage = () => {
             <Card>
               <CardContent className="p-3">
                 <div className="flex gap-2">
+                  <Dialog open={showDestinationDialog} onOpenChange={setShowDestinationDialog}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="icon" className="shrink-0">
+                        <Globe className="h-5 w-5" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Select a Destination</DialogTitle>
+                      </DialogHeader>
+                      <div className="flex items-center space-x-2 mb-4">
+                        <div className="relative flex-1">
+                          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search countries..."
+                            className="pl-8"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <ScrollArea className="h-[300px]">
+                        <div className="grid grid-cols-1 gap-2">
+                          {isLoadingCountries ? (
+                            <div className="flex justify-center items-center h-20">
+                              <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
+                            </div>
+                          ) : (
+                            filteredCountries.map((country) => (
+                              <Button
+                                key={country.id}
+                                variant="outline"
+                                className="justify-start h-auto py-3"
+                                onClick={() =>
+                                  handleDestinationSelect({
+                                    id: country.id,
+                                    name: country.name,
+                                    type: "country",
+                                  })
+                                }
+                              >
+                                <div className="flex items-center">
+                                  <MapPin className="h-4 w-4 mr-2" />
+                                  <span>{country.name}</span>
+                                </div>
+                              </Button>
+                            ))
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </DialogContent>
+                  </Dialog>
+
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" size="icon" className="shrink-0">
@@ -274,9 +363,14 @@ export const BluePage = () => {
                       />
                     </PopoverContent>
                   </Popover>
+
                   <div className="relative flex-1">
                     <Input
-                      placeholder="Tell me about your travel plans..."
+                      placeholder={
+                        selectedDestination
+                          ? `Tell me about your trip to ${selectedDestination.name}...`
+                          : "Tell me about your travel plans or select a destination..."
+                      }
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
                       onKeyDown={(e) => {
@@ -288,20 +382,27 @@ export const BluePage = () => {
                       className="pr-10"
                       disabled={isLoading}
                     />
-                    {selectedDate && (
-                      <div className="absolute right-10 top-1/2 -translate-y-1/2">
+                    <div className="absolute right-10 top-1/2 -translate-y-1/2 flex gap-1">
+                      {selectedDestination && (
+                        <Badge variant="outline" className="bg-primary/10 flex gap-1 items-center">
+                          <MapPin className="h-3 w-3" />
+                          {selectedDestination.name}
+                        </Badge>
+                      )}
+                      {selectedDate && (
                         <Badge variant="outline" className="bg-primary/10 flex gap-1 items-center">
                           <CalendarIcon className="h-3 w-3" />
                           {format(selectedDate, "MMM d, yyyy")}
                         </Badge>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
+
                   <Button
                     type="submit"
                     size="icon"
                     onClick={handleSendMessage}
-                    disabled={!inputValue.trim() || isLoading}
+                    disabled={(!inputValue.trim() && !selectedDestination) || isLoading}
                     className="shrink-0"
                   >
                     {isLoading ? (
@@ -311,10 +412,12 @@ export const BluePage = () => {
                     )}
                   </Button>
                 </div>
+
                 <div className="mt-2 text-xs text-muted-foreground">
                   <p>
-                    Try: &quot;I want to visit Paris for 5 days in July with a budget of $2000&quot; or &quot;Plan a family trip to
-                    Tokyo&quot;
+                    {selectedDestination
+                      ? `Planning a trip to ${selectedDestination.name}? Try adding details like "5 days with a budget of $2000"`
+                      : "Click the globe icon to select a destination, or type your travel plans"}
                   </p>
                 </div>
               </CardContent>
