@@ -325,8 +325,8 @@ export const BluePage = () => {
                 </div>
                 <div className="mt-2 text-xs text-muted-foreground">
                   <p>
-                    Try: "I want to visit Paris for 5 days in July with a budget of $2000" or "Plan a family trip to
-                    Tokyo"
+                    Try: &quot;I want to visit Paris for 5 days in July with a budget of $2000&quot; or &quot;Plan a family trip to
+                    Tokyo&quot;
                   </p>
                 </div>
               </CardContent>
