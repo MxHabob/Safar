@@ -16,9 +16,7 @@ export const ListPlaces = ({ selected }: Props) => {
   const [page, setPage] = useState(1)
   const placesCache = useRef<Place[]>([])
   
-  const { data, isLoading, isFetching, error } =  useGetPlacesQuery({ 
-    page_size: 12,
-  },
+  const { data, isLoading, isFetching, error } =  useGetPlacesQuery( { page, page_size: 12 },
     { 
       refetchOnMountOrArgChange: false,
       selectFromResult: (result) => {
