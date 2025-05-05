@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
-import { CalendarIcon, Send, Plane } from "lucide-react"
+import { CalendarIcon, Send } from "lucide-react"
 import { BoxCard } from "../main/box/box-list/box-card"
 
 type Message = {
