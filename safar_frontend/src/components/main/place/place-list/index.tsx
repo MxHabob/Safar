@@ -18,7 +18,7 @@ export const ListPlaces = ({ selected }: Props) => {
   
   const { data, isLoading, isFetching, error } =  useGetRecommendedPlacesQuery({ 
     limit: 5,
-    // filters: { category: 'beach' }
+    filters: { category: 'Wellness' }
   },
     { 
       refetchOnMountOrArgChange: false,
@@ -56,6 +56,7 @@ export const ListPlaces = ({ selected }: Props) => {
     )
   }
 
+  console.log("places : ", placesCache)
   return (
     <div className="flex flex-col w-full mt-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 w-full pb-4">

@@ -19,7 +19,7 @@ export const ListExperience = ({ overlay, selected, ...rest }: Props) => {
     error,
   } = useGetRecommendedExperiencesQuery({ 
   limit: 5,
-  // filters: { category: 'beach' }
+  filters: { category: 'Hotel' }
 },{ refetchOnMountOrArgChange: false })
 
   if (error) {
@@ -30,6 +30,7 @@ export const ListExperience = ({ overlay, selected, ...rest }: Props) => {
     )
   }
 
+   console.log("experiences : ", experiences)
   return (
     <Slider
       slidesPerView="auto"
