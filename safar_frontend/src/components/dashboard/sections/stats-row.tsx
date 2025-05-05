@@ -4,18 +4,19 @@ import { useGetBookingsQuery } from "@/core/services/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CalendarCheck, CalendarX, Clock, DollarSign } from "lucide-react"
+import { useAuth } from "@/core/hooks/use-auth"
 
 export function StatsRow() {
   const { data: bookingsData, isLoading } = useGetBookingsQuery({
     page: 1,
     page_size: 100,
-  })
+  });
+  const { user } = useAuth()
 
-  // Get bookings where the current user is the owner
   const getOwnerBookings = () => {
     if (!bookingsData?.results) return []
 
-    return bookingsData.results.filter((booking) => booking.place?.owner === true || booking.experience?.owner === true)
+    return bookingsData.results.filter((booking) => booking.place?.owner.id === user.id)
   }
 
   const ownerBookings = getOwnerBookings()
