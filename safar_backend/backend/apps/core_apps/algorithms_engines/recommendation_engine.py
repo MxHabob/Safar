@@ -108,15 +108,16 @@ class RecommendationEngine:
                 # Apply temporal popularity and user interaction boosts
                 query = self._apply_temporal_popularity(query)
                 query = self._boost_user_interactions(query, 'place')
-                
-                results = query.order_by(
-                    '-ml_score',
-                    '-similarity_score',
-                    '-personalization_score', 
-                    '-interaction_boost',
-                    '-recent_popularity',
-                    '-rating'
-                ).distinct()[:limit]
+                order_fields = []
+                if 'ml_score' in query.query.annotations:
+                    order_fields.append('-ml_score')
+                if 'similarity_score' in query.query.annotations:
+                    order_fields.append('-similarity_score')
+                if 'personalization_score' in query.query.annotations:
+                    order_fields.append('-personalization_score')
+                order_fields.extend(['-interaction_boost', '-recent_popularity', '-rating'])                
+
+                results = query.order_by(*order_fields).distinct()[:limit]
             else:
                 # For anonymous users, use popularity-based recommendations
                 results = self._get_anonymous_recommendations(query, 'place', limit)
@@ -132,18 +133,7 @@ class RecommendationEngine:
             return self._fallback_recommendations(Place, filters, limit)
     
     def recommend_experiences(self, limit=5, filters=None):
-        """
-        Recommend experiences to the user
-        
-        Args:
-            limit (int): Maximum number of recommendations to return
-            filters (dict): Additional filters to apply to the query
-            
-        Returns:
-            QuerySet: A queryset of recommended experiences
-        """
         try:
-            # For anonymous users, try to get from cache first
             if not self.is_authenticated:
                 cache_key = self._get_cache_key('experiences', filters, limit)
                 cached_results = cache.get(cache_key)
@@ -151,6 +141,10 @@ class RecommendationEngine:
                     return cached_results
             
             filters = filters or {}
+            # Remove is_available from filters if it exists to avoid duplicate
+            if 'is_available' in filters:
+                del filters['is_available']
+                
             query = Experience.objects.filter(
                 is_available=True,
                 is_deleted=False,
@@ -178,14 +172,16 @@ class RecommendationEngine:
                 query = self._apply_temporal_popularity(query)
                 query = self._boost_user_interactions(query, 'experience')
                 
-                results = query.order_by(
-                    '-ml_score',
-                    '-similarity_score',
-                    '-personalization_score',
-                    '-interaction_boost',
-                    '-recent_popularity',
-                    '-rating'
-                ).distinct()[:limit]
+                order_fields = []
+                if 'ml_score' in query.query.annotations:
+                    order_fields.append('-ml_score')
+                if 'similarity_score' in query.query.annotations:
+                    order_fields.append('-similarity_score')
+                if 'personalization_score' in query.query.annotations:
+                    order_fields.append('-personalization_score')
+                order_fields.extend(['-interaction_boost', '-recent_popularity', '-rating'])                
+
+                results = query.order_by(*order_fields).distinct()[:limit]
             else:
                 # For anonymous users, use popularity-based recommendations
                 results = self._get_anonymous_recommendations(query, 'experience', limit)
@@ -918,7 +914,58 @@ class RecommendationEngine:
                 output_field=FloatField()
             )
         )
-    
+
+    def _find_similar_users_behavior_based(self):
+        """Find users with similar interaction patterns"""
+        if not self.is_authenticated:
+            return User.objects.none()
+        
+        try:
+            # Get items this user has interacted with
+            user_interactions = UserInteraction.objects.filter(
+                user=self.user
+            ).values_list('content_type', 'object_id', 'interaction_type')
+            
+            if not user_interactions:
+                return User.objects.none()
+                
+            # Find other users who interacted with the same items
+            similar_users = UserInteraction.objects.filter(
+                content_type__in=[x[0] for x in user_interactions],
+                object_id__in=[x[1] for x in user_interactions],
+                interaction_type__in=[x[2] for x in user_interactions]
+            ).exclude(user=self.user).values_list('user', flat=True).distinct()
+            
+            return User.objects.filter(id__in=similar_users)[:100]  # Limit to 100
+            
+        except Exception as e:
+            logger.error(f"Error finding behavior-based similar users: {str(e)}", exc_info=True)
+            return User.objects.none()
+            
+    def _find_similar_users_content_based(self):
+        """Find users with similar content preferences"""
+        if not self.is_authenticated or not self.profile:
+            return User.objects.none()
+        
+        try:
+            # Find users with similar preferred countries
+            similar_users = User.objects.filter(
+                profile__preferred_countries__in=self.profile.preferred_countries.all()
+            ).exclude(id=self.user.id).distinct()
+            
+            # Find users with similar travel interests
+            if self.profile.travel_interests:
+                similar_interests = User.objects.filter(
+                    profile__travel_interests__overlap=self.profile.travel_interests
+                ).exclude(id=self.user.id).distinct()
+                similar_users = (similar_users | similar_interests).distinct()
+                
+            return similar_users[:100]  # Limit to 100 most similar
+            
+        except Exception as e:
+            logger.error(f"Error finding content-based similar users: {str(e)}", exc_info=True)
+            return User.objects.none()
+
     def _find_similar_users(self):
         """Find users similar to the current user using multiple methods"""
         if not self.is_authenticated:
