@@ -199,19 +199,7 @@ export const BluePage = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen max-h-screen bg-gray-50">
-      <header className="border-b bg-white p-4 shadow-sm">
-        <div className="container mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Plane className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">Travel Box Assistant</h1>
-          </div>
-          <Badge variant="outline" className="bg-primary/10">
-            AI Powered
-          </Badge>
-        </div>
-      </header>
-
+    <div className="flex flex-col h-screen max-h-screen ">
       <main className="flex-1 overflow-hidden container mx-auto p-4">
         <div className="flex flex-col h-full">
           <div className="flex-1 overflow-y-auto pr-4 pb-4">
