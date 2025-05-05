@@ -845,14 +845,15 @@ class BoxGenerator:
 
     def _calculate_total_price(self, itinerary_days):
         """Calculate total price of all itinerary items"""
-        total = 0.0
+        from decimal import Decimal
+        total = Decimal('0.0')
         
         for day in itinerary_days:
             for item in day.items.all():
                 if item.estimated_cost:
-                    total += item.estimated_cost
+                    total += Decimal(str(item.estimated_cost))
                     
-        return round(total, 2)
+        return round(float(total), 2)
 
     def optimize_existing_box(self, box):
         """
