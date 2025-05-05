@@ -81,13 +81,13 @@ const membershipColor = userData?.membership_level
         <div className={`absolute -inset-1 rounded-full border-2 ${membershipColor}`}></div>
       )}
       
-      {isAuthenticated && userData && userData.points > 0 && (
+      {/* {isAuthenticated && userData && userData.points > 0 && (
         <div className="absolute -bottom-1 -right-1 flex h-3 min-w-3 items-center justify-center rounded-full bg-card px-1">
           <span className="text-xs font-bold text-primary-foreground">
           {formatPoints(userData.points)}
            </span>
         </div>
-      )}
+      )} */}
     </div>
   )
 

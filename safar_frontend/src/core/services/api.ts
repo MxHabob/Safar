@@ -689,7 +689,7 @@ export const api = createApi({
     }),
 
     // Recommendation endpoints
-    getRecommendedPlaces: builder.query<PaginatedResponse<Place>, { limit?: number; filters?: Record<string, any> }>({
+    getRecommendedPlaces: builder.query<PaginatedResponse<Place>, { limit?: number; filters?: Record<string, any>;page?: number; page_size?: number }>({
       query: (params) => ({
         url: "/places/recommended/",
         params,

@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { format } from "date-fns"
 import { CalendarIcon, Send, Globe, MapPin, Search } from "lucide-react"
 import { BoxCard } from "../main/box/box-list/box-card"
+import { UserAvatar } from "../global/user-avatar"
 
 type Message = {
   id: string
@@ -48,7 +49,6 @@ export const BluePage = () => {
   const [searchQuery, setSearchQuery] = useState("")
 
   const { data: countriesData, isLoading: isLoadingCountries } = useGetCountriesQuery({ page_size: 100 })
-  console.log(" countriesData : " , countriesData)
   const [generateBox, { isLoading }] = useGetPersonalizedBoxMutation()
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -247,7 +247,7 @@ export const BluePage = () => {
                     {message.sender === "assistant" && (
                       <Avatar className="h-8 w-8">
                         <AvatarImage src="/assistant-avatar.png" alt="AI Assistant" />
-                        <AvatarFallback className="bg-primary text-primary-foreground">AI</AvatarFallback>
+                        <AvatarFallback className="bg-primary text-primary-foreground">Bl</AvatarFallback>
                       </Avatar>
                     )}
                     <div className="flex flex-col gap-1">
@@ -262,9 +262,7 @@ export const BluePage = () => {
                       <span className="text-xs text-muted-foreground">{format(message.timestamp, "h:mm a")}</span>
                     </div>
                     {message.sender === "user" && (
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-secondary">You</AvatarFallback>
-                      </Avatar>
+                      <UserAvatar className=" w-9 h-9" />
                     )}
                   </div>
                 </div>
@@ -273,7 +271,7 @@ export const BluePage = () => {
                 <div className="flex justify-start">
                   <div className="flex gap-3 max-w-[80%]">
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-primary text-primary-foreground">AI</AvatarFallback>
+                      <AvatarFallback className="bg-primary text-primary-foreground">bl</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col gap-1">
                       <div className="rounded-lg p-3 bg-muted">
