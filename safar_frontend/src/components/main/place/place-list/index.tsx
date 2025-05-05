@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useRef } from "react"
-import { useGetPlacesQuery } from "@/core/services/api"
+import { useGetRecommendedPlacesQuery } from "@/core/services/api"
 import { Button } from "@/components/ui/button"
 import { PlaceCard } from "./place-card"
 import { Spinner } from "@/components/ui/spinner"
@@ -16,8 +16,10 @@ export const ListPlaces = ({ selected }: Props) => {
   const [page, setPage] = useState(1)
   const placesCache = useRef<Place[]>([])
   
-  const { data, isLoading, isFetching, error } = useGetPlacesQuery(
-    { page, page_size: 12 },
+  const { data, isLoading, isFetching, error } =  useGetRecommendedPlacesQuery({ 
+    limit: 5,
+    // filters: { category: 'beach' }
+  },
     { 
       refetchOnMountOrArgChange: false,
       selectFromResult: (result) => {

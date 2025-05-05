@@ -22,10 +22,8 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
         UserProfile.objects.create(user=instance)
         logger.info(f"Created profile for new user {instance.email}")
         
-        # Send welcome notification
         send_welcome_notification(instance)
     
-    # Ensure the profile exists (in case it was deleted)
     if not hasattr(instance, 'profile'):
         UserProfile.objects.create(user=instance)
         logger.warning(f"Recreated missing profile for user {instance.email}")
@@ -56,8 +54,6 @@ def update_location_data(sender, instance, **kwargs):
     """
     if instance.location and (not instance.country or not instance.region or not instance.city):
         try:
-            # This is a placeholder - you'll need to implement actual geocoding
-            # For example using GeoDjango or a service like Google Maps API
             logger.info(f"Would geocode location for user {instance.user.id}")
         except Exception as e:
             logger.error(f"Failed to geocode location for user {instance.user.id}: {str(e)}")
@@ -72,14 +68,12 @@ def notify_profile_update(sender, instance, created, **kwargs):
             if instance.phone_number and instance.user.email:
                 message = _("Your profile has been updated successfully.")
                 
-                # Send email notification
                 send_email_task.delay(
                     subject=_("Profile Updated"),
                     message=message,
                     recipient_list=[instance.user.email]
                 )
                 
-                # Send SMS if phone number exists
                 send_sms_task.delay(
                     to_number=str(instance.phone_number),
                     message=_("Profile updated. Contact support if this wasn't you.")
@@ -96,7 +90,6 @@ def award_points_for_profile_completion(sender, instance, created, **kwargs):
     """
     try:
         if not created and instance.user:
-            # Check if profile is now complete
             profile_complete = all([
                 instance.avatar,
                 instance.bio,
@@ -106,12 +99,10 @@ def award_points_for_profile_completion(sender, instance, created, **kwargs):
             ])
             
             if profile_complete:
-                # Check if we've already awarded points for this
                 from django.core.cache import cache
                 cache_key = f"profile_complete_points:{instance.user.id}"
                 
                 if not cache.get(cache_key):
-                    # Create an interaction record
                     interaction = UserInteraction.objects.create(
                         user=instance.user,
                         content_type=ContentType.objects.get_for_model(instance.user),
@@ -122,11 +113,9 @@ def award_points_for_profile_completion(sender, instance, created, **kwargs):
                         }
                     )
                     
-                    # Award points based on the interaction
                     PointsManager.award_points_for_interaction(interaction)
                     
-                    # Set cache to prevent duplicate awards
-                    cache.set(cache_key, True, 60*60*24*365)  # 1 year
+                    cache.set(cache_key, True, 60*60*24*365)
                     
                     logger.info(f"Awarded profile completion points to user {instance.user.id}")
     except Exception as e:
@@ -138,7 +127,6 @@ def cleanup_profile_data(sender, instance, **kwargs):
     Clean up profile data when profile is deleted.
     """
     try:
-        # Delete avatar file if it exists
         if instance.avatar:
             instance.avatar.delete(save=False)
             logger.info(f"Deleted avatar for user {instance.user.id}")
@@ -163,9 +151,7 @@ def handle_role_changes(sender, instance, **kwargs):
             original = User.objects.get(pk=instance.pk)
             if original.role != instance.role:
                 logger.info(f"User {instance.email} role changed from {original.role} to {instance.role}")
-                # Add any role-specific logic here
-                
-                # Notify user about role change
+
                 notify_role_change(instance, original.role, instance.role)
         except User.DoesNotExist:
             pass
@@ -181,7 +167,6 @@ def handle_membership_level_changes(sender, instance, **kwargs):
             if original.membership_level != instance.membership_level:
                 logger.info(f"User {instance.email} membership changed from {original.membership_level} to {instance.membership_level}")
                 
-                # Notify user about membership level change
                 notify_membership_change(instance, original.membership_level, instance.membership_level)
         except User.DoesNotExist:
             pass
@@ -197,7 +182,6 @@ def handle_user_activation(sender, instance, created, **kwargs):
             if original.is_active != instance.is_active:
                 if instance.is_active:
                     logger.info(f"User {instance.email} was activated")
-                    # Send activation email
                     send_email_task.delay(
                         subject=_("Account Activated"),
                         message=_("Your account has been activated. You can now log in."),
@@ -205,7 +189,6 @@ def handle_user_activation(sender, instance, created, **kwargs):
                     )
                 else:
                     logger.info(f"User {instance.email} was deactivated")
-                    # Send deactivation email
                     send_email_task.delay(
                         subject=_("Account Deactivated"),
                         message=_("Your account has been deactivated. Contact support for more information."),
@@ -221,7 +204,6 @@ def handle_user_login(sender, instance, created, **kwargs):
     """
     if created:
         try:
-            # Create an interaction record for the login
             from django.contrib.contenttypes.models import ContentType
             
             interaction = UserInteraction.objects.create(
@@ -235,8 +217,7 @@ def handle_user_login(sender, instance, created, **kwargs):
                     'device_type': instance.device_type
                 }
             )
-            
-            # Award points for daily login
+
             PointsManager.award_points_for_interaction(interaction)
             
             logger.info(f"Recorded login interaction for user {instance.user.id}")
@@ -250,7 +231,6 @@ def handle_user_interaction(sender, instance, created, **kwargs):
     """
     if created:
         try:
-            # Award points based on the interaction
             PointsManager.award_points_for_interaction(instance)
             
             logger.debug(f"Processed interaction {instance.interaction_type} for user {instance.user.id}")
@@ -264,23 +244,20 @@ def send_welcome_notification(user):
     Send a welcome notification to new users with onboarding information.
     """
     try:
-        # Prepare welcome message
         message = _(f"Welcome to {settings.SITE_NAME}! We're excited to help you discover amazing travel experiences.")
         
-        # Prepare data for deep linking
         data = {
             "deep_link": "/onboarding",
             "user_id": str(user.id),
             "action": "complete_profile"
         }
         
-        # Send through notification service
         NotificationService.send_notification(
             user=user,
             notification_type="Welcome",
             message=message,
             data=data,
-            immediate=True  # Send immediately for better first impression
+            immediate=True
         )
         
         logger.info(f"Sent welcome notification to new user {user.email}")
@@ -294,10 +271,8 @@ def notify_role_change(user, old_role, new_role):
     Notify user about role change and explain new capabilities.
     """
     try:
-        # Prepare role change message
         message = _(f"Your account role has been updated from {old_role} to {new_role}.")
         
-        # Add role-specific information
         if new_role == User.Role.OWNER:
             message += _(" You can now list properties and manage bookings.")
             deep_link = "/owner/dashboard"
@@ -307,14 +282,12 @@ def notify_role_change(user, old_role, new_role):
         else:
             deep_link = "/account/profile"
         
-        # Prepare data for deep linking
         data = {
             "deep_link": deep_link,
             "old_role": old_role,
             "new_role": new_role
         }
         
-        # Send through notification service
         NotificationService.send_notification(
             user=user,
             notification_type="Role Update",
@@ -334,15 +307,12 @@ def notify_membership_change(user, old_level, new_level):
     Notify user about membership level change and explain new benefits.
     """
     try:
-        # Prepare membership change message
         message = _(f"Congratulations! Your membership has been upgraded from {old_level} to {new_level}.")
         
-        # Add level-specific benefits
         benefits = get_membership_benefits(new_level)
         if benefits:
             message += _(" You now have access to: ") + ", ".join(benefits)
         
-        # Prepare data for deep linking
         data = {
             "deep_link": "/account/membership",
             "old_level": old_level,
@@ -350,7 +320,6 @@ def notify_membership_change(user, old_level, new_level):
             "benefits": benefits
         }
         
-        # Send through notification service with image
         image_url = f"{settings.MEDIA_URL}membership/{new_level.lower()}_badge.png"
         
         NotificationService.send_notification(
@@ -359,7 +328,7 @@ def notify_membership_change(user, old_level, new_level):
             message=message,
             data=data,
             image_url=image_url,
-            immediate=True  # Send immediately for better experience
+            immediate=True
         )
         
         logger.info(f"Sent membership change notification to user {user.email}")
@@ -399,8 +368,6 @@ def get_membership_benefits(level):
     
     return benefits.get(level, [])
 
-# Add these functions to apps/authentication/tasks.py
-
 def send_birthday_notification(user_id):
     """
     Send birthday wishes to users on their birthday.
@@ -409,23 +376,19 @@ def send_birthday_notification(user_id):
         from apps.authentication.models import User
         user = User.objects.get(id=user_id)
         
-        # Prepare birthday message
         message = _(f"Happy Birthday, {user.first_name}! 🎂 We hope you have a fantastic day.")
         
-        # Add special birthday offer if applicable
         if user.membership_level in [User.MembershipLevel.GOLD, User.MembershipLevel.PLATINUM]:
             message += _(" Check your account for a special birthday discount on your next booking!")
             discount_code = f"BDAY{user.id}"[-8:]
         else:
             discount_code = None
         
-        # Prepare data
         data = {
             "deep_link": "/account/offers",
             "discount_code": discount_code
         }
         
-        # Send through notification service
         NotificationService.send_notification(
             user=user,
             notification_type="Birthday",
@@ -451,7 +414,6 @@ def send_security_notification(user_id, event_type, ip_address=None, device=None
         from apps.authentication.models import User
         user = User.objects.get(id=user_id)
         
-        # Prepare event-specific message
         if event_type == "login":
             message = _("New login detected on your account.")
         elif event_type == "password_change":
@@ -463,7 +425,6 @@ def send_security_notification(user_id, event_type, ip_address=None, device=None
         else:
             message = _("A security-related change was made to your account.")
         
-        # Add device and location info if available
         details = []
         if device:
             details.append(f"Device: {device}")
@@ -475,25 +436,20 @@ def send_security_notification(user_id, event_type, ip_address=None, device=None
         if details:
             message += _(" Details: ") + ", ".join(details)
         
-        # Add security notice
         message += _(" If this wasn't you, please contact support immediately.")
         
-        # Prepare data
         data = {
             "deep_link": "/account/security",
             "event_type": event_type,
             "timestamp": timezone.now().isoformat()
         }
         
-        # Send through notification service - prioritize SMS for security
         if hasattr(user, 'profile') and user.profile.phone_number:
-            # Send SMS directly for immediate security notification
             NotificationService.send_sms(
                 to_number=str(user.profile.phone_number),
-                message=message[:160]  # SMS length limit
+                message=message[:160]
             )
         
-        # Also send email and push
         NotificationService.send_notification(
             user=user,
             notification_type="Security Alert",
@@ -519,7 +475,6 @@ def send_inactivity_reminder(user_id, days_inactive):
         from apps.authentication.models import User
         user = User.objects.get(id=user_id)
         
-        # Prepare message based on inactivity duration
         if days_inactive <= 30:
             message = _("We miss you! It's been a while since you last visited us.")
         elif days_inactive <= 60:
@@ -527,7 +482,6 @@ def send_inactivity_reminder(user_id, days_inactive):
         else:
             message = _("It's been over 3 months since your last visit. We have exciting new destinations waiting for you!")
         
-        # Add personalized recommendations if available
         from apps.safar.models import Place
         recommended_places = Place.objects.filter(
             country__in=user.profile.preferred_countries.all()
@@ -537,14 +491,12 @@ def send_inactivity_reminder(user_id, days_inactive):
             place_names = [place.name for place in recommended_places]
             message += _(" Popular destinations you might like: ") + ", ".join(place_names)
         
-        # Prepare data
         data = {
             "deep_link": "/discover",
             "days_inactive": days_inactive,
             "recommended_places": [str(place.id) for place in recommended_places] if recommended_places else []
         }
         
-        # Send through notification service
         NotificationService.send_notification(
             user=user,
             notification_type="We Miss You",
@@ -574,24 +526,19 @@ def send_travel_preference_suggestions(user_id):
         
         user = User.objects.get(id=user_id)
         
-        # Skip if user has no preferences
         if not hasattr(user, 'profile') or not user.profile.travel_interests:
             logger.info(f"User {user.email} has no travel preferences set, skipping suggestions")
             return False
-        
-        # Initialize the recommendation engine
+
         recommendation_engine = RecommendationEngine(user)
         
-        # Get personalized recommendations using the engine
         suggested_places = recommendation_engine.recommend_places(limit=3)
         suggested_experiences = recommendation_engine.recommend_experiences(limit=3)
         
-        # Skip if no matches found
         if not suggested_places and not suggested_experiences:
             logger.info(f"No matching suggestions found for user {user.email}")
             return False
         
-        # Prepare message
         message = _("Based on your travel preferences and activity, we've found these recommendations just for you:")
         
         if suggested_places:
@@ -610,20 +557,17 @@ def send_travel_preference_suggestions(user_id):
                 if exp.rating:
                     message += f" ({exp.rating}★)"
         
-        # Add personalization explanation
         interests = ", ".join(user.profile.travel_interests[:3])
         if interests:
             message += f"\n\nThese recommendations match your interests in {interests}."
         
-        # Prepare data for deep linking
         data = {
             "deep_link": "/recommendations",
             "suggested_places": [str(place.id) for place in suggested_places],
             "suggested_experiences": [str(exp.id) for exp in suggested_experiences],
             "recommendation_source": "ml_engine"
         }
-        
-        # Get a featured image if available
+
         image_url = None
         if suggested_places and suggested_places[0].media.filter(type='photo').exists():
             image = suggested_places[0].media.filter(type='photo').first()
@@ -632,7 +576,6 @@ def send_travel_preference_suggestions(user_id):
             image = suggested_experiences[0].media.filter(type='photo').first()
             image_url = image.url or (image.file.url if image.file else None)
         
-        # Send through notification service
         NotificationService.send_notification(
             user=user,
             notification_type="Personalized Recommendations",
@@ -641,14 +584,12 @@ def send_travel_preference_suggestions(user_id):
             image_url=image_url,
             immediate=False
         )
-        
-        # Log recommendation details for analytics
+
         logger.info(
             f"Sent ML-powered recommendations to user {user.email}: "
             f"{len(suggested_places)} places, {len(suggested_experiences)} experiences"
         )
         
-        # Track this as a user interaction for future recommendations
         if suggested_places or suggested_experiences:
             try:
                 from apps.authentication.models import UserInteraction
@@ -684,26 +625,21 @@ def send_account_milestone_notification(user_id, milestone_type):
     try:
         from apps.authentication.models import User
         user = User.objects.get(id=user_id)
-        
-        # Prepare milestone-specific message
+
         if milestone_type == "account_anniversary":
-            # Calculate years
             years = (timezone.now().date() - user.created_at.date()).days // 365
             
             if years == 1:
                 message = _("Happy 1 year anniversary with us! Thank you for being a valued member.")
             else:
                 message = _(f"Happy {years} year anniversary with us! Thank you for your continued trust.")
-                
-            # Add reward if applicable
+
             if years >= 2:
                 message += _(" We've added a special discount to your account as a thank you gift.")
         
         elif milestone_type == "points_milestone":
-            # For point milestones (e.g., reaching 1000 points)
             message = _(f"Congratulations! You've reached {user.points} points.")
             
-            # Add next tier info if applicable
             next_tier_points = 0
             if user.membership_level == User.MembershipLevel.BRONZE:
                 next_tier_points = 1000
@@ -717,7 +653,6 @@ def send_account_milestone_notification(user_id, milestone_type):
                 message += _(f" You're just {points_needed} points away from the next membership level!")
         
         elif milestone_type == "bookings_milestone":
-            # For booking count milestones
             from apps.safar.models import Booking
             booking_count = Booking.objects.filter(user=user, status="Confirmed").count()
             
@@ -728,7 +663,6 @@ def send_account_milestone_notification(user_id, milestone_type):
         else:
             message = _("Congratulations on your achievement!")
         
-        # Prepare data
         data = {
             "deep_link": "/account/achievements",
             "milestone_type": milestone_type
@@ -752,7 +686,6 @@ def send_account_milestone_notification(user_id, milestone_type):
         logger.error(f"Failed to send account milestone notification to user {user_id}: {str(e)}")
         return False
 
-# Add these signal handlers to your existing signals.py file
 
 @receiver(post_save, sender='safar.Booking')
 def award_points_for_booking(sender, instance, created, **kwargs):
@@ -761,7 +694,6 @@ def award_points_for_booking(sender, instance, created, **kwargs):
     """
     try:
         if not created and instance.status == "Confirmed" and instance.user:
-            # Award base points for completing a booking
             PointsManager.award_points(
                 user=instance.user,
                 action='booking_complete',
@@ -771,7 +703,6 @@ def award_points_for_booking(sender, instance, created, **kwargs):
                 }
             )
             
-            # Award points based on booking value
             if instance.total_price:
                 PointsManager.award_points(
                     user=instance.user,
@@ -794,7 +725,6 @@ def award_points_for_review(sender, instance, created, **kwargs):
     """
     try:
         if created and instance.user:
-            # Base points for adding a review
             PointsManager.award_points(
                 user=instance.user,
                 action='review_add',
@@ -804,7 +734,6 @@ def award_points_for_review(sender, instance, created, **kwargs):
                 }
             )
             
-            # Bonus points if review has photos
             if hasattr(instance, 'media') and instance.media.filter(type='photo').exists():
                 PointsManager.award_points(
                     user=instance.user,
@@ -826,7 +755,6 @@ def award_points_for_wishlist(sender, instance, created, **kwargs):
     """
     try:
         if created and instance.user:
-            # Determine what type of item was added
             item_type = None
             item_id = None
             
@@ -864,7 +792,6 @@ def award_points_for_interaction(sender, instance, created, **kwargs):
     """
     try:
         if created and instance.user:
-            # Map interaction types to point actions
             interaction_to_action = {
                 'view_place': 'view_place',
                 'view_experience': 'view_experience',
@@ -875,9 +802,7 @@ def award_points_for_interaction(sender, instance, created, **kwargs):
             action = interaction_to_action.get(instance.interaction_type)
             
             if action:
-                # Check for daily limits on certain actions
                 if action in ['view_place', 'view_experience', 'search_perform']:
-                    # Get count of this action today for this user
                     today = timezone.now().date()
                     count = UserInteraction.objects.filter(
                         user=instance.user,
@@ -885,7 +810,6 @@ def award_points_for_interaction(sender, instance, created, **kwargs):
                         created_at__date=today
                     ).count()
                     
-                    # Apply daily limits
                     daily_limits = {
                         'view_place': 10,
                         'view_experience': 10,
@@ -893,7 +817,6 @@ def award_points_for_interaction(sender, instance, created, **kwargs):
                     }
                     
                     if count > daily_limits.get(action, 0):
-                        # Exceeded daily limit
                         return
                 
                 PointsManager.award_points(
@@ -918,15 +841,12 @@ def award_points_for_login(sender, instance, created, **kwargs):
     """
     try:
         if created and instance.user:
-            # Check if user already got login points today
             today = timezone.now().date()
             
-            # Get or create a cache key for today's login
             from django.core.cache import cache
             cache_key = f"daily_login_points:{instance.user.id}:{today.isoformat()}"
             
             if not cache.get(cache_key):
-                # Award points for daily login
                 PointsManager.award_points(
                     user=instance.user,
                     action='daily_login',
@@ -936,8 +856,7 @@ def award_points_for_login(sender, instance, created, **kwargs):
                     }
                 )
                 
-                # Set cache to prevent duplicate awards
-                cache.set(cache_key, True, 60*60*24)  # 24 hours
+                cache.set(cache_key, True, 60*60*24)
                 
                 logger.info(f"Awarded daily login points to user {instance.user.id}")
     except Exception as e:
@@ -950,7 +869,6 @@ def award_points_for_profile_completion(sender, instance, created, **kwargs):
     """
     try:
         if not created and instance.user:
-            # Check if profile is now complete
             profile_complete = all([
                 instance.avatar,
                 instance.bio,
@@ -960,7 +878,6 @@ def award_points_for_profile_completion(sender, instance, created, **kwargs):
             ])
             
             if profile_complete:
-                # Check if we've already awarded points for this
                 from django.core.cache import cache
                 cache_key = f"profile_complete_points:{instance.user.id}"
                 
@@ -973,8 +890,7 @@ def award_points_for_profile_completion(sender, instance, created, **kwargs):
                         }
                     )
                     
-                    # Set cache to prevent duplicate awards
-                    cache.set(cache_key, True, 60*60*24*365)  # 1 year
+                    cache.set(cache_key, True, 60*60*24*365)
                     
                     logger.info(f"Awarded profile completion points to user {instance.user.id}")
     except Exception as e:

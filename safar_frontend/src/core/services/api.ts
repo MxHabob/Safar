@@ -681,6 +681,45 @@ export const api = createApi({
       }),
       invalidatesTags: ["Notification"],
     }),
+
+    // Recommendation endpoints
+    getRecommendedPlaces: builder.query<PaginatedResponse<Place>, { limit?: number; filters?: Record<string, any> }>({
+      query: (params) => ({
+        url: "/places/recommended/",
+        params,
+      }),
+      providesTags: ["Place"],
+    }),
+
+    getRecommendedExperiences: builder.query<
+      PaginatedResponse<Experience>,
+      { limit?: number; filters?: Record<string, any> }
+    >({
+      query: (params) => ({
+        url: "/experiences/recommended/",
+        params,
+      }),
+      providesTags: ["Experience"],
+    }),
+
+    getPersonalizedBox: builder.mutation<
+      Box,
+      {
+        destination_id: string
+        destination_type: "city" | "region" | "country"
+        duration_days?: number
+        budget?: number
+        theme?: string
+        start_date?: string
+      }
+    >({
+      query: (body) => ({
+        url: "/boxes/generate/",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Box"],
+    }),
   }),
 })
 
@@ -783,4 +822,9 @@ export const {
   useGetUnreadNotificationsQuery,
   useMarkNotificationAsReadMutation,
   useMarkAllNotificationsAsReadMutation,
+
+  useGetRecommendedPlacesQuery,
+  useGetRecommendedExperiencesQuery,
+  useGetPersonalizedBoxMutation,
+
 } = api

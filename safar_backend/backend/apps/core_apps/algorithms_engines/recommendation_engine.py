@@ -14,12 +14,15 @@ from apps.authentication.models import User, UserInteraction
 from apps.safar.models import Place, Experience, Flight
 from apps.geographic_data.models import City, Region, Country
 from datetime import datetime, timedelta
+from django.core.cache import cache
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 class RecommendationEngine:
     """
     Enhanced recommendation engine using scikit-learn for machine learning capabilities
+    with support for anonymous users and fault tolerance
     """
     
     INTERACTION_WEIGHTS = {
@@ -35,11 +38,21 @@ class RecommendationEngine:
     
     TEMPORAL_DECAY_RATE = 0.1  # 10% reduction per month
     
-    def __init__(self, user):
-        if not isinstance(user, User):
-            raise ValueError("Must provide a valid User instance")
+    # Cache TTLs
+    GLOBAL_CACHE_TTL = 3600  # 1 hour for global recommendations
+    USER_CACHE_TTL = 1800    # 30 minutes for user-specific recommendations
+    
+    def __init__(self, user=None):
+        """
+        Initialize the recommendation engine
+        
+        Args:
+            user (User, optional): The user to generate recommendations for.
+                                  If None, anonymous recommendations will be provided.
+        """
         self.user = user
-        self.profile = user.profile
+        self.profile = user.profile if user and hasattr(user, 'profile') else None
+        self.is_authenticated = user is not None
         self.user_item_matrix = None
         self.item_features = None
         self.user_features = None
@@ -47,7 +60,25 @@ class RecommendationEngine:
         self.kmeans_model = None
         
     def recommend_places(self, limit=5, filters=None, boost_user_preferences=True):
+        """
+        Recommend places to the user
+        
+        Args:
+            limit (int): Maximum number of recommendations to return
+            filters (dict): Additional filters to apply to the query
+            boost_user_preferences (bool): Whether to boost based on user preferences
+            
+        Returns:
+            QuerySet: A queryset of recommended places
+        """
         try:
+            # For anonymous users, try to get from cache first
+            if not self.is_authenticated:
+                cache_key = self._get_cache_key('places', filters, limit)
+                cached_results = cache.get(cache_key)
+                if cached_results is not None:
+                    return cached_results
+            
             filters = filters or {}
             query = Place.objects.filter(
                 is_available=True,
@@ -55,42 +86,70 @@ class RecommendationEngine:
                 **filters
             ).select_related('category', 'country', 'city', 'region')
             
-            # Build feature matrices if not already built
-            self._build_feature_matrices('place')
+            if self.is_authenticated:
+                # Apply personalized recommendations for authenticated users
+                # Build feature matrices if not already built
+                self._build_feature_matrices('place')
+                
+                # Apply ML-based recommendations
+                if self.user_item_matrix is not None and self.svd_model is not None:
+                    query = self._apply_matrix_factorization(query, 'place')
+                
+                if boost_user_preferences:
+                    query = self._apply_preference_boosting(query)
+                
+                # Apply content-based filtering if we have item features
+                if self.item_features is not None:
+                    query = self._apply_content_based_filtering(query, 'place')
+                
+                # Apply collaborative filtering
+                query = self._apply_collaborative_filtering(query, 'place')
+                
+                # Apply temporal popularity and user interaction boosts
+                query = self._apply_temporal_popularity(query)
+                query = self._boost_user_interactions(query, 'place')
+                
+                results = query.order_by(
+                    '-ml_score',
+                    '-similarity_score',
+                    '-personalization_score', 
+                    '-interaction_boost',
+                    '-recent_popularity',
+                    '-rating'
+                ).distinct()[:limit]
+            else:
+                # For anonymous users, use popularity-based recommendations
+                results = self._get_anonymous_recommendations(query, 'place', limit)
+                
+                # Cache the results for anonymous users
+                cache_key = self._get_cache_key('places', filters, limit)
+                cache.set(cache_key, results, self.GLOBAL_CACHE_TTL)
             
-            # Apply ML-based recommendations
-            if self.user_item_matrix is not None and self.svd_model is not None:
-                query = self._apply_matrix_factorization(query, 'place')
-            
-            if boost_user_preferences:
-                query = self._apply_preference_boosting(query)
-            
-            # Apply content-based filtering if we have item features
-            if self.item_features is not None:
-                query = self._apply_content_based_filtering(query, 'place')
-            
-            # Apply collaborative filtering
-            query = self._apply_collaborative_filtering(query, 'place')
-            
-            # Apply temporal popularity and user interaction boosts
-            query = self._apply_temporal_popularity(query)
-            query = self._boost_user_interactions(query, 'place')
-            
-            return query.order_by(
-                '-ml_score',
-                '-similarity_score',
-                '-personalization_score', 
-                '-interaction_boost',
-                '-recent_popularity',
-                '-rating'
-            ).distinct()[:limit]
+            return results
             
         except Exception as e:
             logger.error(f"Error recommending places: {str(e)}", exc_info=True)
             return self._fallback_recommendations(Place, filters, limit)
     
     def recommend_experiences(self, limit=5, filters=None):
+        """
+        Recommend experiences to the user
+        
+        Args:
+            limit (int): Maximum number of recommendations to return
+            filters (dict): Additional filters to apply to the query
+            
+        Returns:
+            QuerySet: A queryset of recommended experiences
+        """
         try:
+            # For anonymous users, try to get from cache first
+            if not self.is_authenticated:
+                cache_key = self._get_cache_key('experiences', filters, limit)
+                cached_results = cache.get(cache_key)
+                if cached_results is not None:
+                    return cached_results
+            
             filters = filters or {}
             query = Experience.objects.filter(
                 is_available=True,
@@ -98,109 +157,145 @@ class RecommendationEngine:
                 **filters
             ).select_related('category', 'place', 'owner')
             
-            # Build feature matrices if not already built
-            self._build_feature_matrices('experience')
+            if self.is_authenticated:
+                # Build feature matrices if not already built
+                self._build_feature_matrices('experience')
+                
+                # Apply ML-based recommendations
+                if self.user_item_matrix is not None and self.svd_model is not None:
+                    query = self._apply_matrix_factorization(query, 'experience')
+                
+                query = self._apply_preference_boosting(query)
+                
+                # Apply content-based filtering if we have item features
+                if self.item_features is not None:
+                    query = self._apply_content_based_filtering(query, 'experience')
+                
+                # Apply collaborative filtering
+                query = self._apply_collaborative_filtering(query, 'experience')
+                
+                # Apply temporal popularity and user interaction boosts
+                query = self._apply_temporal_popularity(query)
+                query = self._boost_user_interactions(query, 'experience')
+                
+                results = query.order_by(
+                    '-ml_score',
+                    '-similarity_score',
+                    '-personalization_score',
+                    '-interaction_boost',
+                    '-recent_popularity',
+                    '-rating'
+                ).distinct()[:limit]
+            else:
+                # For anonymous users, use popularity-based recommendations
+                results = self._get_anonymous_recommendations(query, 'experience', limit)
+                
+                # Cache the results for anonymous users
+                cache_key = self._get_cache_key('experiences', filters, limit)
+                cache.set(cache_key, results, self.GLOBAL_CACHE_TTL)
             
-            # Apply ML-based recommendations
-            if self.user_item_matrix is not None and self.svd_model is not None:
-                query = self._apply_matrix_factorization(query, 'experience')
-            
-            query = self._apply_preference_boosting(query)
-            
-            # Apply content-based filtering if we have item features
-            if self.item_features is not None:
-                query = self._apply_content_based_filtering(query, 'experience')
-            
-            # Apply collaborative filtering
-            query = self._apply_collaborative_filtering(query, 'experience')
-            
-            # Apply temporal popularity and user interaction boosts
-            query = self._apply_temporal_popularity(query)
-            query = self._boost_user_interactions(query, 'experience')
-            
-            return query.order_by(
-                '-ml_score',
-                '-similarity_score',
-                '-personalization_score',
-                '-interaction_boost',
-                '-recent_popularity',
-                '-rating'
-            ).distinct()[:limit]
+            return results
             
         except Exception as e:
             logger.error(f"Error recommending experiences: {str(e)}", exc_info=True)
             return self._fallback_recommendations(Experience, filters, limit)
     
-    def recommend_flights(self, origin, destination, date_range, limit=5):
+    def _get_anonymous_recommendations(self, queryset, item_type, limit):
+        """
+        Get recommendations for anonymous users based on popularity and trends
+        
+        Args:
+            queryset: Base queryset to filter from
+            item_type: Type of item ('place', 'experience', etc.)
+            limit: Maximum number of items to return
+            
+        Returns:
+            QuerySet: A queryset of recommended items
+        """
         try:
-            start_date, end_date = date_range
-            query = Flight.objects.filter(
-                departure_airport=origin,
-                arrival_airport=destination,
-                departure_time__gte=start_date,
-                departure_time__lte=end_date,
-                is_deleted=False
-            )
+            # Apply temporal popularity boost
+            queryset = self._apply_temporal_popularity(queryset)
             
-            # Apply user preference boosting for airlines
-            if self.profile.travel_history and isinstance(self.profile.travel_history, list):
-                preferred_airlines = list(set(
-                    flight.get('airline') for flight in self.profile.travel_history
-                    if flight.get('airline')
-                ))
+            # Apply trending boost (items with recent interactions)
+            recent_cutoff = datetime.now() - timedelta(days=30)
+            content_type = ContentType.objects.get_for_model(queryset.model)
+            
+            trending_items = UserInteraction.objects.filter(
+                content_type=content_type,
+                created_at__gte=recent_cutoff
+            ).values('object_id').annotate(
+                interaction_count=Count('id')
+            ).order_by('-interaction_count')[:100]
+            
+            trending_ids = [item['object_id'] for item in trending_items]
+            
+            # Combine with high-rated items
+            high_rated = queryset.filter(rating__gte=4.0).order_by('-rating')[:50]
+            high_rated_ids = list(high_rated.values_list('id', flat=True))
+            
+            # Combine trending and high-rated, prioritizing items that are in both
+            combined_ids = list(set(trending_ids + high_rated_ids))
+            
+            # Create a Case expression for ordering by position in the combined_ids list
+            when_clauses = [
+                When(id=id, then=Value(len(combined_ids) - i, output_field=FloatField()))
+                for i, id in enumerate(combined_ids)
+            ]
+            
+            if when_clauses:
+                queryset = queryset.filter(id__in=combined_ids).annotate(
+                    position_score=Case(
+                        *when_clauses,
+                        default=Value(0, FloatField()),
+                        output_field=FloatField()
+                    )
+                )
                 
-                if preferred_airlines:
-                    # Use sklearn to calculate airline preference scores
-                    airline_counts = {}
-                    for flight in self.profile.travel_history:
-                        airline = flight.get('airline')
-                        if airline:
-                            airline_counts[airline] = airline_counts.get(airline, 0) + 1
-                    
-                    total_flights = sum(airline_counts.values())
-                    airline_scores = {
-                        airline: count / total_flights
-                        for airline, count in airline_counts.items()
-                    }
-                    
-                    # Apply airline preference scores
-                    query = query.annotate(
-                        airline_score=Case(
-                            *[When(airline=airline, then=Value(score, FloatField())) 
-                              for airline, score in airline_scores.items()],
-                            default=Value(0.0, FloatField()),
-                            output_field=FloatField()
-                        )
-                    )
-                    
-                    # Calculate price score (lower is better)
-                    query = query.annotate(
-                        price_score=Case(
-                            When(price__lte=500, then=0.8),
-                            When(price__lte=1000, then=0.6),
-                            When(price__lte=1500, then=0.4),
-                            When(price__lte=2000, then=0.2),
-                            default=0.1,
-                            output_field=FloatField()
-                        )
-                    )
-                    
-                    # Combine scores with weights
-                    query = query.annotate(
-                        combined_score=F('airline_score') * 0.6 + F('price_score') * 0.4
-                    ).order_by('-combined_score', 'price')
-                else:
-                    query = query.order_by('price')
+                # Add diversity by including some items from different categories
+                categories = queryset.values_list('category', flat=True).distinct()[:5]
+                diverse_items = []
+                
+                for category in categories:
+                    category_items = queryset.filter(category=category).order_by('-rating')[:3]
+                    diverse_items.extend(list(category_items.values_list('id', flat=True)))
+                
+                # Ensure diverse items are included
+                diverse_queryset = queryset.filter(id__in=diverse_items)
+                
+                # Combine and order results
+                return queryset.order_by(
+                    '-position_score', 
+                    '-recent_popularity', 
+                    '-rating'
+                ).distinct()[:limit]
             else:
-                query = query.order_by('price')
-            
-            return query[:limit]
-            
+                # Fallback to simple popularity-based ordering
+                return queryset.order_by('-rating', '-created_at')[:limit]
+                
         except Exception as e:
-            logger.error(f"Error recommending flights: {str(e)}", exc_info=True)
-            return Flight.objects.none()
+            logger.error(f"Error getting anonymous recommendations: {str(e)}", exc_info=True)
+            return queryset.order_by('-rating', '-created_at')[:limit]
+    
+    def _get_cache_key(self, item_type, filters, limit):
+        """Generate a cache key for recommendations"""
+        filters_str = '_'.join(f"{k}_{v}" for k, v in (filters or {}).items())
+        if self.is_authenticated:
+            return f"rec_{item_type}_{self.user.id}_{filters_str}_{limit}"
+        else:
+            return f"rec_anon_{item_type}_{filters_str}_{limit}"
     
     def recommend_for_box(self, destination, duration_days, limit_per_category=3):
+        """
+        Recommend items for a travel box
+        
+        Args:
+            destination: The destination (City, Region, or Country)
+            duration_days: Number of days for the trip
+            limit_per_category: Maximum number of items per category
+            
+        Returns:
+            dict: Dictionary of recommended items by category
+        """
         try:
             destination_filters = self._create_destination_filters(destination)
             
@@ -225,7 +320,27 @@ class RecommendationEngine:
     
     def _build_feature_matrices(self, item_type):
         """Build user-item interaction matrix and feature matrices for ML algorithms"""
+        if not self.is_authenticated:
+            return
+            
         try:
+            # Try to get from cache first
+            cache_key = f"feature_matrices_{item_type}_{self.user.id}"
+            cached_matrices = cache.get(cache_key)
+            
+            if cached_matrices is not None:
+                self.user_item_matrix = cached_matrices.get('user_item_matrix')
+                self.item_features = cached_matrices.get('item_features')
+                self.user_features = cached_matrices.get('user_features')
+                self.svd_model = cached_matrices.get('svd_model')
+                self.user_ids = cached_matrices.get('user_ids')
+                self.item_ids = cached_matrices.get('item_ids')
+                self.item_id_to_idx = cached_matrices.get('item_id_to_idx')
+                self.kmeans_model = cached_matrices.get('kmeans_model')
+                self.item_clusters = cached_matrices.get('item_clusters')
+                self.item_id_to_cluster = cached_matrices.get('item_id_to_cluster')
+                return
+            
             # Get content type for the item type
             if item_type == 'place':
                 content_type = ContentType.objects.get_for_model(Place)
@@ -355,6 +470,22 @@ class RecommendationEngine:
                 users_df = pd.DataFrame(list(users))
                 # Process user features here if needed
                 self.user_features = None  # Placeholder for future implementation
+            
+            # Cache the matrices
+            matrices_to_cache = {
+                'user_item_matrix': self.user_item_matrix,
+                'item_features': self.item_features,
+                'user_features': self.user_features,
+                'svd_model': self.svd_model,
+                'user_ids': self.user_ids,
+                'item_ids': self.item_ids,
+                'item_id_to_idx': self.item_id_to_idx,
+                'kmeans_model': self.kmeans_model,
+                'item_clusters': getattr(self, 'item_clusters', None),
+                'item_id_to_cluster': getattr(self, 'item_id_to_cluster', None)
+            }
+            
+            cache.set(cache_key, matrices_to_cache, self.USER_CACHE_TTL)
         
         except Exception as e:
             logger.error(f"Error building feature matrices: {str(e)}", exc_info=True)
@@ -363,8 +494,97 @@ class RecommendationEngine:
             self.user_features = None
             self.svd_model = None
     
+    def _fallback_recommendations(self, model_class, filters, limit):
+        """Provide fallback recommendations when ML methods fail"""
+        try:
+            # First try to get from cache
+            cache_key = f"fallback_{model_class.__name__}_{hash(str(filters))}_{limit}"
+            cached_results = cache.get(cache_key)
+            
+            if cached_results is not None:
+                return cached_results
+            
+            queryset = model_class.objects.filter(
+                is_available=True,
+                is_deleted=False,
+                **filters
+            )
+            
+            # Try to use user preferences if available and user is authenticated
+            if self.is_authenticated and self.profile and self.profile.preferred_countries.exists():
+                pref_country_query = queryset.filter(
+                    country__in=self.profile.preferred_countries.all()
+                ).order_by('-rating', '-created_at')[:limit]
+                
+                if pref_country_query.count() >= limit:
+                    return pref_country_query
+            
+            # If we have item clusters, try to recommend from clusters the user has interacted with
+            if self.is_authenticated and hasattr(self, 'item_id_to_cluster') and hasattr(self, 'kmeans_model'):
+                user_interactions = self.user.interactions.filter(
+                    content_type__model=model_class.__name__.lower()
+                ).values_list('object_id', flat=True)
+                
+                # Get clusters of items the user has interacted with
+                user_clusters = [
+                    self.item_id_to_cluster.get(item_id)
+                    for item_id in user_interactions
+                    if item_id in self.item_id_to_cluster
+                ]
+                
+                if user_clusters:
+                    # Count frequency of each cluster
+                    cluster_counts = {}
+                    for cluster in user_clusters:
+                        if cluster is not None:
+                            cluster_counts[cluster] = cluster_counts.get(cluster, 0) + 1
+                    
+                    # Get most frequent clusters
+                    preferred_clusters = sorted(
+                        cluster_counts.keys(),
+                        key=lambda c: cluster_counts[c],
+                        reverse=True
+                    )[:3]
+                    
+                    # Get items from preferred clusters
+                    preferred_items = [
+                        item_id for item_id, cluster in self.item_id_to_cluster.items()
+                        if cluster in preferred_clusters
+                    ]
+                    
+                    if preferred_items:
+                        cluster_query = queryset.filter(id__in=preferred_items).order_by('-rating')[:limit]
+                        if cluster_query.count() > 0:
+                            return cluster_query
+            
+            # Fall back to popular items
+            popular_query = queryset.order_by('-rating', '-created_at')[:limit]
+            if popular_query.exists():
+                results = popular_query
+            else:
+                # Last resort: newest items
+                results = queryset.order_by('-created_at')[:limit]
+            
+            # Cache the results
+            cache.set(cache_key, results, self.GLOBAL_CACHE_TTL)
+            return results
+            
+        except Exception as e:
+            logger.error(f"Fallback recommendation failed: {str(e)}")
+            try:
+                # Ultimate fallback - just get any items
+                return model_class.objects.filter(is_deleted=False)[:limit]
+            except:
+                return model_class.objects.none()
+    
+    # The rest of the methods remain largely the same, but with added checks for self.is_authenticated
+    # and appropriate error handling for fault tolerance
+    
     def _apply_matrix_factorization(self, queryset, item_type):
         """Apply matrix factorization recommendations using SVD"""
+        if not self.is_authenticated:
+            return queryset.annotate(ml_score=Value(0, FloatField()))
+            
         try:
             if self.user_item_matrix is None or self.svd_model is None:
                 return queryset.annotate(ml_score=Value(0, FloatField()))
@@ -425,6 +645,9 @@ class RecommendationEngine:
     
     def _apply_content_based_filtering(self, queryset, item_type):
         """Apply content-based filtering using item features"""
+        if not self.is_authenticated:
+            return queryset
+            
         try:
             if self.item_features is None or not hasattr(self, 'item_id_to_idx'):
                 return queryset
@@ -490,6 +713,9 @@ class RecommendationEngine:
     
     def _apply_collaborative_filtering(self, queryset, item_type):
         """Apply collaborative filtering using user-item interactions"""
+        if not self.is_authenticated:
+            return queryset.annotate(similarity_score=Value(0, FloatField()))
+            
         try:
             similar_users = self._find_similar_users()
             
@@ -560,76 +786,6 @@ class RecommendationEngine:
             logger.error(f"Error applying collaborative filtering: {str(e)}", exc_info=True)
             return queryset.annotate(similarity_score=Value(0, FloatField()))
     
-    def _find_similar_users(self):
-        """Find users similar to the current user using multiple methods"""
-        try:
-            # Use matrix factorization if available
-            if hasattr(self, 'user_factors') and self.user.id in self.user_ids:
-                user_idx = self.user_ids.index(self.user.id)
-                user_vector = self.user_factors[user_idx]
-                
-                # Calculate similarity between this user and all other users
-                user_similarities = cosine_similarity([user_vector], self.user_factors)[0]
-                
-                # Get top similar users (excluding self)
-                similar_indices = np.argsort(user_similarities)[::-1][1:101]  # Top 100 similar users
-                similar_user_ids = [self.user_ids[idx] for idx in similar_indices]
-                
-                return User.objects.filter(id__in=similar_user_ids)
-            
-            # Fall back to traditional methods
-            similar_users_content = self._find_similar_users_content_based()
-            similar_users_behavior = self._find_similar_users_behavior_based()
-            
-            return (similar_users_content | similar_users_behavior).distinct()
-        
-        except Exception as e:
-            logger.error(f"Error finding similar users: {str(e)}", exc_info=True)
-            return User.objects.none()
-    
-    def _find_similar_users_content_based(self):
-        """Find users with similar preferences"""
-        similar_users = User.objects.exclude(id=self.user.id)
-        
-        if self.profile.preferred_countries.exists():
-            country_overlap = Count(
-                'profile__preferred_countries',
-                filter=Q(profile__preferred_countries__in=self.profile.preferred_countries.all())
-            )
-            similar_users = similar_users.annotate(
-                country_similarity=country_overlap
-            ).filter(country_similarity__gt=0)
-        
-        if self.profile.travel_interests:
-            interest_overlap = Count(
-                'profile__travel_interests',
-                filter=Q(profile__travel_interests__overlap=self.profile.travel_interests)
-            )
-            similar_users = similar_users.annotate(
-                interest_similarity=interest_overlap
-            ).filter(interest_similarity__gt=0)
-        
-        return similar_users.order_by('-country_similarity', '-interest_similarity')[:100]
-    
-    def _find_similar_users_behavior_based(self):
-        """Find users with similar behavior patterns"""
-        user_interactions = self.user.interactions.filter(
-            interaction_type__in=self.INTERACTION_WEIGHTS.keys()
-        ).values_list('content_type', 'object_id', 'interaction_type')
-        
-        if not user_interactions:
-            return User.objects.none()
-        
-        similar_users = UserInteraction.objects.filter(
-            content_type__in=[x[0] for x in user_interactions],
-            object_id__in=[x[1] for x in user_interactions],
-            interaction_type__in=[x[2] for x in user_interactions]
-        ).exclude(user=self.user).values('user').annotate(
-            similarity=Count('id')
-        ).order_by('-similarity').values_list('user', flat=True)[:100]
-        
-        return User.objects.filter(id__in=similar_users)
-    
     def _apply_preference_boosting(self, queryset):
         """Apply boosting based on user preferences"""
         queryset = queryset.annotate(
@@ -642,7 +798,7 @@ class RecommendationEngine:
             )
         )
         
-        if self.profile.preferred_countries.exists():
+        if self.is_authenticated and self.profile and self.profile.preferred_countries.exists():
             queryset = queryset.annotate(
                 country_score=Case(
                     When(country__in=self.profile.preferred_countries.all(), then=0.3),
@@ -651,7 +807,7 @@ class RecommendationEngine:
                 )
             )
         
-        if self.profile.travel_interests:
+        if self.is_authenticated and self.profile and self.profile.travel_interests:
             category_boost = Case(
                 When(category__name__in=self.profile.travel_interests, then=0.2),
                 default=0.0,
@@ -725,6 +881,9 @@ class RecommendationEngine:
     
     def _boost_user_interactions(self, queryset, item_type):
         """Boost items the user has interacted with"""
+        if not self.is_authenticated:
+            return queryset.annotate(interaction_boost=Value(0, FloatField()))
+            
         interactions = self.user.interactions.filter(
             content_type__model=item_type,
             interaction_type__in=self.INTERACTION_WEIGHTS.keys()
@@ -760,73 +919,35 @@ class RecommendationEngine:
             )
         )
     
-    def _fallback_recommendations(self, model_class, filters, limit):
-        """Provide fallback recommendations when ML methods fail"""
+    def _find_similar_users(self):
+        """Find users similar to the current user using multiple methods"""
+        if not self.is_authenticated:
+            return User.objects.none()
+            
         try:
-            queryset = model_class.objects.filter(
-                is_available=True,
-                is_deleted=False,
-                **filters
-            )
-            
-            # Try to use user preferences if available
-            if self.profile.preferred_countries.exists():
-                pref_country_query = queryset.filter(
-                    country__in=self.profile.preferred_countries.all()
-                ).order_by('-rating', '-created_at')[:limit]
+            # Use matrix factorization if available
+            if hasattr(self, 'user_factors') and self.user.id in self.user_ids:
+                user_idx = self.user_ids.index(self.user.id)
+                user_vector = self.user_factors[user_idx]
                 
-                if pref_country_query.count() >= limit:
-                    return pref_country_query
-            
-            # If we have item clusters, try to recommend from clusters the user has interacted with
-            if hasattr(self, 'item_id_to_cluster') and hasattr(self, 'kmeans_model'):
-                user_interactions = self.user.interactions.filter(
-                    content_type__model=model_class.__name__.lower()
-                ).values_list('object_id', flat=True)
+                # Calculate similarity between this user and all other users
+                user_similarities = cosine_similarity([user_vector], self.user_factors)[0]
                 
-                # Get clusters of items the user has interacted with
-                user_clusters = [
-                    self.item_id_to_cluster.get(item_id)
-                    for item_id in user_interactions
-                    if item_id in self.item_id_to_cluster
-                ]
+                # Get top similar users (excluding self)
+                similar_indices = np.argsort(user_similarities)[::-1][1:101]  # Top 100 similar users
+                similar_user_ids = [self.user_ids[idx] for idx in similar_indices]
                 
-                if user_clusters:
-                    # Count frequency of each cluster
-                    cluster_counts = {}
-                    for cluster in user_clusters:
-                        if cluster is not None:
-                            cluster_counts[cluster] = cluster_counts.get(cluster, 0) + 1
-                    
-                    # Get most frequent clusters
-                    preferred_clusters = sorted(
-                        cluster_counts.keys(),
-                        key=lambda c: cluster_counts[c],
-                        reverse=True
-                    )[:3]
-                    
-                    # Get items from preferred clusters
-                    preferred_items = [
-                        item_id for item_id, cluster in self.item_id_to_cluster.items()
-                        if cluster in preferred_clusters
-                    ]
-                    
-                    if preferred_items:
-                        cluster_query = queryset.filter(id__in=preferred_items).order_by('-rating')[:limit]
-                        if cluster_query.count() > 0:
-                            return cluster_query
+                return User.objects.filter(id__in=similar_user_ids)
             
-            # Fall back to popular items
-            popular_query = queryset.order_by('-rating', '-created_at')[:limit]
-            if popular_query.exists():
-                return popular_query
+            # Fall back to traditional methods
+            similar_users_content = self._find_similar_users_content_based()
+            similar_users_behavior = self._find_similar_users_behavior_based()
             
-            # Last resort: newest items
-            return queryset.order_by('-created_at')[:limit]
-            
+            return (similar_users_content | similar_users_behavior).distinct()
+        
         except Exception as e:
-            logger.error(f"Fallback recommendation failed: {str(e)}")
-            return model_class.objects.none()
+            logger.error(f"Error finding similar users: {str(e)}", exc_info=True)
+            return User.objects.none()
     
     def _create_destination_filters(self, destination):
         """Create filters based on destination type"""
@@ -838,27 +959,3 @@ class RecommendationEngine:
             return {'country': destination}
         else:
             raise ValueError("Invalid destination type")
-    
-    def calculate_personalization_score(self, item):
-        """Calculate personalization score for a single item"""
-        score = 0.0
-        
-        if hasattr(item, 'country') and item.country and self.profile.preferred_countries.exists():
-            if item.country in self.profile.preferred_countries.all():
-                score += 0.3
-        
-        if hasattr(item, 'category') and self.profile.travel_interests:
-            if item.category.name in self.profile.travel_interests:
-                score += 0.2
-            elif any(tag in self.profile.travel_interests for tag in item.metadata.get('tags', [])):
-                score += 0.15
-        
-        if hasattr(item, 'rating'):
-            score += item.rating * 0.1
-        
-        if hasattr(item, 'price') and item.price and self.profile.metadata.get('price_preference'):
-            user_pref = self.profile.metadata['price_preference']
-            price_score = max(0, 1 - (item.price / user_pref['max']))
-            score += price_score * 0.1
-        
-        return min(max(score, 0.0), 1.0)

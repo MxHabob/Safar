@@ -212,21 +212,26 @@ class PlaceViewSet(BaseViewSet):
             queryset = queryset.filter(price__lte=max_price)
             
         return queryset
+
     @action(detail=False, methods=['get'])
     def recommended(self, request):
-        if not request.user.is_authenticated:
-            return Response(
-                {'error': 'Authentication required for recommendations'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        
         limit = int(request.query_params.get('limit', 5))
-
-        recommendation_engine = RecommendationEngine(request.user)
-        places = recommendation_engine.recommend_places(limit=limit)
         
-        serializer = self.get_serializer(places, many=True)
-        return Response(serializer.data)
+        user = request.user if request.user.is_authenticated else None
+        recommendation_engine = RecommendationEngine(user)
+        
+        try:
+            places = recommendation_engine.recommend_places(limit=limit)
+            serializer = self.get_serializer(places, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"Error in place recommendations: {str(e)}", exc_info=True)
+            places = Place.objects.filter(
+                is_available=True, 
+                is_deleted=False
+            ).order_by('-rating')[:limit]
+            serializer = self.get_serializer(places, many=True)
+            return Response(serializer.data)
     
     @action(detail=True, methods=['get'])
     def similar(self, request, pk=None):
@@ -249,23 +254,27 @@ class ExperienceViewSet(BaseViewSet):
 
     @action(detail=False, methods=['get'])
     def recommended(self, request):
-        if not request.user.is_authenticated:
-            return Response(
-                {'error': 'Authentication required for recommendations'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        
         limit = int(request.query_params.get('limit', 5))
-
+        
         filters = {
             'is_available': True
         }
         
-        recommendation_engine = RecommendationEngine(request.user)
-        experiences = recommendation_engine.recommend_experiences(limit=limit, filters=filters)
+        user = request.user if request.user.is_authenticated else None
+        recommendation_engine = RecommendationEngine(user)
         
-        serializer = self.get_serializer(experiences, many=True)
-        return Response(serializer.data)
+        try:
+            experiences = recommendation_engine.recommend_experiences(limit=limit, filters=filters)
+            serializer = self.get_serializer(experiences, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"Error in experience recommendations: {str(e)}", exc_info=True)
+            experiences = Experience.objects.filter(
+                is_available=True, 
+                is_deleted=False
+            ).order_by('-rating')[:limit]
+            serializer = self.get_serializer(experiences, many=True)
+            return Response(serializer.data)
 
     @action(detail=True, methods=['get'])
     def availability(self, request, pk=None):
