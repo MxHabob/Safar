@@ -18,8 +18,7 @@ export const ListExperience = ({ overlay, selected, ...rest }: Props) => {
     isLoading,
     error,
   } = useGetRecommendedExperiencesQuery({ 
-  limit: 5,
-  filters: { category: 'Hotel' }
+  limit: 5
 },{ refetchOnMountOrArgChange: false })
 
   if (error) {

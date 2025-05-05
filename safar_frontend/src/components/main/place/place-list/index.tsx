@@ -18,7 +18,6 @@ export const ListPlaces = ({ selected }: Props) => {
   
   const { data, isLoading, isFetching, error } =  useGetRecommendedPlacesQuery({ 
     limit: 5,
-    filters: { category: 'Wellness' }
   },
     { 
       refetchOnMountOrArgChange: false,
