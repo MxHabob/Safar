@@ -82,7 +82,7 @@ export function StatsRow() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{rejectedCount}</div>
-          <p className="text-xs text-muted-foreground">Reservations you've declined</p>
+          <p className="text-xs text-muted-foreground">Reservations you&apos;ve declined</p>
         </CardContent>
       </Card>
 
