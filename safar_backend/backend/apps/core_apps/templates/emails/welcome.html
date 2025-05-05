@@ -3,23 +3,164 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% blocktrans %}Welcome to {{ site_name }}{% endblocktrans %}</title>
+    <style type="text/css">
+        @media only screen and (max-width: 600px) {
+            .main-container {
+                width: 100% !important;
+            }
+            .content-block {
+                padding: 20px !important;
+            }
+            .header {
+                padding: 20px 0 !important;
+            }
+            .logo {
+                width: 120px !important;
+            }
+        }
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #121212 !important;
+                color: #e0e0e0 !important;
+            }
+            .main-container {
+                background-color: #1e1e1e !important;
+            }
+            .content-block {
+                background-color: #2d2d2d !important;
+            }
+            .footer {
+                background-color: #1e1e1e !important;
+                color: #a0a0a0 !important;
+            }
+            .text-content {
+                color: #e0e0e0 !important;
+            }
+            .button {
+                background-color: #34E0D8 !important;
+            }
+            .divider {
+                border-color: #444444 !important;
+            }
+        }
+    </style>
 </head>
-<body>
-    <h1>{% blocktrans %}Welcome to {{ site_name }}{% endblocktrans %}</h1>
-    <p>{% blocktrans %}Hello {{ user.first_name|default:"there" }},{% endblocktrans %}</p>
-    <p>{% blocktrans %}Thank you for joining {{ site_name }}! We're excited to have you on board.{% endblocktrans %}</p>
-    
-    <p>{% trans "Here's what you can do next:" %}</p>
-    <ul>
-        <li>{% trans "Complete your profile" %}</li>
-        <li>{% trans "Explore our services" %}</li>
-        <li>{% trans "Contact us if you have any questions" %}</li>
-    </ul>
+<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #333333; background-color: #f5f5f5;">
+    <table class="main-container" width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #1e1e1e;  overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <tr>
+            <td align="center" style="padding: 0;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td class="header" align="center" style="padding: 50px 0;">
+                            <img class="logo light-logo" src="https://mnxm7e45rl.ufs.sh/f/2zohZGTCBADJ1SfGRs78eF1gVY0EQs7N6wvIpfXoAZUy2DqW" alt="{% blocktrans %}{{ site_name }} Logo{% endblocktrans %}" style="width: 200px; height: auto; display: block;" />
+                            <img class="logo dark-logo" src="https://mnxm7e45rl.ufs.sh/f/2zohZGTCBADJjxmov1y2usobhcVmplHxM6WfgNXL1ykadEG5" alt="{% blocktrans %}{{ site_name }} Logo{% endblocktrans %}" style="width: 200px; height: auto; display: none;" />
+                        </td>
+                    </tr>
+                </table>
 
-    <p>{% blocktrans %}If you have any questions, please contact our support team at {{ support_email }}.{% endblocktrans %}</p>
+                <!-- Content Block -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td class="content-block" style="padding: 40px 30px; background-color: #ffffff;">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td>
+                                        <h1 style="margin: 0 0 20px; font-size: 28px; font-weight: 700; color: #34E0D8; text-align: center;">{% blocktrans %}Welcome to {{ site_name }}{% endblocktrans %}</h1>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-content" style="color: #333333;">
+                                        <p style="margin: 0 0 20px; font-size: 18px;">{% blocktrans %}Hello {{ user.first_name|default:"there" }},{% endblocktrans %}</p>
+                                        <p style="margin: 0 0 20px;">{% blocktrans %}Thank you for joining {{ site_name }}! We're excited to have you on board.{% endblocktrans %}</p>
+                                        
+                                        <p style="margin: 30px 0 15px; font-weight: 600;">{% trans "Here's what you can do next:" %}</p>
+                                        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 30px;">
+                                            <tr>
+                                                <td style="padding: 12px 15px; background-color: #f8f9fa; border-left: 4px solid #4F46E5; margin-bottom: 10px; border-radius: 4px;">
+                                                    <p style="margin: 0; color: #4B5563;">{% trans "Complete your profile" %}</p>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="height: 10px;"></td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 12px 15px; background-color: #f8f9fa; border-left: 4px solid #4F46E5; margin-bottom: 10px; border-radius: 4px;">
+                                                    <p style="margin: 0; color: #4B5563;">{% trans "Explore our services" %}</p>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="height: 10px;"></td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 12px 15px; background-color: #f8f9fa; border-left: 4px solid #4F46E5; margin-bottom: 10px; border-radius: 4px;">
+                                                    <p style="margin: 0; color: #4B5563;">{% trans "Contact us if you have any questions" %}</p>
+                                                </td>
+                                            </tr>
+                                        </table>
 
-    <p>{% trans "Best regards," %}<br>
-    {% blocktrans %}The {{ site_name }} Team{% endblocktrans %}</p>
+                                        <!-- CTA Button -->
+                                        <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                                            <tr>
+                                                <td align="center">
+                                                    <a href="#" class="button" style="display: inline-block; padding: 14px 30px; background-color: #4F46E5; color: #ffffff; text-decoration: none; font-weight: 600; border-radius: 6px; text-align: center;">{% trans "Get Started" %}</a>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <p style="margin: 30px 0 20px;">{% blocktrans %}If you have any questions, please contact our support team at {{ support_email }}.{% endblocktrans %}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Divider -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td>
+                            <hr class="divider" style="border: 0; height: 1px; background-color: #e5e7eb; border-color: #e5e7eb; margin: 0;">
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Footer -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td class="footer" align="center" style="padding: 30px; background-color: #f9fafb; color: #6B7280; font-size: 14px;">
+                            <p style="margin: 0 0 10px;">{% trans "Best regards," %}<br>
+                            {% blocktrans %}The {{ site_name }} Team{% endblocktrans %}</p>
+                            
+                            <p style="margin: 20px 0 0; font-size: 12px;">
+                                © {% now "Y" %} {% blocktrans %}{{ site_name }}{% endblocktrans %}. {% trans "All rights reserved." %}
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Dark mode script to switch logos -->
+    <script type="text/javascript">
+        // Check if user prefers dark mode
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.querySelector('.light-logo').style.display = 'none';
+            document.querySelector('.dark-logo').style.display = 'block';
+        }
+        
+        // Listen for changes in color scheme preference
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.querySelector('.light-logo').style.display = 'none';
+                document.querySelector('.dark-logo').style.display = 'block';
+            } else {
+                document.querySelector('.light-logo').style.display = 'block';
+                document.querySelector('.dark-logo').style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>
