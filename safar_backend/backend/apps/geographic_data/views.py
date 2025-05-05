@@ -1,15 +1,15 @@
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from django.contrib.gis.db.models.functions import Distance
-from rest_framework import viewsets, generics
+from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.decorators import action
-
+from apps.core_apps.general import BaseViewSet
 from apps.geographic_data.models import Country, Region, City
 from apps.geographic_data.serializers import CountrySerializer, RegionSerializer, CitySerializer
 
 
-class CountryViewSet(viewsets.ReadOnlyModelViewSet):
+class CountryViewSet(BaseViewSet):
     queryset = Country.objects.all()
     serializer_class = CountrySerializer
 
@@ -34,7 +34,7 @@ class CountryViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data)
 
 
-class RegionViewSet(viewsets.ReadOnlyModelViewSet):
+class RegionViewSet(BaseViewSet):
     queryset = Region.objects.all()
     serializer_class = RegionSerializer
 
@@ -59,7 +59,7 @@ class RegionViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data)
 
 
-class CityViewSet(viewsets.ReadOnlyModelViewSet):
+class CityViewSet(BaseViewSet):
     queryset = City.objects.all()
     serializer_class = CitySerializer
 
