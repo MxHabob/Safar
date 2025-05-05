@@ -630,7 +630,35 @@ class RecommendationEngine:
         except Exception as e:
             logger.error(f"Error applying matrix factorization: {str(e)}", exc_info=True)
             return queryset.annotate(ml_score=Value(0, FloatField()))
-    
+
+    def calculate_personalization_score(self, item):
+        """Calculate a personalization score for an item based on user preferences"""
+        if not self.is_authenticated or not hasattr(self, 'profile'):
+            return 0.0
+            
+        score = 0.0
+        
+        # Country match
+        if hasattr(item, 'country') and item.country and hasattr(self.profile, 'preferred_countries'):
+            if item.country in self.profile.preferred_countries.all():
+                score += 0.3
+        
+        # Category match
+        if hasattr(item, 'category') and item.category and hasattr(self.profile, 'travel_interests'):
+            if item.category.name in self.profile.travel_interests:
+                score += 0.2
+        
+        # Tag match (from metadata)
+        if hasattr(item, 'metadata') and isinstance(item.metadata, dict) and hasattr(self.profile, 'travel_interests'):
+            tags = item.metadata.get('tags', [])
+            if tags and any(tag in self.profile.travel_interests for tag in tags):
+                score += 0.15
+        
+        if hasattr(item, 'rating'):
+            score += min(0.35, item.rating / 15.0)
+        
+        return min(1.0, score)
+
     def _apply_content_based_filtering(self, queryset, item_type):
         """Apply content-based filtering using item features"""
         if not self.is_authenticated:
@@ -980,17 +1008,22 @@ class RecommendationEngine:
                 
                 return User.objects.filter(id__in=similar_user_ids)
             
-            # Get similar users from both methods first
+            # Get similar users from both methods
             similar_users_content = self._find_similar_users_content_based()
             similar_users_behavior = self._find_similar_users_behavior_based()
             
-            # Combine with union and apply distinct before any slicing
-            combined = similar_users_content.union(similar_users_behavior).distinct()
-            return combined[:100]  # Apply limit after distinct
+            # Combine IDs and get distinct users
+            similar_user_ids = list(
+                set(similar_users_content.values_list('id', flat=True)) | 
+                set(similar_users_behavior.values_list('id', flat=True))
+            )
+            
+            return User.objects.filter(id__in=similar_user_ids)[:100]  # Apply limit
             
         except Exception as e:
             logger.error(f"Error finding similar users: {str(e)}", exc_info=True)
             return User.objects.none()
+
     
     def _create_destination_filters(self, destination):
         """Create filters based on destination type"""
