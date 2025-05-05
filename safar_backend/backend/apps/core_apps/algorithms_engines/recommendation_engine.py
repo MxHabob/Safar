@@ -815,6 +815,7 @@ class RecommendationEngine:
     
     def _apply_preference_boosting(self, queryset):
         """Apply boosting based on user preferences"""
+        # First annotate all individual scores
         queryset = queryset.annotate(
             base_score=Case(
                 When(rating__gte=4.5, then=0.3),
@@ -835,36 +836,37 @@ class RecommendationEngine:
             )
         
         if self.is_authenticated and self.profile and self.profile.travel_interests:
-            category_boost = Case(
-                When(category__name__in=self.profile.travel_interests, then=0.2),
-                default=0.0,
-                output_field=models.FloatField()
-            )
-            
-            tag_boost = Case(
-                When(metadata__tags__overlap=self.profile.travel_interests, then=0.15),
-                default=0.0,
-                output_field=models.FloatField()
-            )
-            
             queryset = queryset.annotate(
-                interest_score=category_boost + tag_boost
+                category_boost=Case(
+                    When(category__name__in=self.profile.travel_interests, then=0.2),
+                    default=0.0,
+                    output_field=models.FloatField()
+                ),
+                tag_boost=Case(
+                    When(metadata__tags__overlap=self.profile.travel_interests, then=0.15),
+                    default=0.0,
+                    output_field=models.FloatField()
+                )
             )
         
-        score_components = ['base_score']
-        if 'country_score' in queryset.query.annotations:
-            score_components.append('country_score')
-        if 'interest_score' in queryset.query.annotations:
-            score_components.append('interest_score')
+        # Now calculate the combined personalization_score
+        expression = F('base_score')
         
-        queryset = queryset.annotate(
-            personalization_score=models.ExpressionWrapper(
-                models.F('+'.join(score_components)),
+        if 'country_score' in queryset.query.annotations:
+            expression += F('country_score')
+        
+        if hasattr(self.profile, 'travel_interests') and self.profile.travel_interests:
+            if 'category_boost' in queryset.query.annotations:
+                expression += F('category_boost')
+            if 'tag_boost' in queryset.query.annotations:
+                expression += F('tag_boost')
+        
+        return queryset.annotate(
+            personalization_score=ExpressionWrapper(
+                expression,
                 output_field=models.FloatField()
             )
         )
-        
-        return queryset
     
     def _apply_temporal_popularity(self, queryset):
         """Apply boosting based on recent popularity"""
