@@ -66,7 +66,6 @@ class Media(BaseModel):
 
 # Discount on reservations for places, boxes, experiences, flights, etc., provided that the discount is used once.
 class Discount(models.Model):
-    # Existing fields
     code = models.CharField(max_length=20, unique=True)
     discount_type = models.CharField(max_length=20, choices=[("Percentage", "Percentage"), ("Fixed", "Fixed")])
     amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -174,11 +173,14 @@ class Experience(BaseModel):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="owned_experiences", verbose_name="Owner")
     title = models.CharField(max_length=255, verbose_name="Title", db_index=True)
     description = models.TextField(blank=True, null=True, verbose_name="Description")
-    location = gis_models.PointField(geography=True, verbose_name="Geolocation")
+    location = gis_models.PointField(geography=True,blank=True, null=True, verbose_name="Geolocation")
     price_per_person = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Price Per Person", db_index=True)
     currency = models.CharField(max_length=10, default="USD", verbose_name="Currency")
     duration = models.PositiveIntegerField(verbose_name="Duration (minutes)")
     capacity = models.PositiveIntegerField(verbose_name="Capacity")
+    country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Country")
+    city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="City")
+    region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Region")
     schedule = models.JSONField(default=list, blank=True, null=True, verbose_name="Schedule")
     media = models.ManyToManyField(Media, blank=True, related_name="experiences", verbose_name="Media")
     rating = models.FloatField(

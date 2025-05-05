@@ -58,6 +58,7 @@ class ExperienceSerializer(serializers.ModelSerializer):
             'id', 'place', 'owner', 'category', 'title', 
             'description', 'location', 'price_per_person', 
             'currency', 'duration', 'capacity', 'schedule', 
+            'country', 'city', 'region','metadata',
             'media', 'rating','is_in_wishlist', 'is_available'
         ]
         read_only_fields = ['id']
