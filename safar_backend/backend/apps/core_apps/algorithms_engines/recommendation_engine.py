@@ -16,7 +16,8 @@ from apps.geographic_data.models import City, Region, Country
 from datetime import datetime, timedelta
 from django.core.cache import cache
 from django.conf import settings
-
+import hashlib
+import json 
 logger = logging.getLogger(__name__)
 
 class RecommendationEngine:
@@ -244,6 +245,7 @@ class RecommendationEngine:
             logger.error(f"Error recommending experiences: {str(e)}", exc_info=True)
             return self._fallback_recommendations(Experience, filters, limit)
     
+
     def _get_anonymous_recommendations(self, queryset, item_type, limit=None):
         """
         Get recommendations for anonymous users based on popularity and trends
@@ -260,69 +262,27 @@ class RecommendationEngine:
             # Apply temporal popularity boost
             queryset = self._apply_temporal_popularity(queryset)
             
-            # Apply trending boost (items with recent interactions)
-            recent_cutoff = datetime.now() - timedelta(days=30)
-            content_type = ContentType.objects.get_for_model(queryset.model)
-            
-            trending_items = UserInteraction.objects.filter(
-                content_type=content_type,
-                created_at__gte=recent_cutoff
-            ).values('object_id').annotate(
-                interaction_count=Count('id')
-            ).order_by('-interaction_count')[:100]
-            
-            trending_ids = [item['object_id'] for item in trending_items]
-            
-            # Combine with high-rated items
+            # Get high-rated items as a fallback
             high_rated = queryset.filter(rating__gte=4.0).order_by('-rating')[:50]
             high_rated_ids = list(high_rated.values_list('id', flat=True))
             
-            # Combine trending and high-rated, prioritizing items that are in both
-            combined_ids = list(set(trending_ids + high_rated_ids))
-            
-            # Create a Case expression for ordering by position in the combined_ids list
-            when_clauses = [
-                When(id=id, then=Value(len(combined_ids) - i, output_field=FloatField()))
-                for i, id in enumerate(combined_ids)
-            ]
-            
-            if when_clauses:
-                queryset = queryset.annotate(
-                    position_score=Case(
-                        *when_clauses,
-                        default=Value(0, FloatField()),
-                        output_field=FloatField()
-                    ),
-                    # Calculate a total score for anonymous users
-                    total_score=ExpressionWrapper(
-                        F('position_score') * Value(0.5) +
-                        F('recent_popularity') * Value(0.3) +
-                        F('rating') * Value(0.2),
-                        output_field=FloatField()
-                    )
-                )
+            # If we have no high-rated items, get any items
+            if not high_rated_ids:
+                results = queryset.order_by('-rating', '-created_at')
                 
-                # Add diversity by including some items from different categories
-                categories = queryset.values_list('category', flat=True).distinct()[:5]
-                diverse_items = []
+
+                if not results.exists():
+                    model = queryset.model
+                    results = model.objects.filter(is_available=True, is_deleted=False).order_by('-created_at')
+
+                    if not results.exists():
+                        results = model.objects.all().order_by('-created_at')
                 
-                for category in categories:
-                    category_items = queryset.filter(category=category).order_by('-rating')[:3]
-                    diverse_items.extend(list(category_items.values_list('id', flat=True)))
-                
-                # Ensure diverse items are included
-                diverse_queryset = queryset.filter(id__in=diverse_items)
-                
-                # Combine and order results by the total score
-                results = queryset.order_by('-total_score').distinct()
-                
-                # Apply limit only if specified
                 if limit is not None:
                     results = results[:limit]
                     
                 return results
             else:
-                # Fallback to simple popularity-based ordering with a total score
                 queryset = queryset.annotate(
                     total_score=ExpressionWrapper(
                         F('rating') * Value(0.7) + 
@@ -575,12 +535,16 @@ class RecommendationEngine:
         """Provide fallback recommendations when ML methods fail"""
         try:
             # First try to get from cache
-            cache_key = f"fallback_{model_class.__name__}_{hash(str(filters))}_{limit}"
+            cache_key = f"fallback_{model_class.__name__}_{hash(str(filters or {}))}_{limit}"
             cached_results = cache.get(cache_key)
             
             if cached_results is not None:
                 return cached_results
             
+            # Ensure filters is a dictionary, not None
+            filters = filters or {}
+            
+            # Start with the original query
             queryset = model_class.objects.filter(
                 is_available=True,
                 is_deleted=False,
@@ -593,66 +557,52 @@ class RecommendationEngine:
                     country__in=self.profile.preferred_countries.all()
                 ).order_by('-rating', '-created_at')[:limit]
                 
-                if pref_country_query.count() >= limit:
+                if pref_country_query.exists() and pref_country_query.count() > 0:
                     return pref_country_query
-            
-            # If we have item clusters, try to recommend from clusters the user has interacted with
-            if self.is_authenticated and hasattr(self, 'item_id_to_cluster') and hasattr(self, 'kmeans_model'):
-                user_interactions = self.user.interactions.filter(
-                    content_type__model=model_class.__name__.lower()
-                ).values_list('object_id', flat=True)
-                
-                # Get clusters of items the user has interacted with
-                user_clusters = [
-                    self.item_id_to_cluster.get(item_id)
-                    for item_id in user_interactions
-                    if item_id in self.item_id_to_cluster
-                ]
-                
-                if user_clusters:
-                    # Count frequency of each cluster
-                    cluster_counts = {}
-                    for cluster in user_clusters:
-                        if cluster is not None:
-                            cluster_counts[cluster] = cluster_counts.get(cluster, 0) + 1
-                    
-                    # Get most frequent clusters
-                    preferred_clusters = sorted(
-                        cluster_counts.keys(),
-                        key=lambda c: cluster_counts[c],
-                        reverse=True
-                    )[:3]
-                    
-                    # Get items from preferred clusters
-                    preferred_items = [
-                        item_id for item_id, cluster in self.item_id_to_cluster.items()
-                        if cluster in preferred_clusters
-                    ]
-                    
-                    if preferred_items:
-                        cluster_query = queryset.filter(id__in=preferred_items).order_by('-rating')[:limit]
-                        if cluster_query.count() > 0:
-                            return cluster_query
             
             # Fall back to popular items
             popular_query = queryset.order_by('-rating', '-created_at')[:limit]
             if popular_query.exists():
                 results = popular_query
             else:
-                # Last resort: newest items
-                results = queryset.order_by('-created_at')[:limit]
+                # Try with fewer filters if we got no results
+                results = model_class.objects.filter(
+                    is_available=True,
+                    is_deleted=False
+                ).order_by('-rating', '-created_at')[:limit]
+                
+                # If still empty, try with minimal filters
+                if not results.exists():
+                    results = model_class.objects.filter(is_deleted=False)[:limit]
+                    
+                # Last resort: any items
+                if not results.exists():
+                    results = model_class.objects.all()[:limit or 5]
             
             # Cache the results
             cache.set(cache_key, results, self.GLOBAL_CACHE_TTL)
             return results
             
         except Exception as e:
-            logger.error(f"Fallback recommendation failed: {str(e)}")
+            logger.error(f"Fallback recommendation failed: {str(e)}", exc_info=True)
             try:
-                # Ultimate fallback - just get any items
-                return model_class.objects.filter(is_deleted=False)[:limit]
-            except:
-                return model_class.objects.none()
+                # Ultimate fallback - just get any items without any filters
+                return model_class.objects.all()[:limit or 5]
+            except Exception as final_e:
+                logger.error(f"Ultimate fallback failed: {str(final_e)}", exc_info=True)
+                # Return empty queryset but ensure it's properly annotated
+                empty = model_class.objects.none()
+                # Add any annotations that might be expected by the calling code
+                if hasattr(empty, 'annotate'):
+                    empty = empty.annotate(
+                        ml_score=Value(0.0, FloatField()),
+                        similarity_score=Value(0.0, FloatField()),
+                        personalization_score=Value(0.0, FloatField()),
+                        interaction_boost=Value(0.0, FloatField()),
+                        recent_popularity=Value(0.0, FloatField()),
+                        total_score=Value(0.0, FloatField())
+                    )
+                return empty
     
     # The rest of the methods remain largely the same, but with added checks for self.is_authenticated
     # and appropriate error handling for fault tolerance

@@ -583,6 +583,3 @@ class NotificationViewSet(BaseViewSet):
             is_read=False
         ).update(is_read=True)
         return Response({'status': f'{updated} notifications marked as read'})
-
-    
-    
