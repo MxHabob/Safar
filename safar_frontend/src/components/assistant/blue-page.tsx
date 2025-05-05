@@ -48,6 +48,7 @@ export const BluePage = () => {
   const [searchQuery, setSearchQuery] = useState("")
 
   const { data: countriesData, isLoading: isLoadingCountries } = useGetCountriesQuery({ page_size: 100 })
+  console.log(" countriesData : " , countriesData)
   const [generateBox, { isLoading }] = useGetPersonalizedBoxMutation()
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
