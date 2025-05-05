@@ -180,7 +180,7 @@ class RecommendationEngine:
                 is_available=True,
                 is_deleted=False,
                 **filters
-            ).select_related('category', 'place', 'owner')
+            ).select_related('category', 'place', 'owner', 'place__country', 'place__region', 'place__city')
             
             # Initialize all scores with default values
             query = query.annotate(
