@@ -239,7 +239,7 @@ class BoxGenerator:
             'name': self._generate_box_name(destination, duration_days, theme),
             'duration_days': duration_days,
             'is_customizable': True,
-            'owner': self.user,
+            # 'owner': self.user,
             'metadata': {
                 'generation_parameters': {
                     'destination': str(destination),
@@ -899,7 +899,7 @@ class BoxGenerator:
                     region=original_box.region,
                     country=original_box.country,
                     is_customizable=True,
-                    owner=self.user,
+                    # owner=self.user,
                     metadata={
                         **original_box.metadata,
                         'original_box_id': original_box.id,
