@@ -235,11 +235,15 @@ class BoxGenerator:
 
     def _create_base_box(self, destination, duration_days, start_date, theme):
         """Create the base box object with proper metadata"""
+        from apps.safar.models import Category
+
+        default_category = Category.objects.first()
         box_data = {
             'name': self._generate_box_name(destination, duration_days, theme),
             'duration_days': duration_days,
             'is_customizable': True,
             # 'owner': self.user,
+            'category': default_category,
             'metadata': {
                 'generation_parameters': {
                     'destination': str(destination),
@@ -280,6 +284,7 @@ class BoxGenerator:
             'cultural': 'Cultural',
             'family': 'Family-Friendly',
             'budget': 'Budget-Friendly',
+            
             None: 'Ultimate'
         }
         
@@ -870,6 +875,7 @@ class BoxGenerator:
                     duration_days=box.duration_days,
                     budget=box.total_price,
                     start_date=box.start_date,
+                    category=category,
                     theme=box.metadata.get('theme')
                 )
                 
