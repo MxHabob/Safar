@@ -1,5 +1,5 @@
 "use client"
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from "react"
 import { useGetPersonalizedBoxMutation, useGetCountriesQuery } from "@/core/services/api"
 import type { Box } from "@/core/types"
