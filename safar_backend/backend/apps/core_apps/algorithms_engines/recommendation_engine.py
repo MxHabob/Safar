@@ -7,7 +7,7 @@ from sklearn.cluster import KMeans
 
 import logging
 from django.db import models
-from django.db.models import Q, Case, When, F, Value, FloatField, Count, Avg
+from django.db.models import Q, Case, When, F, Value, FloatField, Count, Avg,ExpressionWrapper
 from django.db.models.functions import Coalesce
 from django.contrib.contenttypes.models import ContentType
 from apps.authentication.models import User, UserInteraction
@@ -435,7 +435,7 @@ class RecommendationEngine:
                 )
             else:
                 items = Experience.objects.filter(id__in=self.item_ids).values(
-                    'id', 'name', 'category__name', 'place__name', 'rating', 'metadata'
+                    'id', 'name', 'category__name', 'place__name', 'rating'
                 )
             
             if not items:
