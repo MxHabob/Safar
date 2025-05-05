@@ -188,6 +188,7 @@ class Experience(BaseModel):
         db_index=True,
     )
     is_available = models.BooleanField(default=True, verbose_name="Is Available", db_index=True)
+    metadata = models.JSONField(default=dict, blank=True)
 
     def __str__(self):
         return self.title

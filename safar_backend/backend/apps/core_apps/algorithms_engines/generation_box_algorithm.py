@@ -339,36 +339,33 @@ class BoxGenerator:
         return itinerary_days
 
     def _combine_and_prioritize_activities(self, places, experiences):
-        """
-        Combine places and experiences into a single prioritized list
-        considering user preferences and activity types
-        """
         activities = []
         
         for place in places:
+            place_meta = getattr(place, 'metadata', {}) or {}
             activities.append({
                 'type': 'place',
                 'object': place,
-                'duration': place.metadata.get('average_visit_duration', 120),
-                'cost': place.price or 0,
-                'opening_hours': place.metadata.get('opening_hours'),
-                'activity_type': place.metadata.get('activity_type', 'cultural'),
-                'popularity': place.metadata.get('popularity_score', 0.5),
-                'indoor': place.metadata.get('is_indoor', False)
+                'duration': place_meta.get('average_visit_duration', 120),
+                'cost': getattr(place, 'price', 0),
+                'opening_hours': place_meta.get('opening_hours'),
+                'activity_type': place_meta.get('activity_type', 'cultural'),
+                'popularity': place_meta.get('popularity_score', 0.5),
+                'indoor': place_meta.get('is_indoor', False)
             })
         
         for experience in experiences:
+            exp_meta = getattr(experience, 'metadata', {}) or {}
             activities.append({
                 'type': 'experience',
                 'object': experience,
-                'duration': experience.duration,
-                'cost': experience.price_per_person,
-                'opening_hours': experience.schedule,
-                'activity_type': experience.metadata.get('activity_type', 'outdoor'),
-                'popularity': experience.metadata.get('popularity_score', 0.5),
-                'indoor': experience.metadata.get('is_indoor', False)
+                'duration': getattr(experience, 'duration', 120),
+                'cost': getattr(experience, 'price_per_person', 0),
+                'opening_hours': getattr(experience, 'schedule', None),
+                'activity_type': exp_meta.get('activity_type', 'outdoor'),
+                'popularity': exp_meta.get('popularity_score', 0.5),
+                'indoor': exp_meta.get('is_indoor', False)
             })
-        
 
         for activity in activities:
             activity['personalization_score'] = self.recommendation_engine.calculate_personalization_score(activity['object'])

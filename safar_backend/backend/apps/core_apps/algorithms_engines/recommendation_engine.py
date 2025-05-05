@@ -153,17 +153,6 @@ class RecommendationEngine:
             return self._fallback_recommendations(Place, filters, limit)
     
     def recommend_experiences(self, limit=None, filters=None):
-        """
-        Recommend experiences to the user
-        
-        Args:
-            limit (int, optional): Maximum number of recommendations to return.
-                                  If None, returns all experiences with scores.
-            filters (dict): Additional filters to apply to the query
-            
-        Returns:
-            QuerySet: A queryset of recommended experiences with scores
-        """
         try:
             if not self.is_authenticated:
                 cache_key = self._get_cache_key('experiences', filters, limit)
@@ -172,15 +161,19 @@ class RecommendationEngine:
                     return cached_results
             
             filters = filters or {}
-            # Remove is_available from filters if it exists to avoid duplicate
-            if 'is_available' in filters:
-                del filters['is_available']
-                
+            
+            # Handle location filtering through place relationship
+            location_filters = {}
+            for loc_key in ['country', 'region', 'city']:
+                if loc_key in filters:
+                    location_filters[f'place__{loc_key}'] = filters.pop(loc_key)
+            
             query = Experience.objects.filter(
                 is_available=True,
                 is_deleted=False,
+                **location_filters,
                 **filters
-            ).select_related('category', 'place', 'owner', 'place__country', 'place__region', 'place__city')
+            ).select_related('category', 'place', 'owner')
             
             # Initialize all scores with default values
             query = query.annotate(
@@ -534,78 +527,46 @@ class RecommendationEngine:
     def _fallback_recommendations(self, model_class, filters, limit):
         """Provide fallback recommendations when ML methods fail"""
         try:
-            # First try to get from cache
-            cache_key = f"fallback_{model_class.__name__}_{hash(str(filters or {}))}_{limit}"
-            cached_results = cache.get(cache_key)
-            
-            if cached_results is not None:
-                return cached_results
-            
-            # Ensure filters is a dictionary, not None
             filters = filters or {}
             
-            # Start with the original query
+            # Handle location filtering differently for Place vs Experience
+            location_filters = {}
+            if model_class == Experience:
+                for loc_key in ['country', 'region', 'city']:
+                    if loc_key in filters:
+                        location_filters[f'place__{loc_key}'] = filters.pop(loc_key)
+            else:
+                location_filters = {k: v for k, v in filters.items() 
+                                  if k in ['country', 'region', 'city']}
+                for k in location_filters.keys():
+                    filters.pop(k)
+            
+            # Start with basic available items
             queryset = model_class.objects.filter(
                 is_available=True,
                 is_deleted=False,
-                **filters
+                **location_filters
             )
             
-            # Try to use user preferences if available and user is authenticated
-            if self.is_authenticated and self.profile and self.profile.preferred_countries.exists():
-                pref_country_query = queryset.filter(
-                    country__in=self.profile.preferred_countries.all()
-                ).order_by('-rating', '-created_at')[:limit]
-                
-                if pref_country_query.exists() and pref_country_query.count() > 0:
-                    return pref_country_query
+            # Try to use user preferences if available
+            if self.is_authenticated and hasattr(self, 'profile'):
+                if hasattr(self.profile, 'preferred_countries') and self.profile.preferred_countries.exists():
+                    if model_class == Experience:
+                        queryset = queryset.filter(place__country__in=self.profile.preferred_countries.all())
+                    else:
+                        queryset = queryset.filter(country__in=self.profile.preferred_countries.all())
             
-            # Fall back to popular items
-            popular_query = queryset.order_by('-rating', '-created_at')[:limit]
-            if popular_query.exists():
-                results = popular_query
-            else:
-                # Try with fewer filters if we got no results
-                results = model_class.objects.filter(
-                    is_available=True,
-                    is_deleted=False
-                ).order_by('-rating', '-created_at')[:limit]
-                
-                # If still empty, try with minimal filters
-                if not results.exists():
-                    results = model_class.objects.filter(is_deleted=False)[:limit]
-                    
-                # Last resort: any items
-                if not results.exists():
-                    results = model_class.objects.all()[:limit or 5]
-            
-            # Cache the results
-            cache.set(cache_key, results, self.GLOBAL_CACHE_TTL)
-            return results
+            # Order by rating and apply limit
+            return queryset.order_by('-rating')[:limit or 10]
             
         except Exception as e:
             logger.error(f"Fallback recommendation failed: {str(e)}", exc_info=True)
-            try:
-                # Ultimate fallback - just get any items without any filters
-                return model_class.objects.all()[:limit or 5]
-            except Exception as final_e:
-                logger.error(f"Ultimate fallback failed: {str(final_e)}", exc_info=True)
-                # Return empty queryset but ensure it's properly annotated
-                empty = model_class.objects.none()
-                # Add any annotations that might be expected by the calling code
-                if hasattr(empty, 'annotate'):
-                    empty = empty.annotate(
-                        ml_score=Value(0.0, FloatField()),
-                        similarity_score=Value(0.0, FloatField()),
-                        personalization_score=Value(0.0, FloatField()),
-                        interaction_boost=Value(0.0, FloatField()),
-                        recent_popularity=Value(0.0, FloatField()),
-                        total_score=Value(0.0, FloatField())
-                    )
-                return empty
+            # Ultimate fallback - just get any available items
+            return model_class.objects.filter(
+                is_available=True,
+                is_deleted=False
+            ).order_by('-rating')[:limit or 10]
     
-    # The rest of the methods remain largely the same, but with added checks for self.is_authenticated
-    # and appropriate error handling for fault tolerance
     
     def _apply_matrix_factorization(self, queryset, item_type):
         """Apply matrix factorization recommendations using SVD"""
@@ -1019,12 +980,14 @@ class RecommendationEngine:
                 
                 return User.objects.filter(id__in=similar_user_ids)
             
-            # Fall back to traditional methods
+            # Get similar users from both methods first
             similar_users_content = self._find_similar_users_content_based()
             similar_users_behavior = self._find_similar_users_behavior_based()
             
-            return (similar_users_content | similar_users_behavior).distinct()
-        
+            # Combine with union and apply distinct before any slicing
+            combined = similar_users_content.union(similar_users_behavior).distinct()
+            return combined[:100]  # Apply limit after distinct
+            
         except Exception as e:
             logger.error(f"Error finding similar users: {str(e)}", exc_info=True)
             return User.objects.none()
