@@ -20,8 +20,8 @@ export const ListSlider = ({ items, overlay, isLoading, selected, route, onSlide
   if (isLoading) {
     return (
       <div className="w-full mt-4 flex gap-2 overflow-hidden">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="h-10 w-24 bg-gray-200 animate-pulse rounded-full"></div>
+        {[1, 2, 3, 4, 5,6,7].map((i) => (
+          <div key={i} className="h-10 w-24 animate-pulse rounded-full"></div>
         ))}
       </div>
     )
