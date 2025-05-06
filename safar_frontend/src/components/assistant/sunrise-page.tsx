@@ -21,8 +21,7 @@ export const SunrisePage = () => {
 
   const handleCountrySelect = (countryName: string) => {
     setSelectedCountry(countryName)
-    
-    // Optional: Generate personalized box when country is selected
+
     if (preference) {
       handleGenerateBox(countryName)
     }
@@ -33,15 +32,14 @@ export const SunrisePage = () => {
       const result = await generateBox({
         destination_id: country,
         destination_type: "country",
-        // Add other parameters as needed
       }).unwrap()
       
       toast.success("Preferences saved!", {
         description: `Your personalized recommendations for ${country} are ready.`,
       })
       
-      // Handle the result as needed
       console.log("Generated box:", result)
+      
     } catch (error) {
       toast.error("Something went wrong", {
         description: "Could not save your preferences. Please try again.",
@@ -62,10 +60,10 @@ export const SunrisePage = () => {
               className="text-white"
             />
           </div>
-          <h1 className="text-xl font-medium">Hi, I'm Sunrise.</h1>
+          <h1 className="text-xl font-medium">Hi, I&apos;m Sunrise.</h1>
         </div>
         <p className="text-sm text-gray-500 mb-6">
-          Specify your destination and I'll show what's most relevant for you.
+          Specify your destination and I&apos;ll show what&apos;s most relevant for you.
         </p>
         <Input
           className="w-full bg-gray-200 border-0 mb-6 h-12 rounded-full"
