@@ -13,7 +13,7 @@ export const SunrisePage = () => {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null)
   
   const { data: countriesData, isLoading: isLoadingCountries } = useGetCountriesQuery({ page_size: 100 })
-  const [generateBox, { isLoading }] = useGetPersonalizedBoxMutation()
+  const [generateBox] = useGetPersonalizedBoxMutation()
 
   const handlePreferenceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPreference(e.target.value)
