@@ -48,32 +48,31 @@ export const SunrisePage = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen p-4">
       <div className="w-full max-w-md flex flex-col items-center text-center">
         <div className="mb-6 flex items-center gap-2">
-          <div className="bg-teal-400 rounded-full p-2">
+          <div className="rounded-full p-2">
             <Image 
-              src="/placeholder.svg?height=24&width=24" 
+              src="/logo.png" 
               alt="Sunrise Logo" 
               width={24} 
               height={24} 
-              className="text-white"
             />
           </div>
-          <h1 className="text-xl font-medium">Hi, I&apos;m Sunrise.</h1>
+          <h1 className="text-1/3 font-medium">Hi, I&apos;m Sunrise.</h1>
         </div>
         <p className="text-sm text-gray-500 mb-6">
           Specify your destination and I&apos;ll show what&apos;s most relevant for you.
         </p>
         <Input
-          className="w-full bg-gray-200 border-0 mb-6 h-12 rounded-full"
+          className="w-full border-0 mb-6 h-12 rounded-full"
           placeholder="What are you looking for?"
           value={preference}
           onChange={handlePreferenceChange}
         />
         
         {isLoadingCountries ? (
-          <div className="w-full h-10 bg-gray-200 animate-pulse rounded-full"></div>
+          <div className="w-full h-10 animate-pulse rounded-full"></div>
         ) : (
           <ListSlider 
             items={countriesData?.results || []}
