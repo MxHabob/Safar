@@ -629,20 +629,26 @@ class BoxGenerator:
 
     def _schedule_activities_in_time_slots(self, day, activities, time_slots, activity_counts, target_counts, remaining_budget):
         """Schedule activities in available time slots"""
+        from decimal import Decimal
+        
+        # Convert remaining_budget to Decimal if it's a float
+        if remaining_budget is not None and isinstance(remaining_budget, float):
+            remaining_budget = Decimal(str(remaining_budget))
+        
         sorted_activities = sorted(
             activities,
             key=lambda x: self._activity_priority_score(x, activity_counts, target_counts),
             reverse=True
-        )
+        )    
 
-        scheduled_items = []
+        scheduled_items = []    
 
         for activity in sorted_activities:
             if len(scheduled_items) >= self.constraints['max_daily_items']:
                 break
                 
             activity_type = getattr(activity, 'metadata', {}).get('activity_type', 'cultural')
-            preferred_times = self.constraints['time_of_day_preferences'].get(activity_type, ['morning', 'afternoon'])
+            preferred_times = self.constraints['time_of_day_preferences'].get(activity_type, ['morning', 'afternoon'])    
 
             suitable_slot = self._find_suitable_time_slot(
                 activity=activity,
@@ -652,8 +658,13 @@ class BoxGenerator:
             
             if suitable_slot:
                 cost = self._get_activity_cost(activity)
+                
+                # Convert cost to Decimal if it's not already
+                if isinstance(cost, float):
+                    cost = Decimal(str(cost))
+                
                 if remaining_budget is not None and cost > remaining_budget:
-                    continue
+                    continue    
 
                 item = self._create_itinerary_item(
                     day=day,

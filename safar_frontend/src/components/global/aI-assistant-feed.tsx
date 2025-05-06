@@ -10,7 +10,7 @@ const AIAssistant = () => {
         <div className="!bg-card shadow-md rounded-full flex items-center justify-between p-3 pl-5">
           <div className="flex items-center">
             <Sparkles className="h-5 w-5 text-blue-600 mr-2" />
-            <span className="font-medium">Ask blue about your trip and he will create boxes just for you.</span>
+            <span className="font-medium">Ask Sunrise about your trip and he will create boxes just for you.</span>
             <Badge className="ml-2">BETA</Badge>
           </div>
           <Button variant="ghost" size="icon" className="rounded-full">

@@ -16,10 +16,8 @@ export default function MessageList({ userId }: MessageListProps) {
   const { isUserOnline, getUserLastSeen } = usePresence()
   const [messageText, setMessageText] = useState("")
 
-  // Find the conversation with this user
   const conversation = conversations.find((conv) => conv.userId === userId)
 
-  // Mark messages as read when viewing the conversation
   useEffect(() => {
     if (conversation) {
       conversation.messages.forEach((message) => {
