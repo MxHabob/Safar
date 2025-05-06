@@ -13,7 +13,7 @@ type Props = {
 } & SwiperProps
 
 export const ListBox = ({ overlay, selected, ...rest }: Props) => {
-  const { data: boxes, isLoading, error } = useGetBoxesQuery({ page_size: 8 }, { refetchOnMountOrArgChange: false })
+  const { data: boxes, isLoading, error } = useGetBoxesQuery({ page_size: 10 }, { refetchOnMountOrArgChange: false })
 
   if (error) {
     return (
@@ -22,6 +22,7 @@ export const ListBox = ({ overlay, selected, ...rest }: Props) => {
       </div>
     )
   }
+  console.log("boxes : ", boxes)
 
   return (
     <Slider slidesPerView="auto" spaceBetween={16} loop={(boxes?.count ?? 0) > 3} freeMode overlay={overlay} {...rest}>

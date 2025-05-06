@@ -8,7 +8,7 @@ import type { Experience } from "@/core/types"
 export function RecommendedExperiences() {
   const experiences: Experience[] = [
     {
-      title: "Desert Safari",
+      title: "Desert Safar",
       
       price_per_person: 89,
       rating: 4.8,
