@@ -14,26 +14,20 @@ class UserActivityMiddleware(MiddlewareMixin):
     
     def process_request(self, request):
         if request.user.is_authenticated:
-            # Update last activity timestamp
             user = request.user
             
-            # Store previous login info if available
             previous_ip = getattr(user, 'last_login_ip', None)
             previous_device = getattr(user, 'last_login_device', None)
             
-            # Get current request info
             current_ip = self._get_client_ip(request)
             current_device = request.META.get('HTTP_USER_AGENT', '')
             
-            # Check for suspicious login (different IP and device)
             if (previous_ip and previous_device and 
                 previous_ip != current_ip and 
                 self._is_different_device(previous_device, current_device)):
                 
-                # Get approximate location from IP
                 location = self._get_location_from_ip(current_ip)
-                
-                # Send security notification
+
                 from apps.authentication.signals import send_security_notification
                 send_security_notification(
                     user_id=str(user.id),
@@ -45,7 +39,6 @@ class UserActivityMiddleware(MiddlewareMixin):
                 
                 logger.info(f"Detected suspicious login for user {user.email}")
             
-            # Update user's last activity
             try:
                 user.is_online = True
                 user.last_activity = timezone.now()
@@ -66,11 +59,9 @@ class UserActivityMiddleware(MiddlewareMixin):
     
     def _is_different_device(self, device1, device2):
         """Check if two user agent strings likely represent different devices"""
-        # Simple check - can be improved with more sophisticated user agent parsing
         if not device1 or not device2:
             return False
             
-        # Check major browser/OS differences
         browsers = ['Chrome', 'Firefox', 'Safari', 'Edge', 'MSIE', 'Opera']
         os_types = ['Windows', 'Mac', 'iPhone', 'iPad', 'Android', 'Linux']
         
@@ -101,10 +92,7 @@ class UserActivityMiddleware(MiddlewareMixin):
     
     def _get_location_from_ip(self, ip):
         """Get approximate location from IP address"""
-        # This is a placeholder - you would implement with a geolocation service
-        # like MaxMind GeoIP, ipstack, or similar
         try:
-            # Placeholder for actual implementation
             return "Unknown Location"
         except Exception as e:
             logger.error(f"Failed to get location from IP: {str(e)}")
@@ -117,17 +105,13 @@ class UserLoginTracker(MiddlewareMixin):
     
     def process_request(self, request):
         if request.user.is_authenticated:
-            # Check if this is a new login session
             if not request.session.get('login_recorded'):
                 try:
-                    # Get location data
                     ip_address = self._get_client_ip(request)
                     user_agent = request.META.get('HTTP_USER_AGENT', '')
                     
-                    # Get approximate location from IP
                     country, city = self._get_location_from_ip(ip_address)
                     
-                    # Record the login
                     login_log = UserLoginLog.objects.create(
                         user=request.user,
                         ip_address=ip_address,
@@ -136,8 +120,7 @@ class UserLoginTracker(MiddlewareMixin):
                         country=country,
                         city=city
                     )
-                    
-                    # Mark session as recorded
+
                     request.session['login_recorded'] = True
                     request.session['login_log_id'] = str(login_log.id)
                     
@@ -157,9 +140,7 @@ class UserLoginTracker(MiddlewareMixin):
     
     def _get_location_from_ip(self, ip):
         """Get country and city from IP address"""
-        # This is a placeholder - you would implement with a geolocation service
         try:
-            # Placeholder for actual implementation
             return "Unknown Country", "Unknown City"
         except Exception as e:
             logger.error(f"Failed to get location from IP: {str(e)}")

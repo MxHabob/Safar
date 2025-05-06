@@ -6,7 +6,7 @@ import Link from "next/link";
 const AIAssistant = () => {
     return ( 
      <div className="container mx-auto px-4 sm:px-6 lg:px-24" >
-     <Link href={"/blue"}>
+     <Link href={"/ai"}>
         <div className="!bg-card shadow-md rounded-full flex items-center justify-between p-3 pl-5">
           <div className="flex items-center">
             <Sparkles className="h-5 w-5 text-blue-600 mr-2" />

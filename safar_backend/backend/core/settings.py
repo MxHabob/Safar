@@ -156,6 +156,9 @@ DATABASES = {
     }
 }
 
+DATABASE_OPTIONS = {
+    'timeout': 20,
+}
 
 # ======================
 #  AUTHENTICATION
@@ -186,7 +189,6 @@ USE_TZ = True
 # ======================
 #  STATIC & MEDIA FILES CONFIGURATION
 # ======================
-# Base directories
 STATIC_DIR = env("STATIC_DIR", default="/app/static")
 STATICFILES_DIR = BASE_DIR / 'staticfiles'
 MEDIA_DIR = BASE_DIR / 'media'
@@ -261,22 +263,6 @@ REST_FRAMEWORK = {
 }
 
 # ======================
-#  JWT SETTINGS
-# ======================
-
-# SIMPLE_JWT = {
-#     "AUTH_HEADER_TYPES": ("JWT", "Bearer"),
-#     'AUTH_COOKIE': 'access',
-#     'AUTH_COOKIE_REFRESH': 'refresh',
-#     'AUTH_COOKIE_MAX_AGE': 60 * 60 * 24 * 7,
-#     'AUTH_COOKIE_HTTP_ONLY': True,
-#     'AUTH_COOKIE_SECURE': True,
-#     'AUTH_COOKIE_SAMESITE': 'None',
-#     'AUTH_COOKIE_PATH': '/',
-#     'AUTH_COOKIE_DOMAIN': None,
-# }
-
-# ======================
 #  DJOSER (AUTH)
 # ======================
 DJOSER = {
@@ -349,8 +335,10 @@ CACHES = {
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
+        'CONFIG': {
             "hosts": [env("REDIS_CACHE_URL", default="redis://redis:6379/0")],
+            'capacity': 1500,  
+            'expiry': 10,
         },
     },
 }
@@ -445,6 +433,11 @@ LOGGING = {
         's3transfer': {
             'handlers': ['console'],
             'level': 'DEBUG',
+        },
+        'channels': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
         },
     },
 }
