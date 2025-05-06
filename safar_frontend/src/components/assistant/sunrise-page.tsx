@@ -42,7 +42,7 @@ export const SunrisePage = () => {
       
     } catch (error) {
       toast.error("Something went wrong", {
-        description: "Could not save your preferences. Please try again.",
+        description: `Could not save your preferences. ${error}`,
       })
     }
   }
