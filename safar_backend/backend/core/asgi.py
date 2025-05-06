@@ -18,3 +18,5 @@ application = ProtocolTypeRouter({
         )
     ),
 })
+
+os.environ['DJANGO_ASGI_SHUTDOWN_TIMEOUT'] = '10' 

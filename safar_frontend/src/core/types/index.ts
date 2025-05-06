@@ -37,7 +37,7 @@ export interface Country extends BaseModel {
 }
 
 export interface Region extends BaseModel {
-  country: Country | string; // Can be full object or just ID
+  country: Country | string;
   name: string;
   code?: string;
   admin_level: number;
@@ -246,6 +246,9 @@ export interface Experience extends BaseModel {
   owner?: User;
   title: string;
   description?: string;
+  country?: Country;
+  region?: Region;
+  city?: City;
   location: string;
   price_per_person: number;
   currency: string;

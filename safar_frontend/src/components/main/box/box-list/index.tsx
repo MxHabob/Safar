@@ -39,7 +39,7 @@ export const ListBox = ({ overlay, selected, ...rest }: Props) => {
         ))
       ) : !isLoading ? (
         <div className="flex justify-center items-center p-8 text-gray-500 col-span-full">
-          <p>No places found.</p>
+          <p>No Boxes found.</p>
         </div>
       ) : null}
 
