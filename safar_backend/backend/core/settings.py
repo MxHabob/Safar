@@ -469,11 +469,14 @@ PHONENUMBER_DB_FORMAT = "E164"
 #  ENVIRONMENT SPECIFIC
 # ======================
 if DEVELOPMENT_MODE:
-    # Development-specific settings
-    INTERNAL_IPS = ["127.0.0.1"]
-    DEBUG_TOOLBAR_CONFIG = {"SHOW_TOOLBAR_CALLBACK": lambda request: True}
-    
-    # Disable some security settings for development
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    
+    CSRF_TRUSTED_ORIGINS = [
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000'
+    ]

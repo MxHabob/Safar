@@ -2,8 +2,6 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db.models import Q
-from asgiref.sync import sync_to_async
-from channels.db import database_sync_to_async
 from django.utils import timezone
 from apps.safar.models import (
     Category, Discount, Place, Experience,
@@ -328,25 +326,14 @@ class BoxViewSet(BaseViewSet):
     search_fields = ['name', 'description']
     ordering_fields = ['total_price', 'created_at']
 
-    @database_sync_to_async
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        # Apply any additional filtering here
-        return queryset
-
-    async def list(self, request, *args, **kwargs):
-        queryset = await self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-
     @action(detail=True, methods=['get'])
-    async def itinerary(self, request, pk=None):
+    def itinerary(self, request, pk=None):
         """Get detailed itinerary for a box"""
-        box = await sync_to_async(self.get_object)()
+        box = self.get_object()
         return Response({'itinerary': 'Detailed itinerary would be here'})
     
     @action(detail=False, methods=['post'])
-    async def generate(self, request):
+    def generate(self, request):
         """
         Generate a custom box based on user preferences
         """
@@ -359,10 +346,10 @@ class BoxViewSet(BaseViewSet):
             theme = request.data.get('theme')
             start_date = request.data.get('start_date')
             
-            destination = await sync_to_async(self._get_destination)(destination_id, destination_type)
+            destination = self._get_destination(destination_id, destination_type)
             
             generator = BoxGenerator(user)
-            box = await sync_to_async(generator.generate_box)(
+            box = generator.generate_box(
                 destination=destination,
                 duration_days=duration_days,
                 budget=budget,
@@ -386,6 +373,25 @@ class BoxViewSet(BaseViewSet):
                 {'error': 'Could not generate box'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+    
+    def _get_destination(self, destination_id, destination_type):
+        """Get destination model instance"""
+        from apps.geographic_data.models import City, Region, Country
+        
+        model_map = {
+            'city': City,
+            'region': Region,
+            'country': Country
+        }
+        
+        if destination_type not in model_map:
+            raise ValueError("Invalid destination type")
+            
+        model = model_map[destination_type]
+        try:
+            return model.objects.get(id=destination_id, is_deleted=False)
+        except model.DoesNotExist:
+            raise ValueError(f"{destination_type.capitalize()} not found")
         
 class BookingViewSet(BaseViewSet):
     queryset = Booking.objects.select_related(
