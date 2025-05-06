@@ -863,6 +863,9 @@ class BoxGenerator:
         - Better activity combinations
         - Weather forecast (if available)
         """
+        from apps.safar.models import Category
+
+        default_category = Category.objects.first()
         try:
             with transaction.atomic():
                 box.itinerary_days.all().delete()
@@ -873,7 +876,7 @@ class BoxGenerator:
                     duration_days=box.duration_days,
                     budget=box.total_price,
                     start_date=box.start_date,
-                    category=category,
+                    category=default_category,
                     theme=box.metadata.get('theme')
                 )
                 
