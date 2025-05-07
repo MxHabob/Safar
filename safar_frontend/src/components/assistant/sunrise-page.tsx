@@ -106,6 +106,7 @@ export const SunrisePage = () => {
       }
 
       const result = await generateBox(params).unwrap()
+      console.log("Generated box:", result)
 
       setMessages((prev) => [
         ...prev,
