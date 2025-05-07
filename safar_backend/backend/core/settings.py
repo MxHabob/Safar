@@ -273,8 +273,12 @@ DJOSER = {
     "TOKEN_MODEL": None,
     "SOCIAL_AUTH_ALLOWED_REDIRECT_URIS": env.list("REDIRECT_URLS", default=[]),
     "SERIALIZERS": {
-        "current_user": "apps.authentication.serializers.UserSerializer",
-        "user": "apps.authentication.serializers.UserSerializer",
+        'current_user': 'apps.authentication.serializers.UserPublicSerializer',
+        'user': 'apps.authentication.serializers.UserPublicSerializer',
+    },
+    'PERMISSIONS': {
+        'user': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],
+        # 'user_list': ['rest_framework.permissions.AllowAny'],
     },
 }
 
