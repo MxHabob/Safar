@@ -16,7 +16,6 @@ def check_user_birthdays():
     try:
         today = timezone.now().date()
         
-        # Find users with birthdays today
         birthday_users = User.objects.filter(
             profile__date_of_birth__month=today.month,
             profile__date_of_birth__day=today.day,

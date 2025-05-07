@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { useGetCategoriesQuery } from "@/core/services/api"
 
 export function HeaderFilters() {
-    const { data: categories ,isLoading} = useGetCategoriesQuery({})
+    const { data: categories ,isLoading} = useGetCategoriesQuery({ page: 1, page_size: 20 })
   return (
 <div className="flex items-center justify-between mx-96 mb-4">
     <ListSlider route  loop={true} isLoading={isLoading} items={categories?.results || []} />

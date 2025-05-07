@@ -45,11 +45,11 @@ class UserPublicSerializer(DjoserUserSerializer):
     is_following = serializers.SerializerMethodField()
 
     class Meta(DjoserUserSerializer.Meta):
-        fields = DjoserUserSerializer.Meta.fields + [
+        fields = tuple(DjoserUserSerializer.Meta.fields) + (
             'profile', 'followers_count', 'following_count', 
             'is_following', 'is_online', 'membership_level', 
             'points', 'preferred_language', 'preferred_currency'
-        ]
+        )
     
     def get_followers_count(self, obj):
         return obj.get_followers_count()
