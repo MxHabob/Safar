@@ -46,7 +46,7 @@ export const SunrisePage = () => {
   const [selectedCountries, setSelectedCountries] = useState<string[]>([])
 
   const { data: countriesData, isLoading: isLoadingCountries } = useGetCountriesQuery({ page_size: 100 })
-  const [generateBox, { isLoading }] = useGetPersonalizedBoxMutation()
+  const [generateBox] = useGetPersonalizedBoxMutation()
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -69,7 +69,7 @@ export const SunrisePage = () => {
     setMessages((prev) => [...prev, userMessage])
     setInputValue("")
     setIsTyping(true)
-
+console.log(isTyping)
     try {
       // If we have a selected destination, use it directly
       let params: any = {
