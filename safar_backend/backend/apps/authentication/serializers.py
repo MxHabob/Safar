@@ -1,3 +1,4 @@
+from djoser.serializers import UserSerializer as DjoserUserSerializer
 from rest_framework import serializers
 from apps.authentication.models import User, UserProfile,PointsTransaction, UserInteraction, UserLoginLog, InteractionType
 from apps.geographic_data.serializers import CitySerializer, CountrySerializer, RegionSerializer
@@ -17,6 +18,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'consent_date']
 
+
+    
 class UserSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer(read_only=True)
 
@@ -35,6 +38,31 @@ class UserSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at', 'role'
         ]
 
+class UserPublicSerializer(DjoserUserSerializer):
+    profile = UserProfileSerializer(read_only=True)
+    followers_count = serializers.SerializerMethodField()
+    following_count = serializers.SerializerMethodField()
+    is_following = serializers.SerializerMethodField()
+
+    class Meta(DjoserUserSerializer.Meta):
+        fields = DjoserUserSerializer.Meta.fields + [
+            'profile', 'followers_count', 'following_count', 
+            'is_following', 'is_online', 'membership_level', 
+            'points', 'preferred_language', 'preferred_currency'
+        ]
+    
+    def get_followers_count(self, obj):
+        return obj.get_followers_count()
+
+    def get_following_count(self, obj):
+        return obj.get_following_count()
+
+    def get_is_following(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return request.user.is_following(obj)
+        return False
+    
 class PointsTransactionSerializer(serializers.ModelSerializer):
     """
     Serializer for points transactions.
@@ -51,18 +79,15 @@ class PointsTransactionSerializer(serializers.ModelSerializer):
         """
         from .points import PointsManager
         
-        # Get points configuration
         config = PointsManager.get_points_config()
         
         if obj.action in config:
             return config[obj.action]['name']
         
-        # Handle deduction actions
         if obj.action.startswith('deduct:'):
             reason = obj.action.split(':', 1)[1]
             return f"Points deduction: {reason}"
         
-        # Fallback to formatted action name
         return obj.action.replace('_', ' ').title()
 
 class PointsSummarySerializer(serializers.Serializer):

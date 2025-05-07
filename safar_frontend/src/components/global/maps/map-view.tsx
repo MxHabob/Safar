@@ -94,15 +94,12 @@ export default function MapView({ itinerary, visitedPlaces, onMapReady, activeDa
     }
   }, [getInitialCenter, onMapReady])
 
-  // Update markers and path when data changes
   useEffect(() => {
     if (!map.current || !mapLoaded) return
 
-    // Clear existing markers
     Object.values(markersRef.current).forEach((marker) => marker.remove())
     markersRef.current = {}
 
-    // Remove existing path layer and source
     if (pathLayerRef.current && map.current.getLayer(pathLayerRef.current)) {
       map.current.removeLayer(pathLayerRef.current)
       map.current.removeSource(pathLayerRef.current)
@@ -112,7 +109,6 @@ export default function MapView({ itinerary, visitedPlaces, onMapReady, activeDa
     const activities = getActivities()
     const coordinates: [number, number][] = []
 
-    // Add markers for all activities with locations
     activities.forEach((activity) => {
       if (!activity.location?.coordinates) return
 
@@ -121,7 +117,6 @@ export default function MapView({ itinerary, visitedPlaces, onMapReady, activeDa
 
       coordinates.push([lng, lat])
 
-      // Create marker element
       const markerEl = document.createElement("div")
       markerEl.className = "flex flex-col items-center"
 
@@ -130,7 +125,6 @@ export default function MapView({ itinerary, visitedPlaces, onMapReady, activeDa
         visitedPlaces.has(activity.id) ? "bg-green-500" : "bg-primary"
       }`
 
-      // Use Flag icon for visited places, MapPin for others
       if (visitedPlaces.has(activity.id)) {
         iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" class="lucide lucide-flag"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>`
       } else {
@@ -150,7 +144,6 @@ export default function MapView({ itinerary, visitedPlaces, onMapReady, activeDa
       markersRef.current[activity.id] = marker
     })
 
-    // Add path if we have coordinates
     if (coordinates.length > 1) {
       const sourceId = `route-${activeDay || "all"}`
       pathLayerRef.current = sourceId
@@ -183,7 +176,6 @@ export default function MapView({ itinerary, visitedPlaces, onMapReady, activeDa
       })
     }
 
-    // Fit bounds to include all markers
     if (coordinates.length > 0) {
       const bounds = new mapboxgl.LngLatBounds()
       coordinates.forEach((coord) => bounds.extend(coord))

@@ -122,7 +122,31 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
 
     def get_short_name(self):
         return self.first_name or self.email.split('@')[0]
+    
+    def follow(self, user_to_follow):
+        """Follow another user"""
+        if self != user_to_follow:
+            self.following.add(user_to_follow)
+            return True
+        return False
 
+    def unfollow(self, user_to_unfollow):
+        """Unfollow another user"""
+        self.following.remove(user_to_unfollow)
+        return True
+
+    def is_following(self, user):
+        """Check if this user is following another user"""
+        return self.following.filter(pk=user.pk).exists()
+
+    def get_followers_count(self):
+        """Get number of followers"""
+        return self.followers.count()
+
+    def get_following_count(self):
+        """Get number of users being followed"""
+        return self.following.count()
+    
     def __str__(self):
         return self.get_full_name()
 

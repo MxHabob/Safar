@@ -56,7 +56,7 @@ export const ListExperience = ({ overlay, selected, ...rest }: Props) => {
 
       {isLoading && (
         <>
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4,5].map((i) => (
             <SwiperSlide key={i} className="content-width-slide">
               <ExperienceCard.Skeleton />
             </SwiperSlide>

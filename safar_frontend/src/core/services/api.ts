@@ -240,6 +240,37 @@ export const api = createApi({
       invalidatesTags: ["Auth"],
     }),
 
+    getUserById: builder.query<User, string>({
+      query: (id) => `/auth/users/${id}/`,
+      providesTags: (result, error, id) => [{ type: 'Auth', id }],
+    }),
+    followUser: builder.mutation<{ status: string }, string>({
+      query: (id) => ({
+        url: `/auth/users/${id}/follow/`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, id) => [{ type: 'Auth', id }],
+    }),
+    unfollowUser: builder.mutation<{ status: string }, string>({
+      query: (id) => ({
+        url: `/auth/users/${id}/unfollow/`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, id) => [{ type: 'Auth', id }],
+    }),
+    getCurrentUser: builder.query<User, void>({
+      query: () => '/auth/users/me/',
+      providesTags: ['Auth'],
+    }),
+    getUserFollowers: builder.query<User[], string>({
+      query: (id) => `/auth/users/${id}/followers/`,
+      providesTags: (result, error, id) => [{ type: 'Auth', id }],
+    }),
+    getUserFollowing: builder.query<User[], string>({
+      query: (id) => `/auth/users/${id}/following/`,
+      providesTags: (result, error, id) => [{ type: 'Auth', id }],
+    }),
+
     // User Interactions endpoints
     getUserInteractions: builder.query<
       PaginatedResponse<UserInteraction>,
@@ -805,6 +836,13 @@ export const {
   useDeleteUserMutation,
   useSocialAuthMutation,
 
+  useGetUserByIdQuery,
+  useFollowUserMutation,
+  useUnfollowUserMutation,
+  useGetCurrentUserQuery,
+  useGetUserFollowersQuery,
+  useGetUserFollowingQuery,
+  
   // User Interaction hooks
   useGetUserInteractionsQuery,
   useGetUserInteractionQuery,

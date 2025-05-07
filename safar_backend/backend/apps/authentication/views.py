@@ -1,135 +1,41 @@
-from django.conf import settings
-from rest_framework.views import APIView
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from djoser.social.views import ProviderAuthView
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-    TokenVerifyView
-)
 from apps.authentication.serializers import UserInteractionSerializer
 from apps.authentication.models import UserInteraction
 from django.contrib.contenttypes.models import ContentType
 from apps.core_apps.general import BaseViewSet
+from django.shortcuts import get_object_or_404
+from djoser.views import UserViewSet as DjoserUserViewSet
 
-class CustomProviderAuthView(ProviderAuthView):
-    
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
+class UserViewSet(DjoserUserViewSet):
+    """Extends Djoser's UserViewSet with custom functionality"""
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def follow(self, request, id=None):
+        user_to_follow = get_object_or_404(self.get_queryset(), pk=id)
+        if request.user.follow(user_to_follow):
+            return Response({'status': 'following'}, status=status.HTTP_200_OK)
+        return Response({'error': 'Cannot follow yourself'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if response.status_code == 201:
-            access_token = response.data.get('access')
-            refresh_token = response.data.get('refresh')
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def unfollow(self, request, id=None):
+        user_to_unfollow = get_object_or_404(self.get_queryset(), pk=id)
+        request.user.unfollow(user_to_unfollow)
+        return Response({'status': 'unfollowed'}, status=status.HTTP_200_OK)
 
-            response.set_cookie(
-                'access',
-                access_token,
-                max_age=settings.AUTH_COOKIE_MAX_AGE,
-                path=settings.AUTH_COOKIE_PATH,
-                secure=settings.AUTH_COOKIE_SECURE,
-                httponly=settings.AUTH_COOKIE_HTTP_ONLY,
-                samesite=settings.AUTH_COOKIE_SAMESITE
-            )
-            response.set_cookie(
-                'refresh',
-                refresh_token,
-                max_age=settings.AUTH_COOKIE_MAX_AGE,
-                path=settings.AUTH_COOKIE_PATH,
-                secure=settings.AUTH_COOKIE_SECURE,
-                httponly=settings.AUTH_COOKIE_HTTP_ONLY,
-                samesite=settings.AUTH_COOKIE_SAMESITE
-            )
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def followers(self, request):
+        followers = request.user.followers.all()
+        serializer = self.get_serializer(followers, many=True)
+        return Response(serializer.data)
 
-        return response
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def following(self, request):
+        following = request.user.following.all()
+        serializer = self.get_serializer(following, many=True)
+        return Response(serializer.data)
 
-class CustomTokenObtainPairView(TokenObtainPairView):
-
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-
-        if response.status_code == 200:
-            access_token = response.data.get('access')
-            refresh_token = response.data.get('refresh')
-
-            response.set_cookie(
-                'access',
-                access_token,
-                max_age=settings.AUTH_COOKIE_MAX_AGE,
-                path=settings.AUTH_COOKIE_PATH,
-                secure=settings.AUTH_COOKIE_SECURE,
-                httponly=settings.AUTH_COOKIE_HTTP_ONLY,
-                samesite=settings.AUTH_COOKIE_SAMESITE
-            )
-            response.set_cookie(
-                'refresh',
-                refresh_token,
-                max_age=settings.AUTH_COOKIE_MAX_AGE,
-                path=settings.AUTH_COOKIE_PATH,
-                secure=settings.AUTH_COOKIE_SECURE,
-                httponly=settings.AUTH_COOKIE_HTTP_ONLY,
-                samesite=settings.AUTH_COOKIE_SAMESITE
-            )
-
-        return response
-
-class CustomTokenRefreshView(TokenRefreshView):
-    
-    def post(self, request, *args, **kwargs):
-        refresh_token = request.COOKIES.get('refresh')
-
-        if refresh_token:
-            request.data['refresh'] = refresh_token
-
-        response = super().post(request, *args, **kwargs)
-
-        if response.status_code == 200:
-            access_token = response.data.get('access')
-
-            response.set_cookie(
-                'access',
-                access_token,
-                max_age=settings.AUTH_COOKIE_MAX_AGE,
-                path=settings.AUTH_COOKIE_PATH,
-                secure=settings.AUTH_COOKIE_SECURE,
-                httponly=settings.AUTH_COOKIE_HTTP_ONLY,
-                samesite=settings.AUTH_COOKIE_SAMESITE
-            )
-
-        return response
-
-class CustomTokenVerifyView(TokenVerifyView):
-    
-    def post(self, request, *args, **kwargs):
-        access_token = request.COOKIES.get('access')
-
-        if access_token:
-            request.data['token'] = access_token
-
-        return super().post(request, *args, **kwargs)
-
-class LogoutView(APIView):
- 
-    def post(self, request, *args, **kwargs):
-        response = Response({"detail": "Logged out successfully."}, status=status.HTTP_200_OK)
-        response.delete_cookie(
-            'access',
-            path=settings.AUTH_COOKIE_PATH,
-            domain=settings.AUTH_COOKIE_DOMAIN,
-            secure=settings.AUTH_COOKIE_SECURE,
-            httponly=settings.AUTH_COOKIE_HTTP_ONLY,
-            samesite=settings.AUTH_COOKIE_SAMESITE
-        )
-        
-        response.delete_cookie(
-            'refresh',
-            path=settings.AUTH_COOKIE_PATH,
-            domain=settings.AUTH_COOKIE_DOMAIN,
-            secure=settings.AUTH_COOKIE_SECURE,
-            httponly=settings.AUTH_COOKIE_HTTP_ONLY,
-            samesite=settings.AUTH_COOKIE_SAMESITE
-        )
-        return response
 
 class UserInteractionListView(BaseViewSet):
     serializer_class = UserInteractionSerializer
@@ -171,3 +77,4 @@ class UserInteractionViewSet(BaseViewSet):
                 {'error': str(e)}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+        

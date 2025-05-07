@@ -16,7 +16,7 @@ import { useAuth } from "@/core/hooks/use-auth"
 import { Calendar, LogOut, Settings, User2, MessageSquare, Bell, Home, UserPlus } from 'lucide-react'
 import { MembershipLevel } from "@/core/types"
 
-interface UserAvatarProps {
+interface UserAvatarDropdownMenuProps {
   className?: string
   showName?: boolean
   showDropdown?: boolean
@@ -29,7 +29,7 @@ const membershipColors: Record<MembershipLevel, string> = {
   platinum: "border-cyan-300"
 }
 
-export const UserAvatar = ({ className, showName = false, showDropdown = true }: UserAvatarProps) => {
+export const UserAvatarDropdownMenu = ({ className, showName = false, showDropdown = true }: UserAvatarDropdownMenuProps) => {
   const router = useRouter()
   const { user: userData, isAuthenticated, isLoading, logout } = useAuth()
 
@@ -81,13 +81,13 @@ const membershipColor = userData?.membership_level
         <div className={`absolute -inset-1 rounded-full border-2 ${membershipColor}`}></div>
       )}
       
-      {/* {isAuthenticated && userData && userData.points > 0 && (
+      {isAuthenticated && userData && userData.points > 0 && (
         <div className="absolute -bottom-1 -right-1 flex h-3 min-w-3 items-center justify-center rounded-full bg-card px-1">
-          <span className="text-xs font-bold text-primary-foreground">
+          <span className="text-xs font-bold">
           {formatPoints(userData.points)}
            </span>
         </div>
-      )} */}
+      )}
     </div>
   )
 

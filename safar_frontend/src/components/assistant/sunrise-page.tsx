@@ -15,7 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { format } from "date-fns"
 import { CalendarIcon, Send, Globe, MapPin, Search } from "lucide-react"
 import { BoxCard } from "../main/box/box-list/box-card"
-import { UserAvatar } from "../global/user-avatar"
+import { UserAvatarDropdownMenu } from "../global/user/user-avatar-dropdown-menu"
 
 type Message = {
   id: string
@@ -262,7 +262,7 @@ export const SunrisePage = () => {
                       <span className="text-xs text-muted-foreground">{format(message.timestamp, "h:mm a")}</span>
                     </div>
                     {message.sender === "user" && (
-                      <UserAvatar className=" w-9 h-9" />
+                      <UserAvatarDropdownMenu className=" w-9 h-9" />
                     )}
                   </div>
                 </div>

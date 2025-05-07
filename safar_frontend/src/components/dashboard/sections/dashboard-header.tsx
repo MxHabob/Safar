@@ -3,7 +3,7 @@
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import type { User } from "@/core/types"
-import { UserAvatar } from "@/components/global/user-avatar"
+import { UserAvatar } from "@/components/global/user/user-avatar-dropdown-menu"
 
 interface DashboardHeaderProps {
   user: User | null

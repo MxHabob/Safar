@@ -274,8 +274,8 @@ DJOSER = {
     "TOKEN_MODEL": None,
     "SOCIAL_AUTH_ALLOWED_REDIRECT_URIS": env.list("REDIRECT_URLS", default=[]),
     "SERIALIZERS": {
-        "current_user": "apps.authentication.serializers.UserSerializer",
-        "user": "apps.authentication.serializers.UserSerializer",
+        'user': 'apps.authentication.serializers.UserPublicSerializer',
+        'current_user': 'apps.authentication.serializers.UserPublicSerializer',
     },
 }
 

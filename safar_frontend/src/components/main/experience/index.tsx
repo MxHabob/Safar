@@ -2,7 +2,6 @@
 import { useGetExperienceQuery } from "@/core/services/api";
 import { Calendar, Users, MapPin, Star, Clock } from 'lucide-react';
 import MapboxMap from "@/components/global/mapBox";
-import Image from "next/image";
 import BookingCard from "@/components/global/cards/booking-card";
 import { MediaGallery } from "@/components/global/media-gallery";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,10 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { RouterBack } from "@/components/global/router-back";
+import { UserAvatar } from "@/components/global/profile/user-avatar";
 
 export const ExperiencePageContent = ({ id }: { id: string }) => {
-  const { data, isFetching, isLoading, error } = useGetExperienceQuery(id);
-  const scheduleDays = (data?.schedule as { days: string[] } | undefined)?.days || [];
+  const { data:experience, isFetching, isLoading, error } = useGetExperienceQuery(id);
+  const scheduleDays = (experience?.schedule as { days: string[] } | undefined)?.days || [];
   const firstThreeDays = scheduleDays.slice(0, 3);
   const remainingDays = scheduleDays.length - 3;
 
@@ -34,12 +34,12 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
           <ShareButton 
             variant="outline" 
             shareText="Share" 
-            item={data} 
+            item={experience} 
             itemType="experience"
             className="rounded-full gap-2 hover:bg-accent transition-colors"
           />
           <WishlistButton 
-            itemId={data?.id || ""} 
+            itemId={experience?.id || ""} 
             itemType="experience" 
             isInwishlist={false} 
             className="rounded-full hover:bg-accent transition-colors"
@@ -48,18 +48,18 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
       </div>
 
       <div className="space-y-4">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{data?.title}</h1>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{experience?.title}</h1>
         <div className="flex items-center gap-2 text-muted-foreground">
           <MapPin className="h-4 w-4" />
           <span>
-            {data?.place?.city?.name}, {data?.place?.region?.name}, {data?.place?.country?.name}
+            {experience?.place?.city?.name}, {experience?.place?.region?.name}, {experience?.place?.country?.name}
           </span>
         </div>
       </div>
 
       <div className="rounded-2xl overflow-hidden shadow-lg dark:shadow-primary/5">
         <MediaGallery 
-          media={Array.isArray(data?.media) ? data.media : []} 
+          media={Array.isArray(experience?.media) ? experience.media : []} 
           variant="carousel" 
           aspectRatio="video" 
           priority 
@@ -71,25 +71,12 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
           <Card className="overflow-hidden border-none shadow-md dark:shadow-primary/5 bg-card">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-background shadow-md">
-                  {data?.owner?.profile?.avatar ? (
-                    <Image
-                      src={data.owner.profile.avatar || "/placeholder.svg"}
-                      alt={data.owner.username || "Host"}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary text-lg font-bold">
-                      {data?.owner?.first_name?.charAt(0)?.toUpperCase() || "H"}
-                    </div>
-                  )}
-                </div>
+                <UserAvatar id={experience?.owner?.id || ""} src={experience?.owner?.profile?.avatar || ""} size={"md"} count={experience?.owner?.points || 0} membership={experience?.owner?.membership_level || "bronze"} fallback={experience?.owner?.first_name?.charAt(0).toUpperCase() || experience?.owner?.username?.charAt(0).toUpperCase() || "U"} alt={experience?.owner?.username}/>
                 <div>
-                  <p className="font-medium text-lg">Hosted by {data?.owner?.first_name} {data?.owner?.last_name}</p>
+                  <p className="font-medium text-lg">Hosted by {experience?.owner?.first_name} {experience?.owner?.last_name}</p>
                   <div className="flex items-center gap-1 text-muted-foreground">
                     <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                    <span>{data?.rating}/5 rating</span>
+                    <span>{experience?.rating}/5 rating</span>
                   </div>
                 </div>
               </div>
@@ -99,7 +86,7 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold mb-4">About this experience</h2>
-              <p className="text-muted-foreground leading-relaxed">{data?.description}</p>
+              <p className="text-muted-foreground leading-relaxed">{experience?.description}</p>
             </div>
             
             <Separator className="my-6" />
@@ -130,7 +117,7 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Capacity</p>
-                      <p className="font-medium">{data?.capacity} people</p>
+                      <p className="font-medium">{experience?.capacity} people</p>
                     </div>
                   </div>
                 </CardContent>
@@ -144,7 +131,7 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Rating</p>
-                      <p className="font-medium">{data?.rating}/5</p>
+                      <p className="font-medium">{experience?.rating}/5</p>
                     </div>
                   </div>
                 </CardContent>
@@ -158,7 +145,7 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Duration</p>
-                      <p className="font-medium">{data?.duration}</p>
+                      <p className="font-medium">{experience?.duration}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -169,8 +156,8 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
 
         <div className="lg:row-start-1 lg:col-start-3">
           <div className="sticky top-4">
-            {data && (
-                <BookingCard id={id} data={data} placeType="experience" />
+            {experience && (
+                <BookingCard id={id} data={experience} placeType="experience" />
             )}
           </div>
         </div>
@@ -179,21 +166,21 @@ export const ExperiencePageContent = ({ id }: { id: string }) => {
       <div className="space-y-4">
         <h2 className="text-2xl font-bold">Location</h2>
         <p className="text-muted-foreground">
-          {data?.place?.name}, {data?.place?.city?.name}, {data?.place?.country?.name}
+          {experience?.place?.name}, {experience?.place?.city?.name}, {experience?.place?.country?.name}
         </p>
         <div className="h-[400px] rounded-xl overflow-hidden shadow-lg dark:shadow-primary/5">
-          <MapboxMap location={data?.location || ""} />
+          <MapboxMap location={experience?.location || ""} />
         </div>
       </div>
 
-      {data?.category && (
+      {experience?.category && (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Category</h2>
           <div className="flex items-center gap-3">
             <Badge variant="secondary" className="px-4 py-1.5 text-sm font-medium">
-              {data.category.name}
+              {experience.category.name}
             </Badge>
-            <p className="text-muted-foreground">{data.category.description}</p>
+            <p className="text-muted-foreground">{experience.category.description}</p>
           </div>
         </div>
       )}

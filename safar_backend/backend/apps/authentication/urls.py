@@ -1,17 +1,17 @@
 from django.urls import path, re_path
 from rest_framework.routers import DefaultRouter
-from .views import (
+from apps.authentication.auth_views import (
     CustomProviderAuthView,
     CustomTokenObtainPairView,
     CustomTokenRefreshView,
     CustomTokenVerifyView,
     LogoutView,
-    UserInteractionListView,
 )
-
+from apps.authentication.views import UserInteractionListView, UserViewSet
 
 router = DefaultRouter()
 router.register(r'interactions', UserInteractionListView, basename='interactions')
+router.register(r'users', UserViewSet, basename='users')
 
 urlpatterns = [
     re_path(

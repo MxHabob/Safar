@@ -92,7 +92,7 @@ export default function DashboardSidebar() {
         <div className="flex flex-col h-full">
           <div className="flex-1 overflow-y-auto py-4">
             <div className="px-3 mb-6">
-              <NavItem href="/account" icon={<Home className="h-5 w-5" />} label="Home" exact />
+              <NavItem href="/dashboard" icon={<Home className="h-5 w-5" />} label="Home" exact />
               <NavItem href="/bookings" icon={<Calendar className="h-5 w-5" />} label="My Bookings" />
               <NavItem
                 href="/messages"
@@ -112,7 +112,7 @@ export default function DashboardSidebar() {
             {isOwner && (
               <div className="px-3 py-2">
                 <h3 className="mb-2 px-2 text-xs font-semibold text-muted-foreground">OWNER DASHBOARD</h3>
-                <NavItem href="/owner/dashboard" icon={<Building className="h-5 w-5" />} label="Owner Dashboard" />
+                <NavItem href="/dashboard" icon={<Building className="h-5 w-5" />} label="Owner Dashboard" />
                 <NavItem href="/owner/reservations" icon={<Calendar className="h-5 w-5" />} label="Reservations" />
                 <NavItem href="/owner/places" icon={<Home className="h-5 w-5" />} label="My Places" />
                 <NavItem href="/owner/experiences" icon={<Users className="h-5 w-5" />} label="My Experiences" />

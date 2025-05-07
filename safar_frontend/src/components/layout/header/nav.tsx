@@ -1,8 +1,8 @@
 import Link from "next/link"
-import { UserAvatar } from "@/components/global/user-avatar"
 import { ModeToggle } from "@/components/global/mode-toggle"
 import NotificationCenter from "@/components/global/notification-center"
 import { Logo } from "@/components/global/logo"
+import { UserAvatarDropdownMenu } from "@/components/global/user/user-avatar-dropdown-menu"
 
 export function Nav() {
   return (
@@ -28,7 +28,7 @@ export function Nav() {
       <ModeToggle/>
       <NotificationCenter/>
       <div className="flex items-center rounded-full ">
-          <UserAvatar className=" w-9 h-9" />
+          <UserAvatarDropdownMenu className=" w-9 h-9" />
       </div>
     </div>
   </div>

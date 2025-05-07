@@ -7,8 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { WishlistButton } from "@/components/global/wishlist-button"
 import InteractionLink from "@/components/global/interaction-link"
 import { MediaGallery } from "@/components/global//media-gallery"
-import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar"
 import { formattedPrice } from "@/lib/utils/date-formatter"
+import { UserAvatar } from "@/components/global/profile/user-avatar"
 
 interface ExperienceCardProps {
   experience: Experience
@@ -54,12 +54,7 @@ export const ExperienceCard = ({ experience }: ExperienceCardProps) => {
 
           <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
             <div className="flex items-center gap-2 text-center">
-              <Avatar className="h-4 w-4 bg-background dark:bg-accent-foreground rounded-full">
-                <AvatarImage src={experience.owner?.profile?.avatar} alt={experience.owner?.first_name || "User avatar"} />
-                <AvatarFallback>
-                  {experience.owner?.first_name?.charAt(0).toUpperCase() || experience.owner?.username?.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar id={experience?.owner?.id || ""} src={experience.owner?.profile?.avatar || ""} size={"sm"} count={experience.owner?.points || 0} membership={experience.owner?.membership_level || "bronze"} fallback={experience.owner?.first_name?.charAt(0).toUpperCase() || experience.owner?.username?.charAt(0).toUpperCase() || "U"} alt={experience.owner?.username}/>
               <span className="font-medium">
                 {experience.owner?.username || `${experience?.owner?.first_name} ${experience?.owner?.last_name}`}
               </span>
