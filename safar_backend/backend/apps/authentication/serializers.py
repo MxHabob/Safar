@@ -59,14 +59,18 @@ class UserPublicSerializer(DjoserUserSerializer):
         ]
     
     def get_followers_count(self, obj):
-        return obj.get_followers_count()
+        if hasattr(obj, 'get_followers_count'):
+            return obj.get_followers_count()
+        return 0
 
     def get_following_count(self, obj):
-        return obj.get_following_count()
+        if hasattr(obj, 'get_following_count'):
+            return obj.get_following_count()
+        return 0
 
     def get_is_following(self, obj):
         request = self.context.get('request')
-        if request and request.user.is_authenticated:
+        if request and request.user.is_authenticated and hasattr(request.user, 'is_following'):
             return request.user.is_following(obj)
         return False
     

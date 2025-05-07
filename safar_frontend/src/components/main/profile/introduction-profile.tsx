@@ -31,7 +31,7 @@ export const IntroductionProfile = ({ userId }: IntroductionProfileProps) => {
             <p className="text-lg text-gray-500 font-semibold">
             {user?.profile?.country?.name} {user?.profile?.city?.name} {user?.profile?.region?.name}
             </p>
-            <p className="text-2xl font-bold">
+            <p className="text-3xl md:text-5xl font-bold">
             {user?.first_name} {user?.last_name} 
             </p>
             </div>
