@@ -148,11 +148,10 @@ ASGI_APPLICATION = "core.asgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.contrib.gis.db.backends.postgis",
-        "NAME": env("POSTGRES_DB"),
-        "USER": env("POSTGRES_USER"),
-        "PASSWORD": env("POSTGRES_PASSWORD"),
-        "HOST": env("POSTGRES_HOST"),
-        "PORT": env("POSTGRES_PORT", default="5432"),
+        "NAME": env("PGDATABASE"),
+        "USER": env("PGUSER"),
+        "PASSWORD": env("PGPASSWORD"),
+        "HOST": env("PGHOST"),
     }
 }
 
@@ -266,7 +265,6 @@ REST_FRAMEWORK = {
 #  DJOSER (AUTH)
 # ======================
 DJOSER = {
-    'USER_ID_FIELD': 'id',
     "PASSWORD_RESET_CONFIRM_URL": "password-reset/{uid}/{token}",
     "SEND_ACTIVATION_EMAIL": True,
     "ACTIVATION_URL": "verify-email/{uid}/{token}",
@@ -275,12 +273,8 @@ DJOSER = {
     "TOKEN_MODEL": None,
     "SOCIAL_AUTH_ALLOWED_REDIRECT_URIS": env.list("REDIRECT_URLS", default=[]),
     "SERIALIZERS": {
-        'user': 'apps.authentication.serializers.UserPublicSerializer',
-        'current_user': 'apps.authentication.serializers.UserPublicSerializer',
-    },
-    'PERMISSIONS': {
-        'user': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],
-        # 'user_list': ['rest_framework.permissions.AllowAny'],
+        "current_user": "apps.authentication.serializers.UserSerializer",
+        "user": "apps.authentication.serializers.UserSerializer",
     },
 }
 
@@ -464,18 +458,7 @@ SITE_NAME = env("SITE_NAME", default="Safer")
 SITE_URL = env("SITE_URL", default="http://localhost:3000")
 
 # Firebase settings
-FIREBASE_CREDENTIALS = {
-    "type": "service_account",
-    "project_id": env("FIREBASE_PROJECT_ID"),
-    "private_key_id": env("FIREBASE_PRIVATE_KEY_ID"),
-    "private_key": env("FIREBASE_PRIVATE_KEY").replace('\\n', '\n'),
-    "client_email": env("FIREBASE_CLIENT_EMAIL"),
-    "client_id": env("FIREBASE_CLIENT_ID"),
-    "auth_uri": env("FIREBASE_AUTH_URI", default="https://accounts.google.com/o/oauth2/auth"),
-    "token_uri": env("FIREBASE_TOKEN_URI", default="https://oauth2.googleapis.com/token"),
-    "auth_provider_x509_cert_url": env("FIREBASE_AUTH_PROVIDER_CERT_URL", default="https://www.googleapis.com/oauth2/v1/certs"),
-    "client_x509_cert_url": env("FIREBASE_CLIENT_CERT_URL")
-}
+FIREBASE_CREDENTIALS_PATH = env("FIREBASE_CREDENTIALS_PATH", default="/app/safar_firebase_credentials.json")
 
 # Phone number field settings
 PHONENUMBER_DEFAULT_REGION = "YE"
