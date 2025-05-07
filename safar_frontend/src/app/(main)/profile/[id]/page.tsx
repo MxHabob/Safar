@@ -3,7 +3,7 @@ type Props = {
 	params: Promise<{ id: string}>
 }
 
-export default async function Home({  params  }: Props) {
+export default async function ProfileIntroduction({  params  }: Props) {
   const id = (await params).id
   return (
     <main className="min-h-full flex items-center justify-center p-4 md:p-8 mt-24">
