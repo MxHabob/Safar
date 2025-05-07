@@ -44,7 +44,6 @@ class Media(BaseModel):
     uploaded_by = models.ForeignKey( User, on_delete=models.CASCADE, related_name="uploaded_media", verbose_name="Uploaded By")
     
     def save(self, *args, **kwargs):
-        # Auto-set file_type based on extension before saving
         if self.file:
             extension = self.file.name.split('.')[-1].lower()
             if extension in PHOTO_EXTENSIONS:

@@ -29,7 +29,6 @@ def send_email_task(self, subject, message, recipient_list, html_message=None, f
         return True
     except Exception as e:
         logger.error(f"Email task failed for {recipient_list}: {str(e)}", exc_info=True)
-        # Exponential backoff with max of 1 hour
         self.retry(exc=e, countdown=min(60 * (2 ** self.request.retries), 3600))
         return False
 
@@ -52,7 +51,6 @@ def send_sms_task(self, to_number, message):
         return True
     except Exception as e:
         logger.error(f"SMS task failed for {to_number}: {str(e)}", exc_info=True)
-        # Exponential backoff with max of 1 hour
         self.retry(exc=e, countdown=min(60 * (2 ** self.request.retries), 3600))
         return False
 
@@ -78,7 +76,6 @@ def send_push_notification_task(self, user_id, title, message, data=None, image_
         return False
     except Exception as e:
         logger.error(f"Push task failed for user {user_id}: {str(e)}", exc_info=True)
-        # Exponential backoff with max of 1 hour
         self.retry(exc=e, countdown=min(60 * (2 ** self.request.retries), 3600))
         return False
 
@@ -93,12 +90,10 @@ def process_notification(self, notification_id):
         with transaction.atomic():
             notification = Notification.objects.select_for_update().get(id=notification_id)
             
-            # Skip if already processed
             if notification.processed_at or notification.status in ['sent', 'failed']:
                 logger.info(f"Notification {notification_id} already processed")
                 return True
                 
-            # Mark as processing
             notification.processing_started = timezone.now()
             notification.status = 'processing'
             notification.save()
@@ -106,7 +101,6 @@ def process_notification(self, notification_id):
         user = notification.user
         results = {}
         
-        # Send email if user has email and wants email notifications
         if user.email and getattr(user.profile, 'wants_email_notifications', True):
             context = {
                 'notification': notification,
@@ -119,16 +113,14 @@ def process_notification(self, notification_id):
                 message=notification.message,
                 recipient_list=[user.email],
                 context=context
-            ).get()  # Wait for result
-            
-        # Send SMS if user has phone number and wants SMS notifications
+            ).get() 
+
         if hasattr(user, 'profile') and user.profile.phone_number and getattr(user.profile, 'wants_sms_notifications', False):
             results['sms'] = send_sms_task.delay(
                 to_number=str(user.profile.phone_number),
                 message=f"{notification.type}: {notification.message[:120]}..."
-            ).get()  # Wait for result
+            ).get()
             
-        # Send push notification if user has push token and wants push notifications
         if hasattr(user, 'profile') and user.profile.notification_push_token and getattr(user.profile, 'wants_push_notifications', True):
             results['push'] = send_push_notification_task.delay(
                 user_id=str(user.id),
@@ -136,9 +128,8 @@ def process_notification(self, notification_id):
                 message=notification.message,
                 data=notification.metadata,
                 image_url=notification.metadata.get('image_url')
-            ).get()  # Wait for result
-        
-        # Update notification status
+            ).get()
+
         with transaction.atomic():
             notification.refresh_from_db()
             notification.status = 'sent' if any(results.values()) else 'failed'
@@ -153,7 +144,6 @@ def process_notification(self, notification_id):
         return False
     except Exception as e:
         logger.error(f"Failed to process notification {notification_id}: {str(e)}", exc_info=True)
-        # Retry with exponential backoff
         self.retry(exc=e, countdown=min(60 * (2 ** self.request.retries), 3600))
         return False
 
@@ -200,7 +190,6 @@ def clean_old_notifications():
     """
     from apps.safar.models import Notification
     
-    # Delete notifications older than the retention period
     retention_days = getattr(settings, 'NOTIFICATION_RETENTION_DAYS', 90)
     cutoff_date = timezone.now() - timezone.timedelta(days=retention_days)
     
@@ -220,7 +209,6 @@ def notify_expiring_discounts():
     from apps.safar.models import Discount
     
     try:
-        # Find discounts expiring in the next 48 hours
         now = timezone.now()
         expiry_threshold = now + timedelta(hours=48)
         
@@ -231,18 +219,14 @@ def notify_expiring_discounts():
         )
         
         for discount in expiring_discounts:
-            # For targeted discounts, notify target users
             if discount.target_users.exists():
                 for user in discount.target_users.all():
-                    # Skip if we've already notified this user about this discount
                     cache_key = f"notified_expiring_discount:{user.id}:{discount.id}"
                     if cache.get(cache_key):
                         continue
                     
-                    # Calculate hours remaining
                     hours_remaining = int((discount.valid_to - now).total_seconds() / 3600)
                     
-                    # Send notification
                     NotificationService.send_notification.delay(
                         user_id=user.id,
                         notification_type="Discount Expiring Soon",
@@ -255,8 +239,7 @@ def notify_expiring_discounts():
                         }
                     )
                     
-                    # Mark as notified
-                    cache.set(cache_key, True, timeout=86400)  # 24 hours
+                    cache.set(cache_key, True, timeout=86400)
         
         return len(expiring_discounts)
         

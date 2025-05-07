@@ -13,10 +13,9 @@ from firebase_admin import credentials
 
 logger = logging.getLogger(__name__)
 
-# Initialize Firebase Admin SDK if not already initialized
 try:
     if not firebase_admin._apps:
-        cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
+        cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS)
         firebase_admin.initialize_app(cred)
 except Exception as e:
     logger.error(f"Failed to initialize Firebase: {str(e)}")
@@ -35,12 +34,10 @@ class NotificationService:
         try:
             from_email = from_email or settings.DEFAULT_FROM_EMAIL
             
-            # Rate limiting check
             if NotificationService._email_rate_limit_exceeded(recipient_list):
                 logger.warning(f"Email rate limit exceeded for {recipient_list}")
                 return False
             
-            # Prepare HTML message with template if not provided
             if not html_message and context is not None:
                 template_context = {
                     'message': message,
@@ -51,7 +48,6 @@ class NotificationService:
                 }
                 html_message = render_to_string('emails/notification.html', template_context)
             
-            # Send the email
             send_mail(
                 subject=subject,
                 message=strip_tags(message) if html_message else message,
@@ -82,7 +78,6 @@ class NotificationService:
         if current_count >= limit:
             return True
             
-        # Increment count and set expiration
         cache.set(cache_key, current_count + 1, timeout=period_minutes * 60)
         return False
 
@@ -100,25 +95,21 @@ class NotificationService:
             return False
             
         try:
-            # Ensure number is in E.164 format
             if not to_number.startswith('+'):
                 logger.error(f"Invalid phone number format: {to_number}")
                 return False
                 
-            # Rate limiting check
             if NotificationService._sms_rate_limit_exceeded(to_number):
                 logger.warning(f"SMS rate limit exceeded for {to_number}")
                 return False
                 
-            # Send SMS via Twilio
             client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
             sms = client.messages.create(
-                body=message[:160],  # SMS length limit
+                body=message[:160],
                 from_=settings.TWILIO_FROM_NUMBER,
                 to=to_number
             )
             
-            # Log SMS in database
             from apps.safar.models import SmsLog
             SmsLog.objects.create(
                 to_number=to_number,
@@ -132,7 +123,6 @@ class NotificationService:
             return True
             
         except Exception as e:
-            # Log failure
             from apps.safar.models import SmsLog
             SmsLog.objects.create(
                 to_number=to_number,
@@ -179,14 +169,12 @@ class NotificationService:
             return False
             
         try:
-            # Prepare notification
             notification = messaging.Notification(
                 title=title[:100],
                 body=message[:200],
                 image=image_url
             )
             
-            # Prepare data payload
             android_config = messaging.AndroidConfig(
                 priority='high',
                 notification=messaging.AndroidNotification(
@@ -206,7 +194,6 @@ class NotificationService:
                 )
             )
             
-            # Create message
             fcm_message = messaging.Message(
                 notification=notification,
                 data=data or {},
@@ -215,10 +202,8 @@ class NotificationService:
                 apns=apns_config
             )
             
-            # Send message
             response = messaging.send(fcm_message)
             
-            # Log push notification
             from apps.safar.models import PushNotificationLog
             PushNotificationLog.objects.create(
                 user=user,
@@ -234,7 +219,6 @@ class NotificationService:
             return True
             
         except Exception as e:
-            # Log failure
             from apps.safar.models import PushNotificationLog
             PushNotificationLog.objects.create(
                 user=user,
@@ -262,7 +246,6 @@ class NotificationService:
         from apps.core_apps.tasks import process_notification
         
         try:
-            # Create notification record
             notification = Notification.objects.create(
                 user=user,
                 type=notification_type,
@@ -272,7 +255,6 @@ class NotificationService:
                 channels=[]
             )
             
-            # If immediate, send directly
             if immediate:
                 results = {
                     'email': False,
@@ -280,7 +262,6 @@ class NotificationService:
                     'push': False
                 }
                 
-                # Check user preferences and send accordingly
                 if getattr(user, 'email', None) and getattr(user.profile, 'wants_email_notifications', True):
                     results['email'] = NotificationService.send_email(
                         subject=f"{settings.SITE_NAME}: {notification_type}",
@@ -308,7 +289,6 @@ class NotificationService:
                         image_url=image_url
                     )
                 
-                # Update notification status
                 notification.status = 'sent' if any(results.values()) else 'failed'
                 notification.channels = [k for k, v in results.items() if v]
                 notification.processed_at = timezone.now()
@@ -316,7 +296,6 @@ class NotificationService:
                 
                 return notification.status == 'sent'
             else:
-                # Queue for processing by Celery
                 process_notification.delay(notification.id)
                 return True
             

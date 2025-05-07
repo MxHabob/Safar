@@ -34,11 +34,10 @@ def send_channel_message(group_name, message_type, data):
     Safely send message to channel group with proper serialization
     """
     try:
-        # Serialize data first
         serialized_data = json.dumps(data, cls=UUIDEncoder)
         message = {
             "type": message_type,
-            "data": json.loads(serialized_data)  # Convert back to dict for channels
+            "data": json.loads(serialized_data)
         }
         async_to_sync(channel_layer.group_send)(group_name, message)
         logger.debug(f"Sent {message_type} to group {group_name}")
@@ -75,8 +74,7 @@ def _handle_new_booking(booking):
         }
     )
     process_notification.delay(notification.id)
-    
-    # Send real-time update
+
     group = f"bookings_{booking.user.id}"
     booking_data = BookingSerializer(booking).data
     send_channel_message(group, "booking.update", booking_data)
@@ -90,7 +88,6 @@ def _handle_booking_update(booking):
         if status_changed:
             _handle_booking_status_change(booking, original.status)
         
-        # Always send real-time update
         group = f"bookings_{booking.user.id}"
         booking_data = BookingSerializer(booking).data
         send_channel_message(group, "booking.update", booking_data)
@@ -146,12 +143,10 @@ def handle_new_message(sender, instance, created, **kwargs):
         return
     
     try:
-        # Real-time update
         group = f"messages_{instance.receiver.id}"
         message_data = MessageSerializer(instance).data
         send_channel_message(group, "message.new", message_data)
         
-        # Create notification
         notification = Notification.objects.create(
             user=instance.receiver,
             type="New Message",
@@ -179,7 +174,6 @@ def handle_notification_creation(sender, instance, created, **kwargs):
     try:
         notification_data = NotificationSerializer(instance).data
         
-        # Send to both specific and general groups
         groups = [
             f"notifications_{instance.user.id}",
             f"safar_{instance.user.id}"
@@ -188,7 +182,6 @@ def handle_notification_creation(sender, instance, created, **kwargs):
         for group in groups:
             send_channel_message(group, "notification.new", notification_data)
         
-        # Process high priority immediately
         if instance.metadata.get('priority') == 'high':
             process_notification.delay(instance.id)
             

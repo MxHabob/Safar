@@ -1,7 +1,7 @@
 import AIAssistant from "@/components/global/aI-assistant-feed"
 import { HeaderFilters } from "@/components/layout/header/header-filters"
 import { MSearch } from "@/components/layout/header/Serch"
-import { ListBox } from "@/components/main/box/box-list"
+// import { ListBox } from "@/components/main/box/box-list"
 import { ListExperience } from "@/components/main/experience/experience-list"
 import { ListPlaces } from "@/components/main/place/place-list"
 import { LoadingPlaceholder } from "@/components/ui/loading-placeholder"

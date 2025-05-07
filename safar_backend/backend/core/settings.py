@@ -464,7 +464,18 @@ SITE_NAME = env("SITE_NAME", default="Safer")
 SITE_URL = env("SITE_URL", default="http://localhost:3000")
 
 # Firebase settings
-FIREBASE_CREDENTIALS_PATH = env("FIREBASE_CREDENTIALS_PATH", default="/app/safar_firebase_credentials.json")
+FIREBASE_CREDENTIALS = {
+    "type": "service_account",
+    "project_id": env("FIREBASE_PROJECT_ID"),
+    "private_key_id": env("FIREBASE_PRIVATE_KEY_ID"),
+    "private_key": env("FIREBASE_PRIVATE_KEY").replace('\\n', '\n'),
+    "client_email": env("FIREBASE_CLIENT_EMAIL"),
+    "client_id": env("FIREBASE_CLIENT_ID"),
+    "auth_uri": env("FIREBASE_AUTH_URI", default="https://accounts.google.com/o/oauth2/auth"),
+    "token_uri": env("FIREBASE_TOKEN_URI", default="https://oauth2.googleapis.com/token"),
+    "auth_provider_x509_cert_url": env("FIREBASE_AUTH_PROVIDER_CERT_URL", default="https://www.googleapis.com/oauth2/v1/certs"),
+    "client_x509_cert_url": env("FIREBASE_CLIENT_CERT_URL")
+}
 
 # Phone number field settings
 PHONENUMBER_DEFAULT_REGION = "YE"

@@ -21,7 +21,6 @@ class UUIDEncoder(json.JSONEncoder):
 class SafariConsumer(AsyncJsonWebsocketConsumer):
     """Enhanced WebSocket consumer with robust connection handling and proper cleanup"""
     
-    # Group prefixes for different notification types
     BOOKING_GROUP = 'bookings_'
     MESSAGE_GROUP = 'messages_'
     NOTIFICATION_GROUP = 'notifications_'
@@ -32,9 +31,9 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
         self.user = None
         self.groups = []
         self._connected = False
-        self.cache_timeout = 300  # 5 minutes
+        self.cache_timeout = 300
         self._disconnect_future = None
-        self._db_operations = set()  # Track ongoing DB operations
+        self._db_operations = set()
 
     async def connect(self):
         """Handle WebSocket connection with improved reliability"""
@@ -46,11 +45,9 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
                 await self.close(code=4001)
                 return
 
-            # Accept connection first to establish the WebSocket
             await self.accept()
             self._connected = True
             
-            # Add user to all relevant groups with timeout and error handling
             self.groups = [
                 f"{self.BOOKING_GROUP}{self.user.id}",
                 f"{self.MESSAGE_GROUP}{self.user.id}",
@@ -62,28 +59,24 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             for group in self.groups:
                 group_tasks.append(self._add_to_group_with_timeout(group))
             
-            # Wait for all group additions with a timeout
             await asyncio.gather(*group_tasks)
             
             logger.info(f"WebSocket connection established for user {self.user.id}")
             
-            # Send initial data with comprehensive error handling
             await self._send_initial_data()
             
         except Exception as e:
             logger.error(f"Error during WebSocket setup: {str(e)}", exc_info=True)
             self._connected = False
-            await self.close(code=1011)  # Internal error
+            await self.close(code=1011)
 
     async def _add_to_group_with_timeout(self, group, timeout=5.0):
         """Add to channel group with timeout to prevent hanging"""
         try:
-            # Create a task for adding to group
             task = asyncio.create_task(
                 self.channel_layer.group_add(group, self.channel_name)
             )
             
-            # Wait for the task with a timeout
             await asyncio.wait_for(task, timeout=timeout)
             
         except asyncio.TimeoutError:
@@ -97,7 +90,6 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             return
             
         try:
-            # Set a timeout for fetching initial data
             initial_data = await asyncio.wait_for(
                 self._get_cached_initial_data(), 
                 timeout=10.0
@@ -121,17 +113,14 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
         """Clean up on WebSocket disconnect with proper error handling"""
         self._connected = False
         
-        # Create a future to track disconnect completion
         self._disconnect_future = asyncio.Future()
         
         try:
             if self.user and not self.user.is_anonymous:
-                # Remove from all groups with timeout
                 group_tasks = []
                 for group in self.groups:
                     group_tasks.append(self._remove_from_group_with_timeout(group))
-                
-                # Wait for all group removals with a timeout
+
                 if group_tasks:
                     await asyncio.wait_for(
                         asyncio.gather(*group_tasks, return_exceptions=True),
@@ -139,13 +128,11 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
                     )
                 
                 logger.info(f"WebSocket connection closed for user {self.user.id} with code {close_code}")
-                
-            # Cancel any pending database operations
+
             for task in self._db_operations:
                 if not task.done():
                     task.cancel()
                     
-            # Mark disconnect as complete
             if not self._disconnect_future.done():
                 self._disconnect_future.set_result(True)
                 
@@ -161,12 +148,10 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
     async def _remove_from_group_with_timeout(self, group, timeout=2.0):
         """Remove from channel group with timeout to prevent hanging"""
         try:
-            # Create a task for removing from group
             task = asyncio.create_task(
                 self.channel_layer.group_discard(group, self.channel_name)
             )
             
-            # Wait for the task with a timeout
             await asyncio.wait_for(task, timeout=timeout)
             
         except asyncio.TimeoutError:
@@ -179,18 +164,14 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
         cache_key = f"ws_initial_data_{self.user.id}"
         
         try:
-            # Try to get from cache first
             cached_data = await sync_to_async(cache.get)(cache_key)
             if cached_data:
                 return json.loads(cached_data)
             
-            # If not in cache, fetch and store
             data = await self._fetch_initial_data()
             
-            # Serialize with UUID handling
             serialized_data = json.dumps(data, cls=UUIDEncoder)
-            
-            # Store in cache
+
             await sync_to_async(cache.set)(
                 cache_key, 
                 serialized_data, 
@@ -201,7 +182,6 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             
         except Exception as e:
             logger.error(f"Cache error: {str(e)}")
-            # Fallback to direct fetch
             return await self._fetch_initial_data()
 
     async def _fetch_initial_data(self) -> Dict:
@@ -210,19 +190,16 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             return {}
             
         try:
-            # Create a database task with tracking
             db_task = asyncio.create_task(
                 database_sync_to_async(self._get_initial_data_sync)()
             )
             self._db_operations.add(db_task)
             
-            # Wait for the task with a timeout
             bookings, messages, notifications = await asyncio.wait_for(
                 db_task, 
                 timeout=5.0
             )
-            
-            # Remove from tracking
+
             self._db_operations.remove(db_task)
             
             return {
@@ -240,13 +217,11 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
     def _get_initial_data_sync(self) -> tuple:
         """Synchronous method to fetch all initial data with optimized queries"""
         try:
-            # Import models here to avoid circular imports
             from apps.safar.models import Booking, Message, Notification
             from apps.safar.serializers import (
                 BookingSerializer, MessageSerializer, NotificationSerializer
             )
             
-            # Use select_related to optimize queries
             bookings = BookingSerializer(
                 Booking.objects.filter(user=self.user)
                 .select_related('place', 'experience', 'flight', 'box')
@@ -300,7 +275,6 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             
             handler = handlers.get(action)
             if handler:
-                # Execute handler with timeout
                 await asyncio.wait_for(
                     handler(payload),
                     timeout=5.0
@@ -345,16 +319,13 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             return
             
         try:
-            # Create a database task with tracking
             db_task = asyncio.create_task(
                 database_sync_to_async(self._mark_message_read_sync)(message_id)
             )
             self._db_operations.add(db_task)
             
-            # Wait for the task with a timeout
             success = await asyncio.wait_for(db_task, timeout=3.0)
             
-            # Remove from tracking
             self._db_operations.remove(db_task)
             
             if success:
@@ -377,7 +348,6 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
     def _mark_message_read_sync(self, message_id) -> bool:
         """Sync version of mark message read with error handling"""
         try:
-            # Import model here to avoid circular imports
             from apps.safar.models import Message
             
             return Message.objects.filter(
@@ -400,16 +370,13 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             return
             
         try:
-            # Create a database task with tracking
             db_task = asyncio.create_task(
                 database_sync_to_async(self._mark_notification_read_sync)(notification_id)
             )
             self._db_operations.add(db_task)
             
-            # Wait for the task with a timeout
             success = await asyncio.wait_for(db_task, timeout=3.0)
             
-            # Remove from tracking
             self._db_operations.remove(db_task)
             
             if success:
@@ -432,7 +399,6 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
     def _mark_notification_read_sync(self, notification_id) -> bool:
         """Sync version of mark notification read with error handling"""
         try:
-            # Import model here to avoid circular imports
             from apps.safar.models import Notification
             
             return Notification.objects.filter(
@@ -450,16 +416,13 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             return
             
         try:
-            # Create a database task with tracking
             db_task = asyncio.create_task(
                 database_sync_to_async(self._mark_all_notifications_read_sync)()
             )
             self._db_operations.add(db_task)
             
-            # Wait for the task with a timeout
             count = await asyncio.wait_for(db_task, timeout=3.0)
             
-            # Remove from tracking
             self._db_operations.remove(db_task)
             
             await self._invalidate_cache()
@@ -479,7 +442,6 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
     def _mark_all_notifications_read_sync(self) -> int:
         """Mark all user's notifications as read with error handling"""
         try:
-            # Import model here to avoid circular imports
             from apps.safar.models import Notification
             
             return Notification.objects.filter(
@@ -497,18 +459,15 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             
         try:
             offset = int(payload.get("offset", 0))
-            limit = min(int(payload.get("limit", 20)), 50)  # Cap at 50
+            limit = min(int(payload.get("limit", 20)), 50) 
             
-            # Create a database task with tracking
             db_task = asyncio.create_task(
                 database_sync_to_async(self._get_more_messages_sync)(offset, limit)
             )
             self._db_operations.add(db_task)
             
-            # Wait for the task with a timeout
             messages = await asyncio.wait_for(db_task, timeout=5.0)
             
-            # Remove from tracking
             self._db_operations.remove(db_task)
             
             response = {
@@ -582,17 +541,14 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             return
             
         try:
-            # Serialize with UUID handling
             serialized_content = json.dumps(content, cls=UUIDEncoder)
             parsed_content = json.loads(serialized_content)
             
-            # Send with parent method
             await super().send_json(parsed_content, close)
         except Exception as e:
             logger.error(f"Error sending JSON data: {str(e)}")
             self._connected = False
 
-    # Event handlers for different message types
     async def booking_update(self, event: Dict):
         """Handle booking update events with connection check"""
         if not self._connected:
