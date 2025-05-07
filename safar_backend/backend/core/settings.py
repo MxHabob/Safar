@@ -278,6 +278,10 @@ DJOSER = {
         'user': 'apps.authentication.serializers.UserPublicSerializer',
         'current_user': 'apps.authentication.serializers.UserPublicSerializer',
     },
+    'PERMISSIONS': {
+        'user': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],
+        'user_list': ['rest_framework.permissions.AllowAny'],
+    },
 }
 
 # ======================
