@@ -148,6 +148,9 @@ export interface User extends BaseModel {
   last_login_device?: string;
   last_login_ip?: string;
   last_activity?: string;
+  followers_count: number;
+  following_count: number;
+  is_following?: boolean;
 }
 
 // Content Types

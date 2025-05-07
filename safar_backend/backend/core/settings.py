@@ -266,6 +266,7 @@ REST_FRAMEWORK = {
 #  DJOSER (AUTH)
 # ======================
 DJOSER = {
+    'USER_ID_FIELD': 'id',
     "PASSWORD_RESET_CONFIRM_URL": "password-reset/{uid}/{token}",
     "SEND_ACTIVATION_EMAIL": True,
     "ACTIVATION_URL": "verify-email/{uid}/{token}",
