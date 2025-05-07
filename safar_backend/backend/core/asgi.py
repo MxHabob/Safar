@@ -5,6 +5,9 @@ from channels.security.websocket import AllowedHostsOriginValidator
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 
+# Set a reasonable shutdown timeout (in seconds)
+os.environ['DJANGO_ASGI_SHUTDOWN_TIMEOUT'] = '5'
+
 django_asgi_app = get_asgi_application()
 
 from apps.real_time.middleware import JWTAuthMiddlewareStack
@@ -18,5 +21,3 @@ application = ProtocolTypeRouter({
         )
     ),
 })
-
-os.environ['DJANGO_ASGI_SHUTDOWN_TIMEOUT'] = '10' 

@@ -8,18 +8,20 @@ import jwt
 from channels.db import database_sync_to_async
 import logging
 from django.conf import settings
+import asyncio
 
 logger = logging.getLogger(__name__)
 
 class JWTAuthMiddleware:
     """
-    Custom JWT authentication middleware for Django Channels
+    Custom JWT authentication middleware for Django Channels with improved performance
     """
     def __init__(self, inner):
         self.inner = inner
 
     async def __call__(self, scope, receive, send):
-        close_old_connections()
+        # Close old connections to prevent connection leaks
+        await database_sync_to_async(close_old_connections)()
         
         scope["user"] = AnonymousUser()
         
@@ -27,12 +29,23 @@ class JWTAuthMiddleware:
         
         if token:
             try:
-                user_id = self._get_user_id_from_token(token)
+                # Use a timeout for token validation to prevent hanging
+                user_id = await asyncio.wait_for(
+                    database_sync_to_async(self._get_user_id_from_token)(token),
+                    timeout=1.0
+                )
+                
                 if user_id:
-                    user = await self.get_user(user_id)
+                    # Use a timeout for user retrieval
+                    user = await asyncio.wait_for(
+                        self.get_user(user_id),
+                        timeout=1.0
+                    )
                     if user:
                         scope["user"] = user
                         logger.debug(f"Authenticated WebSocket connection for user {user_id}")
+            except asyncio.TimeoutError:
+                logger.error("Timeout authenticating WebSocket connection")
             except Exception as e:
                 logger.error(f"Error authenticating WebSocket connection: {str(e)}")
         
