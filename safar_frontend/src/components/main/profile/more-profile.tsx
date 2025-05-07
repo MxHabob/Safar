@@ -1,8 +1,7 @@
 'use client'
-import React from 'react'
-import { IntroductionProfile } from "@/components/main/profile/introduction-profile";
+
+
 import { useGetUserByIdQuery } from "@/core/services/api";
-import { LoyaltyStatusCard } from "@/components/dashboard/cards/loyalty-status-card"
 import { useState } from "react";
 import { UserAvatar } from '@/components/global/profile/user-avatar';
 import { RouterBack } from '@/components/global/router-back';
@@ -12,15 +11,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CardContent } from '@/components/ui/card';
 import { StatusCircle } from '@/components/dashboard/ui/status-circle';
 
-type IntroductionProfileProps = {
+type MoreProfileProps = {
     userId: string;
 }
-export const MoreProfile = ({ userId }: IntroductionProfileProps) => {
+export const MoreProfile = ({ userId }: MoreProfileProps) => {
     const { data: user, isLoading } = useGetUserByIdQuery(userId);
     const [isFollowing, setIsFollowing] = useState(user?.is_following || false);
 
     if (isLoading) {
-        return <IntroductionProfile.Skeleton />;
+        return <MoreProfile.Skeleton />;
     }
 
     return (
@@ -57,8 +56,6 @@ export const MoreProfile = ({ userId }: IntroductionProfileProps) => {
       </CardContent>
             </div>
             </div>
-       
-           
         </div>
     )
 }        
@@ -88,5 +85,3 @@ MoreProfile.Skeleton = function MoreProfileSkeleton() {
         </div>
     )
 }
-
-export default MoreProfile
