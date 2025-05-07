@@ -1,12 +1,15 @@
+import MoreProfile from "@/components/main/profile/more-profile"
+
 type Props = {
-    params: Promise<{ id: string}>
+	params: Promise<{ id: string}>
 }
 
-export default async function ProfileMore({  params  }: Props) {
+export default async  function ProfileMore({  params  }: Props) {
   const id = (await params).id
   return (
-    <main className="min-h-full flex items-center justify-center p-4 md:p-8 mt-24">
-      <h1>{id}</h1>
+    <main className="min-h-full flex items-center justify-center p-4 md:p-8">
+      <MoreProfile userId={id} />
+        
     </main>
   )
 }
