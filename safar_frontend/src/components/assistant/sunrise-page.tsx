@@ -8,10 +8,14 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { format } from "date-fns"
-import { Send, MapPin, Search } from "lucide-react"
+import { CalendarIcon, Send, Globe, MapPin, Search } from "lucide-react"
+import { BoxCard } from "../main/box/box-list/box-card"
+import { UserAvatarDropdownMenu } from "../global/user/user-avatar-dropdown-menu"
 
 type Message = {
   id: string
@@ -43,10 +47,9 @@ export const SunrisePage = () => {
   const [showDestinationDialog, setShowDestinationDialog] = useState(false)
   const [selectedDestination, setSelectedDestination] = useState<DestinationSelection | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedCountries, setSelectedCountries] = useState<string[]>([])
 
   const { data: countriesData, isLoading: isLoadingCountries } = useGetCountriesQuery({ page_size: 100 })
-  const [generateBox] = useGetPersonalizedBoxMutation()
+  const [generateBox, { isLoading }] = useGetPersonalizedBoxMutation()
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -69,7 +72,7 @@ export const SunrisePage = () => {
     setMessages((prev) => [...prev, userMessage])
     setInputValue("")
     setIsTyping(true)
-console.log(isTyping)
+
     try {
       // If we have a selected destination, use it directly
       let params: any = {
@@ -228,153 +231,200 @@ console.log(isTyping)
     setShowDestinationDialog(false)
   }
 
-  const toggleCountryFilter = (countryName: string) => {
-    setSelectedCountries((prev) =>
-      prev.includes(countryName) ? prev.filter((c) => c !== countryName) : [...prev, countryName],
-    )
-  }
-
   const filteredCountries =
     countriesData?.results.filter(
       (country) => !searchQuery || country.name.toLowerCase().includes(searchQuery.toLowerCase()),
     ) || []
 
-  // Featured destinations - would normally come from an API
-  const featuredDestinations = [
-    { id: "dest1", name: "Paris", type: "city", country: "France", image: "/placeholder.svg?height=200&width=300" },
-    { id: "dest2", name: "Tokyo", type: "city", country: "Japan", image: "/placeholder.svg?height=200&width=300" },
-  ]
-
-  // Popular countries for filters
-  const popularCountries = ["Yemen", "United States", "United States", "Australia", "France", "Belgium"]
-
   return (
-    <div className="flex flex-col h-screen max-h-screen bg-white">
-      <header className="border-b py-3 px-4">
-        <div className="container mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src="/assistant-avatar.png" alt="AI Assistant" />
-              <AvatarFallback className="bg-primary text-primary-foreground">Bl</AvatarFallback>
-            </Avatar>
-            <div className="w-64 h-6 bg-gray-200 rounded-full"></div>
-          </div>
-          <div className="flex items-center">
-            <span className="text-xs font-medium px-2 py-1 bg-gray-100 rounded">ML</span>
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1 overflow-auto container mx-auto p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {featuredDestinations.map((destination) => (
-            <Card key={destination.id} className="overflow-hidden">
-              <div className="relative h-48 bg-gray-200">
-                <div className="absolute top-2 right-2 w-6 h-1 bg-gray-300"></div>
-              </div>
-              <CardContent className="p-4">
-                <div className="space-y-1">
-                  <div className="h-4 w-32 bg-gray-300 rounded"></div>
-                  <div className="h-3 w-20 bg-gray-300 rounded"></div>
+    <div className="flex flex-col h-screen max-h-screen">
+      <main className="flex-1 overflow-hidden container mx-auto p-4">
+        <div className="flex flex-col h-full">
+          <div className="flex-1 overflow-y-auto pr-4 pb-4">
+            <div className="space-y-4">
+              {messages.map((message) => (
+                <div key={message.id} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className="flex gap-3 max-w-[80%]">
+                    {message.sender === "assistant" && (
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src="/assistant-avatar.png" alt="AI Assistant" />
+                        <AvatarFallback className="bg-primary text-primary-foreground">Bl</AvatarFallback>
+                      </Avatar>
+                    )}
+                    <div className="flex flex-col gap-1">
+                      <div
+                        className={`rounded-lg p-3 ${
+                          message.sender === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+                        }`}
+                      >
+                        <p>{message.content}</p>
+                      </div>
+                      {message.box && <BoxCard box={message.box} />}
+                      <span className="text-xs text-muted-foreground">{format(message.timestamp, "h:mm a")}</span>
+                    </div>
+                    {message.sender === "user" && (
+                      <UserAvatarDropdownMenu className=" w-9 h-9" />
+                    )}
+                  </div>
                 </div>
-                <div className="mt-2 space-y-1">
-                  <div className="h-2 w-full bg-gray-300 rounded"></div>
-                  <div className="h-2 w-5/6 bg-gray-300 rounded"></div>
-                  <div className="h-2 w-4/6 bg-gray-300 rounded"></div>
+              ))}
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="flex gap-3 max-w-[80%]">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary text-primary-foreground">bl</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col gap-1">
+                      <div className="rounded-lg p-3 bg-muted">
+                        <div className="flex gap-1">
+                          <div className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]"></div>
+                          <div className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]"></div>
+                          <div className="h-2 w-2 rounded-full bg-primary animate-bounce"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+
+          <div className="mt-4 border-t pt-4">
+            <Card>
+              <CardContent className="p-3">
+                <div className="flex gap-2">
+                  <Dialog open={showDestinationDialog} onOpenChange={setShowDestinationDialog}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="icon" className="shrink-0">
+                        <Globe className="h-5 w-5" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Select a Destination</DialogTitle>
+                      </DialogHeader>
+                      <div className="flex items-center space-x-2 mb-4">
+                        <div className="relative flex-1">
+                          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search countries..."
+                            className="pl-8"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <ScrollArea className="h-[300px]">
+                        <div className="grid grid-cols-1 gap-2">
+                          {isLoadingCountries ? (
+                            <div className="flex justify-center items-center h-20">
+                              <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
+                            </div>
+                          ) : (
+                            filteredCountries.map((country) => (
+                              <Button
+                                key={country.id}
+                                variant="outline"
+                                className="justify-start h-auto py-3"
+                                onClick={() =>
+                                  handleDestinationSelect({
+                                    id: country.id,
+                                    name: country.name,
+                                    type: "country",
+                                  })
+                                }
+                              >
+                                <div className="flex items-center">
+                                  <MapPin className="h-4 w-4 mr-2" />
+                                  <span>{country.name}</span>
+                                </div>
+                              </Button>
+                            ))
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="icon" className="shrink-0">
+                        <CalendarIcon className="h-5 w-5" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        initialFocus
+                        disabled={(date) => date < new Date()}
+                      />
+                    </PopoverContent>
+                  </Popover>
+
+                  <div className="relative flex-1">
+                    <Input
+                      placeholder={
+                        selectedDestination
+                          ? `Tell me about your trip to ${selectedDestination.name}...`
+                          : "Tell me about your travel plans or select a destination..."
+                      }
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault()
+                          handleSendMessage()
+                        }
+                      }}
+                      className="pr-10"
+                      disabled={isLoading}
+                    />
+                    <div className="absolute right-10 top-1/2 -translate-y-1/2 flex gap-1">
+                      {selectedDestination && (
+                        <Badge variant="outline" className="bg-primary/10 flex gap-1 items-center">
+                          <MapPin className="h-3 w-3" />
+                          {selectedDestination.name}
+                        </Badge>
+                      )}
+                      {selectedDate && (
+                        <Badge variant="outline" className="bg-primary/10 flex gap-1 items-center">
+                          <CalendarIcon className="h-3 w-3" />
+                          {format(selectedDate, "MMM d, yyyy")}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    size="icon"
+                    onClick={handleSendMessage}
+                    disabled={(!inputValue.trim() && !selectedDestination) || isLoading}
+                    className="shrink-0"
+                  >
+                    {isLoading ? (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    ) : (
+                      <Send className="h-5 w-5" />
+                    )}
+                  </Button>
+                </div>
+
+                <div className="mt-2 text-xs text-muted-foreground">
+                  <p>
+                    {selectedDestination
+                      ? `Planning a trip to ${selectedDestination.name}? Try adding details like "5 days with a budget of $2000"`
+                      : "Click the globe icon to select a destination, or type your travel plans"}
+                  </p>
                 </div>
               </CardContent>
             </Card>
-          ))}
+          </div>
         </div>
       </main>
-
-      <footer className="border-t py-4 px-4">
-        <div className="container mx-auto space-y-3">
-          <div className="flex flex-wrap gap-2">
-            {popularCountries.map((country, index) => (
-              <Badge
-                key={index}
-                variant="outline"
-                className={`rounded-full px-3 py-1 cursor-pointer ${
-                  selectedCountries.includes(country) ? "bg-gray-200" : "bg-gray-100"
-                }`}
-                onClick={() => toggleCountryFilter(country)}
-              >
-                {country}
-              </Badge>
-            ))}
-          </div>
-
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Input
-                placeholder="Search destinations..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault()
-                    handleSendMessage()
-                  }
-                }}
-                className="bg-gray-100 border-gray-200"
-              />
-            </div>
-            <Button type="submit" size="icon" onClick={handleSendMessage} className="rounded-full bg-primary">
-              <Send className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-      </footer>
-
-      {/* Preserve the original dialog for destination selection */}
-      <Dialog open={showDestinationDialog} onOpenChange={setShowDestinationDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Select a Destination</DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center space-x-2 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search countries..."
-                className="pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-          <ScrollArea className="h-[300px]">
-            <div className="grid grid-cols-1 gap-2">
-              {isLoadingCountries ? (
-                <div className="flex justify-center items-center h-20">
-                  <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
-                </div>
-              ) : (
-                filteredCountries.map((country) => (
-                  <Button
-                    key={country.id}
-                    variant="outline"
-                    className="justify-start h-auto py-3"
-                    onClick={() =>
-                      handleDestinationSelect({
-                        id: country.id,
-                        name: country.name,
-                        type: "country",
-                      })
-                    }
-                  >
-                    <div className="flex items-center">
-                      <MapPin className="h-4 w-4 mr-2" />
-                      <span>{country.name}</span>
-                    </div>
-                  </Button>
-                ))
-              )}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
