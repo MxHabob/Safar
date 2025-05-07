@@ -1,4 +1,3 @@
-import { IntroductionProfile } from "@/components/main/profile/introduction-profile";
 type Props = {
     params: Promise<{ id: string}>
 }
