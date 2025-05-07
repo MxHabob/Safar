@@ -7,7 +7,7 @@ import numpy as np
 from django.db import transaction
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
-from django.db.models import Q, F, Count, Avg
+from django.db.models import Q, F, Count, Avg ,Sum
 from sklearn.cluster import DBSCAN
 from apps.authentication.models import User
 from apps.safar.models import (
@@ -1072,13 +1072,12 @@ class BoxGenerator:
     def _calculate_total_price(self, itinerary_days):
         """Calculate total price of all itinerary items - optimized"""
         from decimal import Decimal
-        
-        # Use Django's aggregation for better performance
+
         total = Decimal('0.0')
         
         for day in itinerary_days:
             day_total = day.items.aggregate(
-                total=models.Sum('estimated_cost')
+                total=Sum('estimated_cost')
             )['total'] or Decimal('0.0')
             
             total += day_total
