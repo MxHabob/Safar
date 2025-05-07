@@ -46,6 +46,7 @@ class UserPublicSerializer(DjoserUserSerializer):
 
     class Meta(DjoserUserSerializer.Meta):
         fields = tuple(DjoserUserSerializer.Meta.fields) + (
+            'id', 'email', 'role', 
             'profile', 'followers_count', 'following_count',
             'first_name', 'last_name', 'username','is_active',
             'created_at', 'updated_at', 'last_login', 

@@ -3,7 +3,7 @@
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import type { User } from "@/core/types"
-import { UserAvatar } from "@/components/global/user/user-avatar-dropdown-menu"
+import { UserAvatarDropdownMenu } from "@/components/global/user/user-avatar-dropdown-menu"
 
 interface DashboardHeaderProps {
   user: User | null
@@ -31,7 +31,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
           </span>
           <span className="text-xs text-muted-foreground">{user?.email}</span>
         </div>
-        <UserAvatar className="h-9 w-9" />
+        <UserAvatarDropdownMenu className="h-9 w-9" />
       </div>
     </div>
   )

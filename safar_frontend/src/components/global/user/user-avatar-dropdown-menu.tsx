@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/core/hooks/use-auth"
 import { Calendar, LogOut, Settings, User2, MessageSquare, Bell, Home, UserPlus } from 'lucide-react'
 import { MembershipLevel } from "@/core/types"
+import NotificationCenter from "../notification-center"
 
 interface UserAvatarDropdownMenuProps {
   className?: string
@@ -104,6 +105,11 @@ const membershipColor = userData?.membership_level
 
   return (
     <DropdownMenu>
+      {isAuthenticated && userData && (
+       <div className="mr-4">
+       <NotificationCenter/>
+     </div>
+      )}
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
           {avatarContent}

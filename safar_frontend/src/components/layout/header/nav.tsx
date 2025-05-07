@@ -1,6 +1,5 @@
 import Link from "next/link"
 import { ModeToggle } from "@/components/global/mode-toggle"
-import NotificationCenter from "@/components/global/notification-center"
 import { Logo } from "@/components/global/logo"
 import { UserAvatarDropdownMenu } from "@/components/global/user/user-avatar-dropdown-menu"
 
@@ -22,11 +21,15 @@ export function Nav() {
           Flight
           </Link>
         </li>
+        <li>
+          <Link href="/#" className="font-medium">
+          Store
+          </Link>
+        </li>
       </ul>
     </nav>
     <div className="flex items-center space-x-4">
       <ModeToggle/>
-      <NotificationCenter/>
       <div className="flex items-center rounded-full ">
           <UserAvatarDropdownMenu className=" w-9 h-9" />
       </div>
