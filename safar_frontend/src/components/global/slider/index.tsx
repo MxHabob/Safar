@@ -21,8 +21,8 @@ export const Slider = ({ children, overlay,isLoading, ...rest }: SliderProps) =>
     >
       {overlay && (
         <>
-          <div className="absolute w-[20px] slider-overlay left-0 h-full z-50" />
-          <div className="absolute w-[20px] slider-overlay-rev right-0 h-full z-50" />
+          <div className="absolute w-[10px] slider-overlay left-0 h-full z-50" />
+          <div className="absolute w-[10px] slider-overlay-rev right-0 h-full z-50" />
         </>
       )}
       <Swiper modules={[Navigation, Pagination, Autoplay, FreeMode]} {...rest}>
