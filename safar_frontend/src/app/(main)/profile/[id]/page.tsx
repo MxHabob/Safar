@@ -6,7 +6,7 @@ type Props = {
 export default async function ProfileIntroduction({  params  }: Props) {
   const id = (await params).id
   return (
-    <main className="min-h-full flex items-center justify-center p-4 md:p-8 mt-24">
+    <main className="min-h-full flex items-center justify-center p-4 md:p-8">
       <IntroductionProfile userId={id}/>
     </main>
   )

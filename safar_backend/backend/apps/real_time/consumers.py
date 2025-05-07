@@ -25,7 +25,7 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
     MESSAGE_GROUP = 'messages_'
     NOTIFICATION_GROUP = 'notifications_'
     GENERAL_GROUP = 'safar_'
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = None
@@ -33,7 +33,6 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
         self._connected = False
         self.cache_timeout = 300
         self._disconnect_future = None
-        self._db_operations = set()
 
     async def connect(self):
         """Handle WebSocket connection with improved reliability"""
@@ -129,10 +128,6 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
                 
                 logger.info(f"WebSocket connection closed for user {self.user.id} with code {close_code}")
 
-            for task in self._db_operations:
-                if not task.done():
-                    task.cancel()
-                    
             if not self._disconnect_future.done():
                 self._disconnect_future.set_result(True)
                 
@@ -190,18 +185,11 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             return {}
             
         try:
-            db_task = asyncio.create_task(
-                database_sync_to_async(self._get_initial_data_sync)()
-            )
-            self._db_operations.add(db_task)
-            
             bookings, messages, notifications = await asyncio.wait_for(
-                db_task, 
+                database_sync_to_async(self._get_initial_data_sync)(),
                 timeout=5.0
             )
 
-            self._db_operations.remove(db_task)
-            
             return {
                 "bookings": bookings,
                 "messages": messages,
@@ -319,14 +307,10 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             return
             
         try:
-            db_task = asyncio.create_task(
-                database_sync_to_async(self._mark_message_read_sync)(message_id)
+            success = await asyncio.wait_for(
+                database_sync_to_async(self._mark_message_read_sync)(message_id),
+                timeout=3.0
             )
-            self._db_operations.add(db_task)
-            
-            success = await asyncio.wait_for(db_task, timeout=3.0)
-            
-            self._db_operations.remove(db_task)
             
             if success:
                 await self._invalidate_cache()
@@ -370,14 +354,10 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             return
             
         try:
-            db_task = asyncio.create_task(
-                database_sync_to_async(self._mark_notification_read_sync)(notification_id)
+            success = await asyncio.wait_for(
+                database_sync_to_async(self._mark_notification_read_sync)(notification_id),
+                timeout=3.0
             )
-            self._db_operations.add(db_task)
-            
-            success = await asyncio.wait_for(db_task, timeout=3.0)
-            
-            self._db_operations.remove(db_task)
             
             if success:
                 await self._invalidate_cache()
@@ -416,14 +396,10 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             return
             
         try:
-            db_task = asyncio.create_task(
-                database_sync_to_async(self._mark_all_notifications_read_sync)()
+            count = await asyncio.wait_for(
+                database_sync_to_async(self._mark_all_notifications_read_sync)(),
+                timeout=3.0
             )
-            self._db_operations.add(db_task)
-            
-            count = await asyncio.wait_for(db_task, timeout=3.0)
-            
-            self._db_operations.remove(db_task)
             
             await self._invalidate_cache()
             response = {
@@ -461,14 +437,10 @@ class SafariConsumer(AsyncJsonWebsocketConsumer):
             offset = int(payload.get("offset", 0))
             limit = min(int(payload.get("limit", 20)), 50) 
             
-            db_task = asyncio.create_task(
-                database_sync_to_async(self._get_more_messages_sync)(offset, limit)
+            messages = await asyncio.wait_for(
+                database_sync_to_async(self._get_more_messages_sync)(offset, limit),
+                timeout=5.0
             )
-            self._db_operations.add(db_task)
-            
-            messages = await asyncio.wait_for(db_task, timeout=5.0)
-            
-            self._db_operations.remove(db_task)
             
             response = {
                 "type": "more_messages",

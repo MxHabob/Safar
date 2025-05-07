@@ -1,7 +1,7 @@
 import AIAssistant from "@/components/global/aI-assistant-feed"
 import { HeaderFilters } from "@/components/layout/header/header-filters"
 import { MSearch } from "@/components/layout/header/Serch"
-// import { ListBox } from "@/components/main/box/box-list"
+import { ListBox } from "@/components/main/box/box-list"
 import { ListExperience } from "@/components/main/experience/experience-list"
 import { ListPlaces } from "@/components/main/place/place-list"
 import { LoadingPlaceholder } from "@/components/ui/loading-placeholder"
@@ -22,7 +22,7 @@ export default function Home() {
       </div>
       <AIAssistant />
       <div className="px-2 sm:px-6 lg:px-8 md:mx-8 space-y-4">
-        {/* <div className="flex justify-between items-center my-4">
+        <div className="flex justify-between items-center my-4">
           <h2 className="text-2xl font-bold">Picked for you Box</h2>
           <Link href="/boxes">
             <Button variant="ghost" className="flex items-center gap-1">
@@ -32,7 +32,7 @@ export default function Home() {
         </div>
         <Suspense fallback={<LoadingPlaceholder count={4} type="box" />}>
           <ListBox overlay={false} loop={true} />
-        </Suspense> */}
+        </Suspense>
 
         <div className="flex justify-between items-center my-4">
           <h2 className="text-2xl font-bold">Featured Experiences</h2>
