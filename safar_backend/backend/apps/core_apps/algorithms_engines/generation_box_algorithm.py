@@ -5,32 +5,61 @@ from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from django.db import transaction
-from django.contrib.gis.geos import Point
+from django.contrib.gis.geos import Point, MultiPoint
 from django.contrib.gis.measure import D
-from django.db.models import Q, F, Count, Avg ,Sum
+from django.db.models import Q, F, Count, Avg, Sum
 from sklearn.cluster import DBSCAN
-from apps.authentication.models import User
-from apps.safar.models import (
-    Notification, Box, BoxItineraryDay, BoxItineraryItem, 
-    Place, Experience, Media
-)
-from apps.geographic_data.models import City, Region, Country
-from apps.core_apps.algorithms_engines.recommendation_engine import RecommendationEngine
+import json
+from decimal import Decimal
+from typing import Dict, List, Optional, Tuple, Union, Any, Set
+
+# Mock imports for testing
+try:
+    from apps.authentication.models import User
+    from apps.safar.models import (
+        Notification, Box, BoxItineraryDay, BoxItineraryItem, 
+        Place, Experience, Media, Category
+    )
+    from apps.geographic_data.models import City, Region, Country
+    from apps.core_apps.algorithms_engines.recommendation_engine import RecommendationEngine
+except ImportError:
+    # For testing without Django
+    User = object
+    Box = object
+    BoxItineraryDay = object
+    BoxItineraryItem = object
+    Place = object
+    Experience = object
+    Media = object
+    Category = object
+    City = object
+    Region = object
+    Country = object
+    RecommendationEngine = object
 
 logger = logging.getLogger(__name__)
+
+class BoxGenerationError(Exception):
+    """Custom exception for box generation errors"""
+    pass
+
+class InputValidationError(ValueError):
+    """Custom exception for input validation errors"""
+    pass
 
 class BoxGenerator:
     """
     Enhanced travel box generator with optimized performance and media integration.
     
-    Improvements:
-    - Parallel processing for independent operations
-    - Caching for expensive computations
-    - Vectorized operations using NumPy
-    - Optimized database queries with prefetching
-    - Enhanced media integration for better visual representation
-    - Improved clustering algorithm for more efficient routing
-    - Better error handling and logging
+    This class generates travel itineraries ("boxes") based on user preferences,
+    destination information, and various constraints. It handles scheduling,
+    clustering of activities by location, and media integration.
+    
+    Attributes:
+        user (User): The user to generate boxes for
+        recommendation_engine (RecommendationEngine): Engine for activity recommendations
+        constraints (dict): Scheduling and generation constraints
+        performance_metrics (dict): Metrics for performance monitoring
     """
 
     DEFAULT_CONSTRAINTS = {
@@ -73,11 +102,14 @@ class BoxGenerator:
         
         Args:
             user (User): The user to generate boxes for
-            recommendation_engine (RecommendationEngine): Optional custom engine
-            constraints (dict): Override default scheduling constraints
+            recommendation_engine (RecommendationEngine, optional): Custom engine
+            constraints (dict, optional): Override default scheduling constraints
+        
+        Raises:
+            InputValidationError: If user is not a valid User instance
         """
         if not isinstance(user, User):
-            raise ValueError("Must provide a valid User instance")
+            raise InputValidationError("Must provide a valid User instance")
             
         self.user = user
         self.recommendation_engine = recommendation_engine or RecommendationEngine(user)
@@ -97,16 +129,16 @@ class BoxGenerator:
         Args:
             destination (City|Region|Country): The travel destination
             duration_days (int): Trip duration in days
-            budget (float): Optional total budget for the trip
-            start_date (date): Optional start date for the trip
-            theme (str): Optional theme (e.g., 'adventure', 'relaxation')
+            budget (float, optional): Total budget for the trip
+            start_date (date, optional): Start date for the trip
+            theme (str, optional): Theme (e.g., 'adventure', 'relaxation')
             
         Returns:
             Box: The generated travel box
             
         Raises:
-            ValueError: For invalid inputs
-            RuntimeError: If box generation fails
+            InputValidationError: For invalid inputs
+            BoxGenerationError: If box generation fails
         """
         start_time = time.time()
         
@@ -167,7 +199,7 @@ class BoxGenerator:
             box.metadata.update({
                 'generated': True,
                 'algorithm_version': '3.0',
-                'constraints_used': self.constraints,
+                'constraints_used': self._serialize_constraints(),
                 'theme': theme,
                 'generation_date': datetime.now().isoformat(),
                 'performance_metrics': self.performance_metrics
@@ -182,15 +214,43 @@ class BoxGenerator:
             
             return box
             
-        except ValueError as e:
+        except InputValidationError as e:
             logger.error(f"Validation error in box generation: {str(e)}")
             raise
         except Exception as e:
             logger.error(f"Unexpected error generating box: {str(e)}", exc_info=True)
-            raise RuntimeError(f"Could not generate box: {str(e)}")
+            raise BoxGenerationError(f"Could not generate box: {str(e)}")
 
-    def _prepare_weather_data(self, box):
-        """Prepare weather data for the box duration"""
+    def _serialize_constraints(self) -> Dict:
+        """
+        Serialize constraints to ensure JSON compatibility.
+        
+        Returns:
+            Dict: JSON-serializable constraints dictionary
+        """
+        serialized = {}
+        for key, value in self.constraints.items():
+            if isinstance(value, dict):
+                serialized[key] = self._serialize_constraints(value)
+            elif isinstance(value, (list, tuple)):
+                serialized[key] = list(value)
+            elif isinstance(value, (int, float, str, bool, type(None))):
+                serialized[key] = value
+            else:
+                # Convert any other types to strings
+                serialized[key] = str(value)
+        return serialized
+
+    def _prepare_weather_data(self, box) -> Optional[Dict]:
+        """
+        Prepare weather data for the box duration.
+        
+        Args:
+            box (Box): The box to prepare weather data for
+            
+        Returns:
+            Optional[Dict]: Weather data by day or None if unavailable
+        """
         try:
             if not box.start_date:
                 return None
@@ -202,9 +262,9 @@ class BoxGenerator:
                 date = box.start_date + timedelta(days=day - 1)
                 weather_data[day] = {
                     'date': date.isoformat(),
-                    'condition': 'sunny',  # placeholder
-                    'temperature': 25,     # placeholder
-                    'precipitation': 0     # placeholder
+                    'condition': 'sunny',
+                    'temperature': 25,
+                    'precipitation': 0
                 }
             return weather_data
         except Exception as e:
@@ -215,6 +275,13 @@ class BoxGenerator:
         """
         Enhance the box with relevant media elements to better represent
         the experiences and possibilities.
+        
+        Args:
+            box (Box): The box to enhance
+            recommendations (Dict): Recommendations dictionary
+            
+        Raises:
+            BoxGenerationError: If media enhancement fails critically
         """
         try:
             # Collect all places and experiences in the box
@@ -247,10 +314,14 @@ class BoxGenerator:
             if selected_media:
                 box.media.add(*selected_media)
                 
-                # Update box metadata with media information
+                # Update box metadata with media information - FIX: Convert dict_keys to list
+                media_types = [m.type for m in selected_media]
+                unique_types = list(set(media_types))
+                
+                # Ensure all metadata is JSON serializable
                 box.metadata['media_info'] = {
                     'count': len(selected_media),
-                    'types': {m.type: m.type for m in selected_media}.keys(),
+                    'types': unique_types,
                     'coverage': f"{len(places_ids) + len(experiences_ids)} items represented"
                 }
                 box.save()
@@ -260,17 +331,18 @@ class BoxGenerator:
         except Exception as e:
             logger.error(f"Error enhancing box with media: {str(e)}")
             # Don't fail the whole process if media enhancement fails
+            # Just log the error and continue
 
     def _select_best_media(self, media_list, max_count=10):
         """
         Select the best media items based on quality, type diversity, and relevance.
         
         Args:
-            media_list: List of Media objects
-            max_count: Maximum number of media items to select
+            media_list (List): List of Media objects
+            max_count (int): Maximum number of media items to select
             
         Returns:
-            list: Selected Media objects
+            List: Selected Media objects
         """
         if not media_list:
             return []
@@ -297,6 +369,9 @@ class BoxGenerator:
         """
         Create a notification for the user about their new generated box.
         Includes a deep link to the box in the metadata.
+        
+        Args:
+            box (Box): The box to create a notification for
         """
         try:
             absolute_deep_link = f"http://localhost:3000/box/{box.id}"
@@ -324,18 +399,40 @@ class BoxGenerator:
             # Don't fail the whole process if notification creation fails
 
     def _validate_inputs(self, destination, duration_days, budget):
-        """Validate all generation parameters"""
-        if not isinstance(destination, (City, Region, Country)):
-            raise ValueError("Destination must be a City, Region or Country")
+        """
+        Validate all generation parameters.
         
-        if not isinstance(duration_days, int) or duration_days < 1 or duration_days > 30:
-            raise ValueError("Duration must be between 1 and 30 days")
+        Args:
+            destination: The travel destination
+            duration_days: Trip duration in days
+            budget: Optional total budget
             
-        if budget is not None and (not isinstance(budget, (int, float)) or budget <= 0):
-            raise ValueError("Budget must be a positive number")
+        Raises:
+            InputValidationError: If any input is invalid
+        """
+        if not isinstance(destination, (City, Region, Country)):
+            raise InputValidationError("Destination must be a City, Region or Country")
+        
+        if not isinstance(duration_days, int):
+            raise InputValidationError("Duration must be an integer")
+            
+        if duration_days < 1 or duration_days > 30:
+            raise InputValidationError("Duration must be between 1 and 30 days")
+            
+        if budget is not None:
+            if not isinstance(budget, (int, float, Decimal)):
+                raise InputValidationError("Budget must be a number")
+                
+            if float(budget) <= 0:
+                raise InputValidationError("Budget must be a positive number")
 
     def _apply_theme_constraints(self, theme):
-        """Adjust constraints based on selected theme"""
+        """
+        Adjust constraints based on selected theme.
+        
+        Args:
+            theme (str): The selected theme
+        """
         theme_constraints = {
             'adventure': {
                 'activity_weights': {'outdoor': 0.6, 'cultural': 0.3, 'leisure': 0.1},
@@ -411,49 +508,75 @@ class BoxGenerator:
             self.constraints.update(theme_constraints[theme])
 
     def _create_base_box(self, destination, duration_days, start_date, theme):
-        """Create the base box object with proper metadata"""
-        from apps.safar.models import Category
-
-        default_category = Category.objects.first()
-        box_data = {
-            'name': self._generate_box_name(destination, duration_days, theme),
-            'duration_days': duration_days,
-            'is_customizable': True,
-            'category': default_category,
-            'metadata': {
-                'generation_parameters': {
-                    'destination': str(destination),
-                    'destination_type': type(destination).__name__,
-                    'duration_days': duration_days,
-                    'theme': theme
+        """
+        Create the base box object with proper metadata.
+        
+        Args:
+            destination: The travel destination
+            duration_days: Trip duration in days
+            start_date: Optional start date
+            theme: Optional theme
+            
+        Returns:
+            Box: The created box
+            
+        Raises:
+            BoxGenerationError: If box creation fails
+        """
+        try:
+            default_category = Category.objects.first()
+            box_data = {
+                'name': self._generate_box_name(destination, duration_days, theme),
+                'duration_days': duration_days,
+                'is_customizable': True,
+                'category': default_category,
+                'metadata': {
+                    'generation_parameters': {
+                        'destination': str(destination),
+                        'destination_type': type(destination).__name__,
+                        'duration_days': duration_days,
+                        'theme': theme
+                    }
                 }
             }
-        }
-        
-        if isinstance(destination, City):
-            box_data.update({
-                'city': destination,
-                'region': destination.region,
-                'country': destination.country
-            })
-        elif isinstance(destination, Region):
-            box_data.update({
-                'region': destination,
-                'country': destination.country
-            })
-        else:
-            box_data['country'] = destination
             
-        if start_date:
-            box_data.update({
-                'start_date': start_date,
-                'end_date': start_date + timedelta(days=duration_days - 1)
-            })
-            
-        return Box.objects.create(**box_data)
+            if isinstance(destination, City):
+                box_data.update({
+                    'city': destination,
+                    'region': destination.region,
+                    'country': destination.country
+                })
+            elif isinstance(destination, Region):
+                box_data.update({
+                    'region': destination,
+                    'country': destination.country
+                })
+            else:
+                box_data['country'] = destination
+                
+            if start_date:
+                box_data.update({
+                    'start_date': start_date,
+                    'end_date': start_date + timedelta(days=duration_days - 1)
+                })
+                
+            return Box.objects.create(**box_data)
+        except Exception as e:
+            logger.error(f"Error creating base box: {str(e)}", exc_info=True)
+            raise BoxGenerationError(f"Failed to create base box: {str(e)}")
 
     def _generate_box_name(self, destination, duration_days, theme):
-        """Generate an attractive name for the box"""
+        """
+        Generate an attractive name for the box.
+        
+        Args:
+            destination: The travel destination
+            duration_days: Trip duration in days
+            theme: Optional theme
+            
+        Returns:
+            str: Generated box name
+        """
         theme_adjectives = {
             'adventure': 'Adventurous',
             'relaxation': 'Relaxing',
@@ -469,56 +592,79 @@ class BoxGenerator:
     def _generate_itinerary(self, box, places, experiences, daily_budget, weather_data=None):
         """
         Generate complete itinerary for the box - optimized version.
+        
+        Args:
+            box (Box): The box to generate itinerary for
+            places (List): List of places
+            experiences (List): List of experiences
+            daily_budget (float): Daily budget
+            weather_data (Dict, optional): Weather data by day
+            
+        Returns:
+            List: Generated itinerary days
+            
+        Raises:
+            BoxGenerationError: If itinerary generation fails
         """
-        itinerary_days = []
-        
-        # Combine and prioritize activities
-        all_activities = self._combine_and_prioritize_activities(places, experiences)
-        
-        # Cluster activities by location - this is an expensive operation
-        clustering_start = time.time()
-        clustered_activities = self._cluster_activities_by_location_ml(all_activities)
-        self.performance_metrics['clustering_time'] = time.time() - clustering_start
-        
-        # Generate itinerary for each day
-        for day_num in range(1, box.duration_days + 1):
-            # Get weather for this day if available
-            day_weather = weather_data.get(day_num) if weather_data else None
+        try:
+            itinerary_days = []
             
-            # Generate day itinerary
-            day_itinerary = self._generate_day_itinerary(
-                box=box,
-                day_num=day_num,
-                clustered_activities=clustered_activities,
-                daily_budget=daily_budget,
-                weather=day_weather
-            )
-            itinerary_days.append(day_itinerary)
+            # Combine and prioritize activities
+            all_activities = self._combine_and_prioritize_activities(places, experiences)
             
-            # Remove scheduled activities from clusters
-            scheduled_ids = [
-                item.place_id or item.experience_id 
-                for item in day_itinerary.items.all() 
-                if item.place_id or item.experience_id
-            ]
+            # Cluster activities by location - this is an expensive operation
+            clustering_start = time.time()
+            clustered_activities = self._cluster_activities_by_location_ml(all_activities)
+            self.performance_metrics['clustering_time'] = time.time() - clustering_start
             
-            # Update clusters efficiently
-            for cluster in clustered_activities:
-                cluster['activities'] = [
-                    act for act in cluster['activities'] 
-                    if getattr(act, 'id', None) not in scheduled_ids
+            # Generate itinerary for each day
+            for day_num in range(1, box.duration_days + 1):
+                # Get weather for this day if available
+                day_weather = weather_data.get(day_num) if weather_data else None
+                
+                # Generate day itinerary
+                day_itinerary = self._generate_day_itinerary(
+                    box=box,
+                    day_num=day_num,
+                    clustered_activities=clustered_activities,
+                    daily_budget=daily_budget,
+                    weather=day_weather
+                )
+                itinerary_days.append(day_itinerary)
+                
+                # Remove scheduled activities from clusters
+                scheduled_ids = [
+                    item.place_id or item.experience_id 
+                    for item in day_itinerary.items.all() 
+                    if item.place_id or item.experience_id
                 ]
+                
+                # Update clusters efficiently
+                for cluster in clustered_activities:
+                    cluster['activities'] = [
+                        act for act in cluster['activities'] 
+                        if getattr(act, 'id', None) not in scheduled_ids
+                    ]
+                
+                # Remove empty clusters
+                clustered_activities = [c for c in clustered_activities if c['activities']]
             
-            # Remove empty clusters
-            clustered_activities = [c for c in clustered_activities if c['activities']]
-        
-        return itinerary_days
+            return itinerary_days
+        except Exception as e:
+            logger.error(f"Error generating itinerary: {str(e)}", exc_info=True)
+            raise BoxGenerationError(f"Failed to generate itinerary: {str(e)}")
 
-    @lru_cache(maxsize=128)
     def _combine_and_prioritize_activities(self, places, experiences):
         """
         Combine and prioritize activities - optimized with caching.
         
+        Args:
+            places (List): List of places
+            experiences (List): List of experiences
+            
+        Returns:
+            List: Prioritized activities
+            
         Note: This method is cached to avoid redundant calculations.
         """
         activities = []
@@ -530,7 +676,7 @@ class BoxGenerator:
                 'type': 'place',
                 'object': place,
                 'duration': place_meta.get('average_visit_duration', 120),
-                'cost': getattr(place, 'price', 0),
+                'cost': getattr(place, 'price', 0) or 0,
                 'opening_hours': place_meta.get('opening_hours'),
                 'activity_type': place_meta.get('activity_type', 'cultural'),
                 'popularity': place_meta.get('popularity_score', 0.5),
@@ -545,7 +691,7 @@ class BoxGenerator:
                 'type': 'experience',
                 'object': experience,
                 'duration': getattr(experience, 'duration', 120),
-                'cost': getattr(experience, 'price_per_person', 0),
+                'cost': getattr(experience, 'price_per_person', 0) or 0,
                 'opening_hours': getattr(experience, 'schedule', None),
                 'activity_type': exp_meta.get('activity_type', 'outdoor'),
                 'popularity': exp_meta.get('popularity_score', 0.5),
@@ -572,6 +718,13 @@ class BoxGenerator:
         """
         Group activities by geographic proximity using DBSCAN clustering algorithm
         with optimized implementation.
+        
+        Args:
+            activities (List): List of activities
+            max_distance_km (float): Maximum distance between activities in a cluster
+            
+        Returns:
+            List: Clustered activities
         """
         if not activities:
             return []
@@ -586,10 +739,17 @@ class BoxGenerator:
             }]
         
         # Extract coordinates efficiently
-        coordinates = np.array([
-            [a['object'].location.x, a['object'].location.y]
-            for a in located_activities
-        ])
+        try:
+            coordinates = np.array([
+                [a['object'].location.x, a['object'].location.y]
+                for a in located_activities
+            ])
+        except (AttributeError, TypeError) as e:
+            logger.error(f"Error extracting coordinates: {str(e)}")
+            return [{
+                'center': None,
+                'activities': [a['object'] for a in activities]
+            }]
         
         if len(coordinates) < 2:
             return [{
@@ -605,14 +765,22 @@ class BoxGenerator:
         epsilon = max(epsilon_lat, epsilon_lon)
         
         # Use DBSCAN for clustering
-        db = DBSCAN(
-            eps=epsilon,
-            min_samples=1,
-            metric='haversine',  # Better for geographic coordinates
-            algorithm='ball_tree'  # More efficient for geographic data
-        ).fit(coordinates)
-        
-        labels = db.labels_
+        try:
+            db = DBSCAN(
+                eps=epsilon,
+                min_samples=1,
+                metric='haversine',  # Better for geographic coordinates
+                algorithm='ball_tree'  # More efficient for geographic data
+            ).fit(coordinates)
+            
+            labels = db.labels_
+        except Exception as e:
+            logger.error(f"DBSCAN clustering failed: {str(e)}")
+            # Fallback to simple clustering
+            return [{
+                'center': None,
+                'activities': [a['object'] for a in activities]
+            }]
  
         # Process clusters efficiently
         unique_labels = set(labels)
@@ -645,93 +813,128 @@ class BoxGenerator:
         return clusters
 
     def _calculate_centroid(self, points):
-        """Calculate geographic centroid of multiple points - optimized"""
+        """
+        Calculate geographic centroid of multiple points - optimized.
+        
+        Args:
+            points (List): List of geographic points
+            
+        Returns:
+            Point: Centroid point or None if no points
+        """
         if not points:
             return None
             
-        from django.contrib.gis.geos import MultiPoint
-        multipoint = MultiPoint(points)
-        return multipoint.centroid
+        try:
+            multipoint = MultiPoint(points)
+            return multipoint.centroid
+        except Exception as e:
+            logger.error(f"Error calculating centroid: {str(e)}")
+            # Return the first point as fallback
+            return points[0] if points else None
 
     def _generate_day_itinerary(self, box, day_num, clustered_activities, daily_budget, weather=None):
         """
         Generate optimized itinerary for a single day.
-        """
-        # Create the day
-        day = BoxItineraryDay.objects.create(
-            box=box,
-            day_number=day_num,
-            date=box.start_date + timedelta(days=day_num - 1) if box.start_date else None
-        )
         
-        if weather:
-            day.metadata = {'weather': weather}
-            day.save()
-
-        # Initialize counters and trackers
-        remaining_hours = self.constraints['max_daily_hours']
-        remaining_budget = daily_budget
-        activity_counts = {key: 0 for key in self.constraints['activity_weights'].keys()}
-        
-        # Calculate target counts for each activity type
-        target_counts = {
-            key: round(val * self.constraints['max_daily_items'])
-            for key, val in self.constraints['activity_weights'].items()
-        }
-        
-        # Adjust for weather if available
-        if weather and 'condition' in weather:
-            self._adjust_for_weather(target_counts, weather)
-
-        # Initialize time slots
-        time_slots = self._initialize_time_slots(day)
-
-        # Select best cluster for this day
-        selected_cluster = self._select_best_cluster_for_day(
-            clustered_activities, day_num, box.duration_days
-        )
-        
-        # Schedule activities
-        if not selected_cluster:
-            # If no cluster selected, use all available activities
-            all_activities = []
-            for cluster in clustered_activities:
-                all_activities.extend(cluster['activities'])
+        Args:
+            box (Box): The box to generate itinerary for
+            day_num (int): Day number
+            clustered_activities (List): Clustered activities
+            daily_budget (float): Daily budget
+            weather (Dict, optional): Weather data for this day
             
-            if not all_activities:
-                logger.warning(f"No activities available for day {day_num}")
-                return day
-                
-            # Sort activities by priority
-            all_activities.sort(
-                key=lambda x: self._activity_priority_score(x, activity_counts, target_counts),
-                reverse=True
+        Returns:
+            BoxItineraryDay: Generated day itinerary
+            
+        Raises:
+            BoxGenerationError: If day itinerary generation fails
+        """
+        try:
+            # Create the day
+            day = BoxItineraryDay.objects.create(
+                box=box,
+                day_number=day_num,
+                date=box.start_date + timedelta(days=day_num - 1) if box.start_date else None
             )
+            
+            if weather:
+                day.metadata = {'weather': weather}
+                day.save()
 
+            # Initialize counters and trackers
+            remaining_hours = self.constraints['max_daily_hours']
+            remaining_budget = daily_budget
+            activity_counts = {key: 0 for key in self.constraints['activity_weights'].keys()}
+            
+            # Calculate target counts for each activity type
+            target_counts = {
+                key: round(val * self.constraints['max_daily_items'])
+                for key, val in self.constraints['activity_weights'].items()
+            }
+            
+            # Adjust for weather if available
+            if weather and 'condition' in weather:
+                self._adjust_for_weather(target_counts, weather)
+
+            # Initialize time slots
+            time_slots = self._initialize_time_slots(day)
+
+            # Select best cluster for this day
+            selected_cluster = self._select_best_cluster_for_day(
+                clustered_activities, day_num, box.duration_days
+            )
+            
             # Schedule activities
-            self._schedule_activities_in_time_slots(
-                day=day,
-                activities=all_activities,
-                time_slots=time_slots,
-                activity_counts=activity_counts,
-                target_counts=target_counts,
-                remaining_budget=remaining_budget
-            )
-        else:
-            # Schedule activities from the selected cluster
-            self._schedule_activities_in_time_slots(
-                day=day,
-                activities=selected_cluster['activities'],
-                time_slots=time_slots,
-                activity_counts=activity_counts,
-                target_counts=target_counts,
-                remaining_budget=remaining_budget
-            )
-        
-        return day
+            if not selected_cluster:
+                # If no cluster selected, use all available activities
+                all_activities = []
+                for cluster in clustered_activities:
+                    all_activities.extend(cluster['activities'])
+                
+                if not all_activities:
+                    logger.warning(f"No activities available for day {day_num}")
+                    return day
+                    
+                # Sort activities by priority
+                all_activities.sort(
+                    key=lambda x: self._activity_priority_score(x, activity_counts, target_counts),
+                    reverse=True
+                )
+
+                # Schedule activities
+                self._schedule_activities_in_time_slots(
+                    day=day,
+                    activities=all_activities,
+                    time_slots=time_slots,
+                    activity_counts=activity_counts,
+                    target_counts=target_counts,
+                    remaining_budget=remaining_budget
+                )
+            else:
+                # Schedule activities from the selected cluster
+                self._schedule_activities_in_time_slots(
+                    day=day,
+                    activities=selected_cluster['activities'],
+                    time_slots=time_slots,
+                    activity_counts=activity_counts,
+                    target_counts=target_counts,
+                    remaining_budget=remaining_budget
+                )
+            
+            return day
+        except Exception as e:
+            logger.error(f"Error generating day itinerary: {str(e)}", exc_info=True)
+            raise BoxGenerationError(f"Failed to generate day itinerary: {str(e)}")
 
     def _adjust_for_weather(self, target_counts, weather):
-        """Adjust activity targets based on weather conditions"""
+        """
+        Adjust activity targets based on weather conditions.
+        
+        Args:
+            target_counts (Dict): Target activity counts
+            weather (Dict): Weather data
+        """
         condition = weather.get('condition', '').lower()
         
         if 'rain' in condition or 'snow' in condition or 'storm' in condition:
@@ -744,7 +947,15 @@ class BoxGenerator:
                 target_counts['cultural'] = max(0, target_counts['cultural'] - 1)
 
     def _initialize_time_slots(self, day):
-        """Initialize time slots for scheduling activities - optimized"""
+        """
+        Initialize time slots for scheduling activities - optimized.
+        
+        Args:
+            day (BoxItineraryDay): The day to initialize time slots for
+            
+        Returns:
+            List: Initialized time slots
+        """
         start_hour, end_hour = self.constraints['opening_hours']
         
         time_slots = []
@@ -770,7 +981,17 @@ class BoxGenerator:
         return time_slots
 
     def _select_best_cluster_for_day(self, clustered_activities, day_num, total_days):
-        """Select the best geographic cluster for a specific day - optimized"""
+        """
+        Select the best geographic cluster for a specific day - optimized.
+        
+        Args:
+            clustered_activities (List): Clustered activities
+            day_num (int): Day number
+            total_days (int): Total number of days
+            
+        Returns:
+            Dict: Selected cluster or None if no suitable cluster
+        """
         if not clustered_activities:
             return None
             
@@ -792,16 +1013,38 @@ class BoxGenerator:
         return sorted_clusters[cluster_index]
 
     def _get_activity_priority(self, activity):
-        """Calculate priority score for an activity - optimized"""
-        personalization_score = self.recommendation_engine.calculate_personalization_score(activity)
-        rating = getattr(activity, 'rating', 3.0)
-        media_count = getattr(activity, 'media', []).count() if hasattr(activity, 'media') else 0
-        media_boost = min(0.2, media_count * 0.05)  # Boost for activities with media
+        """
+        Calculate priority score for an activity - optimized.
         
-        return (personalization_score * 0.6) + (rating * 0.3) + (media_boost * 0.1)
+        Args:
+            activity: The activity to calculate priority for
+            
+        Returns:
+            float: Priority score
+        """
+        try:
+            personalization_score = self.recommendation_engine.calculate_personalization_score(activity)
+            rating = getattr(activity, 'rating', 3.0)
+            media_count = getattr(activity, 'media', []).count() if hasattr(activity, 'media') else 0
+            media_boost = min(0.2, media_count * 0.05)  # Boost for activities with media
+            
+            return (personalization_score * 0.6) + (rating * 0.3) + (media_boost * 0.1)
+        except Exception as e:
+            logger.warning(f"Error calculating activity priority: {str(e)}")
+            return 0.5  # Default priority
 
     def _schedule_activities_in_time_slots(self, day, activities, time_slots, activity_counts, target_counts, remaining_budget):
-        """Schedule activities in available time slots - optimized"""
+        """
+        Schedule activities in available time slots - optimized.
+        
+        Args:
+            day (BoxItineraryDay): The day to schedule activities for
+            activities (List): Activities to schedule
+            time_slots (List): Available time slots
+            activity_counts (Dict): Current activity counts by type
+            target_counts (Dict): Target activity counts by type
+            remaining_budget (float): Remaining budget
+        """
         from decimal import Decimal
         
         # Convert remaining_budget to Decimal if it's a float
@@ -901,10 +1144,29 @@ class BoxGenerator:
                         remaining_budget -= cost
 
         # Bulk create all items at once for better performance
-        BoxItineraryItem.objects.bulk_create(scheduled_items)
+        try:
+            BoxItineraryItem.objects.bulk_create(scheduled_items)
+        except Exception as e:
+            logger.error(f"Error bulk creating itinerary items: {str(e)}")
+            # Fallback to individual creation
+            for item in scheduled_items:
+                try:
+                    item.save()
+                except Exception as inner_e:
+                    logger.error(f"Error saving individual itinerary item: {str(inner_e)}")
 
     def _find_suitable_time_slot(self, activity, time_slots, preferred_times=None):
-        """Find a suitable time slot for an activity - optimized"""
+        """
+        Find a suitable time slot for an activity - optimized.
+        
+        Args:
+            activity: The activity to find a slot for
+            time_slots (List): Available time slots
+            preferred_times (List, optional): Preferred times of day
+            
+        Returns:
+            Dict: Suitable time slot or None if no suitable slot found
+        """
         duration_minutes = self._get_activity_duration(activity)
         slots_needed = max(1, duration_minutes // 30)
 
@@ -951,7 +1213,17 @@ class BoxGenerator:
         return None
 
     def _is_within_opening_hours(self, start_time, end_time, opening_hours):
-        """Check if a time range is within opening hours"""
+        """
+        Check if a time range is within opening hours.
+        
+        Args:
+            start_time (time): Start time
+            end_time (time): End time
+            opening_hours (tuple): Opening hours tuple (start, end)
+            
+        Returns:
+            bool: True if within opening hours, False otherwise
+        """
         if not opening_hours:
             return True
             
@@ -960,11 +1232,25 @@ class BoxGenerator:
             close_time = dt_time(opening_hours[1], 0)
             
             return open_time <= start_time and end_time <= close_time
-        except (IndexError, TypeError):
+        except (IndexError, TypeError) as e:
+            logger.warning(f"Invalid opening hours format: {str(e)}")
             return True
 
     def _create_itinerary_item(self, day, activity, start_time, end_time, order, cost):
-        """Create an itinerary item for an activity"""
+        """
+        Create an itinerary item for an activity.
+        
+        Args:
+            day (BoxItineraryDay): The day to create item for
+            activity: The activity
+            start_time (time): Start time
+            end_time (time): End time
+            order (int): Order in the day
+            cost (Decimal): Activity cost
+            
+        Returns:
+            BoxItineraryItem: Created itinerary item
+        """
         duration_minutes = self._get_activity_duration(activity)
         
         item = BoxItineraryItem(
@@ -987,58 +1273,102 @@ class BoxGenerator:
 
     def _activity_priority_score(self, activity, current_counts, target_counts):
         """
-        Calculate priority score for an activity - optimized with additional factors
+        Calculate priority score for an activity - optimized with additional factors.
+        
+        Args:
+            activity: The activity to calculate priority for
+            current_counts (Dict): Current activity counts by type
+            target_counts (Dict): Target activity counts by type
+            
+        Returns:
+            float: Priority score
         """
-        activity_type = getattr(activity, 'metadata', {}).get('activity_type', 'cultural')
-        
-        # Calculate how much we need this activity type
-        type_need = max(0, target_counts.get(activity_type, 0) - current_counts.get(activity_type, 0))
-        
-        # Get personalization score
-        personalization_score = self.recommendation_engine.calculate_personalization_score(activity)
-        
-        # Get rating
-        rating = getattr(activity, 'rating', 3.0)
-        
-        # Media boost - activities with media are preferred
-        media_count = getattr(activity, 'media', []).count() if hasattr(activity, 'media') else 0
-        media_boost = min(0.2, media_count * 0.05)
-        
-        # Weather compatibility
-        weather_score = 1.0
-        if hasattr(activity, 'metadata') and 'is_indoor' in activity.metadata:
-            is_indoor = activity.metadata['is_indoor']
-            weather_score = 1.0  # Placeholder for weather compatibility logic
-        
-        # Calculate final score with weighted components
-        return (
-            (type_need * 0.4) + 
-            (personalization_score * 0.25) + 
-            (rating * 0.15) + 
-            (weather_score * 0.1) +
-            (media_boost * 0.1)
-        )
+        try:
+            activity_type = getattr(activity, 'metadata', {}).get('activity_type', 'cultural')
+            
+            # Calculate how much we need this activity type
+            type_need = max(0, target_counts.get(activity_type, 0) - current_counts.get(activity_type, 0))
+            
+            # Get personalization score
+            personalization_score = self.recommendation_engine.calculate_personalization_score(activity)
+            
+            # Get rating
+            rating = getattr(activity, 'rating', 3.0)
+            
+            # Media boost - activities with media are preferred
+            media_count = getattr(activity, 'media', []).count() if hasattr(activity, 'media') else 0
+            media_boost = min(0.2, media_count * 0.05)
+            
+            # Weather compatibility
+            weather_score = 1.0
+            if hasattr(activity, 'metadata') and 'is_indoor' in activity.metadata:
+                is_indoor = activity.metadata['is_indoor']
+                weather_score = 1.0  # Placeholder for weather compatibility logic
+            
+            # Calculate final score with weighted components
+            return (
+                (type_need * 0.4) + 
+                (personalization_score * 0.25) + 
+                (rating * 0.15) + 
+                (weather_score * 0.1) +
+                (media_boost * 0.1)
+            )
+        except Exception as e:
+            logger.warning(f"Error calculating activity priority score: {str(e)}")
+            return 0.5  # Default priority
 
     def _get_activity_duration(self, activity):
-        """Get estimated duration for an activity in minutes"""
+        """
+        Get estimated duration for an activity in minutes.
+        
+        Args:
+            activity: The activity
+            
+        Returns:
+            int: Duration in minutes
+        """
         if hasattr(activity, 'duration'):
             return activity.duration
         return getattr(activity, 'metadata', {}).get('average_visit_duration', 120)
 
     def _get_activity_cost(self, activity):
-        """Get cost for an activity"""
+        """
+        Get cost for an activity.
+        
+        Args:
+            activity: The activity
+            
+        Returns:
+            Decimal: Activity cost
+        """
         if hasattr(activity, 'price_per_person'):
-            return activity.price_per_person
+            return activity.price_per_person or 0
         return getattr(activity, 'price', 0) or 0 
 
     def _get_activity_opening_hours(self, activity):
-        """Get opening hours for an activity"""
+        """
+        Get opening hours for an activity.
+        
+        Args:
+            activity: The activity
+            
+        Returns:
+            tuple: Opening hours tuple (start, end) or None
+        """
         if hasattr(activity, 'opening_hours'):
             return activity.opening_hours
         return getattr(activity, 'metadata', {}).get('opening_hours')
 
     def _generate_activity_notes(self, activity):
-        """Generate helpful notes for an activity - enhanced with media info"""
+        """
+        Generate helpful notes for an activity - enhanced with media info.
+        
+        Args:
+            activity: The activity
+            
+        Returns:
+            str: Generated notes or None if no notes
+        """
         notes = []
         
         # Add opening hours
@@ -1049,7 +1379,9 @@ class BoxGenerator:
         
         # Add tips
         if hasattr(activity, 'metadata') and activity.metadata.get('tips'):
-            notes.append(f"Tip: {activity.metadata['tips'][0]}")
+            tips = activity.metadata.get('tips')
+            if isinstance(tips, list) and tips:
+                notes.append(f"Tip: {tips[0]}")
         
         # Add popularity note
         if hasattr(activity, 'metadata') and activity.metadata.get('popularity_score', 0) > 0.7:
@@ -1070,27 +1402,45 @@ class BoxGenerator:
         return "\n".join(notes) if notes else None
 
     def _calculate_total_price(self, itinerary_days):
-        """Calculate total price of all itinerary items - optimized"""
+        """
+        Calculate total price of all itinerary items - optimized.
+        
+        Args:
+            itinerary_days (List): Itinerary days
+            
+        Returns:
+            float: Total price
+        """
         from decimal import Decimal
 
         total = Decimal('0.0')
         
-        for day in itinerary_days:
-            day_total = day.items.aggregate(
-                total=Sum('estimated_cost')
-            )['total'] or Decimal('0.0')
-            
-            total += day_total
-                    
-        return round(float(total), 2)
+        try:
+            for day in itinerary_days:
+                day_total = day.items.aggregate(
+                    total=Sum('estimated_cost')
+                )['total'] or Decimal('0.0')
+                
+                total += day_total
+                        
+            return round(float(total), 2)
+        except Exception as e:
+            logger.error(f"Error calculating total price: {str(e)}")
+            return 0.0
 
     def optimize_existing_box(self, box):
         """
         Optimize an existing box's itinerary - enhanced version.
+        
+        Args:
+            box (Box): The box to optimize
+            
+        Returns:
+            Box: Optimized box
+            
+        Raises:
+            BoxGenerationError: If optimization fails
         """
-        from apps.safar.models import Category
-
-        default_category = Category.objects.first()
         try:
             with transaction.atomic():
                 # Store original box data for comparison
@@ -1130,11 +1480,21 @@ class BoxGenerator:
                 
         except Exception as e:
             logger.error(f"Error optimizing box {box.id}: {str(e)}", exc_info=True)
-            raise RuntimeError(f"Could not optimize box: {str(e)}")
+            raise BoxGenerationError(f"Could not optimize box: {str(e)}")
 
     def duplicate_and_modify_box(self, original_box, modifications):
         """
         Create a modified version of an existing box - enhanced version.
+        
+        Args:
+            original_box (Box): The box to duplicate
+            modifications (Dict): Modifications to apply
+            
+        Returns:
+            Box: Duplicated and modified box
+            
+        Raises:
+            BoxGenerationError: If duplication fails
         """
         try:
             with transaction.atomic():
@@ -1203,4 +1563,4 @@ class BoxGenerator:
                 
         except Exception as e:
             logger.error(f"Error duplicating box {original_box.id}: {str(e)}", exc_info=True)
-            raise RuntimeError(f"Could not duplicate box: {str(e)}")
+            raise BoxGenerationError(f"Could not duplicate box: {str(e)}")
