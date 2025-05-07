@@ -221,15 +221,23 @@ class BoxGenerator:
             logger.error(f"Unexpected error generating box: {str(e)}", exc_info=True)
             raise BoxGenerationError(f"Could not generate box: {str(e)}")
 
-    def _serialize_constraints(self) -> Dict:
+    def _serialize_constraints(self, constraints_dict=None):
         """
         Serialize constraints to ensure JSON compatibility.
+        
+        Args:
+            constraints_dict (Dict, optional): Dictionary to serialize. 
+                                          If None, uses self.constraints.
         
         Returns:
             Dict: JSON-serializable constraints dictionary
         """
+        # If no dictionary provided, use self.constraints
+        if constraints_dict is None:
+            constraints_dict = self.constraints
+        
         serialized = {}
-        for key, value in self.constraints.items():
+        for key, value in constraints_dict.items():
             if isinstance(value, dict):
                 serialized[key] = self._serialize_constraints(value)
             elif isinstance(value, (list, tuple)):
