@@ -142,7 +142,7 @@ class BoxItineraryDaySerializer(serializers.ModelSerializer):
 class BoxSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     media = MediaSerializer(many=True, read_only=True)
-    itinerary_days = BoxItineraryDaySerializer(many=True, read_only=True)
+    # itinerary_days = BoxItineraryDaySerializer(many=True, read_only=True)
     is_in_wishlist = serializers.SerializerMethodField()
 
     class Meta:
@@ -151,7 +151,7 @@ class BoxSerializer(serializers.ModelSerializer):
             'id', 'category', 'name', 'description', 'total_price', 'currency',
             'country', 'city', 'media', 'duration_days', 'duration_hours',
             'start_date', 'end_date', 'is_customizable', 'max_group_size',
-            'tags', 'is_in_wishlist', 'itinerary_days'
+            'tags', 'is_in_wishlist'
         ]
         read_only_fields = ['id']
 
