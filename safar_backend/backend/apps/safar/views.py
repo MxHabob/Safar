@@ -332,66 +332,66 @@ class BoxViewSet(BaseViewSet):
         box = self.get_object()
         return Response({'itinerary': 'Detailed itinerary would be here'})
     
-    # @action(detail=False, methods=['post'])
-    # def generate(self, request):
-    #     """
-    #     Generate a custom box based on user preferences
-    #     """
-    #     try:
-    #         user = request.user
-    #         destination_id = request.data.get('destination_id')
-    #         destination_type = request.data.get('destination_type')
-    #         duration_days = int(request.data.get('duration_days', 3))
-    #         budget = request.data.get('budget')
-    #         theme = request.data.get('theme')
-    #         start_date = request.data.get('start_date')
+    @action(detail=False, methods=['post'])
+    def generate(self, request):
+        """
+        Generate a custom box based on user preferences
+        """
+        try:
+            user = request.user
+            destination_id = request.data.get('destination_id')
+            destination_type = request.data.get('destination_type')
+            duration_days = int(request.data.get('duration_days', 3))
+            budget = request.data.get('budget')
+            theme = request.data.get('theme')
+            start_date = request.data.get('start_date')
             
-    #         destination = self._get_destination(destination_id, destination_type)
+            destination = self._get_destination(destination_id, destination_type)
             
-    #         generator = BoxGenerator(user)
-    #         box = generator.generate_box(
-    #             destination=destination,
-    #             duration_days=duration_days,
-    #             budget=budget,
-    #             start_date=start_date,
-    #             theme=theme
-    #         )
+            generator = BoxGenerator(user)
+            box = generator.generate_box(
+                destination=destination,
+                duration_days=duration_days,
+                budget=budget,
+                start_date=start_date,
+                theme=theme
+            )
             
-    #         return Response(
-    #             BoxSerializer(box).data,
-    #             status=status.HTTP_201_CREATED
-    #         )
+            return Response(
+                BoxSerializer(box).data,
+                status=status.HTTP_201_CREATED
+            )
             
-    #     except ValueError as e:
-    #         return Response(
-    #             {'error': str(e)},
-    #             status=status.HTTP_400_BAD_REQUEST
-    #         )
-    #     except Exception as e:
-    #         logger.error(f"Box generation failed: {str(e)}")
-    #         return Response(
-    #             {'error': 'Could not generate box'},
-    #             status=status.HTTP_500_INTERNAL_SERVER_ERROR
-    #         )
+        except ValueError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Box generation failed: {str(e)}")
+            return Response(
+                {'error': 'Could not generate box'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
     
-    # def _get_destination(self, destination_id, destination_type):
-    #     """Get destination model instance"""
-    #     from apps.geographic_data.models import City, Region, Country
+    def _get_destination(self, destination_id, destination_type):
+        """Get destination model instance"""
+        from apps.geographic_data.models import City, Region, Country
         
-    #     model_map = {
-    #         'city': City,
-    #         'region': Region,
-    #         'country': Country
-    #     }
+        model_map = {
+            'city': City,
+            'region': Region,
+            'country': Country
+        }
         
-    #     if destination_type not in model_map:
-    #         raise ValueError("Invalid destination type")
+        if destination_type not in model_map:
+            raise ValueError("Invalid destination type")
             
-    #     model = model_map[destination_type]
-    #     try:
-    #         return model.objects.get(id=destination_id, is_deleted=False)
-    #     except model.DoesNotExist:
-    #         raise ValueError(f"{destination_type.capitalize()} not found")
+        model = model_map[destination_type]
+        try:
+            return model.objects.get(id=destination_id, is_deleted=False)
+        except model.DoesNotExist:
+            raise ValueError(f"{destination_type.capitalize()} not found")
         
 class BookingViewSet(BaseViewSet):
     queryset = Booking.objects.select_related(
