@@ -2,7 +2,6 @@
 
 
 import { useGetUserByIdQuery } from "@/core/services/api";
-import { useState } from "react";
 import { UserAvatar } from '@/components/global/profile/user-avatar';
 import { RouterBack } from '@/components/global/router-back';
 import { Button } from "@/components/ui/button";

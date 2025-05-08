@@ -13,33 +13,26 @@ type FollowButtonProps = {
 export const FollowButton = ({ 
   userId, 
   isFollowing, 
-  className = "h-10 rounded-full w-1/3 mt-8"
+  className = "h-10 rounded-full w-1/3"
 }: FollowButtonProps) => {
-  const [followUser ,isLoading] = useFollowUserMutation()
-  const [unfollowUser] = useUnfollowUserMutation()
+  const [followUser, { isLoading: isFollowingLoading }] = useFollowUserMutation()
+  const [unfollowUser, { isLoading: isUnfollowingLoading }] = useUnfollowUserMutation()
+
+  const isLoading = isFollowingLoading || isUnfollowingLoading
 
   const handleFollow = async () => {
     const action = isFollowing ? unfollowUser(userId) : followUser(userId)
     const actionName = isFollowing ? "Unfollowing" : "Following"
     const successMessage = isFollowing ? "Unfollowed successfully" : "You're now following this user"
     
-    try {
-      toast.promise(action, {
-        loading: `${actionName} user...`,
-        success: () => {
-          return successMessage
-        },
-        error: (error) => {
-          console.error("Follow error:", error)
-          return error.data?.message || "Failed to update follow status"
-        },
-        finally: () => {
-          
-        }
-      })
-    } catch {
-      
-    }
+    toast.promise(action, {
+      loading: `${actionName} user...`,
+      success: successMessage,
+      error: (error) => {
+        console.error("Follow error:", error)
+        return error.data?.message || "Failed to update follow status"
+      }
+    })
   }
 
   return (
@@ -50,7 +43,7 @@ export const FollowButton = ({
       variant={isFollowing ? "outline" : "default"}
     >
       {isLoading ? (
-        <Spinner className="h-4 w-4 animate-spin" />
+        <Spinner className="h-4 w-4" />
       ) : (
         isFollowing ? "Unfollow" : "Follow"
       )}
