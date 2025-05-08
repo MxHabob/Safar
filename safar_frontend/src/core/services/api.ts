@@ -267,7 +267,7 @@ export const api = createApi({
 
     followUser: builder.mutation<{ status: string }, string>({
       query: (id) => ({
-        url: `/auth/users/${id}/follow/`,
+        url: `/users/${id}/follow/`,
         method: "POST",
       }),
       invalidatesTags: (result, error, id) => [{ type: "Auth", id }],
@@ -275,7 +275,7 @@ export const api = createApi({
 
     unfollowUser: builder.mutation<{ status: string }, string>({
       query: (id) => ({
-        url: `/auth/users/${id}/unfollow/`,
+        url: `/users/${id}/unfollow/`,
         method: "POST",
       }),
       invalidatesTags: (result, error, id) => [{ type: "Auth", id }],
