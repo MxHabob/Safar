@@ -3,7 +3,7 @@
 import "swiper/css/bundle"
 import { type SwiperProps, SwiperSlide } from "swiper/react"
 import { Slider } from "@/components/global/slider"
-import { useGetRecommendedExperiencesQuery } from "@/core/services/api"
+import { useGetExperiencesQuery } from "@/core/services/api"
 import { ExperienceCard } from "./experience-card"
 import type { Experience } from "@/core/types"
 
@@ -17,7 +17,7 @@ export const ListExperience = ({ overlay, selected, ...rest }: Props) => {
     data: experiences,
     isLoading,
     error,
-  } = useGetRecommendedExperiencesQuery({ page_size: 10},{ refetchOnMountOrArgChange: false })
+  } = useGetExperiencesQuery({ page_size: 10},{ refetchOnMountOrArgChange: false })
 
   if (error) {
     return (
