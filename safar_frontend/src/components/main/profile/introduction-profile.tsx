@@ -40,7 +40,7 @@ export const IntroductionProfile = ({ userId }: IntroductionProfileProps) => {
              userId={userId} 
              isFollowing={user?.is_following || false}
             />
-            <Button variant={"outline"} className="h-10 rounded-full w-1/3 mt-8" onClick={() => router.push(`/more`)}>
+            <Button variant={"outline"} className="h-10 rounded-full w-1/3 mt-8" onClick={() => router.push(`${userId}/more`)}>
               More
             </Button>
             </div>

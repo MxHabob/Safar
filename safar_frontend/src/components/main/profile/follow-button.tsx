@@ -13,7 +13,7 @@ type FollowButtonProps = {
 export const FollowButton = ({ 
   userId, 
   isFollowing, 
-  className = "h-10 rounded-full w-1/3"
+  className = "h-10 rounded-full w-1/3 mt-8"
 }: FollowButtonProps) => {
   const [followUser, { isLoading: isFollowingLoading }] = useFollowUserMutation()
   const [unfollowUser, { isLoading: isUnfollowingLoading }] = useUnfollowUserMutation()

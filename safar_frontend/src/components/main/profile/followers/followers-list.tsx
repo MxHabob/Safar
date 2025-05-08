@@ -47,7 +47,7 @@ export const ListFollowers = ({ userId ,overlay, selected, ...rest }: Props) => 
         ))
       ) : !isLoading ? (
         <div className="flex justify-center items-center p-8 text-gray-500 col-span-full">
-          <p>No experiences found.</p>
+          <p>No Followers found.</p>
         </div>
       ) : null}
 
