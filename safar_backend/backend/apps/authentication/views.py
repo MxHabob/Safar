@@ -10,8 +10,8 @@ from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjoserUserViewSet
 
 class UserViewSet(DjoserUserViewSet):
-    """Extends Djoser's UserViewSet with custom functionality"""
     lookup_field = 'id'
+    
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def follow(self, request, id=None):
         user_to_follow = get_object_or_404(self.get_queryset(), pk=id)
@@ -37,11 +37,23 @@ class UserViewSet(DjoserUserViewSet):
         serializer = self.get_serializer(following, many=True)
         return Response(serializer.data)
 
+    @action(detail=True, methods=['get'])
+    def user_followers(self, request, id=None):
+        user = self.get_object()
+        followers = user.followers.all()
+        serializer = self.get_serializer(followers, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def user_following(self, request, id=None):
+        user = self.get_object()
+        following = user.following.all()
+        serializer = self.get_serializer(following, many=True)
+        return Response(serializer.data)
+
 
 class UserInteractionListView(BaseViewSet):
     serializer_class = UserInteractionSerializer
-    
-    
     
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
