@@ -16,15 +16,32 @@ import type {
   Notification,
   LoginResponse,
   User,
-  PaginatedResponse,
   InteractionType,
   UserInteraction,
   City,
   Region,
   Country,
+  PaginatedResponse,
 } from "@/core/types"
 import { setTokens, logout } from "@/core/features/auth/auth-slice"
 import type { RootState } from "@/core/store"
+import {
+  BaseQueryParams,
+  BookingQueryParams,
+  BoxQueryParams,
+  CategoryQueryParams,
+  CityQueryParams,
+  CitySearchQueryParams,
+  CountryQueryParams,
+  DiscountQueryParams,
+  ExperienceQueryParams,
+  FlightQueryParams,
+  NearbyCityQueryParams,
+  PaymentQueryParams,
+  PlaceQueryParams,
+  RegionQueryParams,
+  ReviewQueryParams
+} from "../types/query-parameters"
 
 const mutex = new Mutex()
 
@@ -96,7 +113,10 @@ const baseQueryWithReauth: BaseQueryFn = async (args, api, extraOptions) => {
     }
   }
 
-  if (result.error?.status === 401 || (result.error?.status === 403 && (result.error.data as { code?: string })?.code === "token_invalid")) {
+  if (
+    result.error?.status === 401 ||
+    (result.error?.status === 403 && (result.error.data as { code?: string })?.code === "token_invalid")
+  ) {
     api.dispatch(logout())
   }
 
@@ -242,33 +262,38 @@ export const api = createApi({
 
     getUserById: builder.query<User, string>({
       query: (id) => `/auth/users/${id}/`,
-      providesTags: (result, error, id) => [{ type: 'Auth', id }],
+      providesTags: (result, error, id) => [{ type: "Auth", id }],
     }),
+
     followUser: builder.mutation<{ status: string }, string>({
       query: (id) => ({
         url: `/auth/users/${id}/follow/`,
-        method: 'POST',
+        method: "POST",
       }),
-      invalidatesTags: (result, error, id) => [{ type: 'Auth', id }],
+      invalidatesTags: (result, error, id) => [{ type: "Auth", id }],
     }),
+
     unfollowUser: builder.mutation<{ status: string }, string>({
       query: (id) => ({
         url: `/auth/users/${id}/unfollow/`,
-        method: 'POST',
+        method: "POST",
       }),
-      invalidatesTags: (result, error, id) => [{ type: 'Auth', id }],
+      invalidatesTags: (result, error, id) => [{ type: "Auth", id }],
     }),
+
     getCurrentUser: builder.query<User, void>({
-      query: () => '/auth/users/me/',
-      providesTags: ['Auth'],
+      query: () => "/auth/users/me/",
+      providesTags: ["Auth"],
     }),
+
     getUserFollowers: builder.query<User[], string>({
       query: (id) => `/auth/users/${id}/followers/`,
-      providesTags: (result, error, id) => [{ type: 'Auth', id }],
+      providesTags: (result, error, id) => [{ type: "Auth", id }],
     }),
+
     getUserFollowing: builder.query<User[], string>({
       query: (id) => `/auth/users/${id}/following/`,
-      providesTags: (result, error, id) => [{ type: 'Auth', id }],
+      providesTags: (result, error, id) => [{ type: "Auth", id }],
     }),
 
     // User Interactions endpoints
@@ -279,6 +304,8 @@ export const api = createApi({
         page_size?: number
         interaction_type?: InteractionType
         content_type?: string
+        search?: string
+        ordering?: string
       }
     >({
       query: (params) => ({
@@ -321,13 +348,14 @@ export const api = createApi({
     }),
 
     // Category endpoints
-    getCategories: builder.query<PaginatedResponse<Category>, { page?: number; page_size?: number }>({
+    getCategories: builder.query<PaginatedResponse<Category>, CategoryQueryParams>({
       query: (params) => ({
         url: "/categories/",
         params,
       }),
       providesTags: ["Category"],
     }),
+
     getCategory: builder.query<Category, string>({
       query: (id) => `/categories/${id}/`,
       providesTags: (result, error, id) => [{ type: "Category", id }],
@@ -341,6 +369,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Category"],
     }),
+
     updateCategory: builder.mutation<Category, Partial<Category> & { id: string }>({
       query: ({ id, ...patch }) => ({
         url: `/categories/${id}/`,
@@ -349,6 +378,7 @@ export const api = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [{ type: "Category", id }],
     }),
+
     deleteCategory: builder.mutation<void, string>({
       query: (id) => ({
         url: `/categories/${id}/`,
@@ -358,24 +388,27 @@ export const api = createApi({
     }),
 
     // Discount endpoints
-    getDiscounts: builder.query<PaginatedResponse<Discount>, { page?: number; page_size?: number }>({
+    getDiscounts: builder.query<PaginatedResponse<Discount>, DiscountQueryParams>({
       query: (params) => ({
         url: "/discounts/",
         params,
       }),
       providesTags: ["Discount"],
     }),
-    getActiveDiscounts: builder.query<PaginatedResponse<Discount>, { page?: number; page_size?: number }>({
+
+    getActiveDiscounts: builder.query<PaginatedResponse<Discount>, DiscountQueryParams>({
       query: (params) => ({
         url: "/discounts/active/",
         params,
       }),
       providesTags: ["Discount"],
     }),
+
     getDiscount: builder.query<Discount, string>({
       query: (id) => `/discounts/${id}/`,
       providesTags: (result, error, id) => [{ type: "Discount", id }],
     }),
+
     createDiscount: builder.mutation<Discount, Partial<Discount>>({
       query: (body) => ({
         url: "/discounts/",
@@ -384,6 +417,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Discount"],
     }),
+
     applyDiscount: builder.mutation<Discount, { id: string; booking_id: string }>({
       query: ({ id, booking_id }) => ({
         url: `/discounts/${id}/apply/`,
@@ -393,8 +427,27 @@ export const api = createApi({
       invalidatesTags: ["Discount", "Booking"],
     }),
 
+    validateDiscount: builder.mutation<
+      { valid: boolean; discount?: Partial<Discount>; error?: string },
+      { code: string; entity_type?: string; entity_id?: string; amount?: number }
+    >({
+      query: (data) => ({
+        url: "/discounts/validate/",
+        method: "POST",
+        body: data,
+      }),
+    }),
+
+    getMyDiscounts: builder.query<PaginatedResponse<Discount>, DiscountQueryParams>({
+      query: (params) => ({
+        url: "/discounts/my_discounts/",
+        params,
+      }),
+      providesTags: ["Discount"],
+    }),
+
     // Place endpoints
-    getPlaces: builder.query<PaginatedResponse<Place>, { page?: number; page_size?: number }>({
+    getPlaces: builder.query<PaginatedResponse<Place>, PlaceQueryParams>({
       query: (params) => ({
         url: "/places/",
         params,
@@ -402,17 +455,19 @@ export const api = createApi({
       providesTags: ["Place"],
     }),
 
-    getSimilarPlaces: builder.query<PaginatedResponse<Place>, { id: string; page?: number; page_size?: number }>({
+    getSimilarPlaces: builder.query<PaginatedResponse<Place>, { id: string } & PlaceQueryParams>({
       query: ({ id, ...params }) => ({
         url: `/places/${id}/similar/`,
         params,
       }),
       providesTags: (result, error, { id }) => [{ type: "Place", id }],
     }),
+
     getPlace: builder.query<Place, string>({
       query: (id) => `/places/${id}/`,
       providesTags: (result, error, id) => [{ type: "Place", id }],
     }),
+
     createPlace: builder.mutation<Place, Partial<Place>>({
       query: (body) => ({
         url: "/places/",
@@ -421,6 +476,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Place"],
     }),
+
     updatePlace: builder.mutation<Place, Partial<Place> & { id: string }>({
       query: ({ id, ...patch }) => ({
         url: `/places/${id}/`,
@@ -429,6 +485,7 @@ export const api = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [{ type: "Place", id }],
     }),
+
     deletePlace: builder.mutation<void, string>({
       query: (id) => ({
         url: `/places/${id}/`,
@@ -438,21 +495,24 @@ export const api = createApi({
     }),
 
     // Experience endpoints
-    getExperiences: builder.query<PaginatedResponse<Experience>, { page?: number; page_size?: number }>({
+    getExperiences: builder.query<PaginatedResponse<Experience>, ExperienceQueryParams>({
       query: (params) => ({
         url: "/experiences/",
         params,
       }),
       providesTags: ["Experience"],
     }),
+
     getExperience: builder.query<Experience, string>({
       query: (id) => `/experiences/${id}/`,
       providesTags: (result, error, id) => [{ type: "Experience", id }],
     }),
+
     checkExperienceAvailability: builder.query<{ available: boolean; capacity: number }, { id: string; date: string }>({
       query: ({ id, date }) => `/experiences/${id}/availability/?date=${date}`,
       providesTags: ["Experience"],
     }),
+
     createExperience: builder.mutation<Experience, Partial<Experience>>({
       query: (body) => ({
         url: "/experiences/",
@@ -461,6 +521,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Experience"],
     }),
+
     updateExperience: builder.mutation<Experience, Partial<Experience> & { id: string }>({
       query: ({ id, ...patch }) => ({
         url: `/experiences/${id}/`,
@@ -477,17 +538,23 @@ export const api = createApi({
       }),
       invalidatesTags: (result, error, id) => [{ type: "Experience", id }],
     }),
+
     // Flight endpoints
-    getFlights: builder.query<PaginatedResponse<Flight>, { page?: number; page_size?: number }>({
+    getFlights: builder.query<PaginatedResponse<Flight>, FlightQueryParams>({
       query: (params) => ({
         url: "/flights/",
         params,
       }),
       providesTags: ["Flight"],
     }),
+
     searchFlights: builder.query<
       PaginatedResponse<Flight>,
-      { departure?: string; arrival?: string; date?: string; page?: number; page_size?: number }
+      {
+        departure?: string
+        arrival?: string
+        date?: string
+      } & BaseQueryParams
     >({
       query: (params) => ({
         url: "/flights/search/",
@@ -495,27 +562,31 @@ export const api = createApi({
       }),
       providesTags: ["Flight"],
     }),
+
     getFlight: builder.query<Flight, string>({
       query: (id) => `/flights/${id}/`,
       providesTags: (result, error, id) => [{ type: "Flight", id }],
     }),
 
     // Box endpoints
-    getBoxes: builder.query<PaginatedResponse<Box>, { page?: number; page_size?: number }>({
+    getBoxes: builder.query<PaginatedResponse<Box>, BoxQueryParams>({
       query: (params) => ({
         url: "/boxes/",
         params,
       }),
       providesTags: ["Box"],
     }),
+
     getBox: builder.query<Box, string>({
       query: (id) => `/boxes/${id}/`,
       providesTags: (result, error, id) => [{ type: "Box", id }],
     }),
+
     getBoxItinerary: builder.query<{ itinerary: string }, string>({
       query: (id) => `/boxes/${id}/itinerary/`,
       providesTags: ["Box"],
     }),
+
     createBox: builder.mutation<Box, Partial<Box>>({
       query: (body) => ({
         url: "/boxes/",
@@ -526,24 +597,27 @@ export const api = createApi({
     }),
 
     // Booking endpoints
-    getBookings: builder.query<PaginatedResponse<Booking>, { page?: number; page_size?: number }>({
+    getBookings: builder.query<PaginatedResponse<Booking>, BookingQueryParams>({
       query: (params) => ({
         url: "/bookings/",
         params,
       }),
       providesTags: ["Booking"],
     }),
-    getUpcomingBookings: builder.query<PaginatedResponse<Booking>, { page?: number; page_size?: number }>({
+
+    getUpcomingBookings: builder.query<PaginatedResponse<Booking>, BookingQueryParams>({
       query: (params) => ({
         url: "/bookings/upcoming/",
         params,
       }),
       providesTags: ["Booking"],
     }),
+
     getBooking: builder.query<Booking, string>({
       query: (id) => `/bookings/${id}/`,
       providesTags: (result, error, id) => [{ type: "Booking", id }],
     }),
+
     createBooking: builder.mutation<Booking, Partial<Booking>>({
       query: (body) => ({
         url: "/bookings/",
@@ -552,6 +626,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Booking"],
     }),
+
     updateBooking: builder.mutation<Booking, Partial<Booking> & { id: string }>({
       query: ({ id, ...patch }) => ({
         url: `/bookings/${id}/`,
@@ -560,6 +635,7 @@ export const api = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [{ type: "Booking", id }],
     }),
+
     confirmBooking: builder.mutation<Booking, string>({
       query: (id) => ({
         url: `/bookings/${id}/confirm/`,
@@ -567,6 +643,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Booking"],
     }),
+
     cancelBooking: builder.mutation<Booking, string>({
       query: (id) => ({
         url: `/bookings/${id}/cancel/`,
@@ -576,20 +653,22 @@ export const api = createApi({
     }),
 
     // Wishlist endpoints
-    getWishlists: builder.query<PaginatedResponse<Wishlist>, { page?: number; page_size?: number }>({
+    getWishlists: builder.query<PaginatedResponse<Wishlist>, BaseQueryParams>({
       query: (params) => ({
         url: "/wishlists/",
         params,
       }),
       providesTags: ["Wishlist"],
     }),
-    getUserWishlist: builder.query<PaginatedResponse<Wishlist>, { page?: number; page_size?: number }>({
+
+    getUserWishlist: builder.query<PaginatedResponse<Wishlist>, BaseQueryParams>({
       query: (params) => ({
         url: "/wishlists/mine/",
         params,
       }),
       providesTags: ["Wishlist"],
     }),
+
     addToWishlist: builder.mutation<Wishlist, Partial<Wishlist>>({
       query: (body) => ({
         url: "/wishlists/",
@@ -598,6 +677,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Wishlist"],
     }),
+
     removeFromWishlist: builder.mutation<void, string>({
       query: (id) => ({
         url: `/wishlists/${id}/`,
@@ -607,20 +687,22 @@ export const api = createApi({
     }),
 
     // Review endpoints
-    getReviews: builder.query<PaginatedResponse<Review>, { page?: number; page_size?: number }>({
+    getReviews: builder.query<PaginatedResponse<Review>, ReviewQueryParams>({
       query: (params) => ({
         url: "/reviews/",
         params,
       }),
       providesTags: ["Review"],
     }),
-    getUserReviews: builder.query<PaginatedResponse<Review>, { page?: number; page_size?: number }>({
+
+    getUserReviews: builder.query<PaginatedResponse<Review>, ReviewQueryParams>({
       query: (params) => ({
         url: "/reviews/my_reviews/",
         params,
       }),
       providesTags: ["Review"],
     }),
+
     createReview: builder.mutation<Review, Partial<Review>>({
       query: (body) => ({
         url: "/reviews/",
@@ -629,6 +711,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Review"],
     }),
+
     updateReview: builder.mutation<Review, Partial<Review> & { id: string }>({
       query: ({ id, ...patch }) => ({
         url: `/reviews/${id}/`,
@@ -639,17 +722,19 @@ export const api = createApi({
     }),
 
     // Payment endpoints
-    getPayments: builder.query<PaginatedResponse<Payment>, { page?: number; page_size?: number }>({
+    getPayments: builder.query<PaginatedResponse<Payment>, PaymentQueryParams>({
       query: (params) => ({
         url: "/payments/",
         params,
       }),
       providesTags: ["Payment"],
     }),
+
     getPayment: builder.query<Payment, string>({
       query: (id) => `/payments/${id}/`,
       providesTags: (result, error, id) => [{ type: "Payment", id }],
     }),
+
     markPaymentAsPaid: builder.mutation<Payment, string>({
       query: (id) => ({
         url: `/payments/${id}/mark_as_paid/`,
@@ -659,20 +744,22 @@ export const api = createApi({
     }),
 
     // Message endpoints
-    getMessages: builder.query<PaginatedResponse<Message>, { page?: number; page_size?: number }>({
+    getMessages: builder.query<PaginatedResponse<Message>, BaseQueryParams>({
       query: (params) => ({
         url: "/messages/",
         params,
       }),
       providesTags: ["Message"],
     }),
-    getUnreadMessages: builder.query<PaginatedResponse<Message>, { page?: number; page_size?: number }>({
+
+    getUnreadMessages: builder.query<PaginatedResponse<Message>, BaseQueryParams>({
       query: (params) => ({
         url: "/messages/unread/",
         params,
       }),
       providesTags: ["Message"],
     }),
+
     sendMessage: builder.mutation<Message, Partial<Message>>({
       query: (body) => ({
         url: "/messages/",
@@ -681,6 +768,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Message"],
     }),
+
     markMessageAsRead: builder.mutation<Message, string>({
       query: (id) => ({
         url: `/messages/${id}/mark_as_read/`,
@@ -690,20 +778,22 @@ export const api = createApi({
     }),
 
     // Notification endpoints
-    getNotifications: builder.query<PaginatedResponse<Notification>, { page?: number; page_size?: number }>({
+    getNotifications: builder.query<PaginatedResponse<Notification>, BaseQueryParams>({
       query: (params) => ({
         url: "/notifications/",
         params,
       }),
       providesTags: ["Notification"],
     }),
-    getUnreadNotifications: builder.query<PaginatedResponse<Notification>, { page?: number; page_size?: number }>({
+
+    getUnreadNotifications: builder.query<PaginatedResponse<Notification>, BaseQueryParams>({
       query: (params) => ({
         url: "/notifications/unread/",
         params,
       }),
       providesTags: ["Notification"],
     }),
+
     markNotificationAsRead: builder.mutation<Notification, string>({
       query: (id) => ({
         url: `/notifications/${id}/mark_as_read/`,
@@ -711,6 +801,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Notification"],
     }),
+
     markAllNotificationsAsRead: builder.mutation<{ status: string }, void>({
       query: () => ({
         url: "/notifications/mark_all_read/",
@@ -720,7 +811,13 @@ export const api = createApi({
     }),
 
     // Recommendation endpoints
-    getRecommendedPlaces: builder.query<PaginatedResponse<Place>, { limit?: number; filters?: Record<string, any>;page?: number; page_size?: number }>({
+    getRecommendedPlaces: builder.query<
+      PaginatedResponse<Place>,
+      {
+        limit?: number
+        filters?: Record<string, any>
+      } & BaseQueryParams
+    >({
       query: (params) => ({
         url: "/places/recommended/",
         params,
@@ -730,7 +827,10 @@ export const api = createApi({
 
     getRecommendedExperiences: builder.query<
       PaginatedResponse<Experience>,
-      { limit?: number; filters?: Record<string, any> }
+      {
+        limit?: number
+        filters?: Record<string, any>
+      } & BaseQueryParams
     >({
       query: (params) => ({
         url: "/experiences/recommended/",
@@ -757,7 +857,9 @@ export const api = createApi({
       }),
       invalidatesTags: ["Box"],
     }),
-        getCountries: builder.query<PaginatedResponse<Country>, { page?: number; page_size?: number }>({
+
+    // Geographic data endpoints
+    getCountries: builder.query<PaginatedResponse<Country>, CountryQueryParams>({
       query: (params) => ({
         url: "/countries/",
         params,
@@ -765,7 +867,12 @@ export const api = createApi({
       providesTags: ["Country"],
     }),
 
-    getRegions: builder.query<PaginatedResponse<Region>, { page?: number; page_size?: number; country_code?: string }>({
+    getCountryRegions: builder.query<Region[], string>({
+      query: (id) => `/countries/${id}/regions/`,
+      providesTags: (result, error, id) => [{ type: "Country", id }, "Region"],
+    }),
+
+    getRegions: builder.query<PaginatedResponse<Region>, RegionQueryParams>({
       query: (params) => ({
         url: "/regions/",
         params,
@@ -773,7 +880,12 @@ export const api = createApi({
       providesTags: ["Region"],
     }),
 
-    getCities: builder.query<PaginatedResponse<City>, { page?: number; page_size?: number }>({
+    getRegionCities: builder.query<City[], string>({
+      query: (id) => `/regions/${id}/cities/`,
+      providesTags: (result, error, id) => [{ type: "Region", id }, "City"],
+    }),
+
+    getCities: builder.query<PaginatedResponse<City>, CityQueryParams>({
       query: (params) => ({
         url: "/cities/",
         params,
@@ -781,7 +893,7 @@ export const api = createApi({
       providesTags: ["City"],
     }),
 
-    getNearbyCities: builder.query<PaginatedResponse<City>, { latitude: number; longitude: number; radius?: number }>({
+    getNearbyCities: builder.query<PaginatedResponse<City>, NearbyCityQueryParams>({
       query: (params) => ({
         url: "/cities/nearby/",
         params,
@@ -789,7 +901,7 @@ export const api = createApi({
       providesTags: ["City"],
     }),
 
-    searchCities: builder.query<PaginatedResponse<City>, { query: string; limit?: number }>({
+    searchCities: builder.query<PaginatedResponse<City>, CitySearchQueryParams>({
       query: (params) => ({
         url: "/cities/search/",
         params,
@@ -799,7 +911,9 @@ export const api = createApi({
 
     getCitiesInCountry: builder.query<
       PaginatedResponse<City>,
-      { country_code: string; page?: number; page_size?: number }
+      {
+        country_code: string
+      } & BaseQueryParams
     >({
       query: ({ country_code, ...params }) => ({
         url: `/countries/${country_code}/cities/`,
@@ -808,15 +922,18 @@ export const api = createApi({
       providesTags: ["City"],
     }),
 
-    getCitiesInRegion: builder.query<PaginatedResponse<City>, { region_id: number; page?: number; page_size?: number }>(
+    getCitiesInRegion: builder.query<
+      PaginatedResponse<City>,
       {
-        query: ({ region_id, ...params }) => ({
-          url: `/regions/${region_id}/cities/`,
-          params,
-        }),
-        providesTags: ["City"],
-      },
-    ),
+        region_id: string
+      } & BaseQueryParams
+    >({
+      query: ({ region_id, ...params }) => ({
+        url: `/regions/${region_id}/cities/`,
+        params,
+      }),
+      providesTags: ["City"],
+    }),
   }),
 })
 
@@ -842,12 +959,13 @@ export const {
   useGetCurrentUserQuery,
   useGetUserFollowersQuery,
   useGetUserFollowingQuery,
-  
+
   // User Interaction hooks
   useGetUserInteractionsQuery,
   useGetUserInteractionQuery,
   useCreateUserInteractionMutation,
   useLogInteractionMutation,
+
   // Category
   useGetCategoriesQuery,
   useGetCategoryQuery,
@@ -861,6 +979,8 @@ export const {
   useGetDiscountQuery,
   useCreateDiscountMutation,
   useApplyDiscountMutation,
+  useValidateDiscountMutation,
+  useGetMyDiscountsQuery,
 
   // Place
   useGetPlacesQuery,
@@ -927,12 +1047,16 @@ export const {
   useMarkNotificationAsReadMutation,
   useMarkAllNotificationsAsReadMutation,
 
+  // Recommendation
   useGetRecommendedPlacesQuery,
   useGetRecommendedExperiencesQuery,
   useGetPersonalizedBoxMutation,
 
+  // Geographic data
   useGetCountriesQuery,
+  useGetCountryRegionsQuery,
   useGetRegionsQuery,
+  useGetRegionCitiesQuery,
   useGetCitiesQuery,
   useGetNearbyCitiesQuery,
   useSearchCitiesQuery,

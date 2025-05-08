@@ -1,7 +1,6 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,23 +13,16 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/core/hooks/use-auth"
 import { Calendar, LogOut, Settings, User2, MessageSquare, Bell, Home, UserPlus } from 'lucide-react'
-import { MembershipLevel } from "@/core/types"
 import NotificationCenter from "../notification-center"
+import { UserAvatar } from "../profile/user-avatar"
+import { formatCount } from "@/lib/utils/date-formatter"
 
 interface UserAvatarDropdownMenuProps {
   className?: string
-  showName?: boolean
   showDropdown?: boolean
 }
 
-const membershipColors: Record<MembershipLevel, string> = {
-  bronze: "border-amber-600",
-  silver: "border-slate-400",
-  gold: "border-yellow-400",
-  platinum: "border-cyan-300"
-}
-
-export const UserAvatarDropdownMenu = ({ className, showName = false, showDropdown = true }: UserAvatarDropdownMenuProps) => {
+export const UserAvatarDropdownMenu = ({ className, showDropdown = true }: UserAvatarDropdownMenuProps) => {
   const router = useRouter()
   const { user: userData, isAuthenticated, isLoading, logout } = useAuth()
 
@@ -38,7 +30,6 @@ export const UserAvatarDropdownMenu = ({ className, showName = false, showDropdo
     return (
       <div className="flex items-center space-x-2">
         <Skeleton className="h-8 w-8 rounded-full" />
-        {showName && <Skeleton className="h-4 w-20" />}
       </div>
     )
   }
@@ -48,57 +39,12 @@ export const UserAvatarDropdownMenu = ({ className, showName = false, showDropdo
       await logout()
     } catch {
     }
-  }
-
-  const formatPoints = (points: number) => {
-    if (points >= 1000) {
-      return `${(points / 1000).toFixed(1)}K`
-    }
-    return points.toString()
-  }
-
-const membershipColor = userData?.membership_level 
-  ? membershipColors[userData.membership_level as MembershipLevel] 
-  : "border-transparent";
-
-  const avatarContent = (
-    <div className="relative">
-      <Avatar className={className}>
-        <AvatarImage 
-          src={userData?.profile?.avatar || "/placeholder.svg"} 
-          alt={userData?.first_name || "User avatar"} 
-        />
-        <AvatarFallback>
-          {isAuthenticated && userData
-            ? (((userData.first_name?.charAt(0)?.toUpperCase() ?? "") + 
-                (userData.last_name?.charAt(0)?.toUpperCase() ?? "")) || 
-                (userData.username?.charAt(0)?.toUpperCase() ?? ""))
-            : <User2 className="h-4 w-4" />
-          }
-        </AvatarFallback>
-      </Avatar>
-      
-      {isAuthenticated && userData && (
-        <div className={`absolute -inset-1 rounded-full border-2 ${membershipColor}`}></div>
-      )}
-      
-      {isAuthenticated && userData && userData.points > 0 && (
-        <div className="absolute -bottom-1 -right-1 flex h-3 min-w-3 items-center justify-center rounded-full bg-card px-1">
-          <span className="text-xs font-bold">
-          {formatPoints(userData.points)}
-           </span>
-        </div>
-      )}
-    </div>
-  )
-
+  }   
+    
   if (!showDropdown) {
     return (
       <div className="flex items-center gap-2">
-        {avatarContent}
-        {showName && isAuthenticated && userData && (
-          <span className="font-medium">{userData.first_name || userData.email?.split("@")[0]}</span>
-        )}
+         <UserAvatar className={className} size={"sm"} src={userData?.profile?.avatar} membership={userData?.membership_level} alt={userData?.username} count={userData?.points || 0} fallback={userData?.username?.charAt(0)?.toUpperCase() || <User2 className="h-4 w-4" />} />   
       </div>
     )
   }
@@ -112,7 +58,7 @@ const membershipColor = userData?.membership_level
       )}
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
-          {avatarContent}
+        <UserAvatar className={className} size={"sm"} src={userData?.profile?.avatar} membership={userData?.membership_level} alt={userData?.username} count={userData?.points || 0} fallback={userData?.username?.charAt(0)?.toUpperCase() || <User2 className="h-4 w-4" />} />   
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -131,7 +77,7 @@ const membershipColor = userData?.membership_level
                       "text-cyan-300"
                     }`}></div>
                     <span className="text-xs capitalize">{userData.membership_level} Member</span>
-                    <span className="ml-auto text-xs font-semibold text-primary">{formatPoints(userData.points)} pts</span>
+                    <span className="ml-auto text-xs font-semibold text-primary">{formatCount(userData.points)} pts</span>
                   </div>
                 )}
               </div>

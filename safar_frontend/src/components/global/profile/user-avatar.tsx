@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { formatCount } from "@/lib/utils/date-formatter"
 
 const UserAvatarWrapperVariants = cva("relative inline-block", {
   variants: {
@@ -15,6 +17,7 @@ const UserAvatarWrapperVariants = cva("relative inline-block", {
       xl: "w-32 h-32",
     },
     membership: {
+      none: "rounded-full",
       bronze: "ring-2 ring-gray-400 rounded-full",
       gold: "ring-2 ring-blue-500 rounded-full",
       silver: "ring-2 ring-purple-600 rounded-full",
@@ -23,7 +26,7 @@ const UserAvatarWrapperVariants = cva("relative inline-block", {
   },
   defaultVariants: {
     size: "md",
-    membership: "bronze",
+    membership: "none",
   },
 })
 
@@ -50,21 +53,11 @@ export interface UserAvatarProps extends VariantProps<typeof UserAvatarWrapperVa
   src?: string
   alt?: string
   id?: string
-  fallback: string
+  fallback: any
   className?: string
 }
 
-export function formatCount(count: number): string {
-  if (count >= 1000000) {
-    return `${Math.floor(count / 1000000)}M`
-  } else if (count >= 1000) {
-    return `${Math.floor(count / 1000)}K`
-  } else {
-    return count.toString()
-  }
-}
-
-export const UserAvatar =({
+export const UserAvatar = ({
   count,
   src,
   id,
@@ -77,14 +70,23 @@ export const UserAvatar =({
   const formattedCount = formatCount(count)
   
   return (
-   <div className={cn(UserAvatarWrapperVariants({ size, membership }), className)}>
-    <Link href={id ? `/profile/${id}` : "#"}>
-      <Avatar className="h-full w-full">
-        <AvatarImage src={src || ""} alt={alt} />
-        <AvatarFallback>{fallback}</AvatarFallback>
-      </Avatar>
-    </Link>
-      <div className={badgeVariants({ size })}>{formattedCount}</div>
-   </div>
+    <div className={cn(UserAvatarWrapperVariants({ size, membership }), className)}>
+      {id ? (
+        <Link href={`/profile/${id}`} passHref legacyBehavior>
+          <Avatar className="h-full w-full" asChild>
+            <div>
+              <AvatarImage src={src || ""} alt={alt} />
+              <AvatarFallback>{fallback}</AvatarFallback>
+            </div>
+          </Avatar>
+        </Link>
+      ) : (
+        <Avatar className="h-full w-full">
+          <AvatarImage src={src || ""} alt={alt} />
+          <AvatarFallback>{fallback}</AvatarFallback>
+        </Avatar>
+      )}
+      {count > 0 && <div className={badgeVariants({ size })}>{formattedCount}</div>}
+    </div>
   )
 }
