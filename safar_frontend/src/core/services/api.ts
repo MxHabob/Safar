@@ -287,12 +287,12 @@ export const api = createApi({
     }),
 
     getUserFollowers: builder.query<User[], string>({
-      query: (id) => `/auth/users/${id}/followers/`,
+      query: (id) => `/users/${id}/user_followers/`,
       providesTags: (result, error, id) => [{ type: "Auth", id }],
     }),
 
     getUserFollowing: builder.query<User[], string>({
-      query: (id) => `/auth/users/${id}/following/`,
+      query: (id) => `/users/${id}/user_following/`,
       providesTags: (result, error, id) => [{ type: "Auth", id }],
     }),
 
