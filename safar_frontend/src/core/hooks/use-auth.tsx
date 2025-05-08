@@ -73,11 +73,12 @@ export const useAuth = () => {
             refresh: response.refresh,
           }),
         )
-console.log("authState : " , response)
+
         router.push("/")
         return { success: true }
       } catch (error: any) {
         const errorMessage = error.data?.detail || "Login failed"
+        console.log("errorMessage : " ,errorMessage)
         dispatch(loginFailure(errorMessage))
         return { success: false, error: errorMessage }
       }
@@ -98,6 +99,7 @@ console.log("authState : " , response)
         return { success: true }
       } catch (error: any) {
         const errorMessage = error.data?.detail || "Registration failed"
+        console.log("errorMessage : " ,errorMessage)
         dispatch(loginFailure(errorMessage))
         toast.error(errorMessage)
         return { success: false, error: errorMessage }

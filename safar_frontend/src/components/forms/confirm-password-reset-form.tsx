@@ -26,7 +26,7 @@ export function ConfirmPasswordResetForm() {
     resolver: zodResolver(confirmPasswordResetSchema),
     defaultValues: {
       new_password: "",
-      re_password: "",
+      re_new_password: "",
     },
   })
 
@@ -73,7 +73,7 @@ export function ConfirmPasswordResetForm() {
             />
             <FormField
               control={form.control}
-              name="re_password"
+              name="re_new_password"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Confirm New Password</FormLabel>

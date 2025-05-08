@@ -35,9 +35,9 @@ export const confirmPasswordResetSchema = z
       .regex(/[a-zA-Z]/, { message: "Password must contain at least one letter" })
       .regex(/[0-9]/, { message: "Password must contain at least one number" })
       .regex(/[^a-zA-Z0-9]/, { message: "Password must contain at least one special character" }),
-      re_password: z.string(),
+      re_new_password: z.string(),
   })
-  .refine((data) => data.new_password === data.re_password, {
+  .refine((data) => data.new_password === data.re_new_password, {
     message: "Passwords do not match",
     path: ["confirm_password"],
   })
