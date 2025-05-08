@@ -2,7 +2,6 @@
 import React from 'react'
 import { IntroductionProfile } from "@/components/main/profile/introduction-profile";
 import { useGetUserByIdQuery } from "@/core/services/api";
-import { LoyaltyStatusCard } from "@/components/dashboard/cards/loyalty-status-card"
 import { useState } from "react";
 import { UserAvatar } from '@/components/global/profile/user-avatar';
 import { RouterBack } from '@/components/global/router-back';
