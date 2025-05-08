@@ -14,11 +14,11 @@ type ProfileProps = {
   userId: string;
 };
 
-export const ProfilePage = ({ userId }: ProfileProps) => {
+export const ProfileDetailsPage = ({ userId }: ProfileProps) => {
   const { data: user, isLoading, error } = useGetUserByIdQuery(userId);
 
   if (isLoading) {
-    return <ProfilePage.Skeleton />;
+    return <ProfileDetailsPage.Skeleton />;
   }
 
   if (error) {
@@ -105,7 +105,7 @@ export const ProfilePage = ({ userId }: ProfileProps) => {
   );
 };
 
-ProfilePage.Skeleton = function ProfileSkeleton() {
+ProfileDetailsPage.Skeleton = function ProfileSkeleton() {
   return (
     <div className="container max-w-6xl mx-auto py-8">
       <div className="flex flex-col md:flex-row items-start justify-between gap-8">
