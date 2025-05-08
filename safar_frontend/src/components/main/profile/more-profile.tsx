@@ -10,6 +10,7 @@ import { FollowButton } from './follow-button';
 import { Skeleton } from "@/components/ui/skeleton";
 import { CardContent } from '@/components/ui/card';
 import { StatusCircle } from '@/components/dashboard/ui/status-circle';
+import FollowersList from "./followers-list";
 
 type MoreProfileProps = {
     userId: string;
@@ -21,7 +22,7 @@ export const MoreProfile = ({ userId }: MoreProfileProps) => {
     if (isLoading) {
         return <MoreProfile.Skeleton />;
     }
-
+    console.log('following_count:', user?.following_count)
     return (
         <div className="container max-w-6xl mx-auto">
             <RouterBack />
@@ -47,18 +48,20 @@ export const MoreProfile = ({ userId }: MoreProfileProps) => {
                             Message
                         </Button>
                     </div>
+                    {/* related users */}
+                <FollowersList  userId={userId} user={user} />
                 </div>
                 <div className='flex justify-end'>
-            <CardContent className="p-4 pt-0 flex flex-col items-end">
-        <div className="text-xl font-bold mb-2">{user?.membership_level || "curve"}</div>
-        <StatusCircle value={user?.points || 0} maxValue={10000} />
-        <div className="mt-2 text-xs text-muted-foreground">{10000 - (user?.points || 0)} points until Diamond status</div>
-      </CardContent>
-            </div>
+                    <CardContent className="p-4 pt-0 flex flex-col items-end">
+                        <div className="text-xl font-bold mb-2">{user?.membership_level || "curve"}</div>
+                        <StatusCircle value={user?.points || 0} maxValue={10000} />
+                        <div className="mt-2 text-xs text-muted-foreground">{10000 - (user?.points || 0)} points until Diamond status</div>
+                    </CardContent>
+                </div>
             </div>
         </div>
     )
-}        
+}
 MoreProfile.Skeleton = function MoreProfileSkeleton() {
     return (
         <div className="container max-w-6xl mx-auto">
