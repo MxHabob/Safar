@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -35,12 +37,14 @@ export const MediaGallery = ({
   if (!media.length) {
     return (
       <div className={cn("relative overflow-hidden rounded-lg bg-muted", className)}>
-        <div className={cn(
-          "relative w-full overflow-hidden",
-          aspectRatio === "square" && "aspect-square",
-          aspectRatio === "video" && "aspect-video",
-          aspectRatio === "wide" && "aspect-[16/9]",
-        )}>
+        <div
+          className={cn(
+            "relative w-full overflow-hidden",
+            aspectRatio === "square" && "aspect-square",
+            aspectRatio === "video" && "aspect-video",
+            aspectRatio === "wide" && "aspect-[16/9]",
+          )}
+        >
           <Image src="/placeholder.svg" alt="No image available" fill className="object-cover w-full h-full" />
         </div>
       </div>
@@ -66,15 +70,17 @@ export const MediaGallery = ({
   const renderMediaContent = (item: Media, index: number, size: string, roundedClasses?: string) => (
     <div
       key={index}
-      className={cn("relative cursor-pointer", roundedClasses)}
+      className={cn("relative cursor-pointer overflow-hidden", roundedClasses)}
       onClick={(e) => handleImageClick(index, e)}
     >
-      <div className={cn(
-        "w-full h-full",
-        aspectRatio === "square" && "aspect-square",
-        aspectRatio === "video" && "aspect-video",
-        aspectRatio === "wide" && "aspect-[16/9]"
-      )}>
+      <div
+        className={cn(
+          "w-full h-full transition-transform duration-700 hover:scale-110",
+          aspectRatio === "square" && "aspect-square",
+          aspectRatio === "video" && "aspect-video",
+          aspectRatio === "wide" && "aspect-[16/9]",
+        )}
+      >
         {item.type === "video" ? (
           <video src={item.file || item.url || ""} muted autoPlay loop className="object-cover w-full h-full" />
         ) : (
@@ -112,9 +118,7 @@ export const MediaGallery = ({
     <div className={cn("relative overflow-hidden rounded-lg", className)}>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-1">
         {renderMediaContent(displayMedia[0], 0, "(max-width: 768px) 100vw, 50vw")}
-        {displayMedia.slice(1).map((item, index) =>
-          renderMediaContent(item, index + 1, "25vw")
-        )}
+        {displayMedia.slice(1).map((item, index) => renderMediaContent(item, index + 1, "25vw"))}
       </div>
 
       {hasMoreMedia && showViewAll && (
@@ -140,7 +144,7 @@ export const MediaGallery = ({
             index === 1 && "rounded-tr-lg",
             isLastOdd && "rounded-bl-lg rounded-br-lg col-span-2",
             !isLastOdd && index === displayMedia.length - 2 && "rounded-bl-lg",
-            !isLastOdd && index === displayMedia.length - 1 && "rounded-br-lg"
+            !isLastOdd && index === displayMedia.length - 1 && "rounded-br-lg",
           )
           return renderMediaContent(item, index, "(max-width: 768px) 50vw, 25vw", roundedClasses)
         })}
@@ -170,19 +174,25 @@ export const MediaGallery = ({
             "w-full",
             aspectRatio === "square" && "aspect-square",
             aspectRatio === "video" && "aspect-video",
-            aspectRatio === "wide" && "aspect-[16/9]"
+            aspectRatio === "wide" && "aspect-[16/9]",
           )}
           onClick={(e) => handleImageClick(currentImageIndex, e)}
         >
           {isVideo ? (
-            <video src={currentMedia.file || currentMedia.url || ""} muted autoPlay loop className="object-cover w-full h-full" />
+            <video
+              src={currentMedia.file || currentMedia.url || ""}
+              muted
+              autoPlay
+              loop
+              className="object-cover w-full h-full transition-transform duration-700 hover:scale-110"
+            />
           ) : (
             <Image
               src={currentMedia.file || currentMedia.url || ""}
               alt={`Media ${currentImageIndex + 1}`}
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover"
+              className="object-cover transition-transform duration-700 hover:scale-110"
               priority={priority}
             />
           )}
@@ -193,7 +203,7 @@ export const MediaGallery = ({
             <button
               onClick={changeImage(-1)}
               aria-label="Previous"
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/70 hover:bg-background/90 rounded-full p-2 backdrop-blur-sm hidden group-hover:block"
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/70 hover:bg-background/90 rounded-full p-2 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200"
             >
               <ChevronLeft className="h-5 w-5 text-foreground" />
             </button>
@@ -201,7 +211,7 @@ export const MediaGallery = ({
             <button
               onClick={changeImage(1)}
               aria-label="Next"
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/70 hover:bg-background/90 rounded-full p-2 backdrop-blur-sm hidden group-hover:block"
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/70 hover:bg-background/90 rounded-full p-2 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200"
             >
               <ChevronRight className="h-5 w-5 text-foreground" />
             </button>
@@ -213,11 +223,15 @@ export const MediaGallery = ({
 
   const renderVariant = () => {
     switch (variant) {
-      case "compact": return renderCompact()
-      case "grid": return renderGrid()
-      case "carousel": return renderCarousel()
+      case "compact":
+        return renderCompact()
+      case "grid":
+        return renderGrid()
+      case "carousel":
+        return renderCarousel()
       case "default":
-      default: return renderDefault()
+      default:
+        return renderDefault()
     }
   }
 

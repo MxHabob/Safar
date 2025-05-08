@@ -8,10 +8,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
     TokenVerifyView
 )
-from apps.authentication.serializers import UserInteractionSerializer
-from apps.authentication.models import UserInteraction
-from django.contrib.contenttypes.models import ContentType
-from apps.core_apps.general import BaseViewSet
+from rest_framework.permissions import IsAuthenticated
 
 class CustomProviderAuthView(ProviderAuthView):
     
@@ -109,7 +106,8 @@ class CustomTokenVerifyView(TokenVerifyView):
         return super().post(request, *args, **kwargs)
 
 class LogoutView(APIView):
- 
+    permission_classes = [IsAuthenticated]
+    
     def post(self, request, *args, **kwargs):
         response = Response({"detail": "Logged out successfully."}, status=status.HTTP_200_OK)
         response.delete_cookie(

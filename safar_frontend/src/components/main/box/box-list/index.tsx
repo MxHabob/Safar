@@ -22,16 +22,30 @@ export const ListBox = ({ overlay, selected, ...rest }: Props) => {
       </div>
     )
   }
-  console.log("boxes : ", boxes)
 
   return (
-    <Slider slidesPerView="auto" spaceBetween={16} loop={(boxes?.count ?? 0) > 3} freeMode overlay={overlay} {...rest}>
+    <Slider 
+      slidesPerView="auto" 
+      spaceBetween={24} 
+      loop={(boxes?.count ?? 0) > 3} 
+      freeMode 
+      overlay={overlay} 
+      breakpoints={{
+        320: { slidesPerView: 1.2, spaceBetween: 16 },
+        640: { slidesPerView: 1.5, spaceBetween: 20 },
+        768: { slidesPerView: 2, spaceBetween: 20 },
+        1024: { slidesPerView: 2.5, spaceBetween: 24 },
+        1280: { slidesPerView: 3, spaceBetween: 24 },
+        1536: { slidesPerView: 3.5, spaceBetween: 32 },
+      }}
+      {...rest}
+    >
       {(boxes?.count ?? 0) > 0 ? (
         boxes?.results.map((box: Box) => (
           <SwiperSlide
             key={box.id}
-            className={`content-width-slide transition-all pb-4 duration-200 ${
-              selected === box.id ? "scale-[1.02]" : ""
+            className={`w-full transition-all duration-200 ${
+              selected === box.id ? "scale-[1.05] md:scale-[1.05]" : ""
             }`}
           >
             <BoxCard box={box} />
@@ -45,8 +59,8 @@ export const ListBox = ({ overlay, selected, ...rest }: Props) => {
 
       {isLoading && (
         <>
-          {[1, 2, 3, 4,5].map((i) => (
-            <SwiperSlide key={i} className="content-width-slide">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <SwiperSlide key={i} className="w-full">
               <BoxCard.Skeleton />
             </SwiperSlide>
           ))}

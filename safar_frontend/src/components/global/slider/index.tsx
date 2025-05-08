@@ -15,7 +15,7 @@ export const Slider = ({ children, overlay,isLoading, ...rest }: SliderProps) =>
     <InfiniteScrollObserver loadingComponent={isLoading}>
     <div
       style={{
-        maskImage: `linear-gradient(to right,rgba(0, 0, 0, 0),rgba(0, 0, 0, 1) 10%,rgba(0, 0, 0, 1) 50%,rgba(0, 0, 0, 0))`,
+        maskImage: `linear-gradient(to right,rgba(0, 0, 0, 0),rgba(0, 0, 0, 1) 5%,rgba(0, 0, 0, 1) 95%,rgba(0, 0, 0, 0))`,
       }}
       className="w-full max-w-full mt-4 relative"
     >

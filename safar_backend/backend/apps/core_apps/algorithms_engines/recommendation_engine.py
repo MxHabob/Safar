@@ -7,15 +7,14 @@ from sklearn.cluster import KMeans
 
 import logging
 from django.db import models
-from django.db.models import Q, Case, When, F, Value, FloatField, Count, Avg,ExpressionWrapper
+from django.db.models import Case, When, F, Value, FloatField, Count, Avg,ExpressionWrapper
 from django.db.models.functions import Coalesce
 from django.contrib.contenttypes.models import ContentType
 from apps.authentication.models import User, UserInteraction
-from apps.safar.models import Place, Experience, Flight
+from apps.safar.models import Place, Experience
 from apps.geographic_data.models import City, Region, Country
 from datetime import datetime, timedelta
 from django.core.cache import cache
-from django.conf import settings
 import hashlib
 import json 
 logger = logging.getLogger(__name__)
@@ -37,11 +36,11 @@ class RecommendationEngine:
         'recommendation_click': 0.4
     }
     
-    TEMPORAL_DECAY_RATE = 0.1  # 10% reduction per month
+    TEMPORAL_DECAY_RATE = 0.1 
     
     # Cache TTLs
-    GLOBAL_CACHE_TTL = 3600  # 1 hour for global recommendations
-    USER_CACHE_TTL = 1800    # 30 minutes for user-specific recommendations
+    GLOBAL_CACHE_TTL = 3600 
+    USER_CACHE_TTL = 1800 
     
     def __init__(self, user=None):
         """
@@ -74,7 +73,7 @@ class RecommendationEngine:
             QuerySet: A queryset of recommended places with scores
         """
         try:
-            # For anonymous users, try to get from cache first
+
             if not self.is_authenticated:
                 cache_key = self._get_cache_key('places', filters, limit)
                 cached_results = cache.get(cache_key)
@@ -98,28 +97,22 @@ class RecommendationEngine:
             )
             
             if self.is_authenticated:
-                # Build feature matrices if not already built
                 self._build_feature_matrices('place')
                 
-                # Apply ML-based recommendations
                 if self.user_item_matrix is not None and self.svd_model is not None:
                     query = self._apply_matrix_factorization(query, 'place')
                 
                 if boost_user_preferences:
                     query = self._apply_preference_boosting(query)
                 
-                # Apply content-based filtering if we have item features
                 if self.item_features is not None:
                     query = self._apply_content_based_filtering(query, 'place')
                 
-                # Apply collaborative filtering
                 query = self._apply_collaborative_filtering(query, 'place')
                 
-                # Apply temporal popularity and user interaction boosts
                 query = self._apply_temporal_popularity(query)
                 query = self._boost_user_interactions(query, 'place')
                 
-                # Calculate a weighted total score for consistent ordering
                 query = query.annotate(
                     total_score=ExpressionWrapper(
                         F('ml_score') * Value(0.3) +
@@ -132,17 +125,14 @@ class RecommendationEngine:
                     )
                 )
                 
-                # Order by the total score
                 results = query.order_by('-total_score')
                 
-                # Apply limit only if specified
                 if limit is not None:
                     results = results[:limit]
             else:
-                # For anonymous users, use popularity-based recommendations
+
                 results = self._get_anonymous_recommendations(query, 'place', limit)
                 
-                # Cache the results for anonymous users
                 cache_key = self._get_cache_key('places', filters, limit)
                 cache.set(cache_key, results, self.GLOBAL_CACHE_TTL)
             
@@ -162,20 +152,18 @@ class RecommendationEngine:
             
             filters = filters or {}
             
-            # Handle location filtering through place relationship
             location_filters = {}
             for loc_key in ['country', 'region', 'city']:
                 if loc_key in filters:
                     location_filters[f'place__{loc_key}'] = filters.pop(loc_key)
             
             query = Experience.objects.filter(
-                is_available=True,
+                # is_available=True,
                 is_deleted=False,
                 **location_filters,
                 **filters
             ).select_related('category', 'place', 'owner')
             
-            # Initialize all scores with default values
             query = query.annotate(
                 ml_score=Value(0.0, FloatField()),
                 similarity_score=Value(0.0, FloatField()),
@@ -185,27 +173,21 @@ class RecommendationEngine:
             )
             
             if self.is_authenticated:
-                # Build feature matrices if not already built
                 self._build_feature_matrices('experience')
                 
-                # Apply ML-based recommendations
                 if self.user_item_matrix is not None and self.svd_model is not None:
                     query = self._apply_matrix_factorization(query, 'experience')
                 
                 query = self._apply_preference_boosting(query)
                 
-                # Apply content-based filtering if we have item features
                 if self.item_features is not None:
                     query = self._apply_content_based_filtering(query, 'experience')
                 
-                # Apply collaborative filtering
                 query = self._apply_collaborative_filtering(query, 'experience')
                 
-                # Apply temporal popularity and user interaction boosts
                 query = self._apply_temporal_popularity(query)
                 query = self._boost_user_interactions(query, 'experience')
                 
-                # Calculate a weighted total score for consistent ordering
                 query = query.annotate(
                     total_score=ExpressionWrapper(
                         F('ml_score') * Value(0.3) +
@@ -218,17 +200,13 @@ class RecommendationEngine:
                     )
                 )
                 
-                # Order by the total score
                 results = query.order_by('-total_score')
                 
-                # Apply limit only if specified
                 if limit is not None:
                     results = results[:limit]
             else:
-                # For anonymous users, use popularity-based recommendations
                 results = self._get_anonymous_recommendations(query, 'experience', limit)
                 
-                # Cache the results for anonymous users
                 cache_key = self._get_cache_key('experiences', filters, limit)
                 cache.set(cache_key, results, self.GLOBAL_CACHE_TTL)
             
@@ -252,14 +230,11 @@ class RecommendationEngine:
             QuerySet: A queryset of recommended items with scores
         """
         try:
-            # Apply temporal popularity boost
             queryset = self._apply_temporal_popularity(queryset)
             
-            # Get high-rated items as a fallback
             high_rated = queryset.filter(rating__gte=4.0).order_by('-rating')[:50]
             high_rated_ids = list(high_rated.values_list('id', flat=True))
             
-            # If we have no high-rated items, get any items
             if not high_rated_ids:
                 results = queryset.order_by('-rating', '-created_at')
                 
@@ -286,7 +261,6 @@ class RecommendationEngine:
                 
                 results = queryset.order_by('-total_score')
                 
-                # Apply limit only if specified
                 if limit is not None:
                     results = results[:limit]
                     
@@ -296,7 +270,6 @@ class RecommendationEngine:
             logger.error(f"Error getting anonymous recommendations: {str(e)}", exc_info=True)
             results = queryset.order_by('-rating', '-created_at')
             
-            # Apply limit only if specified
             if limit is not None:
                 results = results[:limit]
                 
@@ -304,7 +277,6 @@ class RecommendationEngine:
     
     def _get_cache_key(self, item_type, filters, limit):
         """Generate a cache key for recommendations"""
-        # Use a more efficient hash for filters
         filters_hash = hashlib.md5(
             json.dumps(filters or {}, sort_keys=True).encode()
         ).hexdigest()
@@ -354,7 +326,6 @@ class RecommendationEngine:
             return
             
         try:
-            # Try to get from cache first
             cache_key = f"feature_matrices_{item_type}_{self.user.id}"
             cached_matrices = cache.get(cache_key)
             
@@ -371,7 +342,6 @@ class RecommendationEngine:
                 self.item_id_to_cluster = cached_matrices.get('item_id_to_cluster')
                 return
             
-            # Get content type for the item type
             if item_type == 'place':
                 content_type = ContentType.objects.get_for_model(Place)
             elif item_type == 'experience':
@@ -379,7 +349,6 @@ class RecommendationEngine:
             else:
                 return
             
-            # Get all interactions for this item type
             interactions = UserInteraction.objects.filter(
                 content_type=content_type,
                 interaction_type__in=self.INTERACTION_WEIGHTS.keys()
@@ -388,13 +357,11 @@ class RecommendationEngine:
             if not interactions:
                 return
             
-            # Convert to DataFrame
+
             df = pd.DataFrame(list(interactions))
-            
-            # Apply weights to interactions
+  
             df['weight'] = df['interaction_type'].map(self.INTERACTION_WEIGHTS)
             
-            # Apply temporal decay
             now = datetime.now()
             df['days_old'] = df['created_at'].apply(lambda x: (now - x).days)
             df['time_decay'] = df['days_old'].apply(
@@ -402,7 +369,7 @@ class RecommendationEngine:
             )
             df['final_weight'] = df['weight'] * df['time_decay']
             
-            # Create user-item matrix
+
             user_item_df = df.pivot_table(
                 index='user_id', 
                 columns='object_id', 
@@ -414,13 +381,12 @@ class RecommendationEngine:
             self.user_item_matrix = user_item_df.values
             self.user_ids = user_item_df.index.tolist()
             self.item_ids = user_item_df.columns.tolist()
-            
-            # Train SVD model for matrix factorization
+
             self.svd_model = TruncatedSVD(n_components=min(50, min(self.user_item_matrix.shape) - 1))
             self.user_factors = self.svd_model.fit_transform(self.user_item_matrix)
             self.item_factors = self.svd_model.components_.T
             
-            # Build item features
+
             if item_type == 'place':
                 items = Place.objects.filter(id__in=self.item_ids).values(
                     'id', 'name', 'category__name', 'country__name', 'city__name', 
@@ -434,36 +400,33 @@ class RecommendationEngine:
             if not items:
                 return
             
-            # Convert to DataFrame
             items_df = pd.DataFrame(list(items))
             
-            # Extract features
             feature_columns = []
             
-            # Process categorical features
             categorical_features = ['category__name', 'country__name', 'city__name', 'region__name']
             for feature in categorical_features:
                 if feature in items_df.columns:
-                    # One-hot encode
+
                     dummies = pd.get_dummies(items_df[feature], prefix=feature.split('__')[0])
                     items_df = pd.concat([items_df, dummies], axis=1)
                     feature_columns.extend(dummies.columns)
             
-            # Process numerical features
+ 
             if 'rating' in items_df.columns:
-                items_df['rating_scaled'] = items_df['rating'] / 5.0  # Normalize to 0-1
+                items_df['rating_scaled'] = items_df['rating'] / 5.0 
                 feature_columns.append('rating_scaled')
             
-            # Process metadata (tags)
+
             if 'metadata' in items_df.columns:
-                # Extract tags from metadata
+        
                 items_df['tags'] = items_df['metadata'].apply(
                     lambda x: ' '.join(x.get('tags', [])) if isinstance(x, dict) else ''
                 )
                 
-                # Use TF-IDF for tags
+
                 tfidf = TfidfVectorizer(max_features=50)
-                if items_df['tags'].str.strip().any():  # Check if there are any non-empty tags
+                if items_df['tags'].str.strip().any(): 
                     tag_features = tfidf.fit_transform(items_df['tags'].fillna(''))
                     tag_feature_df = pd.DataFrame(
                         tag_features.toarray(),
@@ -473,24 +436,21 @@ class RecommendationEngine:
                     items_df = pd.concat([items_df, tag_feature_df], axis=1)
                     feature_columns.extend(tag_feature_df.columns)
             
-            # Create final feature matrix
             if feature_columns:
                 self.item_features = items_df[feature_columns].values
                 self.item_id_to_idx = {item_id: idx for idx, item_id in enumerate(items_df['id'])}
                 
-                # Cluster items
-                if self.item_features.shape[0] > 10:  # Only cluster if we have enough items
+                if self.item_features.shape[0] > 10:
                     n_clusters = min(10, self.item_features.shape[0] // 2)
                     self.kmeans_model = KMeans(n_clusters=n_clusters, random_state=42)
                     self.item_clusters = self.kmeans_model.fit_predict(self.item_features)
                     
-                    # Create mapping from item_id to cluster
+
                     self.item_id_to_cluster = {
                         item_id: self.item_clusters[i] 
                         for i, item_id in enumerate(items_df['id'])
                     }
             
-            # Build user features
             users = User.objects.filter(id__in=self.user_ids).values(
                 'id', 'profile__preferred_countries', 'profile__travel_interests',
                 'profile__gender', 'membership_level'
@@ -498,10 +458,10 @@ class RecommendationEngine:
             
             if users:
                 users_df = pd.DataFrame(list(users))
-                # Process user features here if needed
-                self.user_features = None  # Placeholder for future implementation
+
+                self.user_features = None 
             
-            # Cache the matrices
+
             matrices_to_cache = {
                 'user_item_matrix': self.user_item_matrix,
                 'item_features': self.item_features,
@@ -529,7 +489,7 @@ class RecommendationEngine:
         try:
             filters = filters or {}
             
-            # Handle location filtering differently for Place vs Experience
+     
             location_filters = {}
             if model_class == Experience:
                 for loc_key in ['country', 'region', 'city']:
@@ -541,14 +501,14 @@ class RecommendationEngine:
                 for k in location_filters.keys():
                     filters.pop(k)
             
-            # Start with basic available items
+   
             queryset = model_class.objects.filter(
                 is_available=True,
                 is_deleted=False,
                 **location_filters
             )
             
-            # Try to use user preferences if available
+         
             if self.is_authenticated and hasattr(self, 'profile'):
                 if hasattr(self.profile, 'preferred_countries') and self.profile.preferred_countries.exists():
                     if model_class == Experience:
@@ -556,12 +516,12 @@ class RecommendationEngine:
                     else:
                         queryset = queryset.filter(country__in=self.profile.preferred_countries.all())
             
-            # Order by rating and apply limit
+
             return queryset.order_by('-rating')[:limit or 10]
             
         except Exception as e:
             logger.error(f"Fallback recommendation failed: {str(e)}", exc_info=True)
-            # Ultimate fallback - just get any available items
+
             return model_class.objects.filter(
                 is_available=True,
                 is_deleted=False
@@ -577,27 +537,26 @@ class RecommendationEngine:
             if self.user_item_matrix is None or self.svd_model is None:
                 return queryset.annotate(ml_score=Value(0, FloatField()))
             
-            # Get user index
+
             try:
                 user_idx = self.user_ids.index(self.user.id)
             except ValueError:
-                # User not in the matrix, use average user vector
+
                 user_idx = None
                 user_vector = np.mean(self.user_factors, axis=0)
             
             if user_idx is not None:
                 user_vector = self.user_factors[user_idx]
             
-            # Calculate predicted ratings for all items
             predicted_ratings = np.dot(user_vector, self.svd_model.components_)
             
-            # Map item IDs to their predicted ratings
+
             item_ratings = {
                 self.item_ids[i]: float(predicted_ratings[i])
                 for i in range(len(self.item_ids))
             }
             
-            # Normalize ratings to 0-1 scale
+
             if item_ratings:
                 min_rating = min(item_ratings.values())
                 max_rating = max(item_ratings.values())
@@ -613,7 +572,6 @@ class RecommendationEngine:
                         item_id: 0.5 for item_id in item_ratings
                     }
                 
-                # Apply ratings to queryset
                 return queryset.annotate(
                     ml_score=Case(
                         *[
@@ -638,17 +596,15 @@ class RecommendationEngine:
             
         score = 0.0
         
-        # Country match
         if hasattr(item, 'country') and item.country and hasattr(self.profile, 'preferred_countries'):
             if item.country in self.profile.preferred_countries.all():
                 score += 0.3
-        
-        # Category match
+
         if hasattr(item, 'category') and item.category and hasattr(self.profile, 'travel_interests'):
             if item.category.name in self.profile.travel_interests:
                 score += 0.2
         
-        # Tag match (from metadata)
+
         if hasattr(item, 'metadata') and isinstance(item.metadata, dict) and hasattr(self.profile, 'travel_interests'):
             tags = item.metadata.get('tags', [])
             if tags and any(tag in self.profile.travel_interests for tag in tags):
@@ -668,7 +624,6 @@ class RecommendationEngine:
             if self.item_features is None or not hasattr(self, 'item_id_to_idx'):
                 return queryset
             
-            # Get user's past interactions
             user_interactions = UserInteraction.objects.filter(
                 user=self.user,
                 interaction_type__in=self.INTERACTION_WEIGHTS.keys()
@@ -682,10 +637,9 @@ class RecommendationEngine:
             if not user_interactions:
                 return queryset
             
-            # Get item IDs the user has interacted with
             interacted_item_ids = user_interactions.values_list('object_id', flat=True)
             
-            # Get indices of items the user has interacted with
+
             interacted_indices = [
                 self.item_id_to_idx[item_id] 
                 for item_id in interacted_item_ids 
@@ -695,23 +649,18 @@ class RecommendationEngine:
             if not interacted_indices:
                 return queryset
             
-            # Get features of items the user has interacted with
             interacted_features = self.item_features[interacted_indices]
             
-            # Calculate user profile as the average of interacted item features
             user_profile = np.mean(interacted_features, axis=0)
             
-            # Calculate similarity between user profile and all items
             similarities = cosine_similarity([user_profile], self.item_features)[0]
             
-            # Map item IDs to their similarity scores
             item_similarities = {
                 item_id: float(similarities[self.item_id_to_idx[item_id]])
                 for item_id in self.item_id_to_idx
                 if item_id in queryset.values_list('id', flat=True)
             }
             
-            # Apply similarity scores to queryset
             return queryset.annotate(
                 content_similarity=Case(
                     *[
@@ -804,7 +753,6 @@ class RecommendationEngine:
     
     def _apply_preference_boosting(self, queryset):
         """Apply boosting based on user preferences"""
-        # First annotate all individual scores
         queryset = queryset.annotate(
             base_score=Case(
                 When(rating__gte=4.5, then=0.3),

@@ -56,7 +56,7 @@ export const ExperienceCard = ({ experience }: ExperienceCardProps) => {
             <div className="flex items-center gap-2 text-center">
               <UserAvatar id={experience?.owner?.id || ""} src={experience.owner?.profile?.avatar || ""} size={"sm"} count={experience.owner?.points || 0} membership={experience.owner?.membership_level || "bronze"} fallback={experience.owner?.first_name?.charAt(0).toUpperCase() || experience.owner?.username?.charAt(0).toUpperCase() || "U"} alt={experience.owner?.username}/>
               <span className="font-medium">
-                {experience.owner?.username || `${experience?.owner?.first_name} ${experience?.owner?.last_name}`}
+                {`${experience?.owner?.first_name} ${experience?.owner?.last_name}` || experience.owner?.username}
               </span>
             </div>
             <Badge className="px-2 py-1 border-none">

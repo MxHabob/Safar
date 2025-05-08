@@ -1379,23 +1379,22 @@ class BoxGenerator:
         """
         notes = []
         
-        # Add opening hours
+
         if hasattr(activity, 'opening_hours'):
             notes.append(f"Opening hours: {activity.opening_hours}")
         elif hasattr(activity, 'metadata') and 'opening_hours' in activity.metadata:
             notes.append(f"Opening hours: {activity.metadata['opening_hours']}")
         
-        # Add tips
+
         if hasattr(activity, 'metadata') and activity.metadata.get('tips'):
             tips = activity.metadata.get('tips')
             if isinstance(tips, list) and tips:
                 notes.append(f"Tip: {tips[0]}")
         
-        # Add popularity note
+ 
         if hasattr(activity, 'metadata') and activity.metadata.get('popularity_score', 0) > 0.7:
             notes.append("This is a popular attraction. Consider visiting early to avoid crowds.")
-        
-        # Add media note
+    
         if hasattr(activity, 'media') and activity.media.exists():
             media_count = activity.media.count()
             photo_count = activity.media.filter(type='photo').count()
@@ -1451,17 +1450,17 @@ class BoxGenerator:
         """
         try:
             with transaction.atomic():
-                # Store original box data for comparison
+     
                 original_price = box.total_price
                 original_metadata = box.metadata.copy() if box.metadata else {}
                 
-                # Delete existing itinerary
+        
                 box.itinerary_days.all().delete()
 
-                # Get destination
+ 
                 destination = box.city or box.region or box.country
                 
-                # Generate new box
+        
                 optimized_box = self.generate_box(
                     destination=destination,
                     duration_days=box.duration_days,
@@ -1469,8 +1468,7 @@ class BoxGenerator:
                     start_date=box.start_date,
                     theme=box.metadata.get('theme')
                 )
-                
-                # Update optimization metrics
+     
                 box.metadata['optimization'] = {
                     'original_price': float(original_price) if original_price else 0,
                     'optimized_price': float(optimized_box.total_price) if optimized_box.total_price else 0,
@@ -1506,7 +1504,7 @@ class BoxGenerator:
         """
         try:
             with transaction.atomic():
-                # Create new box with modifications
+          
                 new_box = Box.objects.create(
                     name=f"{original_box.name} (Modified)",
                     duration_days=modifications.get('duration_days', original_box.duration_days),
@@ -1525,11 +1523,10 @@ class BoxGenerator:
                     }
                 )
                 
-                # Copy media
                 if original_box.media.exists():
                     new_box.media.add(*original_box.media.all())
                 
-                # Copy itinerary days and items
+
                 for old_day in original_box.itinerary_days.order_by('day_number'):
                     new_day = BoxItineraryDay.objects.create(
                         box=new_box,
@@ -1541,7 +1538,7 @@ class BoxGenerator:
                         metadata=old_day.metadata
                     )
                     
-                    # Copy items
+
                     items_to_create = []
                     for old_item in old_day.items.order_by('order'):
                         new_item = BoxItineraryItem(
@@ -1557,11 +1554,10 @@ class BoxGenerator:
                             is_optional=old_item.is_optional
                         )
                         items_to_create.append(new_item)
-                    
-                    # Bulk create items for better performance
+       
                     BoxItineraryItem.objects.bulk_create(items_to_create)
                 
-                # Calculate total price
+
                 new_box.total_price = self._calculate_total_price(
                     new_box.itinerary_days.all()
                 )

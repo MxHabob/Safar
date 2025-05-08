@@ -27,7 +27,7 @@ export const ListExperience = ({ overlay, selected, ...rest }: Props) => {
     )
   }
 
-   console.log("experiences : ", experiences)
+
   return (
     <Slider
       slidesPerView="auto"

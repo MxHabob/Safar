@@ -24,11 +24,11 @@ export const IntroductionProfile = ({ userId }: IntroductionProfileProps) => {
   <div className="container max-w-6xl mx-auto">
         <RouterBack/>
     <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-      <div className="w-full md:w-1/2 space-y-18">
+      <div className="w-full md:w-1/2 space-y-18  ml-8 mt-4">
           <UserAvatar src={user?.profile?.avatar || ""} size={"lg"} count={user?.points || 0} membership={user?.membership_level || "bronze"} fallback={user?.first_name?.charAt(0).toUpperCase() || user?.username?.charAt(0).toUpperCase() || "U"} alt={user?.username}/>
           <div className="space-y-6">
             <div className="space-y-8">
-            <p className="text-lg text-gray-500 font-semibold">
+            <p className="text-lg text-gray-600 font-semibold">
             {user?.profile?.country?.name} {user?.profile?.city?.name} {user?.profile?.region?.name}
             </p>
             <p className="text-3xl md:text-5xl font-bold">
@@ -51,8 +51,8 @@ export const IntroductionProfile = ({ userId }: IntroductionProfileProps) => {
         <div className="w-full md:w-1/2 flex justify-center md:justify-end">
           <Image
             src="/images/tropical-island.png"
-            width={500}
-            height={500}
+            width={600}
+            height={600}
             alt="Tropical island with palm tree"
             priority
           />

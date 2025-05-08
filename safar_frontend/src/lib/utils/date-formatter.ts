@@ -40,3 +40,14 @@ export const formattedPrice = (currency: string = "USD", price: number = 0) => {
     maximumFractionDigits: 0,
   }).format(price);
 }
+
+
+export function formatCount(count: number): string {
+  if (count >= 1000000) {
+    return `${Math.floor(count / 1000000)}M`
+  } else if (count >= 1000) {
+    return `${Math.floor(count / 1000)}K`
+  } else {
+    return count.toString()
+  }
+}
