@@ -5,11 +5,12 @@ from rest_framework import status
 from apps.authentication.serializers import UserInteractionSerializer
 from apps.authentication.models import UserInteraction
 from django.contrib.contenttypes.models import ContentType
-from apps.core_apps.general import BaseViewSet
+from apps.core_apps.general import BaseViewSet,GENPagination
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjoserUserViewSet
 
-class UserViewSet(BaseViewSet, DjoserUserViewSet):
+class UserViewSet(DjoserUserViewSet):
+    pagination_class = GENPagination
     lookup_field = 'id'
     
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
