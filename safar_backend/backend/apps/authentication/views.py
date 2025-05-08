@@ -11,6 +11,7 @@ from djoser.views import UserViewSet as DjoserUserViewSet
 
 class UserViewSet(DjoserUserViewSet):
     """Extends Djoser's UserViewSet with custom functionality"""
+    lookup_field = 'id'
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def follow(self, request, id=None):
         user_to_follow = get_object_or_404(self.get_queryset(), pk=id)
