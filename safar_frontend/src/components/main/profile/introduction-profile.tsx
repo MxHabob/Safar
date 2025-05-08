@@ -6,15 +6,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useGetUserByIdQuery } from "@/core/services/api";
 import Image from "next/image";
 import { FollowButton } from "./follow-button";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type IntroductionProfileProps = {
     userId: string;
 }
 
 export const IntroductionProfile = ({ userId }: IntroductionProfileProps) => {
+    const router = useRouter()
     const {data:user,isLoading} = useGetUserByIdQuery(userId);
-    const [isFollowing, setIsFollowing] = useState(user?.is_following || false);
 
     if (isLoading) {
         return <IntroductionProfile.Skeleton />;
@@ -38,11 +38,10 @@ export const IntroductionProfile = ({ userId }: IntroductionProfileProps) => {
             <div className="flex items-center gap-4">
             <FollowButton 
              userId={userId} 
-             isFollowing={isFollowing}
-             onFollowChange={setIsFollowing}
+             isFollowing={user?.is_following || false}
             />
-            <Button variant={"outline"} className="h-10 rounded-full w-1/3 mt-8">
-              Message
+            <Button variant={"outline"} className="h-10 rounded-full w-1/3 mt-8" onClick={() => router.push(`/more`)}>
+              More
             </Button>
             </div>
           </div>

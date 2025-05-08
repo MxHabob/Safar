@@ -9,7 +9,7 @@ from apps.core_apps.general import BaseViewSet
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjoserUserViewSet
 
-class UserViewSet(DjoserUserViewSet):
+class UserViewSet(BaseViewSet, DjoserUserViewSet):
     lookup_field = 'id'
     
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
