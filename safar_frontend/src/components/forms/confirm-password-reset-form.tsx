@@ -37,7 +37,8 @@ export function ConfirmPasswordResetForm() {
       const result = await confirmPasswordReset({
         uid,
         token,
-        new_password: data.re_password,
+        new_password: data.new_password,
+        re_new_password :  data.re_new_password,
       })
 
       if (!result.success) {
