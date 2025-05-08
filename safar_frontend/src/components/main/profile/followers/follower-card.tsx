@@ -29,14 +29,14 @@ FllowerCard.Skeleton = function FllowerCardSkeleton() {
     return (
       <div className={cn( "flex flex-col items-center p-4 max-w-xs mx-auto rounded-lg")}>
         <div className={cn("relative mb-1")}>
-          <div className={cn("w-32 h-32 rounded-full border-2 flex items-center justify-center")}>
-            <Skeleton className="w-full h-full rounded-full bg-gray-200"/>
+          <div className={cn("w-32 h-32 rounded-full flex items-center justify-center")}>
+            <Skeleton className="w-full h-full rounded-full"/>
           </div>
-          <Skeleton className="absolute bottom-0 right-0 w-16 h-5 rounded-full bg-gray-200"/>
+          <Skeleton className="absolute bottom-0 right-0 w-16 h-5 rounded-full"/>
         </div>
-        <Skeleton className="h-6 w-24 bg-gray-200 rounded mt-2"/>
-        <Skeleton className="h-4 w-32 bg-gray-200 rounded mt-2 mb-3"/>
-        <Skeleton className="h-10 w-full bg-gray-200 rounded-full"/>
+        <Skeleton className="h-6 w-24 rounded mt-2"/>
+        <Skeleton className="h-4 w-32 rounded mt-2 mb-3"/>
+        <Skeleton className="h-10 w-full rounded-full"/>
       </div>
     )
 }

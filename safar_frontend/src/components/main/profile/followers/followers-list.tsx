@@ -24,7 +24,7 @@ export const ListFollowers = ({ userId ,overlay, selected, ...rest }: Props) => 
     )
   }
 
-
+  console.log("followers : ", followers)
   return (
     <Slider
       slidesPerView="auto"
