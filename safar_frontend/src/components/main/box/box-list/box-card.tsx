@@ -43,7 +43,7 @@ export const BoxCard = ({ box }: BoxCardProps) => {
         <div className="absolute bottom-0 left-0 w-full p-4 md:p-6 lg:p-8">
           <div className="mb-2 flex items-center">
             <MapPin className="mr-2 h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
-            <span className="text-sm md:text-base font-medium">
+            <span className="text-sm md:text-base font-medium text-white/80">
               {box?.country?.name} - {box?.city?.name}
             </span>
           </div>

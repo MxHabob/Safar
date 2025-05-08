@@ -76,7 +76,7 @@ export const UserAvatar = ({
           <Avatar className="h-full w-full" asChild>
             <div>
               <AvatarImage src={src || ""} alt={alt} />
-              <AvatarFallback>{fallback}</AvatarFallback>
+              <AvatarFallback className="font-extrabold">{fallback.toUpperCase()}</AvatarFallback>
             </div>
           </Avatar>
         </Link>

@@ -45,7 +45,7 @@ export const ListBox = ({ overlay, selected, ...rest }: Props) => {
           <SwiperSlide
             key={box.id}
             className={`w-full transition-all duration-200 ${
-              selected === box.id ? "scale-[1.05] md:scale-[1.1]" : ""
+              selected === box.id ? "scale-[1.05] md:scale-[1.05]" : ""
             }`}
           >
             <BoxCard box={box} />
