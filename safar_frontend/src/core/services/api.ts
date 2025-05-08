@@ -190,7 +190,7 @@ export const api = createApi({
       }),
     }),
 
-    confirmPasswordReset: builder.mutation<void, { uid: string; token: string; new_password: string }>({
+    confirmPasswordReset: builder.mutation<void, { uid: string; token: string; new_password: string,re_new_password: string }>({
       query: (data) => ({
         url: "/auth/users/reset_password_confirm/",
         method: "POST",

@@ -180,7 +180,7 @@ export const useAuth = () => {
   )
 
   const confirmPasswordReset = useCallback(
-    async (data: { uid: string; token: string; new_password: string }) => {
+    async (data: { uid: string; token: string; new_password: string,re_new_password: sring }) => {
       try {
         await toast.promise(confirmPasswordResetApi(data).unwrap(), {
           loading: "Resetting your password...",
