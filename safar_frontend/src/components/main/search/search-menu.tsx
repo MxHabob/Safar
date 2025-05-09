@@ -25,13 +25,12 @@ export function CommandMenu() {
   const [search, setSearch] = React.useState("")
   const [debouncedSearch] = useDebounce(search, 300)
 
-  // Fetch search results when the debounced search value changes
   const { data: places, isLoading: placesLoading } = useQuery({
     queryKey: ["places", debouncedSearch],
     queryFn: async () => {
       if (!debouncedSearch || debouncedSearch.length < 2) return []
       const response = await api.endpoints.getPlaces.initiate({ search: debouncedSearch, page_size: 5 })
-      return "data" in response ? response.data.results : []
+      return "data" in response ? response?.data?.results : []
     },
     enabled: debouncedSearch.length >= 2,
   })
@@ -41,7 +40,7 @@ export function CommandMenu() {
     queryFn: async () => {
       if (!debouncedSearch || debouncedSearch.length < 2) return []
       const response = await api.endpoints.getExperiences.initiate({ search: debouncedSearch, page_size: 5 })
-      return "data" in response ? response.data.results : []
+      return "data" in response ? response?.data?.results : []
     },
     enabled: debouncedSearch.length >= 2,
   })
@@ -51,7 +50,7 @@ export function CommandMenu() {
     queryFn: async () => {
       if (!debouncedSearch || debouncedSearch.length < 2) return []
       const response = await api.endpoints.searchCities.initiate({ q: debouncedSearch, limit: 5 })
-      return "data" in response ? response.data.results : []
+      return "data" in response ? response?.data?.results : []
     },
     enabled: debouncedSearch.length >= 2,
   })
@@ -61,7 +60,7 @@ export function CommandMenu() {
     queryFn: async () => {
       if (!debouncedSearch || debouncedSearch.length < 2) return []
       const response = await api.endpoints.getCountries.initiate({ search: debouncedSearch, page_size: 5 })
-      return "data" in response ? response.data.results : []
+      return "data" in response ? response?.data?.results : []
     },
     enabled: debouncedSearch.length >= 2,
   })
@@ -101,18 +100,22 @@ export function CommandMenu() {
 
   return (
     <>
-      <Button
-        variant="outline"
-        className="relative h-10 w-full justify-start rounded-md px-4 text-sm text-muted-foreground sm:pr-12 md:w-64 lg:w-80"
-        onClick={() => setOpen(true)}
-      >
-        <Search className="mr-2 h-4 w-4" />
-        <span className="hidden lg:inline-flex">Search places, experiences, cities...</span>
-        <span className="inline-flex lg:hidden">Search...</span>
-        <kbd className="pointer-events-none absolute right-1.5 top-2 hidden h-6 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-xs font-medium opacity-100 sm:flex">
-          <span className="text-xs">⌘</span>K
-        </kbd>
-      </Button>
+      <div className="relative mx-auto max-w-4xl">
+          <div className="flex items-center rounded-full bg-card shadow-lg">
+            <div className="flex-1 px-6 py-3">
+              <div className="text-sm font-medium">Where</div>
+              <input
+                type="text"
+                placeholder="Search destinations"
+                className="w-full border-none p-0 text-sm focus:outline-none focus:ring-0"
+                onClick={() => setOpen(true)}
+              />
+            </div>
+            <Button className="absolute right-2 flex h-12 w-12 items-center justify-center rounded-full bg-[#34E0D8] " onClick={() => setOpen(true)}>
+              <Search className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder="Search places, experiences, cities..." value={search} onValueChange={setSearch} />
         <CommandList>
@@ -130,7 +133,7 @@ export function CommandMenu() {
 
               {places && places.length > 0 && (
                 <CommandGroup heading="Places">
-                  {places.map((place) => (
+                  {places.map((place : Place) => (
                     <CommandItem key={`place-${place.id}`} onSelect={() => handleSelect("place", place)}>
                       <MapPin className="mr-2 h-4 w-4" />
                       <span>{place.name}</span>
@@ -141,7 +144,7 @@ export function CommandMenu() {
 
               {experiences && experiences.length > 0 && (
                 <CommandGroup heading="Experiences">
-                  {experiences.map((experience) => (
+                  {experiences.map((experience : Experience) => (
                     <CommandItem
                       key={`experience-${experience.id}`}
                       onSelect={() => handleSelect("experience", experience)}
@@ -155,7 +158,7 @@ export function CommandMenu() {
 
               {cities && cities.length > 0 && (
                 <CommandGroup heading="Cities">
-                  {cities.map((city) => (
+                  {cities.map((city : City) => (
                     <CommandItem key={`city-${city.id}`} onSelect={() => handleSelect("city", city)}>
                       <Building className="mr-2 h-4 w-4" />
                       <span>{city.name}</span>
@@ -169,7 +172,7 @@ export function CommandMenu() {
 
               {countries && countries.length > 0 && (
                 <CommandGroup heading="Countries">
-                  {countries.map((country) => (
+                  {countries.map((country : Country) => (
                     <CommandItem key={`country-${country.id}`} onSelect={() => handleSelect("country", country)}>
                       <Globe className="mr-2 h-4 w-4" />
                       <span>{country.name}</span>

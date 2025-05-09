@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { Suspense } from "react"
+import { CommandMenu } from "@/components/main/search/search-menu"
 // import { useSearchParams } from "next/navigation"
 
 export default function Home() {
@@ -21,7 +22,8 @@ export default function Home() {
       </div>
       <HeaderFilters />
       <div className="sticky top-0 z-10 bg-background/50 backdrop-blur-lg items-center justify-center py-4">
-        <MSearch />
+        {/* <MSearch /> */}
+        <CommandMenu />
       </div>
       <AIAssistant />
       <div className="px-2 sm:px-6 lg:px-8 md:mx-8 space-y-4">
