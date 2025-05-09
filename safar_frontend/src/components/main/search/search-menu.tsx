@@ -44,7 +44,7 @@ export function CommandMenu() {
   const handleSelect = (type: ResultType, id: string | number) => {
     setOpen(false)
     const routes: Record<ResultType, string> = {
-      users: `/users/${id}`,
+      users: `/profile/${id}`,
       places: `/places/${id}`,
       experiences: `/experiences/${id}`,
       cities: `/cities/${id}`,
@@ -90,14 +90,12 @@ export function CommandMenu() {
 
       <CommandDialog open={open} onOpenChange={setOpen}>
         <div className="flex items-center border-b px-3">
-          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
           <CommandInput
             placeholder="Search places, experiences, cities, users..."
             value={search}
             onValueChange={setSearch}
           />
         </div>
-
         <CommandList>
           {isLoading && debouncedSearch.length >= 2 ? (
             <div className="flex items-center justify-center py-6">
