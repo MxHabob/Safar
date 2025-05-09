@@ -98,6 +98,10 @@ export function CommandMenu() {
     }
   }
 
+  console.log("countries : ",countries)
+  console.log("cities : ",cities)
+  console.log("experiences :",experiences)
+  console.log("places :",places)
   return (
     <>
       <div className="relative mx-auto max-w-4xl">
