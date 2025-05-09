@@ -197,9 +197,9 @@ class PlaceViewSet(BaseViewSet):
         'category', 'country', 'city', 'region', 'owner'
     ).prefetch_related('media')
     serializer_class = PlaceSerializer
-    filterset_fields = ['country', 'city', 'is_available']
+    filterset_fields = ['category', 'country', 'city', 'is_available']
     search_fields = ['name', 'description']
-    ordering_fields = ['rating', 'price', 'created_at', 'category']
+    ordering_fields = ['rating', 'price', 'created_at']
     
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -223,6 +223,7 @@ class PlaceViewSet(BaseViewSet):
         try:
             places = recommendation_engine.recommend_places(limit=limit)
             
+            # Check if we got results
             if not places.exists():
                 logger.warning("Recommendation engine returned empty results, using fallback")
                 places = Place.objects.filter(
@@ -230,6 +231,7 @@ class PlaceViewSet(BaseViewSet):
                     is_deleted=False
                 ).order_by('-rating')[:limit]
                 
+                # If still empty, get any places
                 if not places.exists():
                     places = Place.objects.all()[:limit]
                     
@@ -237,6 +239,7 @@ class PlaceViewSet(BaseViewSet):
             return Response(serializer.data)
         except Exception as e:
             logger.error(f"Error in place recommendations: {str(e)}", exc_info=True)
+            # Ensure we return something
             places = Place.objects.all().order_by('-created_at')[:limit]
             serializer = self.get_serializer(places, many=True)
             return Response(serializer.data)
@@ -256,9 +259,9 @@ class ExperienceViewSet(BaseViewSet):
         'place', 'owner'
     ).prefetch_related('media')
     serializer_class = ExperienceSerializer
-    filterset_fields = ['place', 'is_available']
+    filterset_fields = ['category','place', 'is_available']
     search_fields = ['title', 'description']
-    ordering_fields = ['rating', 'price_per_person', 'duration','category']
+    ordering_fields = ['rating', 'price_per_person', 'duration']
 
     @action(detail=False, methods=['get'])
     def recommended(self, request):
@@ -319,9 +322,9 @@ class FlightViewSet(BaseViewSet):
 class BoxViewSet(BaseViewSet):
     queryset = Box.objects.select_related('country', 'city').prefetch_related('media')
     serializer_class = BoxSerializer
-    filterset_fields = ['country', 'city']
+    filterset_fields = ['category','country', 'city']
     search_fields = ['name', 'description']
-    ordering_fields = ['total_price', 'created_at','category']
+    ordering_fields = ['total_price', 'created_at']
 
     @action(detail=True, methods=['get'])
     def itinerary(self, request, pk=None):
