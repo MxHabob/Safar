@@ -396,3 +396,23 @@ export interface PaginatedResponse<T> {
   previous: string | null;
   results: T[];
 }
+
+export interface SearchResult {
+  id: string | number;
+  name: string;
+  type: string;
+  [key: string]: any;
+}
+
+export interface SearchResponse {
+  query: string;
+  total_count: number;
+  results: {
+    users?: SearchResult[];
+    places?: SearchResult[];
+    experiences?: SearchResult[];
+    cities?: SearchResult[];
+    regions?: SearchResult[];
+    countries?: SearchResult[];
+  };
+}

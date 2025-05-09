@@ -18,6 +18,9 @@ from apps.safar.serializers import (
     PaymentSerializer, MessageSerializer, NotificationSerializer
 )
 
+from apps.authentication.models import User
+from apps.geographic_data.models import Country, Region, City
+
 logger = logging.getLogger(__name__)
 
 
@@ -594,3 +597,228 @@ class NotificationViewSet(BaseViewSet):
             is_read=False
         ).update(is_read=True)
         return Response({'status': f'{updated} notifications marked as read'})
+
+
+class UniversalSearchView(generics.GenericAPIView):
+    """
+    Universal search endpoint that searches across multiple entity types:
+    - Users
+    - Places
+    - Experiences
+    - Cities
+    - Regions
+    - Countries
+    
+    Returns brief data (id, name, type) for each result.
+    
+    Query Parameters:
+    - q: Search query (required, min 2 characters)
+    - limit: Maximum number of results per entity type (default: 5)
+    - types: Comma-separated list of entity types to search (optional)
+             Available types: users,places,experiences,cities,regions,countries
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        try:
+            query = request.query_params.get('q', '')
+            limit = int(request.query_params.get('limit', 5))
+            types = request.query_params.get('types', '')
+            
+            # Validate query
+            if not query or len(query) < 2:
+                return Response({
+                    'error': 'Search query must be at least 2 characters long'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Parse types to search
+            search_types = [t.strip() for t in types.split(',')] if types else [
+                'users', 'places', 'experiences', 'cities', 'regions', 'countries'
+            ]
+            
+            results = {}
+            
+            # Search users
+            if 'users' in search_types:
+                users = self._search_users(query, limit)
+                results['users'] = [
+                    {
+                        'id': user.id, 
+                        'name': user.get_full_name(), 
+                        'username': user.username,
+                        'type': 'user'
+                    } 
+                    for user in users
+                ]
+            
+            # Search places
+            if 'places' in search_types:
+                places = self._search_places(query, limit)
+                results['places'] = [
+                    {
+                        'id': place.id, 
+                        'name': place.name, 
+                        'type': 'place',
+                        'category': place.category.name if place.category else None
+                    } 
+                    for place in places
+                ]
+            
+            # Search experiences
+            if 'experiences' in search_types:
+                experiences = self._search_experiences(query, limit)
+                results['experiences'] = [
+                    {
+                        'id': exp.id, 
+                        'name': exp.title, 
+                        'type': 'experience',
+                        'category': exp.category.name if exp.category else None
+                    } 
+                    for exp in experiences
+                ]
+            
+            # Search cities
+            if 'cities' in search_types:
+                cities = self._search_cities(query, limit)
+                results['cities'] = [
+                    {
+                        'id': city.id, 
+                        'name': city.name, 
+                        'country': city.country.name if city.country else None, 
+                        'type': 'city'
+                    } 
+                    for city in cities
+                ]
+            
+            # Search regions
+            if 'regions' in search_types:
+                regions = self._search_regions(query, limit)
+                results['regions'] = [
+                    {
+                        'id': region.id, 
+                        'name': region.name, 
+                        'country': region.country.name if region.country else None, 
+                        'type': 'region'
+                    } 
+                    for region in regions
+                ]
+            
+            # Search countries
+            if 'countries' in search_types:
+                countries = self._search_countries(query, limit)
+                results['countries'] = [
+                    {
+                        'id': country.id, 
+                        'name': country.name, 
+                        'code': country.iso_code,
+                        'type': 'country'
+                    } 
+                    for country in countries
+                ]
+            
+            # Add total count
+            total_count = sum(len(results[key]) for key in results)
+            
+            # Log search for analytics
+            self._log_search(request.user, query, total_count)
+            
+            return Response({
+                'query': query,
+                'total_count': total_count,
+                'results': results
+            })
+            
+        except Exception as e:
+            logger.error(f"Search error: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'An error occurred while processing your search'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _search_users(self, query, limit):
+        """Search for users with optimized query"""
+        return User.objects.filter(
+            Q(username__icontains=query) | 
+            Q(first_name__icontains=query) | 
+            Q(last_name__icontains=query) |
+            Q(email__icontains=query)
+        ).filter(
+            is_active=True, 
+            is_deleted=False
+        ).only(
+            'id', 'username', 'first_name', 'last_name', 'email'
+        )[:limit]
+    
+    def _search_places(self, query, limit):
+        """Search for places with optimized query"""
+        return Place.objects.filter(
+            Q(name__icontains=query) | 
+            Q(description__icontains=query)
+        ).filter(
+            is_deleted=False
+        ).select_related(
+            'category'
+        ).only(
+            'id', 'name', 'category__name'
+        )[:limit]
+    
+    def _search_experiences(self, query, limit):
+        """Search for experiences with optimized query"""
+        return Experience.objects.filter(
+            Q(title__icontains=query) | 
+            Q(description__icontains=query)
+        ).filter(
+            is_deleted=False
+        ).select_related(
+            'category'
+        ).only(
+            'id', 'title', 'category__name'
+        )[:limit]
+    
+    def _search_cities(self, query, limit):
+        """Search for cities with optimized query"""
+        return City.objects.filter(
+            Q(name__icontains=query) | 
+            Q(name_ascii__icontains=query)
+        ).select_related(
+            'country'
+        ).only(
+            'id', 'name', 'country__name'
+        )[:limit]
+    
+    def _search_regions(self, query, limit):
+        """Search for regions with optimized query"""
+        return Region.objects.filter(
+            Q(name__icontains=query) | 
+            Q(code__icontains=query)
+        ).select_related(
+            'country'
+        ).only(
+            'id', 'name', 'country__name'
+        )[:limit]
+    
+    def _search_countries(self, query, limit):
+        """Search for countries with optimized query"""
+        return Country.objects.filter(
+            Q(name__icontains=query) | 
+            Q(iso_code__iexact=query) | 
+            Q(iso3_code__iexact=query)
+        ).only(
+            'id', 'name', 'iso_code'
+        )[:limit]
+    
+    def _log_search(self, user, query, result_count):
+        """Log search for analytics"""
+        try:
+            from apps.authentication.models import UserInteraction
+            
+            UserInteraction.log_interaction(
+                user=user,
+                content_object=user,  # Self-reference as there's no specific object
+                interaction_type='search',
+                metadata={
+                    'query': query,
+                    'result_count': result_count
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Failed to log search: {str(e)}")

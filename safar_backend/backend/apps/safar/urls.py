@@ -4,7 +4,8 @@ from apps.safar.views import (
     CategoryViewSet, DiscountViewSet, PlaceViewSet,
     ExperienceViewSet, FlightViewSet, BoxViewSet,
     BookingViewSet, WishlistViewSet, ReviewViewSet,
-    PaymentViewSet, MessageViewSet, NotificationViewSet
+    PaymentViewSet, MessageViewSet, NotificationViewSet,
+    UniversalSearchView
 )
 
 router = DefaultRouter()
@@ -22,6 +23,7 @@ router.register(r'reviews', ReviewViewSet)
 router.register(r'payments', PaymentViewSet)
 router.register(r'messages', MessageViewSet)
 router.register(r'notifications', NotificationViewSet)
+router.register(r'search', UniversalSearchView)
 
 urlpatterns = [
     path('', include(router.urls)),

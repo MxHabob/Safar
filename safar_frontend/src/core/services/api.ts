@@ -929,6 +929,17 @@ export const api = createApi({
       }),
       providesTags: ["City"],
     }),
+      universalSearch: builder.query<SearchResponse, { q: string; limit?: number; types?: string }>({
+      query: (params) => ({
+        url: "search/",
+        method: "GET",
+        params,
+      }),
+      keepUnusedDataFor: 60,
+      transformResponse: (response: SearchResponse) => {
+        return response
+      },
+    }),
   }),
 })
 
@@ -1056,4 +1067,6 @@ export const {
   useSearchCitiesQuery,
   useGetCitiesInCountryQuery,
   useGetCitiesInRegionQuery,
+
+  useUniversalSearchQuery
 } = api

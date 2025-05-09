@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { useDebounce } from "use-debounce"
-import { MapPin, Compass, Globe, Building, Search, Loader2 } from "lucide-react"
+import { MapPin, Compass, Globe, Building, Search, Loader2, User } from "lucide-react"
 
 import {
   CommandDialog,
@@ -17,7 +17,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { api } from "@/core/services/api"
 import { cn } from "@/lib/utils"
-import type { Country } from "@/core/types"
 
 export function CommandMenu() {
   const router = useRouter()
@@ -26,50 +25,39 @@ export function CommandMenu() {
   const [debouncedSearch] = useDebounce(search, 300)
   const searchInputRef = React.useRef<HTMLInputElement>(null)
 
-  // Memoize the query options to prevent unnecessary re-renders
-  const queryOptions = React.useMemo(
-    () => ({
+  // Use the universal search endpoint
+  const {
+    data: searchData,
+    isLoading: isSearching,
+    isError: searchError,
+  } = api.useUniversalSearchQuery(
+    {
+      q: debouncedSearch,
+      limit: 5,
+      types: "users,places,experiences,cities,regions,countries",
+    },
+    {
       skip: debouncedSearch.length < 2,
       refetchOnMountOrArgChange: false,
       refetchOnReconnect: false,
-    }),
-    [debouncedSearch.length],
+    },
   )
 
-  // Use the RTK Query hooks with error handling
-  const {
-    data: placesData,
-    isLoading: placesLoading,
-    isError: placesError,
-  } = api.useGetPlacesQuery({ search: debouncedSearch, page_size: 5 }, queryOptions)
-
-  const {
-    data: experiencesData,
-    isLoading: experiencesLoading,
-    isError: experiencesError,
-  } = api.useGetExperiencesQuery({ search: debouncedSearch, page_size: 5 }, queryOptions)
-
-  const {
-    data: citiesData,
-    isLoading: citiesLoading,
-    isError: citiesError,
-  } = api.useSearchCitiesQuery({ q: debouncedSearch, limit: 5 }, queryOptions)
-
-  const {
-    data: countriesData,
-    isLoading: countriesLoading,
-    isError: countriesError,
-  } = api.useGetCountriesQuery({ search: debouncedSearch, page_size: 5 }, queryOptions)
-
   // Extract results with fallbacks
-  const places = placesData?.results || []
-  const experiences = experiencesData?.results || []
-  const cities = citiesData?.results || []
-  const countries = countriesData?.results || []
+  const users = searchData?.results?.users || []
+  const places = searchData?.results?.places || []
+  const experiences = searchData?.results?.experiences || []
+  const cities = searchData?.results?.cities || []
+  const regions = searchData?.results?.regions || []
+  const countries = searchData?.results?.countries || []
 
-  const isLoading = placesLoading || experiencesLoading || citiesLoading || countriesLoading
-  const hasError = placesError || experiencesError || citiesError || countriesError
-  const hasResults = places.length > 0 || experiences.length > 0 || cities.length > 0 || countries.length > 0
+  const hasResults =
+    users.length > 0 ||
+    places.length > 0 ||
+    experiences.length > 0 ||
+    cities.length > 0 ||
+    regions.length > 0 ||
+    countries.length > 0
 
   // Focus the search input when the dialog opens
   React.useEffect(() => {
@@ -96,66 +84,28 @@ export function CommandMenu() {
   // Reset search when dialog closes
   React.useEffect(() => {
     if (!open) {
-      // Small delay to avoid visual flicker when reopening
       setTimeout(() => setSearch(""), 300)
     }
   }, [open])
 
+  // Navigation handler
   const handleSelect = React.useCallback(
-    <T extends { id: string | number }>(type: string, item: T) => {
+    (type: string, item: { id: string | number }) => {
       setOpen(false)
 
-      const routes = {
+      const routes: Record<string, string> = {
+        user: `/users/${item.id}`,
         place: `/places/${item.id}`,
         experience: `/experiences/${item.id}`,
         city: `/cities/${item.id}`,
+        region: `/regions/${item.id}`,
         country: `/countries/${item.id}`,
-      } as const
+      }
 
-      router.push(routes[type as keyof typeof routes])
+      router.push(routes[type] || "/")
     },
     [router],
   )
-
-
-const renderResultGroup = React.useCallback(
-  <T extends { 
-    id: string | number; 
-    name?: string; 
-    title?: string;
-    country?: Country | string | null;
-  }>(
-    items: T[],
-    type: string,
-    heading: string,
-    icon: React.ReactNode,
-  ) => {
-    if (!items.length) return null
-
-    return (
-      <CommandGroup heading={heading}>
-        {items.map((item) => (
-          <CommandItem
-            key={`${type}-${item.id}`}
-            onSelect={() => handleSelect(type, item)}
-            className="flex items-center"
-          >
-            {icon}
-            <span>{item.name || item.title}</span>
-            {type === "city" && 
-             typeof item.country === "object" && 
-             item.country !== null && 
-             'name' in item.country && 
-             item.country.name && (
-              <span className="ml-2 text-xs text-muted-foreground">{item.country.name}</span>
-            )}
-          </CommandItem>
-        ))}
-      </CommandGroup>
-    )
-  },
-  [handleSelect],
-)
 
   return (
     <>
@@ -192,7 +142,7 @@ const renderResultGroup = React.useCallback(
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
           <CommandInput
             ref={searchInputRef}
-            placeholder="Search places, experiences, cities..."
+            placeholder="Search places, experiences, cities, users..."
             value={search}
             onValueChange={setSearch}
             className="flex-1 border-0 outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -205,31 +155,119 @@ const renderResultGroup = React.useCallback(
         </div>
 
         <CommandList>
-          {isLoading && debouncedSearch.length >= 2 && (
+          {isSearching && debouncedSearch.length >= 2 && (
             <div className="flex items-center justify-center py-6">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           )}
 
-          {hasError && (
+          {searchError && (
             <div className="py-6 text-center text-sm text-muted-foreground">
               Something went wrong. Please try again.
             </div>
           )}
 
-          {!isLoading && !hasError && debouncedSearch.length >= 2 && (
+          {!isSearching && !searchError && debouncedSearch.length >= 2 && (
             <>
               {!hasResults && <CommandEmpty>No results found for &quot;{debouncedSearch}&quot;</CommandEmpty>}
 
-              {renderResultGroup(places, "place", "Places", <MapPin className="mr-2 h-4 w-4 shrink-0" />)}
-              {renderResultGroup(
-                experiences,
-                "experience",
-                "Experiences",
-                <Compass className="mr-2 h-4 w-4 shrink-0" />,
+              {users.length > 0 && (
+                <CommandGroup heading="Users">
+                  {users.map((user) => (
+                    <CommandItem
+                      key={`user-${user.id}`}
+                      onSelect={() => handleSelect("user", user)}
+                      className="flex items-center"
+                    >
+                      <User className="mr-2 h-4 w-4 shrink-0" />
+                      <span>{user.name}</span>
+                      {user.username && <span className="ml-2 text-xs text-muted-foreground">@{user.username}</span>}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
               )}
-              {renderResultGroup(cities, "city", "Cities", <Building className="mr-2 h-4 w-4 shrink-0" />)}
-              {renderResultGroup(countries, "country", "Countries", <Globe className="mr-2 h-4 w-4 shrink-0" />)}
+
+              {places.length > 0 && (
+                <CommandGroup heading="Places">
+                  {places.map((place) => (
+                    <CommandItem
+                      key={`place-${place.id}`}
+                      onSelect={() => handleSelect("place", place)}
+                      className="flex items-center"
+                    >
+                      <MapPin className="mr-2 h-4 w-4 shrink-0" />
+                      <span>{place.name}</span>
+                      {place.category && <span className="ml-2 text-xs text-muted-foreground">{place.category}</span>}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {experiences.length > 0 && (
+                <CommandGroup heading="Experiences">
+                  {experiences.map((experience) => (
+                    <CommandItem
+                      key={`experience-${experience.id}`}
+                      onSelect={() => handleSelect("experience", experience)}
+                      className="flex items-center"
+                    >
+                      <Compass className="mr-2 h-4 w-4 shrink-0" />
+                      <span>{experience.name}</span>
+                      {experience.category && (
+                        <span className="ml-2 text-xs text-muted-foreground">{experience.category}</span>
+                      )}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {cities.length > 0 && (
+                <CommandGroup heading="Cities">
+                  {cities.map((city) => (
+                    <CommandItem
+                      key={`city-${city.id}`}
+                      onSelect={() => handleSelect("city", city)}
+                      className="flex items-center"
+                    >
+                      <Building className="mr-2 h-4 w-4 shrink-0" />
+                      <span>{city.name}</span>
+                      {city.country && <span className="ml-2 text-xs text-muted-foreground">{city.country}</span>}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {regions.length > 0 && (
+                <CommandGroup heading="Regions">
+                  {regions.map((region) => (
+                    <CommandItem
+                      key={`region-${region.id}`}
+                      onSelect={() => handleSelect("region", region)}
+                      className="flex items-center"
+                    >
+                      <Globe className="mr-2 h-4 w-4 shrink-0" />
+                      <span>{region.name}</span>
+                      {region.country && <span className="ml-2 text-xs text-muted-foreground">{region.country}</span>}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {countries.length > 0 && (
+                <CommandGroup heading="Countries">
+                  {countries.map((country) => (
+                    <CommandItem
+                      key={`country-${country.id}`}
+                      onSelect={() => handleSelect("country", country)}
+                      className="flex items-center"
+                    >
+                      <Globe className="mr-2 h-4 w-4 shrink-0" />
+                      <span>{country.name}</span>
+                      {country.code && <span className="ml-2 text-xs text-muted-foreground">{country.code}</span>}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
             </>
           )}
 
