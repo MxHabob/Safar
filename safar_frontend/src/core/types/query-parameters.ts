@@ -27,6 +27,7 @@ export interface PlaceQueryParams extends BaseQueryParams {
 
 // Experience specific params
 export interface ExperienceQueryParams extends BaseQueryParams {
+  category?: string
   place?: string
   is_available?: boolean
   min_price_per_person?: number
@@ -47,6 +48,7 @@ export interface FlightQueryParams extends BaseQueryParams {
 
 // Box specific params
 export interface BoxQueryParams extends BaseQueryParams {
+  category?: string
   country?: string
   city?: string
   min_total_price?: number

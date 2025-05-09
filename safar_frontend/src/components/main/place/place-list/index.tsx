@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { PlaceCard } from "./place-card"
 import { Spinner } from "@/components/ui/spinner"
 import type { Place } from "@/core/types"
+import { useSearchParams } from "next/navigation"
 
 type Props = {
   overlay?: boolean
@@ -13,10 +14,12 @@ type Props = {
 }
 
 export const ListPlaces = ({ selected }: Props) => {
+  const searchParams = useSearchParams()
+  const category = searchParams.get('category')
   const [page, setPage] = useState(1)
   const placesCache = useRef<Place[]>([])
   
-  const { data, isLoading, isFetching, error } =  useGetPlacesQuery( { page, page_size: 12 },
+  const { data, isLoading, isFetching, error } =  useGetPlacesQuery( { page, page_size: 12, category:category || undefined },
     { 
       refetchOnMountOrArgChange: false,
       selectFromResult: (result) => {

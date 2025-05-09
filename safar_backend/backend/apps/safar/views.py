@@ -259,7 +259,7 @@ class ExperienceViewSet(BaseViewSet):
         'place', 'owner'
     ).prefetch_related('media')
     serializer_class = ExperienceSerializer
-    filterset_fields = ['place', 'is_available']
+    filterset_fields = ['category','place', 'is_available']
     search_fields = ['title', 'description']
     ordering_fields = ['rating', 'price_per_person', 'duration']
 
@@ -322,7 +322,7 @@ class FlightViewSet(BaseViewSet):
 class BoxViewSet(BaseViewSet):
     queryset = Box.objects.select_related('country', 'city').prefetch_related('media')
     serializer_class = BoxSerializer
-    filterset_fields = ['country', 'city']
+    filterset_fields = ['category','country', 'city']
     search_fields = ['name', 'description']
     ordering_fields = ['total_price', 'created_at']
 

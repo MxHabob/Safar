@@ -4,7 +4,7 @@ type Props = {
 	params: Promise<{ id: string}>
 }
 
-export default async  function ProfileMore({  params  }: Props) {
+export default async function ProfileMore({  params  }: Props) {
   const id = (await params).id
 
   return (

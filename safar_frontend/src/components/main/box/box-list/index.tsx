@@ -6,6 +6,7 @@ import { Slider } from "@/components/global/slider"
 import { useGetBoxesQuery } from "@/core/services/api"
 import { BoxCard } from "./box-card"
 import type { Box } from "@/core/types"
+import { useSearchParams } from "next/navigation"
 
 type Props = {
   overlay?: boolean
@@ -13,7 +14,9 @@ type Props = {
 } & SwiperProps
 
 export const ListBox = ({ overlay, selected, ...rest }: Props) => {
-  const { data: boxes, isLoading, error } = useGetBoxesQuery({ page_size: 10 }, { refetchOnMountOrArgChange: false })
+  const searchParams = useSearchParams()
+  const category = searchParams.get('category')
+  const { data: boxes, isLoading, error } = useGetBoxesQuery({ page_size: 10,category:category || undefined }, { refetchOnMountOrArgChange: false })
 
   if (error) {
     return (

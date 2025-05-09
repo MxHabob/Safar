@@ -6,6 +6,7 @@ import { Slider } from "@/components/global/slider"
 import { useGetExperiencesQuery } from "@/core/services/api"
 import { ExperienceCard } from "./experience-card"
 import type { Experience } from "@/core/types"
+import { useSearchParams } from "next/navigation"
 
 type Props = {
   overlay?: boolean
@@ -13,11 +14,13 @@ type Props = {
 } & SwiperProps
 
 export const ListExperience = ({ overlay, selected, ...rest }: Props) => {
+    const searchParams = useSearchParams()
+    const category = searchParams.get('category')
   const {
     data: experiences,
     isLoading,
     error,
-  } = useGetExperiencesQuery({ page_size: 10},{ refetchOnMountOrArgChange: false })
+  } = useGetExperiencesQuery({ page_size: 10,category:category || undefined},{ refetchOnMountOrArgChange: false })
 
   if (error) {
     return (
