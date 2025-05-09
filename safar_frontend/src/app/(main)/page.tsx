@@ -1,7 +1,7 @@
 // "use client";
 import AIAssistant from "@/components/global/aI-assistant-feed"
 import { HeaderFilters } from "@/components/layout/header/header-filters"
-import { MSearch } from "@/components/layout/header/Serch"
+// import { MSearch } from "@/components/layout/header/Serch"
 import { ListBox } from "@/components/main/box/box-list"
 import { ListExperience } from "@/components/main/experience/experience-list"
 import { ListPlaces } from "@/components/main/place/place-list"
@@ -11,10 +11,8 @@ import { ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { Suspense } from "react"
 import { CommandMenu } from "@/components/main/search/search-menu"
-// import { useSearchParams } from "next/navigation"
 
 export default function Home() {
-  // const {} = useSearchParams()
   return (
     <div>
       <div className="flex flex-col items-center justify-center my-6">
