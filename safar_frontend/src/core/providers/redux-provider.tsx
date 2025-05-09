@@ -11,7 +11,9 @@ export default function ReduxProvider({
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
+        <QueryProvider>
         {children}
+        </QueryProvider>
       </PersistGate>
     </Provider>
   )

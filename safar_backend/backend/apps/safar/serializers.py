@@ -179,7 +179,7 @@ class WishlistSerializer(serializers.ModelSerializer):
     class Meta:
         model = Wishlist
         fields = ['id', 'user', 'place', 'experience', 'flight', 'box']
-        read_only_fields = ['id']
+        read_only_fields = ['id','user']
 
 class ReviewSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
