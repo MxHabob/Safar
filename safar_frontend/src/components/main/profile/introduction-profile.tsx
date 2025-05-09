@@ -7,24 +7,27 @@ import { useGetUserByIdQuery } from "@/core/services/api";
 import Image from "next/image";
 import { FollowButton } from "./follow-button";
 import { useRouter } from "next/navigation";
+import { ListFollowers } from "./followers/followers-list";
 
 type IntroductionProfileProps = {
     userId: string;
 }
 
 export const IntroductionProfile = ({ userId }: IntroductionProfileProps) => {
-    const router = useRouter()
+  const router = useRouter();
     const {data:user,isLoading} = useGetUserByIdQuery(userId);
+
 
     if (isLoading) {
         return <IntroductionProfile.Skeleton />;
     }
 
     return ( 
-  <div className="container max-w-6xl mx-auto">
+      <div className="container max-w-6xl mx-auto py-8">
         <RouterBack/>
-    <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-      <div className="w-full md:w-1/2 space-y-18  ml-8 mt-4">
+    <div className="flex flex-col md:flex-row items-start justify-between gap-8">
+      <div className="w-full md:w-1/2 space-y-18 md:ml-8 md:mt-4 ">
+      <div className="flex flex-col items-center md:items-start gap-4">
           <UserAvatar src={user?.profile?.avatar || ""} size={"lg"} count={user?.points || 0} membership={user?.membership_level || "bronze"} fallback={user?.first_name?.charAt(0).toUpperCase() || user?.username?.charAt(0).toUpperCase() || "U"} alt={user?.username}/>
           <div className="space-y-6">
             <div className="space-y-8">
@@ -35,15 +38,21 @@ export const IntroductionProfile = ({ userId }: IntroductionProfileProps) => {
             {user?.first_name} {user?.last_name} 
             </p>
             </div>
-            <div className="flex items-center gap-4">
+            </div>
+          </div>
+            <div className="flex flex-col md:flex-row items-center gap-4 mt-4">
             <FollowButton 
              userId={userId} 
              isFollowing={user?.is_following || false}
+              className="w-full md:w-1/3 h-10 rounded-full"
             />
-            <Button variant={"outline"} className="h-10 rounded-full w-1/3 mt-8" onClick={() => router.push(`${userId}/more`)}>
+            <Button variant={"outline"} className="w-full md:w-1/3 h-10 rounded-full" onClick={() => router.push(`/profile/${userId}/more`)}>
               More
             </Button>
             </div>
+          <div className="mt-8 space-y-4">
+            <h2 className="text-xl font-bold mb-4">Followers ({user?.followers_count || 0})</h2>
+            <ListFollowers userId={userId} />
           </div>
         </div>
 

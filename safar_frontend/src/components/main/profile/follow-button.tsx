@@ -1,52 +1,39 @@
-"use client"
-import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
-import { useFollowUserMutation, useUnfollowUserMutation } from "@/core/services/api"
-import { toast } from "sonner"
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { useFollowToggle } from "@/core/hooks/use-social";
+import { cn } from "@/lib/utils";
 
 type FollowButtonProps = {
-  userId: string
-  isFollowing: boolean
-  className?: string
-}
+  userId: string;
+  isFollowing: boolean;
+  className?: string;
+};
 
-export const FollowButton = ({ 
-  userId, 
-  isFollowing, 
-  className = "h-10 rounded-full w-1/3 mt-8"
+export const FollowButton = ({
+  userId,
+  isFollowing,
+  className = "h-10 rounded-full w-1/3 mt-8",
 }: FollowButtonProps) => {
-  const [followUser, { isLoading: isFollowingLoading }] = useFollowUserMutation()
-  const [unfollowUser, { isLoading: isUnfollowingLoading }] = useUnfollowUserMutation()
-
-  const isLoading = isFollowingLoading || isUnfollowingLoading
-
-  const handleFollow = async () => {
-    const action = isFollowing ? unfollowUser(userId) : followUser(userId)
-    const actionName = isFollowing ? "Unfollowing" : "Following"
-    const successMessage = isFollowing ? "Unfollowed successfully" : "You're now following this user"
-    
-    toast.promise(action, {
-      loading: `${actionName} user...`,
-      success: successMessage,
-      error: (error) => {
-        console.error("Follow error:", error)
-        return error.data?.message || "Failed to update follow status"
-      }
-    })
-  }
+  const { toggleFollow, isLoading } = useFollowToggle(userId, isFollowing);
 
   return (
     <Button
-      onClick={handleFollow}
+      onClick={toggleFollow}
       disabled={isLoading}
-      className={className}
+      className={cn(
+        "transition-all",
+        className
+      )}
       variant={isFollowing ? "outline" : "default"}
+      aria-label={isFollowing ? "Unfollow user" : "Follow user"}
+      aria-busy={isLoading}
     >
       {isLoading ? (
-        <Spinner className="h-4 w-4" />
-      ) : (
-        isFollowing ? "Unfollow" : "Follow"
-      )}
+        <Spinner className="mr-2" />
+      ) : null}
+      {isFollowing ? 'Unfollow' : 'Follow'}
     </Button>
-  )
-}
+  );
+};

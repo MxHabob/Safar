@@ -281,17 +281,12 @@ export const api = createApi({
       invalidatesTags: (result, error, id) => [{ type: "Auth", id }],
     }),
 
-    getCurrentUser: builder.query<User, void>({
-      query: () => "/auth/users/me/",
-      providesTags: ["Auth"],
-    }),
-
-    getUserFollowers: builder.query<PaginatedResponse<User>, string>({
+    getUserFollowers: builder.query<User[], string>({
       query: (id) => `/users/${id}/user_followers/`,
       providesTags: (result, error, id) => [{ type: "Auth", id }],
     }),
 
-    getUserFollowing: builder.query<PaginatedResponse<User>, string>({
+    getUserFollowing: builder.query<User[], string>({
       query: (id) => `/users/${id}/user_following/`,
       providesTags: (result, error, id) => [{ type: "Auth", id }],
     }),
@@ -956,7 +951,6 @@ export const {
   useGetUserByIdQuery,
   useFollowUserMutation,
   useUnfollowUserMutation,
-  useGetCurrentUserQuery,
   useGetUserFollowersQuery,
   useGetUserFollowingQuery,
 

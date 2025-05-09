@@ -1,5 +1,6 @@
 "use client";
 
+import "swiper/css/bundle"
 import { SwiperSlide } from "swiper/react";
 import { Slider } from "@/components/global/slider";
 import { useGetUserFollowersQuery } from "@/core/services/api";
@@ -27,15 +28,15 @@ export const ListFollowers = ({ userId, overlay, selected }: Props) => {
     <Slider
       slidesPerView="auto"
       spaceBetween={16}
-      loop={(data?.count ?? 0) > 3}
+      loop={(data?.length ?? 0) > 3}
       freeMode
       overlay={overlay}
     >
-      {(data?.count ?? 0) > 0 ? (
-        data?.results.map((follower: User) => (
+      {(data?.length ?? 0) > 0 ? (
+        data?.map((follower: User) => (
           <SwiperSlide
             key={follower.id}
-            className={`content-width-slide transition-all duration-200 ${
+            className={`content-width-slide transition-all duration-200  ${
               selected === follower.id ? "scale-[1.02]" : ""
             }`}
           >

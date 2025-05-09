@@ -17,6 +17,7 @@ type ProfileProps = {
 export const ProfileDetailsPage = ({ userId }: ProfileProps) => {
   const { data: user, isLoading, error } = useGetUserByIdQuery(userId);
 
+  
   if (isLoading) {
     return <ProfileDetailsPage.Skeleton />;
   }
@@ -80,9 +81,9 @@ export const ProfileDetailsPage = ({ userId }: ProfileProps) => {
             </Button>
           </div>
 
-          <div className="mt-8">
+          <div className="mt-8  gap-4">
             <h2 className="text-xl font-bold mb-4">Followers ({user.followers_count || 0})</h2>
-            <ListFollowers userId={userId} />
+            <ListFollowers userId={userId}  overlay={true}  />
           </div>
         </div>
 
@@ -133,7 +134,6 @@ ProfileDetailsPage.Skeleton = function ProfileSkeleton() {
             </div>
           </div>
         </div>
-
         <div className="w-full md:w-1/2 flex justify-center">
           <Skeleton className="h-64 w-64 rounded-full" />
         </div>

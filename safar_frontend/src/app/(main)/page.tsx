@@ -1,3 +1,4 @@
+// "use client";
 import AIAssistant from "@/components/global/aI-assistant-feed"
 import { HeaderFilters } from "@/components/layout/header/header-filters"
 import { MSearch } from "@/components/layout/header/Serch"
@@ -9,8 +10,10 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { Suspense } from "react"
+// import { useSearchParams } from "next/navigation"
 
 export default function Home() {
+  // const {} = useSearchParams()
   return (
     <div>
       <div className="flex flex-col items-center justify-center my-6">

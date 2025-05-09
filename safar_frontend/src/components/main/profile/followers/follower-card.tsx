@@ -1,5 +1,4 @@
 "use client";
-
 import { cn } from "@/lib/utils";
 import { FollowButton } from "../follow-button";
 import { User } from "@/core/types";
@@ -15,7 +14,7 @@ export const FollowerCard = ({ follower, className }: FollowerCardProps) => {
   return (
     <div
       className={cn(
-        "flex flex-col items-center p-4 max-w-xs mx-auto rounded-lg bg-card",
+        "flex flex-col items-center p-4 max-w-xs mx-auto rounded-lg ",
         className
       )}
     >
