@@ -24,32 +24,41 @@ export function CommandMenu() {
   const [search, setSearch] = React.useState("")
   const [debouncedSearch] = useDebounce(search, 300)
 
+  // Reset search when dialog closes
+  React.useEffect(() => {
+    if (!open) {
+      setSearch("")
+    }
+  }, [open])
+
+  const isSearching = debouncedSearch.length >= 2
+
   // Use the RTK Query hooks directly
   const { data: placesData, isLoading: placesLoading } = api.useGetPlacesQuery(
     { search: debouncedSearch, page_size: 5 },
-    { skip: debouncedSearch.length < 2 }
+    { skip: !isSearching }
   )
   const places = placesData?.results || []
 
   const { data: experiencesData, isLoading: experiencesLoading } = api.useGetExperiencesQuery(
     { search: debouncedSearch, page_size: 5 },
-    { skip: debouncedSearch.length < 2 }
+    { skip: !isSearching }
   )
   const experiences = experiencesData?.results || []
 
   const { data: citiesData, isLoading: citiesLoading } = api.useSearchCitiesQuery(
     { q: debouncedSearch, limit: 5 },
-    { skip: debouncedSearch.length < 2 }
+    { skip: !isSearching }
   )
   const cities = citiesData?.results || []
 
   const { data: countriesData, isLoading: countriesLoading } = api.useGetCountriesQuery(
     { search: debouncedSearch, page_size: 5 },
-    { skip: debouncedSearch.length < 2 }
+    { skip: !isSearching }
   )
   const countries = countriesData?.results || []
 
-  const isLoading = placesLoading || experiencesLoading || citiesLoading || countriesLoading
+  const isLoading = (placesLoading || experiencesLoading || citiesLoading || countriesLoading) && isSearching
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -65,6 +74,7 @@ export function CommandMenu() {
 
   const handleSelect = (type: string, item: Place | Experience | City | Country) => {
     setOpen(false)
+    setSearch("")
 
     switch (type) {
       case "place":
@@ -103,20 +113,20 @@ export function CommandMenu() {
           </Button>
         </div>
       </div>
-      <CommandDialog open={open} onOpenChange={setOpen}>
+      <CommandDialog open={open} onOpenChange={setOpen} key={debouncedSearch}>
         <CommandInput 
           placeholder="Search places, experiences, cities..." 
           value={search} 
           onValueChange={setSearch} 
         />
         <CommandList>
-          {isLoading && debouncedSearch.length >= 2 && (
+          {isLoading && (
             <div className="flex items-center justify-center py-6">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           )}
 
-          {!isLoading && debouncedSearch.length >= 2 && (
+          {!isLoading && isSearching && (
             <>
               {!places?.length && !experiences?.length && !cities?.length && !countries?.length && (
                 <CommandEmpty>No results found.</CommandEmpty>
@@ -125,7 +135,10 @@ export function CommandMenu() {
               {places.length > 0 && (
                 <CommandGroup heading="Places">
                   {places.map((place: Place) => (
-                    <CommandItem key={`place-${place.id}`} onSelect={() => handleSelect("place", place)}>
+                    <CommandItem 
+                      key={`place-${place.id}-${debouncedSearch}`}
+                      onSelect={() => handleSelect("place", place)}
+                    >
                       <MapPin className="mr-2 h-4 w-4" />
                       <span>{place.name}</span>
                     </CommandItem>
@@ -137,7 +150,7 @@ export function CommandMenu() {
                 <CommandGroup heading="Experiences">
                   {experiences.map((experience: Experience) => (
                     <CommandItem
-                      key={`experience-${experience.id}`}
+                      key={`experience-${experience.id}-${debouncedSearch}`}
                       onSelect={() => handleSelect("experience", experience)}
                     >
                       <Compass className="mr-2 h-4 w-4" />
@@ -150,7 +163,10 @@ export function CommandMenu() {
               {cities.length > 0 && (
                 <CommandGroup heading="Cities">
                   {cities.map((city: City) => (
-                    <CommandItem key={`city-${city.id}`} onSelect={() => handleSelect("city", city)}>
+                    <CommandItem 
+                      key={`city-${city.id}-${debouncedSearch}`} 
+                      onSelect={() => handleSelect("city", city)}
+                    >
                       <Building className="mr-2 h-4 w-4" />
                       <span>{city.name}</span>
                       {typeof city.country === "object" && city.country?.name && (
@@ -164,7 +180,10 @@ export function CommandMenu() {
               {countries.length > 0 && (
                 <CommandGroup heading="Countries">
                   {countries.map((country: Country) => (
-                    <CommandItem key={`country-${country.id}`} onSelect={() => handleSelect("country", country)}>
+                    <CommandItem 
+                      key={`country-${country.id}-${debouncedSearch}`} 
+                      onSelect={() => handleSelect("country", country)}
+                    >
                       <Globe className="mr-2 h-4 w-4" />
                       <span>{country.name}</span>
                     </CommandItem>
@@ -176,15 +195,24 @@ export function CommandMenu() {
 
           <CommandSeparator />
           <CommandGroup heading="Suggestions">
-            <CommandItem onSelect={() => router.push("/places/popular")}>
+            <CommandItem onSelect={() => {
+              setOpen(false)
+              router.push("/places/popular")
+            }}>
               <MapPin className="mr-2 h-4 w-4" />
               <span>Popular Places</span>
             </CommandItem>
-            <CommandItem onSelect={() => router.push("/experiences/trending")}>
+            <CommandItem onSelect={() => {
+              setOpen(false)
+              router.push("/experiences/trending")
+            }}>
               <Compass className="mr-2 h-4 w-4" />
               <span>Trending Experiences</span>
             </CommandItem>
-            <CommandItem onSelect={() => router.push("/destinations")}>
+            <CommandItem onSelect={() => {
+              setOpen(false)
+              router.push("/destinations")
+            }}>
               <Globe className="mr-2 h-4 w-4" />
               <span>Top Destinations</span>
             </CommandItem>
