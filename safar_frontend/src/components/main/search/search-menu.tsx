@@ -16,50 +16,70 @@ import {
 } from "@/components/ui/command"
 import { Button } from "@/components/ui/button"
 import { api } from "@/core/services/api"
-import type { City, Country, Experience, Place } from "@/core/types"
+import { cn } from "@/lib/utils"
 
 export function CommandMenu() {
   const router = useRouter()
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
   const [debouncedSearch] = useDebounce(search, 300)
+  const searchInputRef = React.useRef<HTMLInputElement>(null)
 
-  // Reset search when dialog closes
+  // Memoize the query options to prevent unnecessary re-renders
+  const queryOptions = React.useMemo(
+    () => ({
+      skip: debouncedSearch.length < 2,
+      refetchOnMountOrArgChange: false,
+      refetchOnReconnect: false,
+    }),
+    [debouncedSearch.length],
+  )
+
+  // Use the RTK Query hooks with error handling
+  const {
+    data: placesData,
+    isLoading: placesLoading,
+    isError: placesError,
+  } = api.useGetPlacesQuery({ search: debouncedSearch, page_size: 5 }, queryOptions)
+
+  const {
+    data: experiencesData,
+    isLoading: experiencesLoading,
+    isError: experiencesError,
+  } = api.useGetExperiencesQuery({ search: debouncedSearch, page_size: 5 }, queryOptions)
+
+  const {
+    data: citiesData,
+    isLoading: citiesLoading,
+    isError: citiesError,
+  } = api.useSearchCitiesQuery({ q: debouncedSearch, limit: 5 }, queryOptions)
+
+  const {
+    data: countriesData,
+    isLoading: countriesLoading,
+    isError: countriesError,
+  } = api.useGetCountriesQuery({ search: debouncedSearch, page_size: 5 }, queryOptions)
+
+  // Extract results with fallbacks
+  const places = placesData?.results || []
+  const experiences = experiencesData?.results || []
+  const cities = citiesData?.results || []
+  const countries = countriesData?.results || []
+
+  const isLoading = placesLoading || experiencesLoading || citiesLoading || countriesLoading
+  const hasError = placesError || experiencesError || citiesError || countriesError
+  const hasResults = places.length > 0 || experiences.length > 0 || cities.length > 0 || countries.length > 0
+
+  // Focus the search input when the dialog opens
   React.useEffect(() => {
-    if (!open) {
-      setSearch("")
+    if (open && searchInputRef.current) {
+      setTimeout(() => {
+        searchInputRef.current?.focus()
+      }, 0)
     }
   }, [open])
 
-  const isSearching = debouncedSearch.length >= 2
-
-  // Use the RTK Query hooks directly
-  const { data: placesData, isLoading: placesLoading } = api.useGetPlacesQuery(
-    { search: debouncedSearch, page_size: 5 },
-    { skip: !isSearching }
-  )
-  const places = placesData?.results || []
-
-  const { data: experiencesData, isLoading: experiencesLoading } = api.useGetExperiencesQuery(
-    { search: debouncedSearch, page_size: 5 },
-    { skip: !isSearching }
-  )
-  const experiences = experiencesData?.results || []
-
-  const { data: citiesData, isLoading: citiesLoading } = api.useSearchCitiesQuery(
-    { q: debouncedSearch, limit: 5 },
-    { skip: !isSearching }
-  )
-  const cities = citiesData?.results || []
-
-  const { data: countriesData, isLoading: countriesLoading } = api.useGetCountriesQuery(
-    { search: debouncedSearch, page_size: 5 },
-    { skip: !isSearching }
-  )
-  const countries = countriesData?.results || []
-
-  const isLoading = (placesLoading || experiencesLoading || citiesLoading || countriesLoading) && isSearching
-
+  // Keyboard shortcut handler
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -72,30 +92,66 @@ export function CommandMenu() {
     return () => document.removeEventListener("keydown", down)
   }, [])
 
-  const handleSelect = (type: string, item: Place | Experience | City | Country) => {
-    setOpen(false)
-    setSearch("")
-
-    switch (type) {
-      case "place":
-        router.push(`/places/${item.id}`)
-        break
-      case "experience":
-        router.push(`/experiences/${item.id}`)
-        break
-      case "city":
-        router.push(`/cities/${item.id}`)
-        break
-      case "country":
-        router.push(`/countries/${item.id}`)
-        break
+  // Reset search when dialog closes
+  React.useEffect(() => {
+    if (!open) {
+      // Small delay to avoid visual flicker when reopening
+      setTimeout(() => setSearch(""), 300)
     }
-  }
+  }, [open])
+
+  // Navigation handler with type safety
+  const handleSelect = React.useCallback(
+    <T extends { id: string | number }>(type: string, item: T) => {
+      setOpen(false)
+
+      const routes = {
+        place: `/places/${item.id}`,
+        experience: `/experiences/${item.id}`,
+        city: `/cities/${item.id}`,
+        country: `/countries/${item.id}`,
+      } as const
+
+      router.push(routes[type as keyof typeof routes])
+    },
+    [router],
+  )
+
+  // Render result groups
+  const renderResultGroup = React.useCallback(
+    <T extends { id: string | number; name?: string; title?: string }>(
+      items: T[],
+      type: string,
+      heading: string,
+      icon: React.ReactNode,
+    ) => {
+      if (!items.length) return null
+
+      return (
+        <CommandGroup heading={heading}>
+          {items.map((item) => (
+            <CommandItem
+              key={`${type}-${item.id}`}
+              onSelect={() => handleSelect(type, item)}
+              className="flex items-center"
+            >
+              {icon}
+              <span>{item.name || item.title}</span>
+              {type === "city" && "country" in item && typeof item.country === "object" && item.country?.name && (
+                <span className="ml-2 text-xs text-muted-foreground">{item.country.name}</span>
+              )}
+            </CommandItem>
+          ))}
+        </CommandGroup>
+      )
+    },
+    [handleSelect],
+  )
 
   return (
     <>
       <div className="relative mx-auto max-w-4xl">
-        <div className="flex items-center rounded-full bg-card shadow-lg">
+        <div className="flex items-center rounded-full bg-card shadow-lg transition-shadow hover:shadow-xl">
           <div className="flex-1 px-6 py-3">
             <div className="text-sm font-medium">Where</div>
             <input
@@ -103,117 +159,84 @@ export function CommandMenu() {
               placeholder="Search destinations"
               className="w-full border-none p-0 text-sm focus:outline-none focus:ring-0"
               onClick={() => setOpen(true)}
+              aria-label="Open search dialog"
             />
           </div>
-          <Button 
-            className="absolute right-2 flex h-12 w-12 items-center justify-center rounded-full bg-[#34E0D8]" 
+          <Button
+            className="absolute right-2 flex h-12 w-12 items-center justify-center rounded-full bg-[#34E0D8] text-white hover:bg-[#2bc8c1] transition-colors"
             onClick={() => setOpen(true)}
+            aria-label="Search"
           >
             <Search className="h-5 w-5" />
           </Button>
         </div>
+        <div className="mt-2 text-xs text-muted-foreground text-center">
+          <kbd className="rounded border border-muted bg-muted-foreground/5 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+            <span className="mr-0.5">⌘</span>K
+          </kbd>{" "}
+          to search
+        </div>
       </div>
-      <CommandDialog open={open} onOpenChange={setOpen} key={debouncedSearch}>
-        <CommandInput 
-          placeholder="Search places, experiences, cities..." 
-          value={search} 
-          onValueChange={setSearch} 
-        />
+
+      <CommandDialog open={open} onOpenChange={setOpen}>
+        <div className="flex items-center border-b px-3">
+          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+          <CommandInput
+            ref={searchInputRef}
+            placeholder="Search places, experiences, cities..."
+            value={search}
+            onValueChange={setSearch}
+            className="flex-1 border-0 outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          />
+          {search && (
+            <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground" onClick={() => setSearch("")}>
+              Clear
+            </Button>
+          )}
+        </div>
+
         <CommandList>
-          {isLoading && (
+          {isLoading && debouncedSearch.length >= 2 && (
             <div className="flex items-center justify-center py-6">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           )}
 
-          {!isLoading && isSearching && (
+          {hasError && (
+            <div className="py-6 text-center text-sm text-muted-foreground">
+              Something went wrong. Please try again.
+            </div>
+          )}
+
+          {!isLoading && !hasError && debouncedSearch.length >= 2 && (
             <>
-              {!places?.length && !experiences?.length && !cities?.length && !countries?.length && (
-                <CommandEmpty>No results found.</CommandEmpty>
-              )}
+              {!hasResults && <CommandEmpty>No results found for &quot;{debouncedSearch}&quot;</CommandEmpty>}
 
-              {places.length > 0 && (
-                <CommandGroup heading="Places">
-                  {places.map((place: Place) => (
-                    <CommandItem 
-                      key={`place-${place.id}-${debouncedSearch}`}
-                      onSelect={() => handleSelect("place", place)}
-                    >
-                      <MapPin className="mr-2 h-4 w-4" />
-                      <span>{place.name}</span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
+              {renderResultGroup(places, "place", "Places", <MapPin className="mr-2 h-4 w-4 shrink-0" />)}
+              {renderResultGroup(
+                experiences,
+                "experience",
+                "Experiences",
+                <Compass className="mr-2 h-4 w-4 shrink-0" />,
               )}
-
-              {experiences.length > 0 && (
-                <CommandGroup heading="Experiences">
-                  {experiences.map((experience: Experience) => (
-                    <CommandItem
-                      key={`experience-${experience.id}-${debouncedSearch}`}
-                      onSelect={() => handleSelect("experience", experience)}
-                    >
-                      <Compass className="mr-2 h-4 w-4" />
-                      <span>{experience.title}</span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-
-              {cities.length > 0 && (
-                <CommandGroup heading="Cities">
-                  {cities.map((city: City) => (
-                    <CommandItem 
-                      key={`city-${city.id}-${debouncedSearch}`} 
-                      onSelect={() => handleSelect("city", city)}
-                    >
-                      <Building className="mr-2 h-4 w-4" />
-                      <span>{city.name}</span>
-                      {typeof city.country === "object" && city.country?.name && (
-                        <span className="ml-2 text-xs text-muted-foreground">{city.country.name}</span>
-                      )}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-
-              {countries.length > 0 && (
-                <CommandGroup heading="Countries">
-                  {countries.map((country: Country) => (
-                    <CommandItem 
-                      key={`country-${country.id}-${debouncedSearch}`} 
-                      onSelect={() => handleSelect("country", country)}
-                    >
-                      <Globe className="mr-2 h-4 w-4" />
-                      <span>{country.name}</span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
+              {renderResultGroup(cities, "city", "Cities", <Building className="mr-2 h-4 w-4 shrink-0" />)}
+              {renderResultGroup(countries, "country", "Countries", <Globe className="mr-2 h-4 w-4 shrink-0" />)}
             </>
           )}
 
-          <CommandSeparator />
+          <CommandSeparator className={cn(debouncedSearch.length < 2 ? "mt-0" : "")} />
+
           <CommandGroup heading="Suggestions">
-            <CommandItem onSelect={() => {
-              setOpen(false)
-              router.push("/places/popular")
-            }}>
-              <MapPin className="mr-2 h-4 w-4" />
+            <CommandItem onSelect={() => router.push("/places/popular")}>
+              <MapPin className="mr-2 h-4 w-4 shrink-0" />
               <span>Popular Places</span>
             </CommandItem>
-            <CommandItem onSelect={() => {
-              setOpen(false)
-              router.push("/experiences/trending")
-            }}>
-              <Compass className="mr-2 h-4 w-4" />
+            <CommandItem onSelect={() => router.push("/experiences/trending")}>
+              <Compass className="mr-2 h-4 w-4 shrink-0" />
               <span>Trending Experiences</span>
             </CommandItem>
-            <CommandItem onSelect={() => {
-              setOpen(false)
-              router.push("/destinations")
-            }}>
-              <Globe className="mr-2 h-4 w-4" />
+            <CommandItem onSelect={() => router.push("/destinations")}>
+              <Globe className="mr-2 h-4 w-4 shrink-0" />
               <span>Top Destinations</span>
             </CommandItem>
           </CommandGroup>
