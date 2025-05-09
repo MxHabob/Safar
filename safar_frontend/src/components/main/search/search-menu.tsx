@@ -1,5 +1,5 @@
 "use client"
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { useDebounce } from "use-debounce"
@@ -172,7 +172,7 @@ export function CommandMenu() {
 
               {users.length > 0 && (
                 <CommandGroup heading="Users">
-                  {users.map((user) => (
+                  {users.map((user : any) => (
                     <CommandItem
                       key={`user-${user.id}`}
                       onSelect={() => handleSelect("user", user)}
@@ -188,7 +188,7 @@ export function CommandMenu() {
 
               {places.length > 0 && (
                 <CommandGroup heading="Places">
-                  {places.map((place) => (
+                  {places.map((place: any) => (
                     <CommandItem
                       key={`place-${place.id}`}
                       onSelect={() => handleSelect("place", place)}
@@ -204,7 +204,7 @@ export function CommandMenu() {
 
               {experiences.length > 0 && (
                 <CommandGroup heading="Experiences">
-                  {experiences.map((experience) => (
+                  {experiences.map((experience: any) => (
                     <CommandItem
                       key={`experience-${experience.id}`}
                       onSelect={() => handleSelect("experience", experience)}
@@ -222,7 +222,7 @@ export function CommandMenu() {
 
               {cities.length > 0 && (
                 <CommandGroup heading="Cities">
-                  {cities.map((city) => (
+                  {cities.map((city: any) => (
                     <CommandItem
                       key={`city-${city.id}`}
                       onSelect={() => handleSelect("city", city)}
@@ -238,7 +238,7 @@ export function CommandMenu() {
 
               {regions.length > 0 && (
                 <CommandGroup heading="Regions">
-                  {regions.map((region) => (
+                  {regions.map((region: any) => (
                     <CommandItem
                       key={`region-${region.id}`}
                       onSelect={() => handleSelect("region", region)}
@@ -254,7 +254,7 @@ export function CommandMenu() {
 
               {countries.length > 0 && (
                 <CommandGroup heading="Countries">
-                  {countries.map((country) => (
+                  {countries.map((country: any) => (
                     <CommandItem
                       key={`country-${country.id}`}
                       onSelect={() => handleSelect("country", country)}
