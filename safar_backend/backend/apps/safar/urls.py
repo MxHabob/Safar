@@ -23,8 +23,8 @@ router.register(r'reviews', ReviewViewSet)
 router.register(r'payments', PaymentViewSet)
 router.register(r'messages', MessageViewSet)
 router.register(r'notifications', NotificationViewSet)
-router.register(r'search', UniversalSearchView)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('search/', UniversalSearchView.as_view(), name='universal-search'),
 ]
