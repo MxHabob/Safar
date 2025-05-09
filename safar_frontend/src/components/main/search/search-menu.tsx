@@ -29,8 +29,8 @@ export function CommandMenu() {
     queryKey: ["places", debouncedSearch],
     queryFn: async () => {
       if (!debouncedSearch || debouncedSearch.length < 2) return []
-      const response = await api.endpoints.getPlaces({ search: debouncedSearch, page_size: 5 })
-      return response.data ? response.data.results : []
+      const response = await api.useGetPlacesQuery({ search: debouncedSearch, page_size: 5 })
+      return response.data?.results || []
     },
     enabled: debouncedSearch.length >= 2,
   })
@@ -39,8 +39,8 @@ export function CommandMenu() {
     queryKey: ["experiences", debouncedSearch],
     queryFn: async () => {
       if (!debouncedSearch || debouncedSearch.length < 2) return []
-      const response = await api.endpoints.getExperiences({ search: debouncedSearch, page_size: 5 })
-      return response.data ? response.data.results : []
+      const response = await api.useGetExperiencesQuery({ search: debouncedSearch, page_size: 5 })
+      return response.data?.results || []
     },
     enabled: debouncedSearch.length >= 2,
   })
@@ -49,8 +49,8 @@ export function CommandMenu() {
     queryKey: ["cities", debouncedSearch],
     queryFn: async () => {
       if (!debouncedSearch || debouncedSearch.length < 2) return []
-      const response = await api.endpoints.searchCities({ q: debouncedSearch, limit: 5 })
-      return response.data ? response.data.results : []
+      const response = await api.useSearchCitiesQuery({ q: debouncedSearch, limit: 5 })
+      return response.data?.results || []
     },
     enabled: debouncedSearch.length >= 2,
   })
@@ -59,8 +59,8 @@ export function CommandMenu() {
     queryKey: ["countries", debouncedSearch],
     queryFn: async () => {
       if (!debouncedSearch || debouncedSearch.length < 2) return []
-      const response = await api.endpoints.getCountries({ search: debouncedSearch, page_size: 5 })
-      return response.data ? response.data.results : []
+      const response = await api.useGetCountriesQuery({ search: debouncedSearch, page_size: 5 })
+      return response.data?.results || []
     },
     enabled: debouncedSearch.length >= 2,
   })
