@@ -49,27 +49,35 @@ export function CommandMenu() {
     {
       skip: debouncedSearch.length < 2,
       refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
     },
   )
 
-  // Extract results with fallbacks
-  const results = React.useMemo(() => {
-    if (!searchData?.results) return {}
+  // Extract results directly
+  const users = searchData?.results?.users || []
+  const places = searchData?.results?.places || []
+  const experiences = searchData?.results?.experiences || []
+  const cities = searchData?.results?.cities || []
+  const regions = searchData?.results?.regions || []
+  const countries = searchData?.results?.countries || []
 
-    return {
-      users: searchData.results.users || [],
-      places: searchData.results.places || [],
-      experiences: searchData.results.experiences || [],
-      cities: searchData.results.cities || [],
-      regions: searchData.results.regions || [],
-      countries: searchData.results.countries || [],
+  // Check if we have any results
+  const hasResults =
+    users.length > 0 ||
+    places.length > 0 ||
+    experiences.length > 0 ||
+    cities.length > 0 ||
+    regions.length > 0 ||
+    countries.length > 0
+
+  // Debug logging
+  React.useEffect(() => {
+    if (debouncedSearch.length >= 2) {
+      console.log("Search query:", debouncedSearch)
+      console.log("Search results:", searchData)
     }
-  }, [searchData])
-
-  const hasResults = React.useMemo(() => {
-    if (!results) return false
-    return Object.values(results).some((group) => group.length > 0)
-  }, [results])
+  }, [debouncedSearch, searchData])
 
   // Focus the search input when the dialog opens
   React.useEffect(() => {
@@ -110,30 +118,6 @@ export function CommandMenu() {
       country: `/countries/${item.id}`,
     }
     router.push(routes[type] || "/")
-  }
-
-  // Render result group if it has items
-  const renderResultGroup = (title: string, items: SearchResultItem[], type: string, icon: React.ReactNode) => {
-    if (!items || items.length === 0) return null
-
-    return (
-      <CommandGroup heading={title}>
-        {items.map((item) => (
-          <CommandItem
-            key={`${type}-${item.id}`}
-            onSelect={() => handleSelect(type, item)}
-            className="flex items-center"
-          >
-            {icon}
-            <span>{item.name}</span>
-            {item.category && <span className="ml-2 text-xs text-muted-foreground">{item.category}</span>}
-            {item.username && <span className="ml-2 text-xs text-muted-foreground">@{item.username}</span>}
-            {item.country && <span className="ml-2 text-xs text-muted-foreground">{item.country}</span>}
-            {item.code && <span className="ml-2 text-xs text-muted-foreground">{item.code}</span>}
-          </CommandItem>
-        ))}
-      </CommandGroup>
-    )
   }
 
   return (
@@ -205,21 +189,100 @@ export function CommandMenu() {
             <>
               {!hasResults && <CommandEmpty>No results found for &quot;{debouncedSearch}&quot;</CommandEmpty>}
 
-              {renderResultGroup("Users", results.users, "user", <User className="mr-2 h-4 w-4 shrink-0" />)}
-              {renderResultGroup("Places", results.places, "place", <MapPin className="mr-2 h-4 w-4 shrink-0" />)}
-              {renderResultGroup(
-                "Experiences",
-                results.experiences,
-                "experience",
-                <Compass className="mr-2 h-4 w-4 shrink-0" />,
+              {users.length > 0 && (
+                <CommandGroup heading="Users">
+                  {users.map((item) => (
+                    <CommandItem
+                      key={`user-${item.id}`}
+                      onSelect={() => handleSelect("user", item)}
+                      className="flex items-center"
+                    >
+                      <User className="mr-2 h-4 w-4 shrink-0" />
+                      <span>{item.name}</span>
+                      {item.username && <span className="ml-2 text-xs text-muted-foreground">@{item.username}</span>}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
               )}
-              {renderResultGroup("Cities", results.cities, "city", <Building className="mr-2 h-4 w-4 shrink-0" />)}
-              {renderResultGroup("Regions", results.regions, "region", <Globe className="mr-2 h-4 w-4 shrink-0" />)}
-              {renderResultGroup(
-                "Countries",
-                results.countries,
-                "country",
-                <Globe className="mr-2 h-4 w-4 shrink-0" />,
+
+              {places.length > 0 && (
+                <CommandGroup heading="Places">
+                  {places.map((item) => (
+                    <CommandItem
+                      key={`place-${item.id}`}
+                      onSelect={() => handleSelect("place", item)}
+                      className="flex items-center"
+                    >
+                      <MapPin className="mr-2 h-4 w-4 shrink-0" />
+                      <span>{item.name}</span>
+                      {item.category && <span className="ml-2 text-xs text-muted-foreground">{item.category}</span>}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {experiences.length > 0 && (
+                <CommandGroup heading="Experiences">
+                  {experiences.map((item) => (
+                    <CommandItem
+                      key={`experience-${item.id}`}
+                      onSelect={() => handleSelect("experience", item)}
+                      className="flex items-center"
+                    >
+                      <Compass className="mr-2 h-4 w-4 shrink-0" />
+                      <span>{item.name}</span>
+                      {item.category && <span className="ml-2 text-xs text-muted-foreground">{item.category}</span>}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {cities.length > 0 && (
+                <CommandGroup heading="Cities">
+                  {cities.map((item) => (
+                    <CommandItem
+                      key={`city-${item.id}`}
+                      onSelect={() => handleSelect("city", item)}
+                      className="flex items-center"
+                    >
+                      <Building className="mr-2 h-4 w-4 shrink-0" />
+                      <span>{item.name}</span>
+                      {item.country && <span className="ml-2 text-xs text-muted-foreground">{item.country}</span>}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {regions.length > 0 && (
+                <CommandGroup heading="Regions">
+                  {regions.map((item) => (
+                    <CommandItem
+                      key={`region-${item.id}`}
+                      onSelect={() => handleSelect("region", item)}
+                      className="flex items-center"
+                    >
+                      <Globe className="mr-2 h-4 w-4 shrink-0" />
+                      <span>{item.name}</span>
+                      {item.country && <span className="ml-2 text-xs text-muted-foreground">{item.country}</span>}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {countries.length > 0 && (
+                <CommandGroup heading="Countries">
+                  {countries.map((item) => (
+                    <CommandItem
+                      key={`country-${item.id}`}
+                      onSelect={() => handleSelect("country", item)}
+                      className="flex items-center"
+                    >
+                      <Globe className="mr-2 h-4 w-4 shrink-0" />
+                      <span>{item.name}</span>
+                      {item.code && <span className="ml-2 text-xs text-muted-foreground">{item.code}</span>}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
               )}
             </>
           )}
