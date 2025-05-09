@@ -4,8 +4,7 @@ import "swiper/css/bundle"
 import { type SwiperProps, SwiperSlide } from "swiper/react"
 import { Slider } from "@/components/global/slider"
 import { useGetCitiesQuery } from "@/core/services/api"
-import { ExperienceCard } from "./experience-card"
-import type { Experience } from "@/core/types"
+import type { City } from "@/core/types"
 
 type Props = {
   overlay?: boolean
@@ -34,7 +33,7 @@ export const ListExperience = ({ overlay, selected, ...rest }: Props) => {
       {...rest}
     >
       {(data?.count ?? 0) > 0 ? (
-        data?.results.map((city: Experience) => (
+        data?.results.map((city: City) => (
           <SwiperSlide
             key={city.id}
             className={`content-width-slide transition-all duration-200 ${
