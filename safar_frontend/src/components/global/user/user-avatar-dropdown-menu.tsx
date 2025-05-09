@@ -58,7 +58,7 @@ export const UserAvatarDropdownMenu = ({ className, showDropdown = true }: UserA
       )}
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
-        <UserAvatar className={className} size={"sm"} src={userData?.profile?.avatar} membership={userData?.membership_level} alt={userData?.username} count={userData?.points || 0} fallback={userData?.username?.charAt(0)?.toUpperCase() || <User2 className="h-4 w-4" />} />   
+        <UserAvatar className={className} size={"sm"} src={userData?.profile?.avatar} membership={userData?.membership_level} alt={userData?.username} count={userData?.points || 0} fallback={userData?.first_name?.charAt(0)?.toUpperCase() || <User2 className="h-4 w-4" />} />   
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -66,7 +66,7 @@ export const UserAvatarDropdownMenu = ({ className, showDropdown = true }: UserA
           <>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{userData.username || "User"}</p>
+                <p className="text-sm font-medium leading-none">{userData.first_name || "User"}</p>
                 <p className="text-xs leading-none text-muted-foreground">{userData.email}</p>
                 {userData.membership_level && (
                   <div className="mt-1 flex items-center gap-1.5">
@@ -83,7 +83,7 @@ export const UserAvatarDropdownMenu = ({ className, showDropdown = true }: UserA
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/account/profile")}>
+            <DropdownMenuItem onClick={() => router.push(`/profile/${user?.id}`)}>
               <User2 className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>
