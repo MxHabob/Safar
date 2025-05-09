@@ -20,7 +20,8 @@ from apps.safar.serializers import (
 
 from apps.authentication.models import User
 from apps.geographic_data.models import Country, Region, City
-
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_api_key.permissions import HasAPIKey
 logger = logging.getLogger(__name__)
 
 
@@ -50,7 +51,7 @@ class DiscountViewSet(BaseViewSet):
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [permissions.IsAdminUser()]
-        return [permissions.IsAuthenticated()]
+        return [IsAuthenticated()]
 
     @action(detail=False, methods=['get'])
     def my_discounts(self, request):
@@ -401,7 +402,7 @@ class BookingViewSet(BaseViewSet):
         'user', 'place', 'experience', 'flight', 'box'
     )
     serializer_class = BookingSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     filterset_fields = ['status', 'payment_status']
     ordering_fields = ['booking_date', 'check_in', 'check_out']
     
@@ -458,7 +459,7 @@ class WishlistViewSet(BaseViewSet):
         'user', 'place', 'experience', 'flight', 'box'
     )
     serializer_class = WishlistSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         return super().get_queryset().filter(user=self.request.user)
@@ -494,7 +495,7 @@ class ReviewViewSet(BaseViewSet):
 class PaymentViewSet(BaseViewSet):
     queryset = Payment.objects.select_related('user', 'booking')
     serializer_class = PaymentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     filterset_fields = ['payment_status']
     ordering_fields = ['created_at', 'amount']
     
@@ -521,7 +522,7 @@ class PaymentViewSet(BaseViewSet):
 class MessageViewSet(BaseViewSet):
     queryset = Message.objects.select_related('sender', 'receiver', 'booking')
     serializer_class = MessageSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -559,7 +560,7 @@ class MessageViewSet(BaseViewSet):
 class NotificationViewSet(BaseViewSet):
     queryset = Notification.objects.select_related('user')
     serializer_class = NotificationSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     ordering_fields = ['created_at']
     
     def get_queryset(self):
@@ -617,7 +618,7 @@ class UniversalSearchView(generics.GenericAPIView):
     - types: Comma-separated list of entity types to search (optional)
              Available types: users,places,experiences,cities,regions,countries
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated | HasAPIKey]
     
     def get(self, request):
         try:
