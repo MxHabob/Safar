@@ -25,7 +25,6 @@ export function CommandMenu() {
   const [debouncedSearch] = useDebounce(search, 300)
   const searchInputRef = React.useRef<HTMLInputElement>(null)
 
-  // Use the universal search endpoint
   const {
     data: searchData,
     isLoading: isSearching,

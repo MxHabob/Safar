@@ -22,6 +22,7 @@ import type {
   Region,
   Country,
   PaginatedResponse,
+  SearchResponse,
 } from "@/core/types"
 import { setTokens, logout } from "@/core/features/auth/auth-slice"
 import type { RootState } from "@/core/store"
