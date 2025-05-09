@@ -25,6 +25,8 @@ interface SearchResultItem {
   code?: string
 }
 
+type ResultType = 'users' | 'places' | 'experiences' | 'cities' | 'regions' | 'countries'
+
 export function CommandMenu() {
   const router = useRouter()
   const [open, setOpen] = React.useState(false)
@@ -39,9 +41,9 @@ export function CommandMenu() {
   const results = data?.results || {}
   const hasResults = Object.values(results).some((items) => items.length > 0)
 
-  const handleSelect = (type: string, id: string | number) => {
+  const handleSelect = (type: ResultType, id: string | number) => {
     setOpen(false)
-    const routes = {
+    const routes: Record<ResultType, string> = {
       users: `/users/${id}`,
       places: `/places/${id}`,
       experiences: `/experiences/${id}`,
@@ -107,11 +109,14 @@ export function CommandMenu() {
 
               {Object.entries(results).map(([type, items]) => (
                 items.length > 0 && (
-                  <CommandGroup key={type} heading={type.charAt(0).toUpperCase() + type.slice(1)}>
-                    {items.map((item: SearchResultItem) => (
+                  <CommandGroup 
+                    key={type} 
+                    heading={type.charAt(0).toUpperCase() + type.slice(1)}
+                  >
+                    {(items as SearchResultItem[]).map((item) => (
                       <CommandItem
                         key={`${type}-${item.id}`}
-                        onSelect={() => handleSelect(type, item.id)}
+                        onSelect={() => handleSelect(type as ResultType, item.id)}
                       >
                         {getIcon(type)}
                         <span>{item.name}</span>
