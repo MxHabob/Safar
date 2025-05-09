@@ -35,9 +35,9 @@ export const ListExperience = ({ overlay, selected, ...rest }: Props) => {
       {(data?.count ?? 0) > 0 ? (
         data?.results.map((country: Country) => (
           <SwiperSlide
-            key={experience.id}
+            key={country.id}
             className={`content-width-slide transition-all duration-200 ${
-              selected === experience.id ? "scale-[1.02]" : ""
+              selected === country.id ? "scale-[1.02]" : ""
             }`}
           >
             {/* <ExperienceCard country={country} /> */}
