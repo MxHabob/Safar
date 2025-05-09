@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { api } from "@/core/services/api"
 import { cn } from "@/lib/utils"
+import type { Country } from "@/core/types"
 
 export function CommandMenu() {
   const router = useRouter()
