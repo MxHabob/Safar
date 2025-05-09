@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button"
 import { api } from "@/core/services/api"
 import { cn } from "@/lib/utils"
 
-// Type definitions for search results
 interface SearchResultItem {
   id: string | number
   name: string
@@ -35,7 +34,6 @@ export function CommandMenu() {
   const [debouncedSearch] = useDebounce(search, 300)
   const searchInputRef = React.useRef<HTMLInputElement>(null)
 
-  // Fetch search results
   const {
     data: searchData,
     isLoading,
@@ -54,7 +52,6 @@ export function CommandMenu() {
     },
   )
 
-  // Extract results directly
   const users = searchData?.results?.users || []
   const places = searchData?.results?.places || []
   const experiences = searchData?.results?.experiences || []
@@ -62,7 +59,6 @@ export function CommandMenu() {
   const regions = searchData?.results?.regions || []
   const countries = searchData?.results?.countries || []
 
-  // Check if we have any results
   const hasResults =
     users.length > 0 ||
     places.length > 0 ||
@@ -71,7 +67,6 @@ export function CommandMenu() {
     regions.length > 0 ||
     countries.length > 0
 
-  // Debug logging
   React.useEffect(() => {
     if (debouncedSearch.length >= 2) {
       console.log("Search query:", debouncedSearch)
@@ -79,14 +74,12 @@ export function CommandMenu() {
     }
   }, [debouncedSearch, searchData])
 
-  // Focus the search input when the dialog opens
   React.useEffect(() => {
     if (open && searchInputRef.current) {
       setTimeout(() => searchInputRef.current?.focus(), 0)
     }
   }, [open])
 
-  // Keyboard shortcut handler
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -99,14 +92,13 @@ export function CommandMenu() {
     return () => document.removeEventListener("keydown", down)
   }, [])
 
-  // Reset search when dialog closes
-  React.useEffect(() => {
-    if (!open) {
-      setTimeout(() => setSearch(""), 300)
-    }
-  }, [open])
 
-  // Navigation handler
+  // React.useEffect(() => {
+  //   if (!open) {
+  //     setTimeout(() => setSearch(""), 300)
+  //   }
+  // }, [open])
+
   const handleSelect = (type: string, item: SearchResultItem) => {
     setOpen(false)
     const routes: Record<string, string> = {
@@ -122,7 +114,6 @@ export function CommandMenu() {
 
   return (
     <>
-      {/* Search trigger */}
       <div className="relative mx-auto max-w-4xl">
         <div className="flex items-center rounded-full bg-card shadow-lg transition-shadow hover:shadow-xl">
           <div className="flex-1 px-6 py-3">
@@ -143,15 +134,14 @@ export function CommandMenu() {
             <Search className="h-5 w-5" />
           </Button>
         </div>
-        <div className="mt-2 text-xs text-muted-foreground text-center">
+        {/* <div className="mt-2 text-xs text-muted-foreground text-center">
           <kbd className="rounded border border-muted bg-muted-foreground/5 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
             <span className="mr-0.5">⌘</span>K
           </kbd>{" "}
           to search
-        </div>
+        </div> */}
       </div>
 
-      {/* Command dialog */}
       <CommandDialog open={open} onOpenChange={setOpen}>
         <div className="flex items-center border-b px-3">
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
@@ -162,29 +152,21 @@ export function CommandMenu() {
             onValueChange={setSearch}
             className="flex-1 border-0 outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
           />
-          {search && (
-            <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground" onClick={() => setSearch("")}>
-              Clear
-            </Button>
-          )}
         </div>
 
         <CommandList>
-          {/* Loading state */}
           {isLoading && debouncedSearch.length >= 2 && (
             <div className="flex items-center justify-center py-6">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           )}
 
-          {/* Error state */}
           {isError && (
             <div className="py-6 text-center text-sm text-muted-foreground">
               Something went wrong. Please try again.
             </div>
           )}
 
-          {/* Search results */}
           {!isLoading && !isError && debouncedSearch.length >= 2 && (
             <>
               {!hasResults && <CommandEmpty>No results found for &quot;{debouncedSearch}&quot;</CommandEmpty>}
@@ -289,7 +271,6 @@ export function CommandMenu() {
 
           <CommandSeparator className={cn(debouncedSearch.length < 2 ? "mt-0" : "")} />
 
-          {/* Suggestions */}
           <CommandGroup heading="Suggestions">
             <CommandItem onSelect={() => router.push("/places/popular")}>
               <MapPin className="mr-2 h-4 w-4 shrink-0" />
