@@ -100,7 +100,6 @@ export function CommandMenu() {
     }
   }, [open])
 
-  // Navigation handler with type safety
   const handleSelect = React.useCallback(
     <T extends { id: string | number }>(type: string, item: T) => {
       setOpen(false)
@@ -117,36 +116,45 @@ export function CommandMenu() {
     [router],
   )
 
-  // Render result groups
-  const renderResultGroup = React.useCallback(
-    <T extends { id: string | number; name?: string; title?: string }>(
-      items: T[],
-      type: string,
-      heading: string,
-      icon: React.ReactNode,
-    ) => {
-      if (!items.length) return null
 
-      return (
-        <CommandGroup heading={heading}>
-          {items.map((item) => (
-            <CommandItem
-              key={`${type}-${item.id}`}
-              onSelect={() => handleSelect(type, item)}
-              className="flex items-center"
-            >
-              {icon}
-              <span>{item.name || item.title}</span>
-              {type === "city" && "country" in item && typeof item.country === "object" && item.country?.name && (
-                <span className="ml-2 text-xs text-muted-foreground">{item.country.name}</span>
-              )}
-            </CommandItem>
-          ))}
-        </CommandGroup>
-      )
-    },
-    [handleSelect],
-  )
+const renderResultGroup = React.useCallback(
+  <T extends { 
+    id: string | number; 
+    name?: string; 
+    title?: string;
+    country?: Country | string | null;
+  }>(
+    items: T[],
+    type: string,
+    heading: string,
+    icon: React.ReactNode,
+  ) => {
+    if (!items.length) return null
+
+    return (
+      <CommandGroup heading={heading}>
+        {items.map((item) => (
+          <CommandItem
+            key={`${type}-${item.id}`}
+            onSelect={() => handleSelect(type, item)}
+            className="flex items-center"
+          >
+            {icon}
+            <span>{item.name || item.title}</span>
+            {type === "city" && 
+             typeof item.country === "object" && 
+             item.country !== null && 
+             'name' in item.country && 
+             item.country.name && (
+              <span className="ml-2 text-xs text-muted-foreground">{item.country.name}</span>
+            )}
+          </CommandItem>
+        ))}
+      </CommandGroup>
+    )
+  },
+  [handleSelect],
+)
 
   return (
     <>
