@@ -83,7 +83,7 @@ export const UserAvatarDropdownMenu = ({ className, showDropdown = true }: UserA
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push(`/profile/${user?.id}`)}>
+            <DropdownMenuItem onClick={() => router.push(`/profile/${userData?.id}`)}>
               <User2 className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>
