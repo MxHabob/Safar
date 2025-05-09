@@ -29,8 +29,8 @@ export function CommandMenu() {
     queryKey: ["places", debouncedSearch],
     queryFn: async () => {
       if (!debouncedSearch || debouncedSearch.length < 2) return []
-      const response = await api.endpoints.getPlaces.initiate({ search: debouncedSearch, page_size: 5 })
-      return "data" in response ? response?.data?.results : []
+      const response = await api.endpoints.getPlaces({ search: debouncedSearch, page_size: 5 })
+      return response.data ? response.data.results : []
     },
     enabled: debouncedSearch.length >= 2,
   })
@@ -39,8 +39,8 @@ export function CommandMenu() {
     queryKey: ["experiences", debouncedSearch],
     queryFn: async () => {
       if (!debouncedSearch || debouncedSearch.length < 2) return []
-      const response = await api.endpoints.getExperiences.initiate({ search: debouncedSearch, page_size: 5 })
-      return "data" in response ? response?.data?.results : []
+      const response = await api.endpoints.getExperiences({ search: debouncedSearch, page_size: 5 })
+      return response.data ? response.data.results : []
     },
     enabled: debouncedSearch.length >= 2,
   })
@@ -49,8 +49,8 @@ export function CommandMenu() {
     queryKey: ["cities", debouncedSearch],
     queryFn: async () => {
       if (!debouncedSearch || debouncedSearch.length < 2) return []
-      const response = await api.endpoints.searchCities.initiate({ q: debouncedSearch, limit: 5 })
-      return "data" in response ? response?.data?.results : []
+      const response = await api.endpoints.searchCities({ q: debouncedSearch, limit: 5 })
+      return response.data ? response.data.results : []
     },
     enabled: debouncedSearch.length >= 2,
   })
@@ -59,8 +59,8 @@ export function CommandMenu() {
     queryKey: ["countries", debouncedSearch],
     queryFn: async () => {
       if (!debouncedSearch || debouncedSearch.length < 2) return []
-      const response = await api.endpoints.getCountries.initiate({ search: debouncedSearch, page_size: 5 })
-      return "data" in response ? response?.data?.results : []
+      const response = await api.endpoints.getCountries({ search: debouncedSearch, page_size: 5 })
+      return response.data ? response.data.results : []
     },
     enabled: debouncedSearch.length >= 2,
   })
@@ -133,7 +133,7 @@ export function CommandMenu() {
 
               {places && places.length > 0 && (
                 <CommandGroup heading="Places">
-                  {places.map((place : Place) => (
+                  {places.map((place: Place) => (
                     <CommandItem key={`place-${place.id}`} onSelect={() => handleSelect("place", place)}>
                       <MapPin className="mr-2 h-4 w-4" />
                       <span>{place.name}</span>
@@ -144,7 +144,7 @@ export function CommandMenu() {
 
               {experiences && experiences.length > 0 && (
                 <CommandGroup heading="Experiences">
-                  {experiences.map((experience : Experience) => (
+                  {experiences.map((experience: Experience) => (
                     <CommandItem
                       key={`experience-${experience.id}`}
                       onSelect={() => handleSelect("experience", experience)}
@@ -158,7 +158,7 @@ export function CommandMenu() {
 
               {cities && cities.length > 0 && (
                 <CommandGroup heading="Cities">
-                  {cities.map((city : City) => (
+                  {cities.map((city: City) => (
                     <CommandItem key={`city-${city.id}`} onSelect={() => handleSelect("city", city)}>
                       <Building className="mr-2 h-4 w-4" />
                       <span>{city.name}</span>
@@ -172,7 +172,7 @@ export function CommandMenu() {
 
               {countries && countries.length > 0 && (
                 <CommandGroup heading="Countries">
-                  {countries.map((country : Country) => (
+                  {countries.map((country: Country) => (
                     <CommandItem key={`country-${country.id}`} onSelect={() => handleSelect("country", country)}>
                       <Globe className="mr-2 h-4 w-4" />
                       <span>{country.name}</span>
