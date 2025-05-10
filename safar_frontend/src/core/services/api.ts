@@ -26,7 +26,7 @@ import type {
 } from "@/core/types"
 import { setTokens, logout } from "@/core/features/auth/auth-slice"
 import type { RootState } from "@/core/store"
-import {
+import type {
   BaseQueryParams,
   BookingQueryParams,
   BoxQueryParams,
@@ -41,10 +41,19 @@ import {
   PaymentQueryParams,
   PlaceQueryParams,
   RegionQueryParams,
-  ReviewQueryParams
+  ReviewQueryParams,
 } from "../types/query-parameters"
 
 const mutex = new Mutex()
+
+// Define cache lifetimes for different entity types
+const CACHE_LIFETIME = {
+  DEFAULT: 60, // 1 minute in seconds
+  STATIC_DATA: 3600, // 1 hour for relatively static data
+  USER_DATA: 300, // 5 minutes for user-specific data
+  SEARCH_RESULTS: 120, // 2 minutes for search results
+  GEOGRAPHIC_DATA: 86400, // 24 hours for geographic data that rarely changes
+}
 
 const baseQuery = fetchBaseQuery({
   baseUrl: `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api`,
@@ -146,6 +155,8 @@ export const api = createApi({
     "Region",
     "City",
   ],
+  // Configure global cache behavior
+  keepUnusedDataFor: CACHE_LIFETIME.DEFAULT,
   endpoints: (builder) => ({
     // Authentication endpoints
     login: builder.mutation<LoginResponse, { email: string; password: string }>({
@@ -191,7 +202,10 @@ export const api = createApi({
       }),
     }),
 
-    confirmPasswordReset: builder.mutation<void, { uid: string; token: string; new_password: string,re_new_password: string }>({
+    confirmPasswordReset: builder.mutation<
+      void,
+      { uid: string; token: string; new_password: string; re_new_password: string }
+    >({
       query: (data) => ({
         url: "/auth/users/reset_password_confirm/",
         method: "POST",
@@ -228,6 +242,7 @@ export const api = createApi({
         url: "/auth/users/me/",
       }),
       providesTags: ["Auth"],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     updateUser: builder.mutation<User, Partial<User>>({
@@ -264,6 +279,7 @@ export const api = createApi({
     getUserById: builder.query<User, string>({
       query: (id) => `/auth/users/${id}/`,
       providesTags: (result, error, id) => [{ type: "Auth", id }],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     followUser: builder.mutation<{ status: string }, string>({
@@ -285,11 +301,13 @@ export const api = createApi({
     getUserFollowers: builder.query<User[], string>({
       query: (id) => `/users/${id}/user_followers/`,
       providesTags: (result, error, id) => [{ type: "Auth", id }],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     getUserFollowing: builder.query<User[], string>({
       query: (id) => `/users/${id}/user_following/`,
       providesTags: (result, error, id) => [{ type: "Auth", id }],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     // User Interactions endpoints
@@ -309,11 +327,13 @@ export const api = createApi({
         params,
       }),
       providesTags: ["UserInteraction"],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     getUserInteraction: builder.query<UserInteraction, string>({
       query: (id) => `/interactions/${id}/`,
       providesTags: (result, error, id) => [{ type: "UserInteraction", id }],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     createUserInteraction: builder.mutation<UserInteraction, Partial<UserInteraction>>({
@@ -350,11 +370,13 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Category"],
+      keepUnusedDataFor: CACHE_LIFETIME.STATIC_DATA,
     }),
 
     getCategory: builder.query<Category, string>({
       query: (id) => `/categories/${id}/`,
       providesTags: (result, error, id) => [{ type: "Category", id }],
+      keepUnusedDataFor: CACHE_LIFETIME.STATIC_DATA,
     }),
 
     createCategory: builder.mutation<Category, Partial<Category>>({
@@ -390,6 +412,7 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Discount"],
+      keepUnusedDataFor: CACHE_LIFETIME.DEFAULT,
     }),
 
     getActiveDiscounts: builder.query<PaginatedResponse<Discount>, DiscountQueryParams>({
@@ -398,11 +421,13 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Discount"],
+      keepUnusedDataFor: CACHE_LIFETIME.DEFAULT,
     }),
 
     getDiscount: builder.query<Discount, string>({
       query: (id) => `/discounts/${id}/`,
       providesTags: (result, error, id) => [{ type: "Discount", id }],
+      keepUnusedDataFor: CACHE_LIFETIME.DEFAULT,
     }),
 
     createDiscount: builder.mutation<Discount, Partial<Discount>>({
@@ -440,6 +465,7 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Discount"],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     // Place endpoints
@@ -449,6 +475,7 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Place"],
+      keepUnusedDataFor: CACHE_LIFETIME.DEFAULT,
     }),
 
     getSimilarPlaces: builder.query<PaginatedResponse<Place>, { id: string } & PlaceQueryParams>({
@@ -457,11 +484,13 @@ export const api = createApi({
         params,
       }),
       providesTags: (result, error, { id }) => [{ type: "Place", id }],
+      keepUnusedDataFor: CACHE_LIFETIME.DEFAULT,
     }),
 
     getPlace: builder.query<Place, string>({
       query: (id) => `/places/${id}/`,
       providesTags: (result, error, id) => [{ type: "Place", id }],
+      keepUnusedDataFor: CACHE_LIFETIME.DEFAULT,
     }),
 
     createPlace: builder.mutation<Place, Partial<Place>>({
@@ -497,16 +526,20 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Experience"],
+      keepUnusedDataFor: CACHE_LIFETIME.DEFAULT,
     }),
 
     getExperience: builder.query<Experience, string>({
       query: (id) => `/experiences/${id}/`,
       providesTags: (result, error, id) => [{ type: "Experience", id }],
+      keepUnusedDataFor: CACHE_LIFETIME.DEFAULT,
     }),
 
     checkExperienceAvailability: builder.query<{ available: boolean; capacity: number }, { id: string; date: string }>({
       query: ({ id, date }) => `/experiences/${id}/availability/?date=${date}`,
       providesTags: ["Experience"],
+      // Short cache time for availability checks
+      keepUnusedDataFor: 30, // 30 seconds
     }),
 
     createExperience: builder.mutation<Experience, Partial<Experience>>({
@@ -542,6 +575,7 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Flight"],
+      keepUnusedDataFor: CACHE_LIFETIME.DEFAULT,
     }),
 
     searchFlights: builder.query<
@@ -557,11 +591,13 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Flight"],
+      keepUnusedDataFor: CACHE_LIFETIME.SEARCH_RESULTS,
     }),
 
     getFlight: builder.query<Flight, string>({
       query: (id) => `/flights/${id}/`,
       providesTags: (result, error, id) => [{ type: "Flight", id }],
+      keepUnusedDataFor: CACHE_LIFETIME.DEFAULT,
     }),
 
     // Box endpoints
@@ -571,16 +607,19 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Box"],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     getBox: builder.query<Box, string>({
       query: (id) => `/boxes/${id}/`,
       providesTags: (result, error, id) => [{ type: "Box", id }],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     getBoxItinerary: builder.query<{ itinerary: string }, string>({
       query: (id) => `/boxes/${id}/itinerary/`,
       providesTags: ["Box"],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     createBox: builder.mutation<Box, Partial<Box>>({
@@ -599,6 +638,7 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Booking"],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     getUpcomingBookings: builder.query<PaginatedResponse<Booking>, BookingQueryParams>({
@@ -607,11 +647,13 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Booking"],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     getBooking: builder.query<Booking, string>({
       query: (id) => `/bookings/${id}/`,
       providesTags: (result, error, id) => [{ type: "Booking", id }],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     createBooking: builder.mutation<Booking, Partial<Booking>>({
@@ -655,6 +697,7 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Wishlist"],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     getUserWishlist: builder.query<PaginatedResponse<Wishlist>, BaseQueryParams>({
@@ -663,6 +706,7 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Wishlist"],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     addToWishlist: builder.mutation<Wishlist, Partial<Wishlist>>({
@@ -689,6 +733,7 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Review"],
+      keepUnusedDataFor: CACHE_LIFETIME.DEFAULT,
     }),
 
     getUserReviews: builder.query<PaginatedResponse<Review>, ReviewQueryParams>({
@@ -697,6 +742,7 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Review"],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     createReview: builder.mutation<Review, Partial<Review>>({
@@ -724,11 +770,13 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Payment"],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     getPayment: builder.query<Payment, string>({
       query: (id) => `/payments/${id}/`,
       providesTags: (result, error, id) => [{ type: "Payment", id }],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     markPaymentAsPaid: builder.mutation<Payment, string>({
@@ -746,6 +794,7 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Message"],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     getUnreadMessages: builder.query<PaginatedResponse<Message>, BaseQueryParams>({
@@ -754,6 +803,8 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Message"],
+      // Short cache time for unread messages to ensure they're up to date
+      keepUnusedDataFor: 30, // 30 seconds
     }),
 
     sendMessage: builder.mutation<Message, Partial<Message>>({
@@ -780,6 +831,7 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Notification"],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     getUnreadNotifications: builder.query<PaginatedResponse<Notification>, BaseQueryParams>({
@@ -788,6 +840,8 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Notification"],
+      // Short cache time for unread notifications to ensure they're up to date
+      keepUnusedDataFor: 30, // 30 seconds
     }),
 
     markNotificationAsRead: builder.mutation<Notification, string>({
@@ -819,6 +873,7 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Place"],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     getRecommendedExperiences: builder.query<
@@ -833,6 +888,7 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Experience"],
+      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
     }),
 
     getPersonalizedBox: builder.mutation<
@@ -861,16 +917,19 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Country"],
+      keepUnusedDataFor: CACHE_LIFETIME.GEOGRAPHIC_DATA,
     }),
 
     getCountry: builder.query<Country, string>({
       query: (id) => `/countries/${id}/`,
       providesTags: (result, error, id) => [{ type: "Country", id }],
+      keepUnusedDataFor: CACHE_LIFETIME.GEOGRAPHIC_DATA,
     }),
 
     getCountryRegions: builder.query<Region[], string>({
       query: (id) => `/countries/${id}/regions/`,
       providesTags: (result, error, id) => [{ type: "Country", id }, "Region"],
+      keepUnusedDataFor: CACHE_LIFETIME.GEOGRAPHIC_DATA,
     }),
 
     getRegions: builder.query<PaginatedResponse<Region>, RegionQueryParams>({
@@ -879,16 +938,19 @@ export const api = createApi({
         params,
       }),
       providesTags: ["Region"],
+      keepUnusedDataFor: CACHE_LIFETIME.GEOGRAPHIC_DATA,
     }),
 
     getRegion: builder.query<Region, string>({
       query: (id) => `/regions/${id}/`,
       providesTags: (result, error, id) => [{ type: "Region", id }],
+      keepUnusedDataFor: CACHE_LIFETIME.GEOGRAPHIC_DATA,
     }),
 
     getRegionCities: builder.query<City[], string>({
       query: (id) => `/regions/${id}/cities/`,
       providesTags: (result, error, id) => [{ type: "Region", id }, "City"],
+      keepUnusedDataFor: CACHE_LIFETIME.GEOGRAPHIC_DATA,
     }),
 
     getCities: builder.query<PaginatedResponse<City>, CityQueryParams>({
@@ -897,11 +959,13 @@ export const api = createApi({
         params,
       }),
       providesTags: ["City"],
+      keepUnusedDataFor: CACHE_LIFETIME.GEOGRAPHIC_DATA,
     }),
 
     getCity: builder.query<City, string>({
       query: (id) => `/cities/${id}/`,
       providesTags: (result, error, id) => [{ type: "City", id }],
+      keepUnusedDataFor: CACHE_LIFETIME.GEOGRAPHIC_DATA,
     }),
 
     getNearbyCities: builder.query<PaginatedResponse<City>, NearbyCityQueryParams>({
@@ -910,6 +974,7 @@ export const api = createApi({
         params,
       }),
       providesTags: ["City"],
+      keepUnusedDataFor: CACHE_LIFETIME.GEOGRAPHIC_DATA,
     }),
 
     searchCities: builder.query<PaginatedResponse<City>, CitySearchQueryParams>({
@@ -918,6 +983,7 @@ export const api = createApi({
         params,
       }),
       providesTags: ["City"],
+      keepUnusedDataFor: CACHE_LIFETIME.SEARCH_RESULTS,
     }),
 
     getCitiesInCountry: builder.query<
@@ -931,6 +997,7 @@ export const api = createApi({
         params,
       }),
       providesTags: ["City"],
+      keepUnusedDataFor: CACHE_LIFETIME.GEOGRAPHIC_DATA,
     }),
 
     getCitiesInRegion: builder.query<
@@ -944,14 +1011,16 @@ export const api = createApi({
         params,
       }),
       providesTags: ["City"],
+      keepUnusedDataFor: CACHE_LIFETIME.GEOGRAPHIC_DATA,
     }),
-      universalSearch: builder.query<SearchResponse, { q: string; limit?: number; types?: string }>({
+
+    universalSearch: builder.query<SearchResponse, { q: string; limit?: number; types?: string }>({
       query: (params) => ({
         url: "search/",
         method: "GET",
         params,
       }),
-      keepUnusedDataFor: 60,
+      keepUnusedDataFor: CACHE_LIFETIME.SEARCH_RESULTS,
       transformResponse: (response: SearchResponse) => {
         return response
       },
@@ -1087,5 +1156,5 @@ export const {
   useGetCitiesInCountryQuery,
   useGetCitiesInRegionQuery,
 
-  useUniversalSearchQuery
+  useUniversalSearchQuery,
 } = api
