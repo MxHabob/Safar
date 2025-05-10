@@ -46,13 +46,12 @@ import type {
 
 const mutex = new Mutex()
 
-// Define cache lifetimes for different entity types
 const CACHE_LIFETIME = {
-  DEFAULT: 60, // 1 minute in seconds
-  STATIC_DATA: 3600, // 1 hour for relatively static data
-  USER_DATA: 300, // 5 minutes for user-specific data
-  SEARCH_RESULTS: 120, // 2 minutes for search results
-  GEOGRAPHIC_DATA: 86400, // 24 hours for geographic data that rarely changes
+  DEFAULT: 60,
+  STATIC_DATA: 3600,
+  USER_DATA: 300,
+  SEARCH_RESULTS: 120,
+  GEOGRAPHIC_DATA: 86400,
 }
 
 const baseQuery = fetchBaseQuery({

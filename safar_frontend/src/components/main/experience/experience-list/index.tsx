@@ -20,7 +20,7 @@ export const ListExperience = ({ overlay, selected, ...rest }: Props) => {
     data: experiences,
     isLoading,
     error,
-  } = useGetExperiencesQuery({ page_size: 10,category:category || undefined},{ refetchOnMountOrArgChange: false })
+  } = useGetExperiencesQuery({ page_size: 10,category:category || undefined})
 
   if (error) {
     return (

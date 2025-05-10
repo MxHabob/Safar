@@ -16,7 +16,7 @@ type Props = {
 export const ListBox = ({ overlay, selected, ...rest }: Props) => {
   const searchParams = useSearchParams()
   const category = searchParams.get('category')
-  const { data: boxes, isLoading, error } = useGetBoxesQuery({ page_size: 10,category:category || undefined }, { refetchOnMountOrArgChange: false })
+  const { data: boxes, isLoading, error } = useGetBoxesQuery({ page_size: 10,category:category || undefined })
 
   if (error) {
     return (
