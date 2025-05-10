@@ -35,7 +35,7 @@ export const BoxCard = ({ box }: BoxCardProps) => {
           itemId={box.id}
           itemType={"box"}
           isInwishlist={box.is_in_wishlist || false}
-          className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-all duration-200"
+           className={`absolute top-2 right-3 ${box.is_in_wishlist ? 'opacity-70 group-hover:animate-ping ' :'opacity-0'}  group-hover:opacity-100  transition-all duration-200`}
           size="default"
           variant="outline"
         />

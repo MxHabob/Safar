@@ -26,6 +26,9 @@ export const DiscountsPageContent = () => {
   const activeDiscounts = activeDiscountsData?.results || []
   const myDiscounts = myDiscountsData?.results || []
 
+  console.log("activeDiscounts : ",activeDiscounts)
+  console.log("myDiscounts : ",myDiscounts)
+
   const handleFiltersChange = (newFilters: Partial<DiscountFilters>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }))
   }
@@ -130,7 +133,7 @@ export const DiscountsPageContent = () => {
         <TabsContent value="my-discounts" className="mt-6">
           {isLoadingMy ? (
             <div className="flex justify-center items-center py-20">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+              <Spinner size="lg"/>
             </div>
           ) : sortedMyDiscounts.length > 0 ? (
             <DiscountsList discounts={sortedMyDiscounts} showAppliedStatus={true} />

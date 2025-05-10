@@ -47,7 +47,7 @@ export const ExperienceCard = ({ experience }: ExperienceCardProps) => {
             itemId={experience.id}
             itemType={"experience"}
             isInwishlist={experience.is_in_wishlist || false}
-            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100  transition-all duration-200"
+             className={`absolute top-2 right-3 ${experience.is_in_wishlist ? 'opacity-70 group-hover:animate-ping ' :'opacity-0'}  group-hover:opacity-100  transition-all duration-200`}
             size="default"
             variant={"secondary"}
           />

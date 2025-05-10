@@ -19,7 +19,7 @@ class CountrySerializer(serializers.ModelSerializer):
         return representation
 
 class RegionSerializer(serializers.ModelSerializer):
-    country = serializers.StringRelatedField()
+    country = CountrySerializer(read_only=True)
     
     class Meta:
         model = Region
@@ -37,7 +37,7 @@ class RegionSerializer(serializers.ModelSerializer):
         return representation
 
 class CitySerializer(serializers.ModelSerializer):
-    country = serializers.StringRelatedField()
+    country = CountrySerializer(read_only=True)
     region = serializers.StringRelatedField() 
     
     class Meta:

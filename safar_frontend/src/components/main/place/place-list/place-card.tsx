@@ -42,7 +42,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
           itemId={place.id}
           itemType="place"
           isInwishlist={place.is_in_wishlist || false}
-          className="absolute top-2 right-3 opacity-0 group-hover:opacity-100  transition-all duration-200"
+          className={`absolute top-2 right-3 ${place.is_in_wishlist ? 'opacity-70 group-hover:animate-ping ' :'opacity-0'}  group-hover:opacity-100  transition-all duration-200`}
           variant={"secondary"}
         />
 
@@ -79,6 +79,7 @@ export const PlaceCard = ({ place }: PlaceCardProps) => {
 
           <div className="flex justify-between items-center mt-auto">
             <div className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[60%]">
+              {place.country && <span className="mr-1">{place.country.name}</span>}
               {place.city && <span className="mr-1">{place.city.name}</span>}
               {place.city && place.region && <span className="mr-1">,</span>}
               {place.region && <span>{place.region.name}</span>}

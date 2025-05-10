@@ -863,6 +863,11 @@ export const api = createApi({
       providesTags: ["Country"],
     }),
 
+    getCountry: builder.query<Country, string>({
+      query: (id) => `/countries/${id}/`,
+      providesTags: (result, error, id) => [{ type: "Country", id }],
+    }),
+
     getCountryRegions: builder.query<Region[], string>({
       query: (id) => `/countries/${id}/regions/`,
       providesTags: (result, error, id) => [{ type: "Country", id }, "Region"],
@@ -876,6 +881,11 @@ export const api = createApi({
       providesTags: ["Region"],
     }),
 
+    getRegion: builder.query<Region, string>({
+      query: (id) => `/regions/${id}/`,
+      providesTags: (result, error, id) => [{ type: "Region", id }],
+    }),
+
     getRegionCities: builder.query<City[], string>({
       query: (id) => `/regions/${id}/cities/`,
       providesTags: (result, error, id) => [{ type: "Region", id }, "City"],
@@ -887,6 +897,11 @@ export const api = createApi({
         params,
       }),
       providesTags: ["City"],
+    }),
+
+    getCity: builder.query<City, string>({
+      query: (id) => `/cities/${id}/`,
+      providesTags: (result, error, id) => [{ type: "City", id }],
     }),
 
     getNearbyCities: builder.query<PaginatedResponse<City>, NearbyCityQueryParams>({
@@ -1060,10 +1075,13 @@ export const {
 
   // Geographic data
   useGetCountriesQuery,
+  useGetCountryQuery,
   useGetCountryRegionsQuery,
   useGetRegionsQuery,
+  useGetRegionQuery,
   useGetRegionCitiesQuery,
   useGetCitiesQuery,
+  useGetCityQuery,
   useGetNearbyCitiesQuery,
   useSearchCitiesQuery,
   useGetCitiesInCountryQuery,

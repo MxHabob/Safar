@@ -37,7 +37,7 @@ export interface Country extends BaseModel {
 }
 
 export interface Region extends BaseModel {
-  country: Country | string;
+  country: Country;
   name: string;
   code?: string;
   admin_level: number;
@@ -47,7 +47,7 @@ export interface Region extends BaseModel {
 }
 
 export interface City extends BaseModel {
-  country: Country | string;
+  country: Country | null;
   region?: Region | string | null;
   name: string;
   name_ascii: string;

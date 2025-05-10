@@ -9,17 +9,19 @@ import type { Place } from "@/core/types"
 import { useSearchParams } from "next/navigation"
 
 type Props = {
+  country?:string,
+  city?:string,
   overlay?: boolean
   selected?: string
 }
 
-export const ListPlaces = ({ selected }: Props) => {
+export const ListPlaces = ({ selected,country,city }: Props) => {
   const searchParams = useSearchParams()
   const category = searchParams.get('category')
   const [page, setPage] = useState(1)
   const placesCache = useRef<Place[]>([])
   
-  const { data, isLoading, isFetching, error } =  useGetPlacesQuery( { page, page_size: 12, category:category || undefined },
+  const { data, isLoading, isFetching, error } =  useGetPlacesQuery( { page, page_size: 12, category:category || undefined,country:country ||undefined , city:city||undefined },
     { 
       refetchOnMountOrArgChange: false,
       selectFromResult: (result) => {
