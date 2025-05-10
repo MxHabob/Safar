@@ -54,7 +54,14 @@ export const ExperienceCard = ({ experience }: ExperienceCardProps) => {
 
           <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
             <div className="flex items-center gap-2 text-center">
-              <UserAvatar id={experience?.owner?.id || ""} src={experience.owner?.profile?.avatar || ""} size={"sm"} count={experience.owner?.points || 0} membership={experience.owner?.membership_level || "bronze"} fallback={experience.owner?.first_name?.charAt(0).toUpperCase() || experience.owner?.username?.charAt(0).toUpperCase() || "U"} alt={experience.owner?.username}/>
+              <UserAvatar
+               id={experience?.owner?.id || ""}
+               src={experience.owner?.profile?.avatar || ""} 
+               size={"sm"} count={experience.owner?.points || 0} 
+               membership={experience.owner?.membership_level || "bronze"} 
+               fallback={experience.owner?.first_name?.charAt(0).toUpperCase() || experience.owner?.username?.charAt(0).toUpperCase() || "U"} 
+               alt={experience.owner?.username}
+               />
               <span className="font-medium">
                 {`${experience?.owner?.first_name} ${experience?.owner?.last_name}` || experience.owner?.username}
               </span>

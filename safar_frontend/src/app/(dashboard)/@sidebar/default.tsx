@@ -18,6 +18,7 @@ import {
   Calendar,
   Building,
   Users,
+  DiscAlbumIcon,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -107,6 +108,7 @@ export default function DashboardSidebar() {
                 badge={unreadCount > 0 ? unreadCount : undefined}
               />
               <NavItem href="/wishlist" icon={<Heart className="h-5 w-5" />} label="Wishlist" />
+              <NavItem href="/discounts" icon={<DiscAlbumIcon className="h-5 w-5" />} label="discounts" />
             </div>
 
             {isOwner && (

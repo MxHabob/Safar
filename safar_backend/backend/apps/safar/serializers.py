@@ -23,8 +23,8 @@ class DiscountSerializer(serializers.ModelSerializer):
         model = Discount
         fields = ['id', 'code', 'discount_type', 'amount', 'valid_from', 'valid_to', 
                  'is_active', 'applicable_places', 'applicable_experiences', 
-                 'applicable_flights', 'applicable_boxes', 'created_at']
-        read_only_fields = ['id', 'created_at']
+                 'applicable_flights', 'applicable_boxes']
+        read_only_fields = ['id']
 
 class ExperiencePlaceSerializer(serializers.ModelSerializer):
     """Enhanced Place serializer for Experience with location details"""
@@ -176,6 +176,10 @@ class BookingSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'booking_date', 'user']
 
 class WishlistSerializer(serializers.ModelSerializer):
+    experience = ExperienceSerializer(read_only=True)
+    place = PlaceSerializer(read_only=True)
+    flight = FlightSerializer(read_only=True)
+    box = BoxSerializer(read_only=True)
     class Meta:
         model = Wishlist
         fields = ['id', 'user', 'place', 'experience', 'flight', 'box']

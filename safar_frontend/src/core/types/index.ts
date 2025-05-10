@@ -208,6 +208,11 @@ export interface Discount extends BaseModel {
   valid_from: string;
   valid_to: string;
   is_active: boolean;
+  max_uses?: number;
+  uses_count?: number;
+  created_by?:User;
+  min_purchase_amount?: number;
+  max_discount_amount?: number;
   applicable_places?: string[];
   applicable_experiences?: string[];
   applicable_flights?: string[];
