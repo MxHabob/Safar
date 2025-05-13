@@ -3,6 +3,7 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from django.contrib.gis.db import models as gis_models
+from django.core.validators import MinValueValidator, MaxValueValidator
 from apps.core_apps.general import BaseModel
 from apps.authentication.models import User
 from apps.geographic_data.models import Country, Region, City, Media
