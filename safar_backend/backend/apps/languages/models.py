@@ -5,7 +5,7 @@ class Language(BaseModel):
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=10, unique=True)
     is_active = models.BooleanField(default=True)
-    icon = models.ImageField(upload_to='language_icons/', blank=True, null=True)
+    icon =  models.CharField(max_length=10,blank=True, null=True)
 
     class Meta:
         verbose_name = "Language"

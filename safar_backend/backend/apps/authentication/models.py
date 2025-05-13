@@ -1,6 +1,7 @@
 import uuid
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.gis.db import models as gis_models
@@ -18,6 +19,15 @@ def upload_avatar(instance, filename):
     path = f'avatar/{random_uuid}'
     extension = filename.split('.')[-1] if '.' in filename else 'jpg'
     return f'{path}.{extension}'
+
+
+def validate_metadata(value):
+    """Ensure metadata values are within size limits"""
+    if isinstance(value, dict):
+        for k, v in value.items():
+            if isinstance(v, (int, float)) and v > 2147483647:
+                raise ValidationError("Numeric values in metadata must be less than 2,147,483,647")
+    return value
 
 class UserManager(BaseUserManager):
     from apps.core_apps.utility import generate_unique_username
@@ -194,6 +204,7 @@ class UserProfile(BaseModel):
 class UserInteraction(BaseModel):
     INTERACTION_TYPES = (
         ('view_place', 'Viewed Place'),
+        ('login', 'Login'),
         ('view_experience', 'Viewed Experience'),
         ('view_flight', 'Viewed Flight'),
         ('wishlist_add', 'Added to Wishlist'),
@@ -219,7 +230,7 @@ class UserInteraction(BaseModel):
     object_id = models.PositiveBigIntegerField(db_index=True)
     content_object = GenericForeignKey('content_type', 'object_id')
     interaction_type = models.CharField(max_length=50, choices=INTERACTION_TYPES, db_index=True)
-    metadata = models.JSONField(default=dict, blank=True, help_text="Additional context about the interaction (e.g., search query, filters)")
+    metadata = models.JSONField(default=dict, blank=True, help_text="Additional context about the interaction (e.g., search query, filters)",validators=[validate_metadata])
     device_type = models.CharField(max_length=20, blank=True, null=True, choices=(('mobile', 'Mobile'), ('desktop', 'Desktop'), ('tablet', 'Tablet'),))
 
     class Meta:

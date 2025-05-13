@@ -1,6 +1,7 @@
 from django.contrib.gis.db import models as gis_models
 from django.db import models
 from apps.core_apps.general import BaseModel
+from apps.safar.models import Media
 
 class Country(BaseModel):
     """Country model with geographic data"""
@@ -8,6 +9,7 @@ class Country(BaseModel):
     iso_code = models.CharField(max_length=6, null=True, blank=True, db_index=True)
     iso3_code = models.CharField(max_length=6, null=True, blank=True, db_index=True)
     phone_code = models.CharField(max_length=10, null=True, blank=True)
+    media = models.ManyToManyField(Media, blank=True, related_name="country", verbose_name="Media")
     capital = models.CharField(max_length=100, null=True, blank=True)
     currency = models.CharField(max_length=3, null=True, blank=True)
     languages = models.JSONField(default=list, blank=True)
@@ -34,6 +36,7 @@ class Region(BaseModel):
     country = models.ForeignKey(Country, on_delete=models.CASCADE, related_name='regions')
     name = models.CharField(max_length=100, db_index=True)
     code = models.CharField(max_length=10, null=True, blank=True, db_index=True)
+    media = models.ManyToManyField(Media, blank=True, related_name="region", verbose_name="Media")
     admin_level = models.PositiveSmallIntegerField(default=1)
     geometry = gis_models.MultiPolygonField(null=True, blank=True, srid=4326)
     centroid = gis_models.PointField(null=True, blank=True, srid=4326)
@@ -61,6 +64,7 @@ class City(BaseModel):
     country = models.ForeignKey(Country, on_delete=models.CASCADE, related_name='cities')
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, related_name='cities')
     name = models.CharField(max_length=255, db_index=True)
+    media = models.ManyToManyField(Media, blank=True, related_name="city", verbose_name="Media")
     name_ascii = models.CharField(max_length=255, db_index=True, blank=True)
     timezone = models.CharField(max_length=40, null=True, blank=True)
     population = models.PositiveIntegerField(null=True, blank=True)
