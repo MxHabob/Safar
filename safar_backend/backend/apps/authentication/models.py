@@ -281,8 +281,8 @@ class UserLoginLog(BaseModel):
     login_status = models.CharField(max_length=20, default="success")
     session_id = models.CharField(max_length=100, blank=True, null=True)
     
-    country = models.CharField(max_length=100, blank=True)
-    city = models.CharField(max_length=100, blank=True)
+    country = models.CharField(max_length=100, blank=True, null=True)
+    city = models.CharField(max_length=100, blank=True, null=True)
     
     class Meta:
         verbose_name = _("User Login Log")
