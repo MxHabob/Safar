@@ -117,8 +117,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "apps.authentication.middleware.UserActivityMiddleware",
     "apps.authentication.middleware.UserLoginTracker",
+    "apps.authentication.middleware.UserActivityMiddleware",
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -286,6 +286,7 @@ DJOSER = {
 #  COOKIE SETTINGS
 # ======================
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
+SESSION_COOKIE_AGE = 1209600
 SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=not DEVELOPMENT_MODE)
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "None"

@@ -180,6 +180,25 @@ export enum InteractionType {
   RECOMMENDATION_CLICK = 'recommendation_click'
 }
 
+export interface PointsTransaction extends BaseModel {
+  user: string | User;
+  action: string;
+  points: number;
+  metadata: Record<string, any>;
+  interaction?: string | LInteractionType;
+  balance_after: number;
+}
+
+export interface LInteractionType extends BaseModel {
+  code: string;
+  name: string;
+  description: string;
+  points_value: number;
+  daily_limit: number;
+  is_active: boolean;
+  category: string;
+}
+
 
 export interface UserInteraction extends BaseModel {
   user: User | string;

@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.db.models import Sum
 from apps.authentication.models import User, PointsTransaction, UserInteraction, InteractionType
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,320 @@ class PointsManager:
     DAILY_POINTS_PREFIX = 'daily_points:'
     
     CACHE_DURATION = 60 * 60 * 24
-    
+
+
+    @classmethod
+    def get_summary(cls, user):
+        """
+        Get a comprehensive summary of the user's points status.
+        
+        Args:
+            user: User object
+            
+        Returns:
+            dict: Points summary including:
+                - total_points: Current points balance
+                - membership_level: Current membership level
+                - next_level: Next membership level (or None if max)
+                - points_to_next_level: Points needed for next level
+                - progress_percentage: Progress to next level (0-100)
+                - recent_transactions: Last 5 transactions
+                - points_by_category: Points earned by category
+                - daily_limits: Current daily limits status
+        """
+        if not isinstance(user, User):
+            logger.error(f"Invalid user object provided to get_summary: {user}")
+            return {}
+        
+        try:
+            thresholds = cls.get_membership_thresholds()
+            current_level = user.membership_level
+            next_level = cls._get_next_membership_level(user.points)
+
+            if next_level:
+                current_threshold = thresholds[current_level]
+                next_threshold = thresholds[next_level]
+                points_needed = next_threshold - current_threshold
+                points_earned = user.points - current_threshold
+                progress_percentage = min(100, int((points_earned / points_needed) * 100))
+                points_to_next = next_threshold - user.points
+            else:
+                progress_percentage = 100
+                points_to_next = 0
+            
+            recent_transactions = PointsTransaction.objects.filter(
+                user=user
+            ).order_by('-created_at')[:5].values(
+                'id', 'action', 'points', 'created_at'
+            )
+            
+            config = cls.get_points_config()
+            points_by_category = PointsTransaction.objects.filter(
+                user=user,
+                points__gt=0
+            ).values('action').annotate(
+                total=Sum('points')
+            ).order_by('-total')
+            
+            categorized_points = {}
+            for item in points_by_category:
+                action = item['action']
+                if action in config:
+                    category = config[action]['category']
+                    if category not in categorized_points:
+                        categorized_points[category] = 0
+                    categorized_points[category] += item['total']
+            
+            daily_limits = {}
+            today = timezone.now().date().isoformat()
+            
+            for action, values in config.items():
+                if values['daily_limit'] > 0:
+                    cache_key = f"{cls.DAILY_POINTS_PREFIX}{user.id}:{action}:{today}"
+                    count = cache.get(cache_key)
+                    if count is None:
+                        count = PointsTransaction.objects.filter(
+                            user=user,
+                            action=action,
+                            created_at__date=timezone.now().date()
+                        ).count()
+                        cache.set(cache_key, count, cls.CACHE_DURATION)
+                    
+                    daily_limits[action] = {
+                        'used': count,
+                        'remaining': max(0, values['daily_limit'] - count),
+                        'limit': values['daily_limit'],
+                        'name': values['name']
+                    }
+            
+            return {
+                'total_points': user.points,
+                'membership_level': current_level,
+                'next_level': next_level,
+                'points_to_next_level': points_to_next,
+                'progress_percentage': progress_percentage,
+                'recent_transactions': list(recent_transactions),
+                'points_by_category': categorized_points,
+                'daily_limits': daily_limits,
+                'membership_thresholds': thresholds
+            }
+            
+        except Exception as e:
+            logger.error(f"Error generating points summary for user {user.id}: {str(e)}")
+            return {
+                'total_points': user.points,
+                'membership_level': user.membership_level,
+                'next_level': None,
+                'points_to_next_level': 0,
+                'progress_percentage': 100,
+                'recent_transactions': [],
+                'points_by_category': {},
+                'daily_limits': {},
+                'membership_thresholds': cls.get_membership_thresholds()
+            }
+
+    @classmethod
+    def get_leaderboard(cls, limit=20, period='all_time'):
+        """
+        Get points leaderboard for top users.
+        
+        Args:
+            limit: Number of users to return
+            period: Time period ('all_time', 'monthly', 'weekly')
+            
+        Returns:
+            list: Leaderboard entries with user info and points
+        """
+        from django.db.models import Sum, F
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        base_query = User.objects.filter(is_active=True).annotate(
+            total_points=F('points')
+        ).order_by('-total_points', 'date_joined')
+        
+        if period == 'monthly':
+            start_date = timezone.now() - timedelta(days=30)
+            base_query = base_query.annotate(
+                total_points=Sum('pointstransaction__points', 
+                               filter=models.Q(pointstransaction__created_at__gte=start_date))
+            ).filter(total_points__gt=0)
+        elif period == 'weekly':
+            start_date = timezone.now() - timedelta(days=7)
+            base_query = base_query.annotate(
+                total_points=Sum('pointstransaction__points',
+                               filter=models.Q(pointstransaction__created_at__gte=start_date))
+            ).filter(total_points__gt=0)
+        
+        leaderboard = []
+        for rank, user in enumerate(base_query[:limit], 1):
+            leaderboard.append({
+                'rank': rank,
+                'user_id': user.id,
+                'name': user.get_full_name(),
+                'avatar': user.profile.avatar.url if hasattr(user, 'profile') and user.profile.avatar else None,
+                'points': user.total_points,
+                'membership_level': user.membership_level
+            })
+            
+        return leaderboard
+
+    @classmethod
+    def reset_daily_points_counts(cls):
+        """
+        Reset all daily points counts (to be run by a scheduled task).
+        """
+        from django.core.cache import cache
+        from django.db.models import Q
+        
+        # Clear all daily points cache keys
+        keys = cache.keys(f"{cls.DAILY_POINTS_PREFIX}*")
+        for key in keys:
+            cache.delete(key)
+            
+        logger.info(f"Reset {len(keys)} daily points counters")
+
+    @classmethod
+    def bulk_award_points(cls, users, action, points=None, metadata=None):
+        """
+        Award points to multiple users at once (more efficient than individual calls).
+        
+        Args:
+            users: QuerySet or list of User objects
+            action: Action key
+            points: Points to award (if None, use config)
+            metadata: Additional context
+            
+        Returns:
+            int: Number of users who received points
+        """
+        if not users:
+            return 0
+            
+        config = cls.get_points_config()
+        
+        if points is None:
+            if action not in config:
+                logger.warning(f"Unknown action '{action}' in bulk_award_points")
+                return 0
+            points_to_award = config[action]['points']
+        else:
+            points_to_award = points
+            
+        if points_to_award <= 0:
+            return 0
+            
+        updated_count = 0
+        
+        try:
+            with transaction.atomic():
+                # Update users in bulk
+                user_ids = [user.id for user in users]
+                
+                updated_count = User.objects.filter(
+                    id__in=user_ids
+                ).update(
+                    points=models.F('points') + points_to_award
+                )
+                
+                # Create transactions
+                transactions = []
+                now = timezone.now()
+                
+                for user in users:
+                    transactions.append(PointsTransaction(
+                        user=user,
+                        action=action,
+                        points=points_to_award,
+                        metadata=metadata or {},
+                        created_at=now,
+                        updated_at=now,
+                        balance_after=user.points + points_to_award
+                    ))
+                
+                PointsTransaction.objects.bulk_create(transactions)
+                
+                logger.info(
+                    f"Bulk awarded {points_to_award} points to {updated_count} users "
+                    f"for action {action}"
+                )
+                
+                return updated_count
+                
+        except Exception as e:
+            logger.error(f"Error in bulk_award_points: {str(e)}", exc_info=True)
+            return 0
+
+    @classmethod
+    def get_daily_points_remaining(cls, user, action):
+        """
+        Get remaining daily points available for a specific action.
+        
+        Args:
+            user: User object
+            action: Action key
+            
+        Returns:
+            int: Points remaining before hitting daily limit (or None if no limit)
+        """
+        config = cls.get_points_config()
+        
+        if action not in config:
+            return None
+            
+        daily_limit = config[action]['daily_limit']
+        if daily_limit <= 0:
+            return None
+            
+        today = timezone.now().date().isoformat()
+        cache_key = f"{cls.DAILY_POINTS_PREFIX}{user.id}:{action}:{today}"
+        
+        count = cache.get(cache_key)
+        if count is None:
+            count = PointsTransaction.objects.filter(
+                user=user,
+                action=action,
+                created_at__date=timezone.now().date()
+            ).count()
+            cache.set(cache_key, count, cls.CACHE_DURATION)
+            
+        remaining = max(0, daily_limit - count)
+        return remaining
+
+    @classmethod
+    def recalculate_user_points(cls, user):
+        """
+        Recalculate a user's total points from all transactions.
+        
+        Args:
+            user: User object
+            
+        Returns:
+            int: New calculated points total
+        """
+        try:
+            with transaction.atomic():
+                total = PointsTransaction.objects.filter(
+                    user=user
+                ).aggregate(
+                    total=Sum('points')
+                )['total'] or 0
+                
+                user.points = total
+                user.membership_level = cls._check_membership_upgrade(total)
+                user.save(update_fields=['points', 'membership_level'])
+                
+                logger.info(
+                    f"Recalculated points for user {user.id}. "
+                    f"New total: {total}. Membership: {user.membership_level}"
+                )
+                
+                return total
+                
+        except Exception as e:
+            logger.error(f"Error recalculating points for user {user.id}: {str(e)}")
+            return user.points
+            
     @classmethod
     def get_points_config(cls, refresh=False):
         """

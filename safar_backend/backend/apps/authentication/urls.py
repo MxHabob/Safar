@@ -7,11 +7,12 @@ from apps.authentication.auth_views import (
     CustomTokenVerifyView,
     LogoutView,
 )
-from apps.authentication.views import UserInteractionListView, UserViewSet
+from apps.authentication.views import UserInteractionListView, UserViewSet,PointsTransactionViewSet
 
 router = DefaultRouter()
 router.register(r'interactions', UserInteractionListView, basename='interactions')
 router.register(r'users', UserViewSet, basename='users')
+router.register(r'points', PointsTransactionViewSet, basename='users')
 
 urlpatterns = [
     re_path(

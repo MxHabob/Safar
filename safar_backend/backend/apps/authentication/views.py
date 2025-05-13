@@ -2,8 +2,8 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from apps.authentication.serializers import UserInteractionSerializer
-from apps.authentication.models import UserInteraction
+from apps.authentication.serializers import UserInteractionSerializer,PointsTransactionSerializer
+from apps.authentication.models import UserInteraction,PointsTransaction
 from django.contrib.contenttypes.models import ContentType
 from apps.core_apps.general import BaseViewSet,GENPagination
 from django.shortcuts import get_object_or_404
@@ -91,4 +91,50 @@ class UserInteractionViewSet(BaseViewSet):
                 {'error': str(e)}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+class PointsTransactionViewSet(BaseViewSet):
+    """
+    ViewSet for PointsTransaction model.
+    """
+    queryset = PointsTransaction.objects.all()
+    serializer_class = PointsTransactionSerializer
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user).order_by('-created_at')
+
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        """
+        Get a summary of the user's points.
+        """
+        from apps.authentication.points import PointsManager
         
+        points_manager = PointsManager(request.user)
+        summary = points_manager.get_summary()
+        
+        return Response(summary)
+
+    @action(detail=False, methods=['get'])
+    def leaderboard(self, request):
+        """
+        Get the points leaderboard.
+        """
+        from apps.authentication.points import PointsManager
+        
+        leaderboard = PointsManager.get_leaderboard()
+        return Response(leaderboard)
+
+    @action(detail=False, methods=['get'])
+    def history(self, request):
+        """
+        Get the user's points history with pagination.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+            
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
