@@ -3,7 +3,6 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from django.contrib.gis.db import models as gis_models
-from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator
 from apps.core_apps.general import BaseModel
 from apps.core_apps.models import Media
 from apps.authentication.models import User

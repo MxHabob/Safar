@@ -2,7 +2,7 @@ import uuid
 from django.contrib.gis.db import models as gis_models
 from django.db import models
 from apps.core_apps.general import BaseModel
-
+from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator
 PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp']
 VIDEO_EXTENSIONS = ['mp4', 'mov', 'avi', 'mkv', 'webm', 'flv']
 
