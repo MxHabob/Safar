@@ -110,21 +110,6 @@ class LogoutView(APIView):
     
     def post(self, request, *args, **kwargs):
         response = Response({"detail": "Logged out successfully."}, status=status.HTTP_200_OK)
-        response.delete_cookie(
-            'access',
-            path=settings.AUTH_COOKIE_PATH,
-            domain=settings.AUTH_COOKIE_DOMAIN,
-            secure=settings.AUTH_COOKIE_SECURE,
-            httponly=settings.AUTH_COOKIE_HTTP_ONLY,
-            samesite=settings.AUTH_COOKIE_SAMESITE
-        )
-        
-        response.delete_cookie(
-            'refresh',
-            path=settings.AUTH_COOKIE_PATH,
-            domain=settings.AUTH_COOKIE_DOMAIN,
-            secure=settings.AUTH_COOKIE_SECURE,
-            httponly=settings.AUTH_COOKIE_HTTP_ONLY,
-            samesite=settings.AUTH_COOKIE_SAMESITE
-        )
+        response.delete_cookie('access', path=settings.AUTH_COOKIE_PATH,domain=settings.AUTH_COOKIE_DOMAIN)
+        response.delete_cookie('refresh', path=settings.AUTH_COOKIE_PATH,domain=settings.AUTH_COOKIE_DOMAIN)
         return response
