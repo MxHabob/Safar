@@ -5,10 +5,10 @@ from django.utils import timezone
 from django.contrib.gis.db import models as gis_models
 from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator
 from apps.core_apps.general import BaseModel
-from apps.authentication.models import User
 from apps.geographic_data.models import Country, Region, City
 from django.core.validators import FileExtensionValidator
-
+from django.contrib.auth import get_user_model
+User = get_user_model()
 PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp']
 VIDEO_EXTENSIONS = ['mp4', 'mov', 'avi', 'mkv', 'webm', 'flv']
 
