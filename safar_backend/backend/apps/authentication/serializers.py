@@ -54,7 +54,7 @@ class UserPublicSerializer(DjoserUserSerializer):
             'points', 'preferred_language', 'preferred_currency'
         )
         read_only_fields = [
-            'id', 'is_active', 'last_login', 
+            'id', 'is_active', 'last_login','email', 
             'created_at', 'updated_at', 'role'
         ]
     

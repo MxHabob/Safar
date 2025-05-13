@@ -199,30 +199,45 @@ def handle_user_activation(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=UserLoginLog)
 def handle_user_login(sender, instance, created, **kwargs):
-    """
-    Handle user login events for points and tracking.
-    """
-    if created:
-        try:
-            from django.contrib.contenttypes.models import ContentType
-            
-            interaction = UserInteraction.objects.create(
-                user=instance.user,
-                content_type=ContentType.objects.get_for_model(instance.user),
-                object_id=str(instance.user.id),
-                interaction_type='login',
-                metadata={
-                    'login_id': str(instance.id),
-                    'ip_address': str(instance.ip_address)[:100] if instance.ip_address else None,
-                    'device_type': str(instance.device_type)[:100] if instance.device_type else None
-                }
-            )
+    """Record every login attempt but only award points once per day"""
+    if not created:
+        return
 
+    try:
+        from django.contrib.contenttypes.models import ContentType
+        from django.utils import timezone
+        
+        today = timezone.now().date()
+        content_type = ContentType.objects.get_for_model(instance.user)
+        
+        existing = UserInteraction.objects.filter(
+            user=instance.user,
+            content_type=content_type,
+            object_id=str(instance.user.id),
+            interaction_type='login',
+            created_at__date=today
+        ).exists()
+
+        interaction = UserInteraction.objects.create(
+            user=instance.user,
+            content_type=content_type,
+            object_id=str(instance.user.id),
+            interaction_type='login',
+            metadata={
+                'login_id': str(instance.id),
+                'ip_address': str(instance.ip_address),
+                'device': instance.device_type,
+                'first_today': not existing
+            }
+        )
+
+        if not existing:
             PointsManager.award_points_for_interaction(interaction)
             
-            logger.info(f"Recorded login interaction for user {instance.user.id}")
-        except Exception as e:
-            logger.error(f"Error handling user login: {str(e)}", exc_info=True)
+        logger.info(f"Recorded login for {instance.user} (first today: {not existing})")
+
+    except Exception as e:
+        logger.error(f"Error recording login: {str(e)}", exc_info=True)
 
 @receiver(post_save, sender=UserInteraction)
 def handle_user_interaction(sender, instance, created, **kwargs):

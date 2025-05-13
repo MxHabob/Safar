@@ -240,16 +240,8 @@ class UserInteraction(BaseModel):
         verbose_name_plural = 'User Interactions'
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['user', 'interaction_type']),
+            models.Index(fields=['user', 'interaction_type', 'created_at']),
             models.Index(fields=['content_type', 'object_id']),
-            models.Index(fields=['created_at', 'interaction_type']),
-            models.Index(fields=['user']),
-        ]
-        constraints = [
-            models.UniqueConstraint(
-                fields=['user', 'content_type', 'object_id', 'interaction_type'],
-                name='unique_user_interaction',
-            )
         ]
 
     def __str__(self):
