@@ -23,11 +23,20 @@ export interface MultiPolygonGeometry {
   coordinates: [number, number][][][];
 }
 
+
+export interface Media extends BaseModel {
+  url: string;
+  file:string;
+  type: 'image' | 'video';
+  uploaded_by: User;
+}
+
 export interface Country extends BaseModel {
   name: string;
   iso_code?: string;
   iso3_code?: string;
   phone_code?: string;
+  media?: Media[];
   capital?: string;
   currency?: string;
   languages: string[];
@@ -40,6 +49,7 @@ export interface Region extends BaseModel {
   country: Country;
   name: string;
   code?: string;
+  media?: Media[];
   admin_level: number;
   geometry?: MultiPolygonGeometry;
   centroid?: PointGeometry;
@@ -50,6 +60,7 @@ export interface City extends BaseModel {
   country: Country | null;
   region?: Region | string | null;
   name: string;
+  media?: Media[];
   name_ascii: string;
   timezone?: string;
   population?: number;
@@ -236,14 +247,6 @@ export interface Discount extends BaseModel {
   applicable_experiences?: string[];
   applicable_flights?: string[];
   applicable_boxes?: string[];
-}
-
-
-export interface Media extends BaseModel {
-  url: string;
-  file:string;
-  type: 'image' | 'video';
-  uploaded_by: User;
 }
 
 // Place Types
