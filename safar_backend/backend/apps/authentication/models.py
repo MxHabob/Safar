@@ -27,6 +27,8 @@ def validate_metadata(value):
         for k, v in value.items():
             if isinstance(v, (int, float)) and v > 2147483647:
                 raise ValidationError("Numeric values in metadata must be less than 2,147,483,647")
+            if isinstance(v, str) and len(v) > 255:
+                value[k] = v[:255] 
     return value
 
 class UserManager(BaseUserManager):
@@ -227,7 +229,7 @@ class UserInteraction(BaseModel):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='interactions', db_index=True)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, limit_choices_to={'app_label__in': ['places', 'geographic_data']})
-    object_id = models.PositiveBigIntegerField(db_index=True)
+    object_id = models.CharField(max_length=255, db_index=True)
     content_object = GenericForeignKey('content_type', 'object_id')
     interaction_type = models.CharField(max_length=50, choices=INTERACTION_TYPES, db_index=True)
     metadata = models.JSONField(default=dict, blank=True, help_text="Additional context about the interaction (e.g., search query, filters)",validators=[validate_metadata])

@@ -206,19 +206,15 @@ def handle_user_login(sender, instance, created, **kwargs):
         try:
             from django.contrib.contenttypes.models import ContentType
             
-            # Ensure we're not passing overly large values
-            user_id = str(instance.user.id)[:100]  # Truncate if needed
-            login_id = str(instance.id)[:100]
-            
             interaction = UserInteraction.objects.create(
                 user=instance.user,
                 content_type=ContentType.objects.get_for_model(instance.user),
-                object_id=instance.user.id,  # This should match your model's field type
+                object_id=str(instance.user.id),
                 interaction_type='login',
                 metadata={
-                    'login_id': login_id,
-                    'ip_address': instance.ip_address[:100],
-                    'device_type': instance.device_type[:100] if instance.device_type else None
+                    'login_id': str(instance.id),
+                    'ip_address': str(instance.ip_address)[:100] if instance.ip_address else None,
+                    'device_type': str(instance.device_type)[:100] if instance.device_type else None
                 }
             )
 

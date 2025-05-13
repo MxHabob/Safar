@@ -40,7 +40,6 @@ def check_inactive_users():
     try:
         now = timezone.now()
         
-        # Find users inactive for 30, 60, and 90 days
         thresholds = [30, 60, 90]
         total_sent = 0
         
@@ -51,7 +50,6 @@ def check_inactive_users():
                 last_activity__lt=threshold_date,
                 is_active=True
             ).exclude(
-                # Exclude users who received a reminder in the last 30 days
                 notifications__type="We Miss You",
                 notifications__created_at__gt=now - timedelta(days=30)
             )
