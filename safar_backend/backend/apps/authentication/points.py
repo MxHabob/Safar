@@ -509,7 +509,7 @@ class PointsManager:
         """
         if not isinstance(user, User):
             logger.error(f"Invalid user object provided to award_points: {user}")
-            return 0, 0
+            return 0, 0    
 
         config = cls.get_points_config()
         
@@ -541,9 +541,10 @@ class PointsManager:
                 else:
                     membership_upgraded = False
             
-                user.save(update_fields=['points', 'membership_level'])
+                user.save(update_fields=['points', 'membership_level'])    
 
-                transaction = PointsTransaction.objects.create(
+                # Create the transaction object first
+                points_transaction = PointsTransaction.objects.create(
                     user=user,
                     action=action,
                     points=points_to_award,
@@ -556,15 +557,15 @@ class PointsManager:
                     today = timezone.now().date().isoformat()
                     cache_key = f"{cls.DAILY_POINTS_PREFIX}{user.id}:{action}:{today}"
                     count = cache.get(cache_key, 0)
-                    cache.set(cache_key, count + 1, cls.CACHE_DURATION)
-    
+                    cache.set(cache_key, count + 1, cls.CACHE_DURATION)    
+
                 if notify:
                     cls._send_points_notification(
                         user=user,
                         action=action,
                         points_awarded=points_to_award,
                         metadata=metadata,
-                        transaction=transaction
+                        transaction=points_transaction  # Use the created transaction
                     )
                     
                     if membership_upgraded:
