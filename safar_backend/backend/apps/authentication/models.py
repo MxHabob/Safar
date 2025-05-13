@@ -203,36 +203,34 @@ class UserProfile(BaseModel):
     def __str__(self):
         return f"Profile of {self.user.get_full_name()}"
 
-class UserInteraction(BaseModel):
-    INTERACTION_TYPES = (
-        ('view_place', 'Viewed Place'),
-        ('login', 'Login'),
-        ('view_experience', 'Viewed Experience'),
-        ('view_flight', 'Viewed Flight'),
-        ('wishlist_add', 'Added to Wishlist'),
-        ('wishlist_remove', 'Removed from Wishlist'),
-        ('share', 'Shared Item'),
-        ('photo_view', 'Viewed Photos'),
-        ('map_view', 'Viewed Map'),
-        ('search', 'Performed Search'),
-        ('filter', 'Applied Filters'),
-        ('details_expand', 'Expanded Details'),
-        ('availability_check', 'Checked Availability'),
-        ('booking_start', 'Started Booking'),
-        ('booking_abandon', 'Abandoned Booking'),
-        ('booking_complete', 'Completed Booking'),
-        ('rating_given', 'Rated Item'),
-        ('review_added', 'Added Review'),
-        ('recommendation_show', 'Saw Recommendation'),
-        ('recommendation_click', 'Clicked Recommendation'),
-    )
 
+class InteractionType(BaseModel):
+    code = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    
+    points_value = models.PositiveIntegerField(default=0)
+    daily_limit = models.PositiveIntegerField(default=0, help_text="Maximum times per day this can earn points (0 = unlimited)")
+    
+    is_active = models.BooleanField(default=True)
+    
+    category = models.CharField(max_length=50, default="general")
+    
+    class Meta:
+        verbose_name = _('interaction type')
+        verbose_name_plural = _('interaction types')
+        ordering = ['category', 'name']
+    
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+        
+class UserInteraction(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='interactions', db_index=True)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, limit_choices_to={'app_label__in': ['places', 'geographic_data']})
     object_id = models.UUIDField(db_index=True)
     content_object = GenericForeignKey('content_type', 'object_id')
-    interaction_type = models.CharField(max_length=50, choices=INTERACTION_TYPES, db_index=True)
-    metadata = models.JSONField(default=dict, blank=True, help_text="Additional context about the interaction (e.g., search query, filters)",validators=[validate_metadata])
+    interaction_type = models.ForeignKey(InteractionType, on_delete=models.PROTECT, db_index=True, related_name='user_interactions')
+    metadata = models.JSONField(default=dict, blank=True, help_text="Additional context about the interaction (e.g., search query, filters)", validators=[validate_metadata])
     device_type = models.CharField(max_length=20, blank=True, null=True, choices=(('mobile', 'Mobile'), ('desktop', 'Desktop'), ('tablet', 'Tablet'),))
 
     class Meta:
@@ -245,10 +243,12 @@ class UserInteraction(BaseModel):
         ]
 
     def __str__(self):
-        return f"{self.user} - {self.get_interaction_type_display()} - {self.content_object}"
+        return f"{self.user} - {self.interaction_type.name} - {self.content_object}"
 
     @property
     def interaction_weight(self):
+        return self.interaction_type.weight
+        
         weights = {
             'booking_complete': 1.0,
             'booking_start': 0.7,
@@ -260,17 +260,21 @@ class UserInteraction(BaseModel):
             'recommendation_click': 0.4,
             'default': 0.2
         }
-        return weights.get(self.interaction_type, weights['default'])
+        return weights.get(self.interaction_type.code, weights['default'])
 
     @classmethod
-    def log_interaction(cls, user, content_object, interaction_type, **metadata):
+    def log_interaction(cls, user, content_object, interaction_type_code, **metadata):
         try:
+            interaction_type = InteractionType.objects.get(code=interaction_type_code)
             return cls.objects.create(
                 user=user,
                 content_object=content_object,
                 interaction_type=interaction_type,
                 metadata=metadata
             )
+        except InteractionType.DoesNotExist:
+            logger.error(f"InteractionType with code {interaction_type_code} does not exist")
+            raise
         except Exception as e:
             logger.error(f"Error logging interaction: {str(e)}", exc_info=True)
             raise
@@ -372,22 +376,3 @@ class PointsTransaction(BaseModel):
         
         super().save(*args, **kwargs)
 
-class InteractionType(BaseModel):
-    code = models.CharField(max_length=50, unique=True)
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
-    
-    points_value = models.PositiveIntegerField(default=0)
-    daily_limit = models.PositiveIntegerField(default=0, help_text="Maximum times per day this can earn points (0 = unlimited)")
-    
-    is_active = models.BooleanField(default=True)
-    
-    category = models.CharField(max_length=50, default="general")
-    
-    class Meta:
-        verbose_name = _('interaction type')
-        verbose_name_plural = _('interaction types')
-        ordering = ['category', 'name']
-    
-    def __str__(self):
-        return f"{self.name} ({self.code})"

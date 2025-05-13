@@ -36,7 +36,7 @@ CMD ["sh", "-c", "\
     python manage.py shell -c \"from apps.authentication.models import User; User.objects.filter(email='admin@safar.com').exists() or User.objects.create_superuser(email='admin@safar.com', password='admin')\" && \
     # echo 'Downloading essential geographic data...' && \
     # python manage.py import_geodata && \
-    # echo 'Generate a fake data...' && \
-    # python manage.py generate_fake_data --users 50 --places 60 --experiences 50 --boxes 20 --flights 0 --bookings 0 --skip-errors && \
+    echo 'Generate a fake data...' && \
+    python manage.py generate_fake_data --users 50 --places 60 --experiences 50 --boxes 20 --flights 0 --bookings 0 --skip-errors && \
     echo 'Starting Daphne...' && \
     daphne -b 0.0.0.0 -p 8000 core.asgi:application"]

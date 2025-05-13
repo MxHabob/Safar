@@ -1532,6 +1532,7 @@ class Command(BaseCommand):
     def create_interaction_types(self):
         """Create standard interaction types with point values"""
         interaction_types = [
+            # Engagement Interactions
             {
                 "code": "view_place",
                 "name": "View Place",
@@ -1549,6 +1550,32 @@ class Command(BaseCommand):
                 "category": "engagement"
             },
             {
+                "code": "search_performed",
+                "name": "Perform Search",
+                "description": "User performed a search",
+                "points_value": 1,
+                "daily_limit": 5,
+                "category": "engagement"
+            },
+            {
+                "code": "map_interaction",
+                "name": "Map Interaction",
+                "description": "User interacted with the map",
+                "points_value": 1,
+                "daily_limit": 5,
+                "category": "engagement"
+            },
+            {
+                "code": "filter_used",
+                "name": "Use Filter",
+                "description": "User applied filters",
+                "points_value": 1,
+                "daily_limit": 5,
+                "category": "engagement"
+            },        
+
+            # Transaction Interactions
+            {
                 "code": "booking_complete",
                 "name": "Complete Booking",
                 "description": "User completed a booking",
@@ -1556,6 +1583,32 @@ class Command(BaseCommand):
                 "daily_limit": 3,
                 "category": "transaction"
             },
+            {
+                "code": "booking_value",
+                "name": "Booking Value",
+                "description": "Points based on booking value",
+                "points_value": 0.01,  # 1 point per $100
+                "daily_limit": 0,  # No limit
+                "category": "transaction"
+            },
+            {
+                "code": "repeat_booking",
+                "name": "Repeat Booking",
+                "description": "User booked with same provider again",
+                "points_value": 25,
+                "daily_limit": 2,
+                "category": "transaction"
+            },
+            {
+                "code": "early_booking",
+                "name": "Early Booking",
+                "description": "User booked well in advance",
+                "points_value": 15,
+                "daily_limit": 2,
+                "category": "transaction"
+            },        
+
+            # Content Creation
             {
                 "code": "review_added",
                 "name": "Add Review",
@@ -1565,13 +1618,81 @@ class Command(BaseCommand):
                 "category": "content"
             },
             {
+                "code": "review_with_photo",
+                "name": "Review with Photo",
+                "description": "User added review with photos",
+                "points_value": 10,
+                "daily_limit": 5,
+                "category": "content"
+            },
+            {
+                "code": "photo_upload",
+                "name": "Upload Photo",
+                "description": "User uploaded photos",
+                "points_value": 5,
+                "daily_limit": 5,
+                "category": "content"
+            },
+            {
+                "code": "video_upload",
+                "name": "Upload Video",
+                "description": "User uploaded videos",
+                "points_value": 15,
+                "daily_limit": 3,
+                "category": "content"
+            },
+            {
+                "code": "tip_added",
+                "name": "Add Tip",
+                "description": "User added a travel tip",
+                "points_value": 10,
+                "daily_limit": 5,
+                "category": "content"
+            },        
+
+            # Social Interactions
+            {
                 "code": "wishlist_add",
                 "name": "Add to Wishlist",
                 "description": "User added item to wishlist",
                 "points_value": 5,
                 "daily_limit": 10,
-                "category": "engagement"
+                "category": "social"
             },
+            {
+                "code": "share_item",
+                "name": "Share Item",
+                "description": "User shared an item",
+                "points_value": 10,
+                "daily_limit": 5,
+                "category": "social"
+            },
+            {
+                "code": "follow_user",
+                "name": "Follow User",
+                "description": "User followed another user",
+                "points_value": 5,
+                "daily_limit": 5,
+                "category": "social"
+            },
+            {
+                "code": "like_content",
+                "name": "Like Content",
+                "description": "User liked content",
+                "points_value": 1,
+                "daily_limit": 10,
+                "category": "social"
+            },
+            {
+                "code": "comment_added",
+                "name": "Add Comment",
+                "description": "User added a comment",
+                "points_value": 2,
+                "daily_limit": 10,
+                "category": "social"
+            },        
+
+            # Account Management
             {
                 "code": "profile_complete",
                 "name": "Complete Profile",
@@ -1581,12 +1702,134 @@ class Command(BaseCommand):
                 "category": "account"
             },
             {
+                "code": "verification_complete",
+                "name": "Complete Verification",
+                "description": "User completed identity verification",
+                "points_value": 50,
+                "daily_limit": 1,
+                "category": "account"
+            },
+            {
+                "code": "daily_login",
+                "name": "Daily Login",
+                "description": "User logged in today",
+                "points_value": 5,
+                "daily_limit": 1,
+                "category": "account"
+            },
+            {
+                "code": "streak_login",
+                "name": "Login Streak",
+                "description": "User logged in multiple days in a row",
+                "points_value": 10,  # Bonus points
+                "daily_limit": 1,
+                "category": "account"
+            },        
+
+            # Referral Program
+            {
                 "code": "referral",
                 "name": "Refer a Friend",
                 "description": "User referred a friend who signed up",
                 "points_value": 100,
                 "daily_limit": 5,
                 "category": "referral"
+            },
+            {
+                "code": "referral_booking",
+                "name": "Referral Booking",
+                "description": "Referred friend made a booking",
+                "points_value": 50,
+                "daily_limit": 5,
+                "category": "referral"
+            },        
+
+            # Loyalty & Milestones
+            {
+                "code": "anniversary",
+                "name": "Account Anniversary",
+                "description": "User's account anniversary",
+                "points_value": 100,
+                "daily_limit": 1,
+                "category": "loyalty"
+            },
+            {
+                "code": "milestone_booking",
+                "name": "Milestone Booking",
+                "description": "User reached booking milestone (5, 10, etc.)",
+                "points_value": 50,
+                "daily_limit": 1,
+                "category": "loyalty"
+            },
+            {
+                "code": "birthday",
+                "name": "Birthday Reward",
+                "description": "User's birthday reward",
+                "points_value": 50,
+                "daily_limit": 1,
+                "category": "loyalty"
+            },        
+
+            # Community Engagement
+            {
+                "code": "event_attendance",
+                "name": "Event Attendance",
+                "description": "User attended community event",
+                "points_value": 30,
+                "daily_limit": 2,
+                "category": "community"
+            },
+            {
+                "code": "question_asked",
+                "name": "Ask Question",
+                "description": "User asked a question in community",
+                "points_value": 5,
+                "daily_limit": 5,
+                "category": "community"
+            },
+            {
+                "code": "question_answered",
+                "name": "Answer Question",
+                "description": "User answered a question in community",
+                "points_value": 10,
+                "daily_limit": 5,
+                "category": "community"
+            },        
+
+            # Feedback & Surveys
+            {
+                "code": "survey_completed",
+                "name": "Complete Survey",
+                "description": "User completed a survey",
+                "points_value": 20,
+                "daily_limit": 2,
+                "category": "feedback"
+            },
+            {
+                "code": "feedback_provided",
+                "name": "Provide Feedback",
+                "description": "User provided feedback",
+                "points_value": 10,
+                "daily_limit": 2,
+                "category": "feedback"
+            },        
+
+            # Special Promotions
+            {
+                "code": "promo_participation",
+                "name": "Promotion Participation",
+                "description": "User participated in special promotion",
+                "points_value": 50,
+                "daily_limit": 1,
+                "category": "promotion"
+            },
+            {
+                "code": "challenge_completed",
+                "name": "Complete Challenge",
+                "description": "User completed a platform challenge",
+                "points_value": 100,
+                "daily_limit": 1,
+                "category": "promotion"
             }
         ]
         
