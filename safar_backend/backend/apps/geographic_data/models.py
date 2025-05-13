@@ -23,7 +23,7 @@ class Media(BaseModel):
     url = models.URLField(verbose_name="Media URL", blank=True, null=True)
     file = models.FileField( upload_to=upload_file, null=True, blank=True, validators=[FileExtensionValidator( allowed_extensions=PHOTO_EXTENSIONS + VIDEO_EXTENSIONS)])
     type = models.CharField( max_length=10, choices=FILE_TYPE_CHOICES, verbose_name="Media Type", default='photo')
-    uploaded_by = models.ForeignKey( User, on_delete=models.CASCADE, related_name="uploaded_media", verbose_name="Uploaded By")
+    uploaded_by = models.ForeignKey( 'apps.authentication.User', on_delete=models.CASCADE, related_name="uploaded_media", verbose_name="Uploaded By")
     
     def save(self, *args, **kwargs):
         if self.file:
