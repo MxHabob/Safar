@@ -80,9 +80,6 @@ class UserActivityMiddleware(MiddlewareMixin):
 
             try:
                 update_fields = []
-                user.is_online = True
-                update_fields.append('is_online')
-                
                 user.last_activity = timezone.now()
                 update_fields.append('last_activity')
                 
