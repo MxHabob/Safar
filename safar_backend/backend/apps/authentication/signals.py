@@ -206,15 +206,27 @@ def handle_user_login(sender, instance, created, **kwargs):
     try:
         from django.contrib.contenttypes.models import ContentType
         from django.utils import timezone
+        from apps.authentication.models import InteractionType
         
         today = timezone.now().date()
         content_type = ContentType.objects.get_for_model(instance.user)
         
+        interaction_type, _ = InteractionType.objects.get_or_create(
+            code='daily_login',
+            defaults={
+                'name': 'Daily Login',
+                'description': 'Points awarded for logging in each day',
+                'points_value': 5,
+                'daily_limit': 1,
+                'category': 'engagement'
+            }
+        )
+
         existing = UserInteraction.objects.filter(
             user=instance.user,
             content_type=content_type,
             object_id=str(instance.user.id),
-            interaction_type='login',
+            interaction_type=interaction_type,
             created_at__date=today
         ).exists()
 
@@ -222,7 +234,7 @@ def handle_user_login(sender, instance, created, **kwargs):
             user=instance.user,
             content_type=content_type,
             object_id=str(instance.user.id),
-            interaction_type='login',
+            interaction_type=interaction_type,
             metadata={
                 'login_id': str(instance.id),
                 'ip_address': str(instance.ip_address),
