@@ -46,22 +46,17 @@ class UserActivityMiddleware(MiddlewareMixin):
     Works for both admin interface and API requests.
     """
     def process_request(self, request):
-        # Check if this is an API request
         api_request = is_api_request(request)
         
-        # For API requests, try to authenticate via token if not already authenticated
         if api_request and (not hasattr(request, 'user') or not request.user.is_authenticated):
             attach_user_from_token(request)
-        
-        # Only proceed if we have an authenticated user
+
         if hasattr(request, 'user') and request.user.is_authenticated:
             user = request.user
             
-            # Get current request details
             current_ip = self._get_client_ip(request)
             current_device = request.META.get('HTTP_USER_AGENT', '')
             
-            # Check for suspicious login if this is an API request
             if api_request:
                 previous_ip = getattr(user, 'last_login_ip', None)
                 previous_device = getattr(user, 'last_login_device', '')
@@ -82,8 +77,7 @@ class UserActivityMiddleware(MiddlewareMixin):
                     )
                     
                     logger.info(f"Detected suspicious login for user {user.email}")
-            
-            # Update user activity
+
             try:
                 update_fields = []
                 user.is_online = True
@@ -92,7 +86,6 @@ class UserActivityMiddleware(MiddlewareMixin):
                 user.last_activity = timezone.now()
                 update_fields.append('last_activity')
                 
-                # Only update IP and device for API requests
                 if api_request:
                     user.last_login_ip = current_ip
                     update_fields.append('last_login_ip')
@@ -149,7 +142,6 @@ class UserActivityMiddleware(MiddlewareMixin):
     def _get_location_from_ip(self, ip):
         """Get approximate location from IP address"""
         try:
-            # You might want to implement proper IP geolocation here
             return "Unknown Location"
         except Exception as e:
             logger.error(f"Failed to get location from IP: {str(e)}")
@@ -162,14 +154,11 @@ class UserLoginTracker(MiddlewareMixin):
     Works for both admin interface and API requests.
     """
     def process_request(self, request):
-        # Check if this is an API request
         api_request = is_api_request(request)
-        
-        # For API requests, try to authenticate via token if not already authenticated
+
         if api_request and (not hasattr(request, 'user') or not request.user.is_authenticated):
             attach_user_from_token(request)
         
-        # Only proceed if we have an authenticated user and login not already recorded
         if (hasattr(request, 'user') and request.user.is_authenticated and 
             not request.session.get('login_recorded')):
             
@@ -189,7 +178,6 @@ class UserLoginTracker(MiddlewareMixin):
                     login_status="success"
                 )
 
-                # For API requests, we can't use session, so we set a short-lived cookie
                 if api_request:
                     request.login_recorded = True
                 else:
@@ -213,7 +201,6 @@ class UserLoginTracker(MiddlewareMixin):
     def _get_location_from_ip(self, ip):
         """Get country and city from IP address"""
         try:
-            # Implement proper IP geolocation here if needed
             return "Unknown Country", "Unknown City"
         except Exception as e:
             logger.error(f"Failed to get location from IP: {str(e)}")
