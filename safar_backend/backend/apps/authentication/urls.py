@@ -12,7 +12,7 @@ from apps.authentication.views import UserInteractionListView, UserViewSet,Point
 router = DefaultRouter()
 router.register(r'interactions', UserInteractionListView, basename='interactions')
 router.register(r'users', UserViewSet, basename='users')
-router.register(r'points', PointsTransactionViewSet, basename='users')
+router.register(r'points', PointsTransactionViewSet, basename='points')
 
 urlpatterns = [
     re_path(
