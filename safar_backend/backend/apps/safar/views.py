@@ -29,7 +29,7 @@ from rest_framework_api_key.permissions import HasAPIKey
 import logging
 logger = logging.getLogger(__name__)
 
-class RecommendationViewSet(viewsets.ViewSet):
+class RecommendationViewSet(BaseViewSet):
     """
     ViewSet for all recommendation-related endpoints.
     Provides personalized recommendations based on user preferences,
