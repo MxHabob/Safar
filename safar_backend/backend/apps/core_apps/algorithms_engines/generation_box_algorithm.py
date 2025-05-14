@@ -156,29 +156,24 @@ class BoxGenerator:
                 theme=theme
             )
             
-            # Get recommendations in parallel with other operations
+
             with ThreadPoolExecutor(max_workers=2) as executor:
-                # Start recommendation task
                 recommendation_future = executor.submit(
                     self.recommendation_engine.recommend_for_box,
                     destination=destination,
                     duration_days=duration_days
                 )
                 
-                # While recommendations are being fetched, prepare other data
                 weather_data_future = executor.submit(
                     self._prepare_weather_data, box
                 )
                 
-                # Wait for recommendations to complete
                 recommendation_start = time.time()
                 recommendations = recommendation_future.result()
                 self.performance_metrics['recommendation_time'] = time.time() - recommendation_start
-                
-                # Wait for weather data
+
                 weather_data = weather_data_future.result()
             
-            # Generate the itinerary
             scheduling_start = time.time()
             itinerary = self._generate_itinerary(
                 box=box,
@@ -189,13 +184,10 @@ class BoxGenerator:
             )
             self.performance_metrics['scheduling_time'] = time.time() - scheduling_start
             
-            # Calculate total price and update box
             box.total_price = self._calculate_total_price(itinerary)
-            
-            # Enhance box with media elements
+
             self._enhance_box_with_media(box, recommendations)
             
-            # Update metadata
             box.metadata.update({
                 'generated': True,
                 'algorithm_version': '3.0',
@@ -206,7 +198,6 @@ class BoxGenerator:
             })
             box.save()
             
-            # Create notification in background
             self._create_box_notification(box)
             
             self.performance_metrics['total_generation_time'] = time.time() - start_time

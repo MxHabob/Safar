@@ -1024,6 +1024,172 @@ export const api = createApi({
         return response
       },
     }),
+
+    getPersonalizedRecommendations: builder.query<
+  { places?: Place[]; experiences?: Experience[] },
+  {
+    type?: 'places' | 'experiences' | 'both'
+    limit?: number
+    category?: string
+    country?: string
+    city?: string
+    region?: string
+    min_price?: number
+    max_price?: number
+    min_rating?: number
+    location_aware?: boolean
+    diversity_factor?: number
+  }
+>({
+  query: (params) => ({
+    url: "/recommendations/personalized/",
+    params,
+  }),
+  providesTags: ["Place", "Experience"],
+  keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
+}),
+
+getNearbyRecommendations: builder.query<
+  { places?: Place[]; experiences?: Experience[] },
+  {
+    lat?: number
+    lng?: number
+    radius?: number
+    type?: 'places' | 'experiences' | 'both'
+    limit?: number
+    category?: string
+    min_price?: number
+    max_price?: number
+    min_rating?: number
+  }
+>({
+  query: (params) => ({
+    url: "/recommendations/nearby/",
+    params,
+  }),
+  providesTags: ["Place", "Experience"],
+  keepUnusedDataFor: CACHE_LIFETIME.DEFAULT,
+}),
+
+getTrendingRecommendations: builder.query<
+  { places?: Place[]; experiences?: Experience[] },
+  {
+    type?: 'places' | 'experiences' | 'both'
+    limit?: number
+    days?: number
+    category?: string
+    country?: string
+    city?: string
+    region?: string
+  }
+>({
+  query: (params) => ({
+    url: "/recommendations/trending/",
+    params,
+  }),
+  providesTags: ["Place", "Experience"],
+  keepUnusedDataFor: CACHE_LIFETIME.DEFAULT,
+}),
+
+getSeasonalRecommendations: builder.query<
+  { season: string; season_tags: string[]; places?: Place[]; experiences?: Experience[] },
+  {
+    type?: 'places' | 'experiences' | 'both'
+    limit?: number
+    season?: 'spring' | 'summer' | 'autumn' | 'winter'
+    category?: string
+    country?: string
+    city?: string
+    region?: string
+  }
+>({
+  query: (params) => ({
+    url: "/recommendations/seasonal/",
+    params,
+  }),
+  providesTags: ["Place", "Experience"],
+  keepUnusedDataFor: CACHE_LIFETIME.DEFAULT,
+}),
+
+getPopularRecommendations: builder.query<
+  { places?: Place[]; experiences?: Experience[] },
+  {
+    type?: 'places' | 'experiences' | 'both'
+    limit?: number
+    category?: string
+    country?: string
+    city?: string
+    region?: string
+  }
+>({
+  query: (params) => ({
+    url: "/recommendations/popular/",
+    params,
+  }),
+  providesTags: ["Place", "Experience"],
+  keepUnusedDataFor: CACHE_LIFETIME.DEFAULT,
+}),
+
+getTripRecommendations: builder.mutation<
+  {
+    destination: Country | Region | City
+    duration_days: number
+    places: Place[]
+    experiences: Experience[]
+    budget?: {
+      max_per_place?: number
+      max_per_experience?: number
+    }
+  },
+  {
+    destination_id: string
+    destination_type: 'city' | 'region' | 'country'
+    duration_days: number
+    budget?: {
+      max_per_place?: number
+      max_per_experience?: number
+    }
+    interests?: string[]
+    start_date?: string
+  }
+>({
+  query: (body) => ({
+    url: "/recommendations/trip/",
+    method: "POST",
+    body,
+  }),
+  invalidatesTags: ["Place", "Experience"],
+}),
+
+getSimilarItems: builder.query<
+  Place[] | Experience[],
+  {
+    item_id: string
+    item_type: 'place' | 'experience'
+    limit?: number
+  }
+>({
+  query: (params) => ({
+    url: "/recommendations/similar/",
+    params,
+  }),
+  providesTags: (result, error, { item_type }) => [item_type === 'place' ? "Place" : "Experience"],
+  keepUnusedDataFor: CACHE_LIFETIME.DEFAULT,
+}),
+
+getRecommendedCategories: builder.query<
+  Category[],
+  {
+    limit?: number
+  }
+>({
+  query: (params) => ({
+    url: "/recommendations/categories/",
+    params,
+  }),
+  providesTags: ["Category"],
+  keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
+}),
   }),
 })
 
@@ -1156,4 +1322,15 @@ export const {
   useGetCitiesInRegionQuery,
 
   useUniversalSearchQuery,
+
+
+useGetPersonalizedRecommendationsQuery,
+useGetNearbyRecommendationsQuery,
+useGetTrendingRecommendationsQuery,
+useGetSeasonalRecommendationsQuery,
+useGetPopularRecommendationsQuery,
+useGetTripRecommendationsMutation,
+useGetSimilarItemsQuery,
+useGetRecommendedCategoriesQuery,
+
 } = api

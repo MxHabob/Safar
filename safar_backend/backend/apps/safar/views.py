@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db.models import Q
 from django.utils import timezone
+from django.contrib.gis.geos import Point
+from django.contrib.gis.measure import D
 from apps.safar.models import (
     Category, Discount, Place, Experience,
     Flight, Box, Booking, Wishlist, Review, Payment, Message, Notification
@@ -10,7 +12,6 @@ from apps.safar.models import (
 from apps.core_apps.algorithms_engines.recommendation_engine import RecommendationEngine
 from apps.core_apps.algorithms_engines.generation_box_algorithm import BoxGenerator
 from apps.core_apps.general import BaseViewSet
-import logging
 from apps.safar.serializers import (
     CategorySerializer,
     DiscountSerializer, PlaceSerializer, ExperienceSerializer, FlightSerializer,
@@ -20,9 +21,738 @@ from apps.safar.serializers import (
 
 from apps.authentication.models import User
 from apps.geographic_data.models import Country, Region, City
-from rest_framework.permissions import IsAuthenticated
+from apps.geographic_data.serializers import CountrySerializer, RegionSerializer, CitySerializer
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_api_key.permissions import HasAPIKey
+
+
+import logging
 logger = logging.getLogger(__name__)
+
+class RecommendationViewSet(viewsets.ViewSet):
+    """
+    ViewSet for all recommendation-related endpoints.
+    Provides personalized recommendations based on user preferences,
+    location, context, and other factors.
+    """
+    
+    def get_permissions(self):
+        """
+        Anonymous users can access basic recommendations,
+        but personalized recommendations require authentication.
+        """
+        if self.action in ['trending', 'seasonal', 'popular']:
+            return [AllowAny()]
+        return [IsAuthenticated()]
+    
+    def _get_request_context(self, request):
+        """
+        Extract context information from the request
+        """
+        context = {
+            'ip': request.META.get('REMOTE_ADDR'),
+            'device_type': self._detect_device_type(request),
+            'referrer': request.META.get('HTTP_REFERER'),
+            'timestamp': timezone.now()
+        }
+        
+        lat = request.query_params.get('lat')
+        lng = request.query_params.get('lng')
+        
+        if lat and lng:
+            try:
+                context['location'] = Point(float(lng), float(lat), srid=4326)
+            except (ValueError, TypeError):
+                pass
+        
+        return context
+    
+    def _detect_device_type(self, request):
+        """
+        Detect device type from user agent
+        """
+        user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
+        
+        if 'mobile' in user_agent or 'android' in user_agent or 'iphone' in user_agent:
+            return 'mobile'
+        elif 'tablet' in user_agent or 'ipad' in user_agent:
+            return 'tablet'
+        else:
+            return 'desktop'
+    
+    def _get_recommendation_engine(self, request):
+        """
+        Initialize recommendation engine with user and request context
+        """
+        user = request.user if request.user.is_authenticated else None
+        context = self._get_request_context(request)
+        
+        return RecommendationEngine(user, context)
+    
+    def _parse_common_params(self, request):
+        """
+        Parse common query parameters used across recommendation endpoints
+        """
+        return {
+            'limit': int(request.query_params.get('limit', 10)),
+            'offset': int(request.query_params.get('offset', 0)),
+            'category': request.query_params.get('category'),
+            'country': request.query_params.get('country'),
+            'city': request.query_params.get('city'),
+            'region': request.query_params.get('region'),
+            'min_price': request.query_params.get('min_price'),
+            'max_price': request.query_params.get('max_price'),
+            'min_rating': request.query_params.get('min_rating'),
+            'location_aware': request.query_params.get('location_aware', 'true').lower() == 'true'
+        }
+    
+    def _build_filters(self, params):
+        """
+        Build filters dictionary from parameters
+        """
+        filters = {}
+        if params.get('category'):
+            filters['category__name'] = params['category']
+        
+        # Location filters
+        for location_type in ['country', 'city', 'region']:
+            if params.get(location_type):
+                filters[location_type] = params[location_type]
+        
+        # Price filters
+        if params.get('min_price'):
+            filters['price__gte'] = float(params['min_price'])
+        if params.get('max_price'):
+            filters['price__lte'] = float(params['max_price'])
+        
+        # Rating filter
+        if params.get('min_rating'):
+            filters['rating__gte'] = float(params['min_rating'])
+        
+        return filters
+    
+    @action(detail=False, methods=['get'])
+    def personalized(self, request):
+        """
+        Get personalized recommendations based on user preferences and behavior.
+        
+        Query Parameters:
+        - type: Type of items to recommend (places, experiences, both). Default: both
+        - limit: Maximum number of items to return per type. Default: 10
+        - category: Filter by category name
+        - country, city, region: Filter by location
+        - min_price, max_price: Filter by price range
+        - min_rating: Filter by minimum rating
+        - location_aware: Whether to consider user's location (true/false). Default: true
+        - diversity_factor: How much to diversify results (0-1). Default: 0.2
+        """
+        try:
+            params = self._parse_common_params(request)
+            item_type = request.query_params.get('type', 'both')
+            diversity_factor = float(request.query_params.get('diversity_factor', 0.2))
+
+            engine = self._get_recommendation_engine(request)
+
+            filters = self._build_filters(params)
+            
+            response_data = {}
+            
+            if item_type in ['places', 'both']:
+                places = engine.recommend_places(
+                    limit=params['limit'],
+                    filters=filters,
+                    location_aware=params['location_aware'],
+                    diversity_factor=diversity_factor
+                )
+                response_data['places'] = PlaceSerializer(places, many=True).data
+            
+            if item_type in ['experiences', 'both']:
+                experiences = engine.recommend_experiences(
+                    limit=params['limit'],
+                    filters=filters,
+                    location_aware=params['location_aware']
+                )
+                response_data['experiences'] = ExperienceSerializer(experiences, many=True).data
+            
+            return Response(response_data)
+            
+        except Exception as e:
+            logger.error(f"Error in personalized recommendations: {str(e)}", exc_info=True)
+            return Response(
+                {'error': 'An error occurred while generating recommendations'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'])
+    def nearby(self, request):
+        """
+        Get recommendations near a specific location.
+        
+        Query Parameters:
+        - lat: Latitude (required if no user location)
+        - lng: Longitude (required if no user location)
+        - radius: Search radius in kilometers. Default: 10
+        - type: Type of items to recommend (places, experiences, both). Default: both
+        - limit: Maximum number of items to return per type. Default: 10
+        - category: Filter by category name
+        - min_price, max_price: Filter by price range
+        - min_rating: Filter by minimum rating
+        """
+        try:
+            params = self._parse_common_params(request)
+            item_type = request.query_params.get('type', 'both')
+            radius = float(request.query_params.get('radius', 10))
+            
+            # Get location from query parameters
+            lat = request.query_params.get('lat')
+            lng = request.query_params.get('lng')
+            
+            # Initialize recommendation engine
+            engine = self._get_recommendation_engine(request)
+            
+            # If location not provided in query, try to use user's location
+            location = None
+            if lat and lng:
+                try:
+                    location = Point(float(lng), float(lat), srid=4326)
+                except (ValueError, TypeError):
+                    return Response(
+                        {'error': 'Invalid latitude or longitude'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            elif engine.user_location:
+                location = engine.user_location
+            else:
+                return Response(
+                    {'error': 'Location is required. Provide lat and lng parameters.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            response_data = {}
+            
+            # Get nearby places if requested
+            if item_type in ['places', 'both']:
+                # Create location filter
+                place_filters = self._build_filters(params)
+                
+                # Query places within radius
+                places = Place.objects.filter(
+                    location__distance_lte=(location, D(km=radius)),
+                    is_available=True,
+                    is_deleted=False,
+                    **place_filters
+                ).distance(location).order_by('distance')[:params['limit']]
+                
+                response_data['places'] = PlaceSerializer(places, many=True).data
+            
+            # Get nearby experiences if requested
+            if item_type in ['experiences', 'both']:
+                # Create location filter
+                exp_filters = self._build_filters(params)
+                
+                # Query experiences within radius
+                experiences = Experience.objects.filter(
+                    place__location__distance_lte=(location, D(km=radius)),
+                    is_available=True,
+                    is_deleted=False,
+                    **exp_filters
+                ).select_related('place').distance(
+                    location, field_name='place__location'
+                ).order_by('distance')[:params['limit']]
+                
+                response_data['experiences'] = ExperienceSerializer(experiences, many=True).data
+            
+            return Response(response_data)
+            
+        except Exception as e:
+            logger.error(f"Error in nearby recommendations: {str(e)}", exc_info=True)
+            return Response(
+                {'error': 'An error occurred while generating nearby recommendations'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'])
+    def trending(self, request):
+        """
+        Get trending items based on recent user interactions.
+        This endpoint is available to anonymous users.
+        
+        Query Parameters:
+        - type: Type of items to recommend (places, experiences, both). Default: both
+        - limit: Maximum number of items to return per type. Default: 10
+        - days: Number of days to consider for trending. Default: 7
+        - category: Filter by category name
+        - country, city, region: Filter by location
+        """
+        try:
+            params = self._parse_common_params(request)
+            item_type = request.query_params.get('type', 'both')
+            days = int(request.query_params.get('days', 7))
+            
+            # Initialize recommendation engine
+            engine = self._get_recommendation_engine(request)
+            
+            # Build filters
+            filters = self._build_filters(params)
+            
+            # Add trending boost with high weight
+            trending_weight = 0.8
+            
+            response_data = {}
+            
+            # Get trending places if requested
+            if item_type in ['places', 'both']:
+                places_query = Place.objects.filter(
+                    is_available=True,
+                    is_deleted=False,
+                    **filters
+                )
+                
+                # Apply trending boost
+                places = engine._apply_trending_boost(places_query, 'place')
+                
+                # Order by trending score
+                places = places.order_by('-trending_score')[:params['limit']]
+                
+                response_data['places'] = PlaceSerializer(places, many=True).data
+            
+            # Get trending experiences if requested
+            if item_type in ['experiences', 'both']:
+                experiences_query = Experience.objects.filter(
+                    is_available=True,
+                    is_deleted=False,
+                    **filters
+                )
+                
+                # Apply trending boost
+                experiences = engine._apply_trending_boost(experiences_query, 'experience')
+                
+                # Order by trending score
+                experiences = experiences.order_by('-trending_score')[:params['limit']]
+                
+                response_data['experiences'] = ExperienceSerializer(experiences, many=True).data
+            
+            return Response(response_data)
+            
+        except Exception as e:
+            logger.error(f"Error in trending recommendations: {str(e)}", exc_info=True)
+            return Response(
+                {'error': 'An error occurred while generating trending recommendations'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'])
+    def seasonal(self, request):
+        """
+        Get seasonal recommendations based on current season.
+        This endpoint is available to anonymous users.
+        
+        Query Parameters:
+        - type: Type of items to recommend (places, experiences, both). Default: both
+        - limit: Maximum number of items to return per type. Default: 10
+        - season: Override current season (spring, summer, autumn, winter)
+        - category: Filter by category name
+        - country, city, region: Filter by location
+        """
+        try:
+            params = self._parse_common_params(request)
+            item_type = request.query_params.get('type', 'both')
+            season_override = request.query_params.get('season')
+            
+            # Initialize recommendation engine
+            engine = self._get_recommendation_engine(request)
+            
+            # Override season if provided
+            if season_override:
+                engine._get_current_season = lambda: season_override
+            
+            # Build filters
+            filters = self._build_filters(params)
+            
+            response_data = {
+                'season': engine._get_current_season(),
+                'season_tags': engine._get_season_tags()
+            }
+            
+            # Get seasonal places if requested
+            if item_type in ['places', 'both']:
+                places_query = Place.objects.filter(
+                    is_available=True,
+                    is_deleted=False,
+                    **filters
+                )
+                
+                # Apply seasonal boost
+                places = engine._apply_seasonal_boost(places_query, 'place')
+                
+                # Order by seasonal score
+                places = places.order_by('-seasonal_score')[:params['limit']]
+                
+                response_data['places'] = PlaceSerializer(places, many=True).data
+            
+            # Get seasonal experiences if requested
+            if item_type in ['experiences', 'both']:
+                experiences_query = Experience.objects.filter(
+                    is_available=True,
+                    is_deleted=False,
+                    **filters
+                )
+                
+                # Apply seasonal boost
+                experiences = engine._apply_seasonal_boost(experiences_query, 'experience')
+                
+                # Order by seasonal score
+                experiences = experiences.order_by('-seasonal_score')[:params['limit']]
+                
+                response_data['experiences'] = ExperienceSerializer(experiences, many=True).data
+            
+            return Response(response_data)
+            
+        except Exception as e:
+            logger.error(f"Error in seasonal recommendations: {str(e)}", exc_info=True)
+            return Response(
+                {'error': 'An error occurred while generating seasonal recommendations'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'])
+    def popular(self, request):
+        """
+        Get popular items based on ratings and interaction count.
+        This endpoint is available to anonymous users.
+        
+        Query Parameters:
+        - type: Type of items to recommend (places, experiences, both). Default: both
+        - limit: Maximum number of items to return per type. Default: 10
+        - category: Filter by category name
+        - country, city, region: Filter by location
+        """
+        try:
+            params = self._parse_common_params(request)
+            item_type = request.query_params.get('type', 'both')
+            
+            # Build filters
+            filters = self._build_filters(params)
+            
+            response_data = {}
+            
+            # Get popular places if requested
+            if item_type in ['places', 'both']:
+                places = Place.objects.filter(
+                    is_available=True,
+                    is_deleted=False,
+                    **filters
+                ).order_by('-rating')[:params['limit']]
+                
+                response_data['places'] = PlaceSerializer(places, many=True).data
+            
+            # Get popular experiences if requested
+            if item_type in ['experiences', 'both']:
+                experiences = Experience.objects.filter(
+                    is_available=True,
+                    is_deleted=False,
+                    **filters
+                ).order_by('-rating')[:params['limit']]
+                
+                response_data['experiences'] = ExperienceSerializer(experiences, many=True).data
+            
+            return Response(response_data)
+            
+        except Exception as e:
+            logger.error(f"Error in popular recommendations: {str(e)}", exc_info=True)
+            return Response(
+                {'error': 'An error occurred while generating popular recommendations'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['post'])
+    def trip(self, request):
+        """
+        Get recommendations for a trip to a specific destination.
+        
+        Request Body:
+        {
+            "destination_id": "uuid",
+            "destination_type": "city|region|country",
+            "duration_days": 5,
+            "budget": {
+                "max_per_place": 200,
+                "max_per_experience": 100
+            },
+            "interests": ["adventure", "culture", "food"],
+            "start_date": "2023-06-15"
+        }
+        """
+        try:
+            # Validate required fields
+            required_fields = ['destination_id', 'destination_type', 'duration_days']
+            for field in required_fields:
+                if field not in request.data:
+                    return Response(
+                        {'error': f'Missing required field: {field}'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Parse request data
+            destination_id = request.data.get('destination_id')
+            destination_type = request.data.get('destination_type')
+            duration_days = int(request.data.get('duration_days', 3))
+            budget = request.data.get('budget', {})
+            interests = request.data.get('interests', [])
+            start_date = request.data.get('start_date')
+            
+            # Validate destination type
+            if destination_type not in ['city', 'region', 'country']:
+                return Response(
+                    {'error': 'Invalid destination_type. Must be city, region, or country.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get destination
+            destination = self._get_destination(destination_id, destination_type)
+            if not destination:
+                return Response(
+                    {'error': f'{destination_type.capitalize()} not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Initialize recommendation engine
+            engine = self._get_recommendation_engine(request)
+            
+            # Generate recommendations for the trip
+            recommendations = engine.recommend_for_box(
+                destination=destination,
+                duration_days=duration_days,
+                user_interests=interests,
+                budget=budget
+            )
+            
+            # Prepare response
+            response_data = {
+                'destination': self._serialize_destination(destination, destination_type),
+                'duration_days': duration_days,
+                'places': PlaceSerializer(recommendations.get('places', []), many=True).data,
+                'experiences': ExperienceSerializer(recommendations.get('experiences', []), many=True).data
+            }
+            
+            # Add budget information if provided
+            if budget:
+                response_data['budget'] = budget
+            
+            return Response(response_data)
+            
+        except Exception as e:
+            logger.error(f"Error in trip recommendations: {str(e)}", exc_info=True)
+            return Response(
+                {'error': 'An error occurred while generating trip recommendations'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'])
+    def similar(self, request):
+        """
+        Get items similar to a specific item.
+        
+        Query Parameters:
+        - item_id: ID of the reference item (required)
+        - item_type: Type of the reference item (place, experience) (required)
+        - limit: Maximum number of similar items to return. Default: 5
+        """
+        try:
+            # Validate required parameters
+            item_id = request.query_params.get('item_id')
+            item_type = request.query_params.get('item_type')
+            
+            if not item_id or not item_type:
+                return Response(
+                    {'error': 'Both item_id and item_type are required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if item_type not in ['place', 'experience']:
+                return Response(
+                    {'error': 'item_type must be either place or experience'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            limit = int(request.query_params.get('limit', 5))
+            
+            # Get the reference item
+            try:
+                if item_type == 'place':
+                    item = Place.objects.get(id=item_id, is_deleted=False)
+                else:
+                    item = Experience.objects.get(id=item_id, is_deleted=False)
+            except (Place.DoesNotExist, Experience.DoesNotExist):
+                return Response(
+                    {'error': f'{item_type.capitalize()} not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Find similar items
+            similar_items = self._find_similar_items(item, item_type, limit)
+            
+            # Serialize response
+            if item_type == 'place':
+                serializer = PlaceSerializer(similar_items, many=True)
+            else:
+                serializer = ExperienceSerializer(similar_items, many=True)
+            
+            return Response(serializer.data)
+            
+        except Exception as e:
+            logger.error(f"Error finding similar items: {str(e)}", exc_info=True)
+            return Response(
+                {'error': 'An error occurred while finding similar items'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'])
+    def categories(self, request):
+        """
+        Get recommended categories based on user preferences and behavior.
+        """
+        try:
+            limit = int(request.query_params.get('limit', 10))
+            
+            # Initialize recommendation engine
+            engine = self._get_recommendation_engine(request)
+            
+            # Get all categories
+            all_categories = Category.objects.all()
+            
+            if request.user.is_authenticated and hasattr(request.user, 'profile'):
+                # Get user's preferred categories from profile
+                user_interests = getattr(request.user.profile, 'travel_interests', [])
+                
+                # Prioritize categories matching user interests
+                if user_interests:
+                    matching_categories = all_categories.filter(name__in=user_interests)
+                    other_categories = all_categories.exclude(name__in=user_interests)
+                    
+                    # Combine with priority to user's interests
+                    categories = list(matching_categories) + list(other_categories)[:limit - matching_categories.count()]
+                else:
+                    # Get categories from user's interactions
+                    from apps.authentication.models import UserInteraction
+                    from django.contrib.contenttypes.models import ContentType
+                    
+                    place_type = ContentType.objects.get_for_model(Place)
+                    exp_type = ContentType.objects.get_for_model(Experience)
+                    
+                    # Get categories from places user interacted with
+                    place_interactions = UserInteraction.objects.filter(
+                        user=request.user,
+                        content_type=place_type
+                    ).values_list('object_id', flat=True)
+                    
+                    place_categories = Place.objects.filter(
+                        id__in=place_interactions
+                    ).values_list('category', flat=True).distinct()
+                    
+                    # Get categories from experiences user interacted with
+                    exp_interactions = UserInteraction.objects.filter(
+                        user=request.user,
+                        content_type=exp_type
+                    ).values_list('object_id', flat=True)
+                    
+                    exp_categories = Experience.objects.filter(
+                        id__in=exp_interactions
+                    ).values_list('category', flat=True).distinct()
+                    
+                    # Combine category IDs
+                    category_ids = list(place_categories) + list(exp_categories)
+                    
+                    if category_ids:
+                        # Get categories user has interacted with
+                        interacted_categories = Category.objects.filter(id__in=category_ids)
+                        other_categories = all_categories.exclude(id__in=category_ids)
+                        
+                        # Combine with priority to interacted categories
+                        categories = list(interacted_categories) + list(other_categories)[:limit - interacted_categories.count()]
+                    else:
+                        # Fallback to popular categories
+                        categories = all_categories.order_by('?')[:limit]
+            else:
+                # For anonymous users, return random categories
+                categories = all_categories.order_by('?')[:limit]
+            
+            # Serialize and return
+            from apps.safar.serializers import CategorySerializer
+            serializer = CategorySerializer(categories, many=True)
+            
+            return Response(serializer.data)
+            
+        except Exception as e:
+            logger.error(f"Error in category recommendations: {str(e)}", exc_info=True)
+            return Response(
+                {'error': 'An error occurred while generating category recommendations'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def _get_destination(self, destination_id, destination_type):
+        """Get destination model instance"""
+        model_map = {
+            'city': City,
+            'region': Region,
+            'country': Country
+        }
+        
+        model = model_map[destination_type]
+        try:
+            return model.objects.get(id=destination_id, is_deleted=False)
+        except model.DoesNotExist:
+            return None
+    
+    def _serialize_destination(self, destination, destination_type):
+        """Serialize destination based on its type"""
+        if destination_type == 'city':
+            return CitySerializer(destination).data
+        elif destination_type == 'region':
+            return RegionSerializer(destination).data
+        else:
+            return CountrySerializer(destination).data
+    
+    def _find_similar_items(self, item, item_type, limit):
+        """Find items similar to the given item"""
+        if item_type == 'place':
+            # Find places with same category and/or location
+            similar_items = Place.objects.filter(
+                Q(category=item.category) | 
+                Q(country=item.country) |
+                Q(city=item.city)
+            ).exclude(
+                id=item.id
+            ).filter(
+                is_available=True,
+                is_deleted=False
+            ).distinct()
+            
+            # If item has location, boost by proximity
+            if item.location:
+                similar_items = similar_items.annotate(
+                    distance=Distance('location', item.location)
+                ).order_by('distance')
+            else:
+                similar_items = similar_items.order_by('-rating')
+            
+        else:  # experience
+            # Find experiences with same category and/or place
+            similar_items = Experience.objects.filter(
+                Q(category=item.category) | 
+                Q(place=item.place) |
+                Q(place__country=item.place.country if item.place else None)
+            ).exclude(
+                id=item.id
+            ).filter(
+                is_available=True,
+                is_deleted=False
+            ).distinct()
+            
+            # Order by rating
+            similar_items = similar_items.order_by('-rating')
+        
+        return similar_items[:limit]
 
 
 class CategoryViewSet(BaseViewSet):

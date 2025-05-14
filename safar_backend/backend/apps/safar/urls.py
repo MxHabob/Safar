@@ -5,7 +5,7 @@ from apps.safar.views import (
     ExperienceViewSet, FlightViewSet, BoxViewSet,
     BookingViewSet, WishlistViewSet, ReviewViewSet,
     PaymentViewSet, MessageViewSet, NotificationViewSet,
-    UniversalSearchView
+    UniversalSearchView,RecommendationViewSet
 )
 
 router = DefaultRouter()
@@ -23,7 +23,7 @@ router.register(r'reviews', ReviewViewSet)
 router.register(r'payments', PaymentViewSet)
 router.register(r'messages', MessageViewSet)
 router.register(r'notifications', NotificationViewSet)
-
+router.register(r'recommendations', RecommendationViewSet, basename='recommendation')
 urlpatterns = [
     path('', include(router.urls)),
     path('search/', UniversalSearchView.as_view(), name='universal-search'),
