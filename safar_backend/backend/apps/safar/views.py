@@ -10,7 +10,6 @@ from apps.safar.models import (
     Flight, Box, Booking, Wishlist, Review, Payment, Message, Notification
 )
 from apps.core_apps.algorithms_engines.recommendation_engine import RecommendationEngine
-from apps.core_apps.algorithms_engines.generation_box_algorithm import BoxGenerator
 from apps.core_apps.general import BaseViewSet
 from apps.safar.serializers import (
     CategorySerializer,
@@ -138,30 +137,23 @@ class RecommendationViewSet(BaseViewSet):
           (spring, summer, autumn, winter)
         """
         try:
-            # Parse common parameters
             params = self._parse_common_params(request)
-            
-            # Get recommendation type
+
             rec_type = request.query_params.get('type', 'personalized')
             item_type = request.query_params.get('item_type', 'both')
             
-            # Get user and context
             user = request.user if request.user.is_authenticated else None
             context = self._get_request_context(request)
-            
-            # Build filters
+
             filters = self._build_filters(params)
             
-            # Initialize recommendation service
             recommendation_service = RecommendationEngine()
             
-            # Prepare response data
             response_data = {
                 'recommendation_type': rec_type,
                 'filters_applied': filters
             }
             
-            # Add season information for seasonal recommendations
             if rec_type == 'seasonal':
                 from datetime import datetime
                 now = datetime.now()
@@ -740,7 +732,6 @@ class BoxViewSet(BaseViewSet):
                         status=status.HTTP_400_BAD_REQUEST
                     )
             
-            # Extract request data
             user = request.user if request.user.is_authenticated else None
             destination_id = request.data.get('destination_id')
             destination_type = request.data.get('destination_type')
@@ -750,13 +741,11 @@ class BoxViewSet(BaseViewSet):
             start_date = request.data.get('start_date')
             strategy_type = request.data.get('strategy_type', 'standard')
             
-            # Validate strategy type
             valid_strategies = ['standard', 'budget', 'family']
             if strategy_type not in valid_strategies:
                 strategy_type = 'standard'
                 logger.warning(f"Invalid strategy type '{strategy_type}', falling back to standard")
             
-            # Parse start date if provided
             if start_date:
                 from datetime import datetime
                 try:
@@ -767,17 +756,13 @@ class BoxViewSet(BaseViewSet):
                         status=status.HTTP_400_BAD_REQUEST
                     )
             
-            # Get destination
             destination = self._get_destination(destination_id, destination_type)
             
-            # Initialize BoxGenerationService
-            from apps.core_apps.algorithms_engines.box_generation_service import BoxGenerationService
-            box_service = BoxGenerationService()
+            from apps.core_apps.algorithms_engines.generation_box_algorithm import BoxGenerator
+            box_service = BoxGenerator()
             
-            # Add custom constraints if needed
             constraints = request.data.get('constraints')
             
-            # Generate box with appropriate strategy
             box = box_service.generate_box(
                 user=user,
                 destination=destination,
@@ -789,7 +774,6 @@ class BoxViewSet(BaseViewSet):
                 constraints=constraints
             )
             
-            # Log box generation for analytics
             if user:
                 from apps.authentication.models import UserInteraction
                 try:

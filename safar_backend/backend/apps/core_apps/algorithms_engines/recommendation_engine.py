@@ -1,6 +1,7 @@
 import logging
-from typing import Dict, List, Optional, Union, Any
-from django.db.models import QuerySet, Q, F, Value, Case, When, FloatField
+from typing import Dict, List, Optional, Any
+from django.db.models import QuerySet,Q, F, Value, Case, When, FloatField, Count, Subquery, OuterRef, IntegerField
+from django.db.models.functions import Coalesce
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
@@ -410,35 +411,68 @@ class PersonalizedRecommendationStrategy(RecommendationStrategy):
         
         return season_tags.get(season, [])
     
-    def _apply_device_optimization(self, query: QuerySet, context: RecommendationContext) -> QuerySet:
-        """Apply device-specific optimizations"""
+    def _apply_device_optimization(self, query, device_type):
+        """
+        Optimize recommendations based on device type.
+        
+        For mobile devices, prioritize items with:
+        - Fewer images (lighter to load)
+        - Higher mobile_friendly rating
+        - More compact descriptions
+        
+        For desktop, prioritize items with:
+        - More detailed content
+        - Higher quality images
+        """
         try:
-            if not context.device_type:
+            if not device_type or device_type not in ['mobile', 'tablet', 'desktop']:
                 return query
+                
+            from apps.geographic_data.models import Media
             
-            # For mobile devices, prioritize items with better mobile experience
-            if context.is_mobile:
-                return query.annotate(
-                    device_optimization=Case(
-                        # Prioritize items with mobile-friendly content
-                        When(metadata__mobile_friendly=True, then=0.9),
-                        # Prioritize items with fewer images for faster loading
-                        When(media__count__lte=3, then=0.7),
-                        default=0.3,
-                        output_field=FloatField()
-                    )
+            media_count_subquery = Subquery(
+                Media.objects.filter(
+                    content_type=OuterRef('content_type'),
+                    object_id=OuterRef('id')
                 )
+                .values('object_id')
+                .annotate(count=Count('id'))
+                .values('count'),
+                output_field=IntegerField()
+            )
             
-            # For desktop, can prioritize items with rich media
+            query = query.annotate(media_count=Coalesce(media_count_subquery, Value(0)))
+            
             return query.annotate(
                 device_optimization=Case(
-                    When(media__count__gte=5, then=0.8),
-                    default=0.5,
+                    When(Q(device_type='mobile'), then=Case(
+                        When(media_count__lte=3, then=Value(0.8)),
+                        When(media_count__lte=5, then=Value(0.6)),
+                        When(media_count__lte=8, then=Value(0.4)),
+                        default=Value(0.2),
+                        output_field=FloatField()
+                    )),
+                    When(Q(device_type='tablet'), then=Case(
+                        When(media_count__lte=5, then=Value(0.7)),
+                        When(media_count__lte=8, then=Value(0.6)),
+                        When(media_count__lte=12, then=Value(0.4)),
+                        default=Value(0.3),
+                        output_field=FloatField()
+                    )),
+                    default=Case(
+                        When(media_count__gte=8, then=Value(0.8)),
+                        When(media_count__gte=5, then=Value(0.6)),
+                        When(media_count__gte=3, then=Value(0.4)),
+                        default=Value(0.2),
+                        output_field=FloatField()
+                    ),
                     output_field=FloatField()
                 )
             )
-            
         except Exception as e:
+            # Log the error but don't break the query
+            import logging
+            logger = logging.getLogger(__name__)
             logger.error(f"Error optimizing for device: {str(e)}", exc_info=True)
             return query
     
