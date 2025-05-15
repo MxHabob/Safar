@@ -1,315 +1,135 @@
-import numpy as np
-import pandas as pd
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.decomposition import TruncatedSVD
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.cluster import KMeans
-from geopy.distance import geodesic
 import logging
-from django.db import models
-from django.db.models import Case, When, F, Value, FloatField, Count, Avg, ExpressionWrapper, Q
-from django.db.models.functions import Coalesce
-from django.contrib.contenttypes.models import ContentType
+from typing import Dict, List, Optional, Union, Any
+from django.db.models import QuerySet, Q, F, Value, Case, When, FloatField
+from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
-from django.contrib.gis.db.models.functions import Distance
-from datetime import datetime, timedelta
+from django.utils import timezone
 from django.core.cache import cache
-import hashlib
-import json
+from datetime import datetime, timedelta
+
+from apps.authentication.models import User, UserInteraction
+from apps.safar.models import Place, Experience
 
 logger = logging.getLogger(__name__)
 
-class RecommendationEngine:
+class RecommendationContext:
     """
-    Enhanced recommendation engine with improved personalization, location awareness,
-    and dynamic content allocation based on user context
+    Context object that encapsulates all information needed for recommendations.
+    This centralizes the context data needed by different recommendation strategies.
     """
-    INTERACTION_WEIGHTS = {
-        'booking_complete': 1.0,
-        'booking_start': 0.7,
-        'wishlist_add': 0.6,
-        'rating_given': 0.8,
-        'review_added': 0.5,
-        'view_place': 0.3,
-        'view_experience': 0.3,
-        'recommendation_click': 0.4,
-        'search': 0.2,
-        'filter_use': 0.15
-    }
-    
-    TEMPORAL_DECAY_RATE = 0.1 
-    
-    GLOBAL_CACHE_TTL = 3600
-    USER_CACHE_TTL = 1800
-    
-    def __init__(self, user=None, request_context=None):
-        """
-        Initialize the recommendation engine
-        
-        Args:
-            user (User, optional): The user to generate recommendations for.
-                                  If None, anonymous recommendations will be provided.
-            request_context (dict, optional): Additional context from the request
-                                             such as IP, location, device, etc.
-        """
+    def __init__(
+        self, 
+        user: Optional[User] = None,
+        request_data: Optional[Dict] = None,
+        location: Optional[Point] = None,
+        device_type: str = 'desktop',
+        filters: Optional[Dict] = None,
+        limit: int = 10,
+        offset: int = 0
+    ):
         self.user = user
-        self.profile = user.profile if user and hasattr(user, 'profile') else None
-        self.is_authenticated = user is not None
-        self.request_context = request_context or {}
-        
-        self.user_item_matrix = None
-        self.item_features = None
-        self.user_features = None
-        self.svd_model = None
-        self.kmeans_model = None
-        
-        self.user_location = self._get_user_location()
-        self.device_type = self.request_context.get('device_type', 'desktop')
-        self.is_mobile = self.device_type in ['mobile', 'tablet']
-        
+        self.is_authenticated = user is not None and user.is_authenticated
+        self.request_data = request_data or {}
+        self.location = location
+        self.device_type = device_type
+        self.is_mobile = device_type in ['mobile', 'tablet']
+        self.filters = filters or {}
+        self.limit = limit
+        self.offset = offset
         self.current_season = self._get_current_season()
-        self.current_events = self._get_current_events()
-        
-    def recommend_places(self, limit=None, filters=None, boost_user_preferences=True, 
-                         location_aware=True, diversity_factor=0.2):
-        """
-        Recommend places to the user with enhanced personalization
-        
-        Args:
-            limit (int, optional): Maximum number of recommendations to return.
-            filters (dict): Additional filters to apply to the query
-            boost_user_preferences (bool): Whether to boost based on user preferences
-            location_aware (bool): Whether to consider user's location
-            diversity_factor (float): How much to diversify results (0-1)
-            
-        Returns:
-            QuerySet: A queryset of recommended places with scores
-        """
-        try:
-            if not self.is_authenticated:
-                cache_key = self._get_cache_key('places', filters, limit)
-                cached_results = cache.get(cache_key)
-                if cached_results is not None:
-                    return cached_results
-            
-            filters = filters or {}
-            query = self._get_base_place_query(filters)
-            
-            query = self._initialize_scoring_fields(query)
-            
-            if self.is_authenticated:
-                self._build_feature_matrices('place')
-                
-                if self.user_item_matrix is not None and self.svd_model is not None:
-                    query = self._apply_matrix_factorization(query, 'place')
-                
-                if boost_user_preferences:
-                    query = self._apply_preference_boosting(query)
-                
-                if self.item_features is not None:
-                    query = self._apply_content_based_filtering(query, 'place')
-                
-                query = self._apply_collaborative_filtering(query, 'place')
-                
-                # Apply temporal and contextual factors
-                query = self._apply_temporal_popularity(query)
-                query = self._boost_user_interactions(query, 'place')
-                
-                # Apply location awareness if requested
-                if location_aware and self.user_location:
-                    query = self._apply_location_boost(query)
-                
-                # Apply seasonal and trending boosts
-                query = self._apply_seasonal_boost(query)
-                query = self._apply_trending_boost(query)
-                
-                # Apply device-specific optimizations
-                query = self._optimize_for_device(query)
-                
-                # Calculate final score with all factors
-                query = self._calculate_total_score(query)
-                
-                # Apply diversity to avoid too similar results
-                results = self._apply_diversity(query, diversity_factor)
-                
-                if limit is not None:
-                    results = results[:limit]
-            else:
-                # Anonymous recommendations
-                results = self._get_anonymous_recommendations(query, 'place', limit)
-                
-                cache_key = self._get_cache_key('places', filters, limit)
-                cache.set(cache_key, results, self.GLOBAL_CACHE_TTL)
-            
-            # Log recommendations for analytics
-            self._log_recommendations(results, 'place')
-            
-            return results
-            
-        except Exception as e:
-            logger.error(f"Error recommending places: {str(e)}", exc_info=True)
-            return self._fallback_recommendations('place', filters, limit)
     
-    def recommend_experiences(self, limit=None, filters=None, location_aware=True):
+        self.cache_prefix = f"rec_{self._get_cache_key_base()}"
+        
+    def _get_current_season(self) -> str:
+        """Determine current season based on date"""
+        now = datetime.now()
+        month = now.month
+        
+        if 3 <= month <= 5:
+            return 'spring'
+        elif 6 <= month <= 8:
+            return 'summer'
+        elif 9 <= month <= 11:
+            return 'autumn'
+        else:
+            return 'winter'
+    
+    def _get_cache_key_base(self) -> str:
+        """Generate a base cache key from context"""
+        user_part = f"user_{self.user.id}" if self.is_authenticated else "anon"
+
+        device_part = f"dev_{self.device_type}"
+        
+        loc_part = ""
+        if self.location:
+            lat = round(self.location.y, 2)
+            lng = round(self.location.x, 2)
+            loc_part = f"loc_{lat}_{lng}"
+        
+        return f"{user_part}_{device_part}_{loc_part}"
+    
+    def get_cache_key(self, rec_type: str, params: Dict = None) -> str:
+        """Generate a specific cache key for a recommendation type"""
+        key = f"{self.cache_prefix}_{rec_type}"
+        
+        if params:
+            param_str = "_".join(f"{k}_{v}" for k, v in sorted(params.items()))
+            key = f"{key}_{param_str}"
+            
+        key = f"{key}_l{self.limit}_o{self.offset}"
+        
+        return key
+    
+    def get_user_profile(self) -> Optional[Any]:
+        """Get user profile if available"""
+        if self.is_authenticated and hasattr(self.user, 'profile'):
+            return self.user.profile
+        return None
+
+
+class RecommendationStrategy:
+    """Base strategy interface for recommendation algorithms"""
+    
+    def get_recommendations(self, context: RecommendationContext, item_type: str) -> QuerySet:
         """
-        Recommend experiences with enhanced personalization
+        Get recommendations based on the strategy and context
         
         Args:
-            limit (int): Maximum number of recommendations
-            filters (dict): Additional filters
-            location_aware (bool): Whether to consider user's location
+            context: The recommendation context
+            item_type: 'place' or 'experience'
             
         Returns:
-            QuerySet: Recommended experiences
+            QuerySet of recommended items
         """
-        try:
-            if not self.is_authenticated:
-                cache_key = self._get_cache_key('experiences', filters, limit)
-                cached_results = cache.get(cache_key)
-                if cached_results is not None:
-                    return cached_results
-            
-            filters = filters or {}
-            
-            # Handle location filters
+        raise NotImplementedError("Subclasses must implement get_recommendations")
+    
+    def _get_base_query(self, context: RecommendationContext, item_type: str) -> QuerySet:
+        """Get the base query for the item type with filters applied"""
+        filters = context.filters.copy()
+        
+        if item_type == 'place':
+            query = Place.objects.filter(
+                is_available=True,
+                is_deleted=False,
+                **filters
+            ).select_related('category', 'country', 'city', 'region')
+        else: 
             location_filters = {}
             for loc_key in ['country', 'region', 'city']:
                 if loc_key in filters:
                     location_filters[f'place__{loc_key}'] = filters.pop(loc_key)
             
-            query = self._get_base_experience_query(filters, location_filters)
-            
-            # Initialize scoring fields
-            query = self._initialize_scoring_fields(query)
-            
-            if self.is_authenticated:
-                # Apply machine learning based recommendations
-                self._build_feature_matrices('experience')
-                
-                if self.user_item_matrix is not None and self.svd_model is not None:
-                    query = self._apply_matrix_factorization(query, 'experience')
-                
-                query = self._apply_preference_boosting(query)
-                
-                if self.item_features is not None:
-                    query = self._apply_content_based_filtering(query, 'experience')
-                
-                query = self._apply_collaborative_filtering(query, 'experience')
-                
-                # Apply temporal and contextual factors
-                query = self._apply_temporal_popularity(query)
-                query = self._boost_user_interactions(query, 'experience')
-                
-                # Apply location awareness if requested
-                if location_aware and self.user_location:
-                    query = self._apply_location_boost(query, 'experience')
-                
-                # Apply seasonal and trending boosts
-                query = self._apply_seasonal_boost(query, 'experience')
-                query = self._apply_trending_boost(query, 'experience')
-                
-                # Apply device-specific optimizations
-                query = self._optimize_for_device(query, 'experience')
-                
-                # Calculate final score with all factors
-                query = self._calculate_total_score(query, 'experience')
-                
-                results = query.order_by('-total_score')
-                
-                if limit is not None:
-                    results = results[:limit]
-            else:
-                # Anonymous recommendations
-                results = self._get_anonymous_recommendations(query, 'experience', limit)
-                
-                cache_key = self._get_cache_key('experiences', filters, limit)
-                cache.set(cache_key, results, self.GLOBAL_CACHE_TTL)
-            
-            # Log recommendations for analytics
-            self._log_recommendations(results, 'experience')
-            
-            return results
-            
-        except Exception as e:
-            logger.error(f"Error recommending experiences: {str(e)}", exc_info=True)
-            return self._fallback_recommendations('experience', filters, limit)
-    
-    def recommend_for_box(self, destination, duration_days, limit_per_category=3, 
-                          user_interests=None, budget=None):
-        """
-        Recommend items for a travel box with enhanced personalization
+            query = Experience.objects.filter(
+                is_available=True,
+                is_deleted=False,
+                **location_filters,
+                **filters
+            ).select_related('category', 'place', 'owner')
         
-        Args:
-            destination: The destination (City, Region, or Country)
-            duration_days: Number of days for the trip
-            limit_per_category: Maximum number of items per category
-            user_interests: Specific interests to focus on
-            budget: Budget constraints for recommendations
-            
-        Returns:
-            dict: Dictionary of recommended items by category
-        """
-        try:
-            destination_filters = self._create_destination_filters(destination)
-            
-            # Adjust recommendations based on trip duration
-            adjusted_limit = max(3, int(limit_per_category * (duration_days / 3)))
-            
-            # Get places with budget consideration if provided
-            place_filters = destination_filters.copy()
-            if budget and budget.get('max_per_place'):
-                place_filters['price__lte'] = budget.get('max_per_place')
-                
-            places = self.recommend_places(
-                limit=adjusted_limit * 3,
-                filters=place_filters
-            )
-            
-            # Get experiences with budget consideration if provided
-            exp_filters = destination_filters.copy()
-            if budget and budget.get('max_per_experience'):
-                exp_filters['price_per_person__lte'] = budget.get('max_per_experience')
-                
-            experiences = self.recommend_experiences(
-                limit=adjusted_limit * 2,
-                filters=exp_filters
-            )
-            
-            # Organize by categories for better box creation
-            categorized_places = self._categorize_recommendations(places)
-            categorized_experiences = self._categorize_recommendations(experiences)
-            
-            # Balance recommendations based on duration
-            balanced_recommendations = self._balance_recommendations_for_duration(
-                categorized_places, 
-                categorized_experiences,
-                duration_days
-            )
-            
-            return balanced_recommendations
-            
-        except Exception as e:
-            logger.error(f"Error recommending for box: {str(e)}", exc_info=True)
-            return {'places': [], 'experiences': []}
+        return query
     
-    def _get_base_place_query(self, filters):
-        """Get base query for places with optimized joins"""
-        return Place.objects.filter(
-            is_available=True,
-            is_deleted=False,
-            **filters
-        ).select_related('category', 'country', 'city', 'region')
-    
-    def _get_base_experience_query(self, filters, location_filters):
-        """Get base query for experiences with optimized joins"""
-        return Experience.objects.filter(
-            is_deleted=False,
-            **location_filters,
-            **filters
-        ).select_related('category', 'place', 'owner')
-    
-    def _initialize_scoring_fields(self, query):
-        """Initialize all scoring fields with default values"""
+    def _initialize_scoring_fields(self, query: QuerySet) -> QuerySet:
+        """Initialize scoring fields with default values"""
         return query.annotate(
             ml_score=Value(0.0, FloatField()),
             similarity_score=Value(0.0, FloatField()),
@@ -319,84 +139,195 @@ class RecommendationEngine:
             location_score=Value(0.0, FloatField()),
             seasonal_score=Value(0.0, FloatField()),
             trending_score=Value(0.0, FloatField()),
-            device_optimization=Value(0.0, FloatField())
+            device_optimization=Value(0.0, FloatField()),
+            total_score=Value(0.0, FloatField())
         )
+
+
+class PersonalizedRecommendationStrategy(RecommendationStrategy):
+    """Strategy for personalized recommendations based on user preferences and behavior"""
     
-    def _calculate_total_score(self, query, item_type='place'):
-        """Calculate the final score with weighted factors"""
-        # Adjust weights based on item type and user context
-        weights = self._get_score_weights(item_type)
+    def get_recommendations(self, context: RecommendationContext, item_type: str) -> QuerySet:
+        """Get personalized recommendations"""
+        if context.is_authenticated:
+            cache_key = context.get_cache_key(f"personalized_{item_type}")
+            cached_results = cache.get(cache_key)
+            if cached_results is not None:
+                return cached_results
         
-        # Create the weighted sum expression
-        weighted_sum = ExpressionWrapper(
-            F('ml_score') * Value(weights['ml_score']) +
-            F('similarity_score') * Value(weights['similarity_score']) +
-            F('personalization_score') * Value(weights['personalization_score']) +
-            F('interaction_boost') * Value(weights['interaction_boost']) +
-            F('recent_popularity') * Value(weights['recent_popularity']) +
-            F('location_score') * Value(weights['location_score']) +
-            F('seasonal_score') * Value(weights['seasonal_score']) +
-            F('trending_score') * Value(weights['trending_score']) +
-            F('device_optimization') * Value(weights['device_optimization']) +
-            F('rating') * Value(weights['rating']),
-            output_field=FloatField()
-        )
+
+        query = self._get_base_query(context, item_type)
         
-        return query.annotate(total_score=weighted_sum)
-    
-    def _get_score_weights(self, item_type):
-        """Get score weights based on item type and user context"""
-        # Default weights
-        weights = {
-            'ml_score': 0.25,
-            'similarity_score': 0.15,
-            'personalization_score': 0.15,
-            'interaction_boost': 0.10,
-            'recent_popularity': 0.10,
-            'location_score': 0.10,
-            'seasonal_score': 0.05,
-            'trending_score': 0.05,
-            'device_optimization': 0.02,
-            'rating': 0.03
-        }
+        # Initialize scoring fields
+        query = self._initialize_scoring_fields(query)
         
-        # Adjust weights based on user context
-        if self.is_authenticated and self.profile:
-            # If user has strong preferences, boost personalization
-            if hasattr(self.profile, 'travel_interests') and self.profile.travel_interests:
-                weights['personalization_score'] += 0.05
-                weights['ml_score'] -= 0.05
+        # Apply personalization if user is authenticated
+        if context.is_authenticated:
+            # Apply user preference boosting
+            query = self._apply_preference_boosting(query, context)
             
-            # If user has many interactions, boost ML score
-            interaction_count = getattr(self.user, 'interactions', []).count()
-            if interaction_count > 50:
-                weights['ml_score'] += 0.05
-                weights['recent_popularity'] -= 0.05
+            # Apply interaction boosting
+            query = self._apply_interaction_boost(query, context, item_type)
         
-        # Adjust for location awareness
-        if self.user_location:
-            weights['location_score'] += 0.05
-            weights['ml_score'] -= 0.05
+        # Apply common enhancements for all users
+        query = self._apply_popularity_boost(query)
+        query = self._apply_rating_boost(query)
         
-        # Adjust for mobile devices
-        if self.is_mobile:
-            weights['device_optimization'] += 0.03
-            weights['similarity_score'] -= 0.03
+        # Apply location boost if location is available
+        if context.location:
+            query = self._apply_location_boost(query, context, item_type)
         
-        # Normalize weights to ensure they sum to 1
-        total = sum(weights.values())
-        return {k: v/total for k, v in weights.items()}
+        # Apply seasonal boost
+        query = self._apply_seasonal_boost(query, context)
+        
+        # Apply device optimization
+        query = self._apply_device_optimization(query, context)
+        
+        # Calculate final score
+        query = self._calculate_total_score(query, context)
+        
+        # Order by total score and apply limit/offset
+        results = query.order_by('-total_score')[context.offset:context.offset + context.limit]
+        
+        # Cache results for authenticated users
+        if context.is_authenticated:
+            cache_key = context.get_cache_key(f"personalized_{item_type}")
+            cache.set(cache_key, results, 1800)  # 30 minutes
+        
+        return results
     
-    def _apply_location_boost(self, query, item_type='place'):
+    def _apply_preference_boosting(self, query: QuerySet, context: RecommendationContext) -> QuerySet:
+        """Boost items based on user preferences"""
+        profile = context.get_user_profile()
+        if not profile:
+            return query
+        
+        # Check if user has travel interests
+        travel_interests = getattr(profile, 'travel_interests', [])
+        if not travel_interests:
+            return query
+        
+        # Boost items with matching categories
+        return query.annotate(
+            personalization_score=Case(
+                When(category__name__in=travel_interests, then=0.9),
+                default=0.1,
+                output_field=FloatField()
+            )
+        )
+    
+    def _apply_interaction_boost(self, query: QuerySet, context: RecommendationContext, item_type: str) -> QuerySet:
+        """Boost items based on user's past interactions"""
+        if not context.is_authenticated:
+            return query
+        
+        try:
+            # Get content type for the item type
+            from django.contrib.contenttypes.models import ContentType
+            content_type = ContentType.objects.get_for_model(
+                Place if item_type == 'place' else Experience
+            )
+            
+            # Get user's interactions from the last 90 days
+            cutoff_date = timezone.now() - timedelta(days=90)
+            interactions = UserInteraction.objects.filter(
+                user=context.user,
+                content_type=content_type,
+                created_at__gte=cutoff_date
+            )
+            
+            # If no interactions, return query as is
+            if not interactions.exists():
+                return query
+            
+            # Get interaction weights
+            interaction_weights = {
+                'booking_complete': 1.0,
+                'booking_start': 0.7,
+                'wishlist_add': 0.6,
+                'rating_given': 0.8,
+                'review_added': 0.5,
+                'view_place': 0.3,
+                'view_experience': 0.3,
+                'recommendation_click': 0.4,
+                'search': 0.2,
+                'filter_use': 0.15
+            }
+            
+            # Get items user has interacted with and their weights
+            interaction_items = {}
+            for interaction in interactions:
+                item_id = interaction.object_id
+                interaction_type = interaction.interaction_type.code
+                weight = interaction_weights.get(interaction_type, 0.2)
+                
+                # Apply temporal decay (more recent = higher weight)
+                days_ago = (timezone.now() - interaction.created_at).days
+                temporal_factor = max(0.1, 1.0 - (days_ago * 0.01))  # 1% decay per day
+                
+                # Update weight for this item
+                if item_id in interaction_items:
+                    interaction_items[item_id] = max(interaction_items[item_id], weight * temporal_factor)
+                else:
+                    interaction_items[item_id] = weight * temporal_factor
+            
+            # Create a Case expression to boost items based on interaction weights
+            when_clauses = []
+            for item_id, weight in interaction_items.items():
+                when_clauses.append(When(id=item_id, then=Value(weight)))
+            
+            # Apply the Case expression
+            if when_clauses:
+                return query.annotate(
+                    interaction_boost=Case(
+                        *when_clauses,
+                        default=Value(0.0),
+                        output_field=FloatField()
+                    )
+                )
+            
+            return query
+            
+        except Exception as e:
+            logger.error(f"Error applying interaction boost: {str(e)}", exc_info=True)
+            return query
+    
+    def _apply_popularity_boost(self, query: QuerySet) -> QuerySet:
+        """Boost items based on overall popularity"""
+        return query.annotate(
+            recent_popularity=Case(
+                When(view_count__gte=1000, then=0.9),
+                When(view_count__gte=500, then=0.7),
+                When(view_count__gte=100, then=0.5),
+                When(view_count__gte=50, then=0.3),
+                default=0.1,
+                output_field=FloatField()
+            )
+        )
+    
+    def _apply_rating_boost(self, query: QuerySet) -> QuerySet:
+        """Boost items based on rating"""
+        return query.annotate(
+            rating_boost=Case(
+                When(rating__gte=4.5, then=0.9),
+                When(rating__gte=4.0, then=0.7),
+                When(rating__gte=3.5, then=0.5),
+                When(rating__gte=3.0, then=0.3),
+                default=0.1,
+                output_field=FloatField()
+            )
+        )
+    
+    def _apply_location_boost(self, query: QuerySet, context: RecommendationContext, item_type: str) -> QuerySet:
         """Boost items based on proximity to user's location"""
-        if not self.user_location:
+        if not context.location:
             return query
         
         try:
             # For places, use direct location comparison
             if item_type == 'place':
                 return query.annotate(
-                    distance=Distance('location', self.user_location),
+                    distance=Distance('location', context.location),
                     location_score=Case(
                         When(distance__lte=10000, then=0.9),  # Within 10km
                         When(distance__lte=50000, then=0.7),  # Within 50km
@@ -409,7 +340,7 @@ class RecommendationEngine:
             # For experiences, use place location
             elif item_type == 'experience':
                 return query.annotate(
-                    distance=Distance('place__location', self.user_location),
+                    distance=Distance('place__location', context.location),
                     location_score=Case(
                         When(distance__lte=10000, then=0.9),
                         When(distance__lte=50000, then=0.7),
@@ -424,13 +355,13 @@ class RecommendationEngine:
             
         except Exception as e:
             logger.error(f"Error applying location boost: {str(e)}", exc_info=True)
-            return query.annotate(location_score=Value(0.0, FloatField()))
+            return query
     
-    def _apply_seasonal_boost(self, query, item_type='place'):
+    def _apply_seasonal_boost(self, query: QuerySet, context: RecommendationContext) -> QuerySet:
         """Boost items based on seasonal relevance"""
         try:
             # Get current season tags
-            season_tags = self._get_season_tags()
+            season_tags = self._get_season_tags(context.current_season)
             
             if not season_tags:
                 return query
@@ -448,47 +379,25 @@ class RecommendationEngine:
             logger.error(f"Error applying seasonal boost: {str(e)}", exc_info=True)
             return query
     
-    def _apply_trending_boost(self, query, item_type='place'):
-        """Boost items that are currently trending"""
-        try:
-            # Get trending items from the last 7 days
-            content_type = ContentType.objects.get_for_model(
-                Place if item_type == 'place' else Experience
-            )
-            
-            trending_items = UserInteraction.objects.filter(
-                content_type=content_type,
-                created_at__gte=datetime.now() - timedelta(days=7)
-            ).values('object_id').annotate(
-                interaction_count=Count('id')
-            ).filter(
-                interaction_count__gte=5  # Minimum interactions to be considered trending
-            ).values_list('object_id', flat=True)
-            
-            if not trending_items:
-                return query
-            
-            # Boost trending items
-            return query.annotate(
-                trending_score=Case(
-                    When(id__in=trending_items, then=0.9),
-                    default=0.1,
-                    output_field=FloatField()
-                )
-            )
-            
-        except Exception as e:
-            logger.error(f"Error applying trending boost: {str(e)}", exc_info=True)
-            return query
+    def _get_season_tags(self, season: str) -> List[str]:
+        """Get tags related to current season"""
+        season_tags = {
+            'spring': ['spring', 'blossom', 'garden', 'hiking', 'outdoor'],
+            'summer': ['summer', 'beach', 'swimming', 'festival', 'vacation'],
+            'autumn': ['autumn', 'fall', 'foliage', 'harvest', 'cozy'],
+            'winter': ['winter', 'snow', 'skiing', 'holiday', 'christmas']
+        }
+        
+        return season_tags.get(season, [])
     
-    def _optimize_for_device(self, query, item_type='place'):
+    def _apply_device_optimization(self, query: QuerySet, context: RecommendationContext) -> QuerySet:
         """Apply device-specific optimizations"""
         try:
-            if not self.device_type:
+            if not context.device_type:
                 return query
             
             # For mobile devices, prioritize items with better mobile experience
-            if self.is_mobile:
+            if context.is_mobile:
                 return query.annotate(
                     device_optimization=Case(
                         # Prioritize items with mobile-friendly content
@@ -513,191 +422,192 @@ class RecommendationEngine:
             logger.error(f"Error optimizing for device: {str(e)}", exc_info=True)
             return query
     
-    def _apply_diversity(self, query, diversity_factor=0.2):
-        """Apply diversity to avoid too similar results"""
+    def _calculate_total_score(self, query: QuerySet, context: RecommendationContext) -> QuerySet:
+        """Calculate the final score with weighted factors"""
+        # Get weights based on user context
+        weights = self._get_score_weights(context)
+        
+        # Create the weighted sum expression
+        return query.annotate(
+            total_score=F('personalization_score') * weights['personalization_score'] +
+                       F('interaction_boost') * weights['interaction_boost'] +
+                       F('recent_popularity') * weights['recent_popularity'] +
+                       F('location_score') * weights['location_score'] +
+                       F('seasonal_score') * weights['seasonal_score'] +
+                       F('device_optimization') * weights['device_optimization'] +
+                       F('rating') * weights['rating']
+        )
+    
+    def _get_score_weights(self, context: RecommendationContext) -> Dict[str, float]:
+        """Get score weights based on user context"""
+        # Default weights
+        weights = {
+            'personalization_score': 0.15,
+            'interaction_boost': 0.15,
+            'recent_popularity': 0.15,
+            'location_score': 0.15,
+            'seasonal_score': 0.10,
+            'device_optimization': 0.05,
+            'rating': 0.25
+        }
+        
+        # Adjust weights based on user context
+        if context.is_authenticated:
+            profile = context.get_user_profile()
+            if profile:
+                # If user has strong preferences, boost personalization
+                if hasattr(profile, 'travel_interests') and profile.travel_interests:
+                    weights['personalization_score'] += 0.05
+                    weights['recent_popularity'] -= 0.05
+        
+        # Adjust for location awareness
+        if context.location:
+            weights['location_score'] += 0.05
+            weights['seasonal_score'] -= 0.05
+        
+        # Adjust for mobile devices
+        if context.is_mobile:
+            weights['device_optimization'] += 0.05
+            weights['personalization_score'] -= 0.05
+        
+        # Normalize weights to ensure they sum to 1
+        total = sum(weights.values())
+        return {k: v/total for k, v in weights.items()}
+
+
+class TrendingRecommendationStrategy(RecommendationStrategy):
+    """Strategy for trending recommendations based on recent popularity"""
+    
+    def get_recommendations(self, context: RecommendationContext, item_type: str) -> QuerySet:
+        """Get trending recommendations"""
+        # Check cache for all users
+        cache_key = context.get_cache_key(f"trending_{item_type}")
+        cached_results = cache.get(cache_key)
+        if cached_results is not None:
+            return cached_results
+        
+        # Get base query with filters
+        query = self._get_base_query(context, item_type)
+        
+        # Apply trending boost
+        query = self._apply_trending_boost(query, item_type)
+        
+        # Order by trending score and apply limit/offset
+        results = query.order_by('-trending_score')[context.offset:context.offset + context.limit]
+        
+        # Cache results
+        cache.set(cache_key, results, 3600)  # 1 hour
+        
+        return results
+    
+    def _apply_trending_boost(self, query: QuerySet, item_type: str) -> QuerySet:
+        """Boost items that are currently trending"""
         try:
-            if diversity_factor <= 0:
-                return query.order_by('-total_score')
-            
-            # Get top results first
-            top_results = list(query.order_by('-total_score')[:50])
-            
-            if not top_results or len(top_results) <= 5:
-                return query.order_by('-total_score')
-            
-            # Initialize result list with the top item
-            diversified_results = [top_results[0]]
-            remaining_items = top_results[1:]
-            
-            # Add items that are different from already selected items
-            while remaining_items and len(diversified_results) < len(top_results):
-                # Find the most diverse item from remaining items
-                most_diverse_item = None
-                max_diversity_score = -1
-                
-                for item in remaining_items:
-                    # Calculate diversity as average difference from already selected items
-                    diversity_score = self._calculate_diversity_score(item, diversified_results)
-                    
-                    # Combine diversity with original score
-                    combined_score = (1 - diversity_factor) * item.total_score + diversity_factor * diversity_score
-                    
-                    if combined_score > max_diversity_score:
-                        max_diversity_score = combined_score
-                        most_diverse_item = item
-                
-                if most_diverse_item:
-                    diversified_results.append(most_diverse_item)
-                    remaining_items.remove(most_diverse_item)
-                else:
-                    break
-            
-            # Create a Case expression to order by the new diversified order
-            preserved_order = Case(
-                *[When(pk=obj.pk, then=pos) for pos, obj in enumerate(diversified_results)],
-                default=len(diversified_results),
-                output_field=models.IntegerField()
+            # Get trending items from the last 7 days
+            from django.contrib.contenttypes.models import ContentType
+            content_type = ContentType.objects.get_for_model(
+                Place if item_type == 'place' else Experience
             )
             
-            # Apply the ordering to the original queryset
-            item_ids = [item.id for item in diversified_results]
-            return query.filter(id__in=item_ids).order_by(preserved_order)
+            # Get cutoff date (7 days ago)
+            cutoff_date = timezone.now() - timedelta(days=7)
+            
+            # Get interaction counts for items
+            from django.db.models import Count
+            trending_items = UserInteraction.objects.filter(
+                content_type=content_type,
+                created_at__gte=cutoff_date
+            ).values('object_id').annotate(
+                interaction_count=Count('id')
+            ).filter(
+                interaction_count__gte=5  # Minimum interactions to be considered trending
+            ).order_by('-interaction_count')
+            
+            # Extract item IDs and counts
+            trending_map = {str(item['object_id']): item['interaction_count'] for item in trending_items}
+            
+            if not trending_map:
+                # If no trending items, fall back to recent items
+                return query.annotate(
+                    trending_score=Case(
+                        When(created_at__gte=cutoff_date, then=0.7),
+                        default=0.3,
+                        output_field=FloatField()
+                    )
+                )
+            
+            # Create a Case expression to boost items based on trending score
+            when_clauses = []
+            max_count = max(trending_map.values()) if trending_map else 1
+            
+            for item_id, count in trending_map.items():
+                # Normalize count to a score between 0.5 and 1.0
+                normalized_score = 0.5 + (count / max_count) * 0.5
+                when_clauses.append(When(id=item_id, then=Value(normalized_score)))
+            
+            # Apply the Case expression
+            return query.annotate(
+                trending_score=Case(
+                    *when_clauses,
+                    default=Value(0.1),
+                    output_field=FloatField()
+                )
+            )
             
         except Exception as e:
-            logger.error(f"Error applying diversity: {str(e)}", exc_info=True)
-            return query.order_by('-total_score')
+            logger.error(f"Error applying trending boost: {str(e)}", exc_info=True)
+            return query.annotate(trending_score=Value(0.5, FloatField()))
+
+
+class SeasonalRecommendationStrategy(RecommendationStrategy):
+    """Strategy for seasonal recommendations based on current season"""
     
-    def _calculate_diversity_score(self, item, selected_items):
-        """Calculate how diverse an item is compared to already selected items"""
-        if not selected_items:
-            return 1.0
+    def get_recommendations(self, context: RecommendationContext, item_type: str) -> QuerySet:
+        """Get seasonal recommendations"""
+        # Check cache for all users
+        cache_key = context.get_cache_key(f"seasonal_{item_type}")
+        cached_results = cache.get(cache_key)
+        if cached_results is not None:
+            return cached_results
         
-        # Calculate diversity based on category and location
-        diversity_scores = []
+        # Get base query with filters
+        query = self._get_base_query(context, item_type)
         
-        for selected_item in selected_items:
-            score = 0.0
-            
-            # Different category is diverse
-            if hasattr(item, 'category') and hasattr(selected_item, 'category'):
-                if item.category != selected_item.category:
-                    score += 0.5
-            
-            # Different location is diverse
-            if hasattr(item, 'country') and hasattr(selected_item, 'country'):
-                if item.country != selected_item.country:
-                    score += 0.3
-            
-            # Different price range is diverse
-            if hasattr(item, 'price') and hasattr(selected_item, 'price'):
-                price_diff = abs(float(item.price) - float(selected_item.price))
-                normalized_diff = min(1.0, price_diff / 100.0)
-                score += normalized_diff * 0.2
-            
-            diversity_scores.append(score)
+        # Apply seasonal boost
+        query = self._apply_seasonal_boost(query, context.current_season)
         
-        # Return average diversity score
-        return sum(diversity_scores) / len(diversity_scores)
+        # Order by seasonal score and apply limit/offset
+        results = query.order_by('-seasonal_score')[context.offset:context.offset + context.limit]
+        
+        # Cache results
+        cache.set(cache_key, results, 86400)  # 24 hours (seasons don't change quickly)
+        
+        return results
     
-    def _categorize_recommendations(self, items):
-        """Organize recommendations by category for better box creation"""
-        categorized = {}
-        
-        for item in items:
-            if not hasattr(item, 'category') or not item.category:
-                continue
-                
-            category_name = item.category.name
-            if category_name not in categorized:
-                categorized[category_name] = []
-                
-            categorized[category_name].append(item)
-        
-        return categorized
-    
-    def _balance_recommendations_for_duration(self, places, experiences, duration_days):
-        """Balance recommendations based on trip duration"""
-        # Calculate how many items to include based on duration
-        places_per_day = 2
-        experiences_per_day = 1
-        
-        total_places = places_per_day * duration_days
-        total_experiences = experiences_per_day * duration_days
-        
-        # Select top items from each category
-        selected_places = []
-        selected_experiences = []
-        
-        # Distribute places across categories
-        place_categories = list(places.keys())
-        places_per_category = max(1, total_places // len(place_categories)) if place_categories else 0
-        
-        for category in place_categories:
-            selected_places.extend(places[category][:places_per_category])
-        
-        # Fill remaining slots with top-rated places
-        remaining_places = total_places - len(selected_places)
-        if remaining_places > 0:
-            all_places = [p for sublist in places.values() for p in sublist]
-            all_places.sort(key=lambda x: x.rating, reverse=True)
+    def _apply_seasonal_boost(self, query: QuerySet, season: str) -> QuerySet:
+        """Boost items based on seasonal relevance"""
+        try:
+            # Get current season tags
+            season_tags = self._get_season_tags(season)
             
-            # Exclude already selected places
-            additional_places = [p for p in all_places if p not in selected_places][:remaining_places]
-            selected_places.extend(additional_places)
-        
-        # Distribute experiences across categories
-        exp_categories = list(experiences.keys())
-        exps_per_category = max(1, total_experiences // len(exp_categories)) if exp_categories else 0
-        
-        for category in exp_categories:
-            selected_experiences.extend(experiences[category][:exps_per_category])
-        
-        # Fill remaining slots with top-rated experiences
-        remaining_exps = total_experiences - len(selected_experiences)
-        if remaining_exps > 0:
-            all_exps = [e for sublist in experiences.values() for e in sublist]
-            all_exps.sort(key=lambda x: x.rating, reverse=True)
+            if not season_tags:
+                return query.annotate(seasonal_score=Value(0.5, FloatField()))
             
-            # Exclude already selected experiences
-            additional_exps = [e for e in all_exps if e not in selected_experiences][:remaining_exps]
-            selected_experiences.extend(additional_exps)
-        
-        return {
-            'places': selected_places,
-            'experiences': selected_experiences,
-            'days': duration_days
-        }
+            # Boost items with metadata tags matching current season
+            return query.annotate(
+                seasonal_score=Case(
+                    When(metadata__tags__overlap=season_tags, then=0.9),
+                    default=0.2,
+                    output_field=FloatField()
+                )
+            )
+            
+        except Exception as e:
+            logger.error(f"Error applying seasonal boost: {str(e)}", exc_info=True)
+            return query.annotate(seasonal_score=Value(0.5, FloatField()))
     
-    def _get_user_location(self):
-        """Get user's location from profile or request context"""
-        if self.is_authenticated and self.profile and hasattr(self.profile, 'location'):
-            return self.profile.location
-        
-        # Try to get location from request context
-        if self.request_context and 'location' in self.request_context:
-            return self.request_context['location']
-        
-        return None
-    
-    def _get_current_season(self):
-        """Determine current season based on date and location"""
-        now = datetime.now()
-        month = now.month
-        
-        # Default to northern hemisphere seasons
-        if 3 <= month <= 5:
-            return 'spring'
-        elif 6 <= month <= 8:
-            return 'summer'
-        elif 9 <= month <= 11:
-            return 'autumn'
-        else:
-            return 'winter'
-    
-    def _get_season_tags(self):
+    def _get_season_tags(self, season: str) -> List[str]:
         """Get tags related to current season"""
-        season = self._get_current_season()
-        
         season_tags = {
             'spring': ['spring', 'blossom', 'garden', 'hiking', 'outdoor'],
             'summer': ['summer', 'beach', 'swimming', 'festival', 'vacation'],
@@ -706,122 +616,162 @@ class RecommendationEngine:
         }
         
         return season_tags.get(season, [])
+
+
+class NearbyRecommendationStrategy(RecommendationStrategy):
+    """Strategy for nearby recommendations based on user location"""
     
-    def _get_current_events(self):
-        """Get current events that might influence recommendations"""
-        # This would typically connect to an events database or API
-        # For now, return a placeholder
-        return []
+    def get_recommendations(self, context: RecommendationContext, item_type: str) -> QuerySet:
+        """Get nearby recommendations"""
+        # Location is required for this strategy
+        if not context.location:
+            logger.warning("Nearby recommendations requested without location")
+            return self._get_base_query(context, item_type).none()
+        
+        # Check cache
+        cache_key = context.get_cache_key(f"nearby_{item_type}")
+        cached_results = cache.get(cache_key)
+        if cached_results is not None:
+            return cached_results
+        
+        # Get radius from context or default to 10km
+        radius = context.request_data.get('radius', 10)
+        
+        # Get base query with filters
+        query = self._get_base_query(context, item_type)
+        
+        # Apply location filter
+        if item_type == 'place':
+            query = query.filter(
+                location__distance_lte=(context.location, D(km=radius))
+            ).distance(context.location).order_by('distance')
+        else:  # experience
+            query = query.filter(
+                place__location__distance_lte=(context.location, D(km=radius))
+            ).distance(context.location, field_name='place__location').order_by('distance')
+        
+        # Apply limit/offset
+        results = query[context.offset:context.offset + context.limit]
+        
+        # Cache results
+        cache.set(cache_key, results, 1800)  # 30 minutes
+        
+        return results
+
+
+class PopularRecommendationStrategy(RecommendationStrategy):
+    """Strategy for popular recommendations based on ratings"""
     
-    def _log_recommendations(self, results, item_type):
-        """Log recommendations for analytics"""
-        if not self.is_authenticated or not results:
-            return
+    def get_recommendations(self, context: RecommendationContext, item_type: str) -> QuerySet:
+        """Get popular recommendations"""
+        # Check cache for all users
+        cache_key = context.get_cache_key(f"popular_{item_type}")
+        cached_results = cache.get(cache_key)
+        if cached_results is not None:
+            return cached_results
+        
+        # Get base query with filters
+        query = self._get_base_query(context, item_type)
+        
+        # Order by rating and apply limit/offset
+        results = query.order_by('-rating')[context.offset:context.offset + context.limit]
+        
+        # Cache results
+        cache.set(cache_key, results, 3600)  # 1 hour
+        
+        return results
+
+
+class RecommendationEngine:
+    """
+    Unified service for all recommendation types.
+    Uses strategy pattern to select the appropriate algorithm.
+    """
+    
+    def __init__(self):
+        # Initialize strategies
+        self.strategies = {
+            'personalized': PersonalizedRecommendationStrategy(),
+            'trending': TrendingRecommendationStrategy(),
+            'seasonal': SeasonalRecommendationStrategy(),
+            'nearby': NearbyRecommendationStrategy(),
+            'popular': PopularRecommendationStrategy()
+        }
+    
+    def get_recommendations(
+        self,
+        rec_type: str,
+        user: Optional[User] = None,
+        item_type: str = 'place',
+        request_data: Optional[Dict] = None,
+        location: Optional[Point] = None,
+        device_type: str = 'desktop',
+        filters: Optional[Dict] = None,
+        limit: int = 10,
+        offset: int = 0
+    ) -> QuerySet:
+        """
+        Get recommendations using the appropriate strategy
+        
+        Args:
+            rec_type: Type of recommendation (personalized, trending, seasonal, nearby, popular)
+            user: User to get recommendations for (optional)
+            item_type: Type of items to recommend (place, experience)
+            request_data: Additional request data
+            location: User's location
+            device_type: User's device type
+            filters: Filters to apply to recommendations
+            limit: Maximum number of recommendations to return
+            offset: Offset for pagination
             
+        Returns:
+            QuerySet of recommended items
+        """
+        # Create context
+        context = RecommendationContext(
+            user=user,
+            request_data=request_data,
+            location=location,
+            device_type=device_type,
+            filters=filters,
+            limit=limit,
+            offset=offset
+        )
+        
+        # Select strategy based on recommendation type
+        if rec_type not in self.strategies:
+            logger.warning(f"Unknown recommendation type: {rec_type}, falling back to popular")
+            rec_type = 'popular'
+        
+        strategy = self.strategies[rec_type]
+        
+        # Get recommendations using the selected strategy
         try:
-            from apps.authentication.models import UserInteraction
+            recommendations = strategy.get_recommendations(context, item_type)
             
+            # Log recommendations for analytics if user is authenticated
+            if user and user.is_authenticated:
+                self._log_recommendations(user, recommendations, rec_type, item_type)
+            
+            return recommendations
+        except Exception as e:
+            logger.error(f"Error getting {rec_type} recommendations: {str(e)}", exc_info=True)
+            # Fall back to popular recommendations
+            return self.strategies['popular'].get_recommendations(context, item_type)
+    
+    def _log_recommendations(self, user: User, recommendations: QuerySet, rec_type: str, item_type: str) -> None:
+        """Log recommendations for analytics"""
+        try:
             # Log only the top 10 recommendations
-            top_items = results[:10]
-            
-            for position, item in enumerate(top_items):
+            for position, item in enumerate(recommendations[:10]):
                 UserInteraction.log_interaction(
-                    user=self.user,
+                    user=user,
                     content_object=item,
                     interaction_type_code='recommendation_shown',
                     position=position,
                     item_type=item_type,
-                    recommendation_context={
-                        'device': self.device_type,
-                        'location_aware': self.user_location is not None,
-                        'timestamp': datetime.now().isoformat()
-                    }
+                    recommendation_type=rec_type,
+                    timestamp=timezone.now().isoformat()
                 )
         except Exception as e:
             logger.warning(f"Failed to log recommendations: {str(e)}")
-    
-    def _fallback_recommendations(self, item_type, filters, limit):
-        """Provide fallback recommendations when ML methods fail"""
-        try:
-            filters = filters or {}
-            
-            if item_type == 'place':
-                model_class = Place
-                location_filters = {k: v for k, v in filters.items() 
-                                  if k in ['country', 'region', 'city']}
-                for k in location_filters.keys():
-                    if k in filters:
-                        filters.pop(k)
-            else:  # experience
-                model_class = Experience
-                location_filters = {}
-                for loc_key in ['country', 'region', 'city']:
-                    if loc_key in filters:
-                        location_filters[f'place__{loc_key}'] = filters.pop(loc_key)
-            
-            # Basic query with location filters
-            queryset = model_class.objects.filter(
-                is_available=True,
-                is_deleted=False,
-                **location_filters
-            )
-            
-            # Apply user preferences if available
-            if self.is_authenticated and hasattr(self, 'profile'):
-                if hasattr(self.profile, 'preferred_countries') and self.profile.preferred_countries.exists():
-                    if item_type == 'experience':
-                        queryset = queryset.filter(place__country__in=self.profile.preferred_countries.all())
-                    else:
-                        queryset = queryset.filter(country__in=self.profile.preferred_countries.all())
-            
-            # Return top rated items
-            return queryset.order_by('-rating')[:limit or 10]
-            
-        except Exception as e:
-            logger.error(f"Fallback recommendation failed: {str(e)}", exc_info=True)
-            
-            # Last resort fallback
-            if item_type == 'place':
-                return Place.objects.filter(is_available=True, is_deleted=False).order_by('-rating')[:limit or 10]
-            else:
-                return Experience.objects.filter(is_available=True, is_deleted=False).order_by('-rating')[:limit or 10]
-
-# Example usage:
-def example_usage():
-    # Initialize with user and request context
-    user = User.objects.get(id=1)  # Replace with actual user
-    
-    request_context = {
-        'ip': '192.168.1.1',
-        'device_type': 'mobile',
-        'location': None, 
-        'referrer': 'search'
-    }
-    
-    engine = EnhancedRecommendationEngine(user, request_context)
-    
-    place_recommendations = engine.recommend_places(
-        limit=10,
-        filters={'category__name': 'Hotel'},
-        location_aware=True
-    )
-    
-    experience_recommendations = engine.recommend_experiences(
-        limit=5,
-        filters={'price_per_person__lte': 100}
-    )
-    
-    from apps.geographic_data.models import City
-    destination = City.objects.get(name='Paris')
-    
-    box_recommendations = engine.recommend_for_box(
-        destination=destination,
-        duration_days=5,
-        budget={'max_per_place': 200, 'max_per_experience': 100}
-    )
-    
-    return {
-        'places': place_recommendations,
-        'experiences': experience_recommendations,
-        'box': box_recommendations
-    }

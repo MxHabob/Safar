@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useRef } from "react"
-import { useGetPlacesQuery } from "@/core/services/api"
+import { useGetRecommendationsQuery } from "@/core/services/api"
 import { Button } from "@/components/ui/button"
 import { PlaceCard } from "./place-card"
 import { Spinner } from "@/components/ui/spinner"
@@ -9,28 +9,41 @@ import type { Place } from "@/core/types"
 import { useSearchParams } from "next/navigation"
 
 type Props = {
-  country?:string,
-  city?:string,
+  country?: string
+  city?: string
   overlay?: boolean
   selected?: string
+  recommendationType?: "personalized" | "trending" | "seasonal" | "nearby" | "popular"
 }
 
-export const ListPlaces = ({ selected,country,city }: Props) => {
+export const ListPlaces = ({ selected, country, city, recommendationType = "personalized" }: Props) => {
   const searchParams = useSearchParams()
-  const category = searchParams.get('category')
+  const category = searchParams.get("category")
   const [page, setPage] = useState(1)
   const placesCache = useRef<Place[]>([])
-  
-  const { data, isLoading, isFetching, error } =  useGetPlacesQuery( { page, page_size: 12, category:category || undefined,country:country ||undefined , city:city||undefined },
-    { 
+
+  // Calculate offset based on page
+  const offset = (page - 1) * 12
+
+  const { data, isLoading, isFetching, error } = useGetRecommendationsQuery(
+    {
+      type: recommendationType,
+      item_type: "places",
+      limit: 12,
+      offset,
+      category: category || undefined,
+      country: country || undefined,
+      city: city || undefined,
+    },
+    {
       refetchOnMountOrArgChange: false,
       selectFromResult: (result) => {
-        if (result.data?.results && !result.isFetching) {
+        if (result.data?.places && !result.isFetching) {
           if (page === 1) {
-            placesCache.current = result.data.results
+            placesCache.current = result.data.places
           } else {
-            const newPlaces = result.data.results.filter(
-              (newPlace) => !placesCache.current.some((place) => place.id === newPlace.id)
+            const newPlaces = result.data.places.filter(
+              (newPlace) => !placesCache.current.some((place) => place.id === newPlace.id),
             )
             if (newPlaces.length > 0) {
               placesCache.current = [...placesCache.current, ...newPlaces]
@@ -38,8 +51,8 @@ export const ListPlaces = ({ selected,country,city }: Props) => {
           }
         }
         return result
-      }
-    }
+      },
+    },
   )
 
   const handleLoadMore = useCallback(() => {
@@ -48,12 +61,15 @@ export const ListPlaces = ({ selected,country,city }: Props) => {
     }
   }, [isFetching])
 
-  const hasMorePlaces = data?.next !== null
-  
+  // Check if there are more places to load
+  // Since the recommendation endpoint might not have pagination info,
+  // we'll assume there are more if we received a full page of results
+  const hasMorePlaces = data?.places && data.places.length === 12
+
   if (error) {
     return (
       <div className="flex justify-center items-center p-8 text-red-500">
-        <p>Error loading places. Please try again later.</p>
+        <p>Error loading recommendations. Please try again later.</p>
       </div>
     )
   }
@@ -89,12 +105,7 @@ export const ListPlaces = ({ selected,country,city }: Props) => {
 
       {hasMorePlaces && (
         <div className="my-8 w-full flex justify-center">
-          <Button 
-            onClick={handleLoadMore} 
-            disabled={isFetching} 
-            className="px-8" 
-            variant="outline"
-          >
+          <Button onClick={handleLoadMore} disabled={isFetching} className="px-8" variant="outline">
             {isFetching ? <Spinner size={"lg"} /> : "More"}
           </Button>
         </div>
