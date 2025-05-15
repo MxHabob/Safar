@@ -53,7 +53,6 @@ class RecommendationViewSet(BaseViewSet):
             'timestamp': timezone.now()
         }
         
-        # Extract location from query parameters
         lat = request.query_params.get('lat')
         lng = request.query_params.get('lng')
         

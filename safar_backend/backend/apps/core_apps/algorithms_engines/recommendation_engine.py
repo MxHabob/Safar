@@ -743,7 +743,6 @@ class RecommendationEngine:
     """
     
     def __init__(self):
-        # Initialize strategies
         self.strategies = {
             'personalized': PersonalizedRecommendationStrategy(),
             'trending': TrendingRecommendationStrategy(),
@@ -781,7 +780,6 @@ class RecommendationEngine:
         Returns:
             QuerySet of recommended items
         """
-        # Create context
         context = RecommendationContext(
             user=user,
             request_data=request_data,
@@ -792,27 +790,70 @@ class RecommendationEngine:
             offset=offset
         )
         
-        # Select strategy based on recommendation type
         if rec_type not in self.strategies:
             logger.warning(f"Unknown recommendation type: {rec_type}, falling back to popular")
             rec_type = 'popular'
         
         strategy = self.strategies[rec_type]
         
-        # Get recommendations using the selected strategy
         try:
             recommendations = strategy.get_recommendations(context, item_type)
             
-            # Log recommendations for analytics if user is authenticated
             if user and user.is_authenticated:
                 self._log_recommendations(user, recommendations, rec_type, item_type)
             
             return recommendations
         except Exception as e:
             logger.error(f"Error getting {rec_type} recommendations: {str(e)}", exc_info=True)
-            # Fall back to popular recommendations
             return self.strategies['popular'].get_recommendations(context, item_type)
+
+    def recommend_for_box(self, destination, duration_days):
+        """
+        Get recommendations specifically for box generation.
+        
+        Args:
+            destination: The travel destination (City, Region, or Country)
+            duration_days: Trip duration in days
+            
+        Returns:
+            Dict: Dictionary with recommended places and experiences
+        """
+        # Determine the destination type and create appropriate filters
+        filters = {}
+        if hasattr(destination, '__class__') and destination.__class__.__name__ == 'City':
+            filters['city'] = destination.id
+        elif hasattr(destination, '__class__') and destination.__class__.__name__ == 'Region':
+            filters['region'] = destination.id
+        else:  # Assume Country
+            filters['country'] = destination.id
+        
+        # Calculate how many items to fetch based on duration
+        places_limit = duration_days * 3  # More options for places
+        experiences_limit = duration_days * 2  # Fewer experiences
+        
+        # Get place recommendations
+        places = self.get_recommendations(
+            rec_type='personalized',
+            item_type='place',
+            filters=filters,
+            limit=places_limit
+        )
+        
+        # Get experience recommendations
+        experiences = self.get_recommendations(
+            rec_type='personalized',
+            item_type='experience',
+            filters=filters,
+            limit=experiences_limit
+        )
+        
+        # Return combined recommendations
+        return {
+            'places': places,
+            'experiences': experiences
+        }
     
+
     def _log_recommendations(self, user: User, recommendations: QuerySet, rec_type: str, item_type: str) -> None:
         """Log recommendations for analytics"""
         try:
