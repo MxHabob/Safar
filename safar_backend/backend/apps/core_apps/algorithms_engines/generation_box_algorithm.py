@@ -1846,7 +1846,6 @@ class BoxGenerator:
                     start_date=modifications.get('start_date', original_box.start_date),
                     end_date=modifications.get('end_date', original_box.end_date),
                     city=original_box.city,
-                    region=original_box.region,
                     country=original_box.country,
                     is_customizable=True,
                     category=original_box.category,
