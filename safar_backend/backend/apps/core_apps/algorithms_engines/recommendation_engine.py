@@ -853,6 +853,26 @@ class RecommendationEngine:
             'experiences': experiences
         }
     
+    def calculate_personalization_score(self, item):
+        """
+        Calculate personalization score for an item.
+        This method is used by the box generation algorithm.
+        
+        Args:
+            item: The item to calculate score for
+            
+        Returns:
+            float: Personalization score between 0 and 1
+        """
+        # Simple implementation - can be enhanced with actual personalization logic
+        rating = getattr(item, 'rating', 3.0)
+        popularity = getattr(item, 'metadata', {}).get('popularity_score', 0.5)
+        
+        # Normalize rating to 0-1 scale
+        normalized_rating = min(1.0, rating / 5.0)
+        
+        # Calculate weighted score
+        return (normalized_rating * 0.7) + (popularity * 0.3)
 
     def _log_recommendations(self, user: User, recommendations: QuerySet, rec_type: str, item_type: str) -> None:
         """Log recommendations for analytics"""
