@@ -1,6 +1,7 @@
 import logging
 from typing import Dict, List, Optional, Union, Any
 from django.db.models import QuerySet, Q, F, Value, Case, When, FloatField
+from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from django.utils import timezone
