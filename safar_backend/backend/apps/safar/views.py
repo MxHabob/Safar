@@ -153,7 +153,7 @@ class RecommendationViewSet(BaseViewSet):
             filters = self._build_filters(params)
             
             # Initialize recommendation service
-            recommendation_service = RecommendationService()
+            recommendation_service = RecommendationEngine()
             
             # Prepare response data
             response_data = {
@@ -295,7 +295,7 @@ class RecommendationViewSet(BaseViewSet):
             context = self._get_request_context(request)
             
             # Initialize recommendation service
-            recommendation_service = RecommendationService()
+            recommendation_service = RecommendationEngine()
             
             # Get personalized recommendations for the destination
             filters = {destination_type: destination_id}
