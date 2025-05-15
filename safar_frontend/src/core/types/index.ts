@@ -333,6 +333,8 @@ export interface BoxItineraryItem extends BaseModel {
 
 // Box Types
 export interface Box extends BaseModel {
+  destination_id: string | undefined;
+  destination_type: string | undefined;
   category?: Category | string;
   name: string;
   description?: string;

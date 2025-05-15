@@ -537,8 +537,7 @@ export const api = createApi({
     checkExperienceAvailability: builder.query<{ available: boolean; capacity: number }, { id: string; date: string }>({
       query: ({ id, date }) => `/experiences/${id}/availability/?date=${date}`,
       providesTags: ["Experience"],
-      // Short cache time for availability checks
-      keepUnusedDataFor: 30, // 30 seconds
+      keepUnusedDataFor: 30,
     }),
 
     createExperience: builder.mutation<Experience, Partial<Experience>>({
@@ -859,46 +858,17 @@ export const api = createApi({
       invalidatesTags: ["Notification"],
     }),
 
-    // Recommendation endpoints
-    getRecommendedPlaces: builder.query<
-      PaginatedResponse<Place>,
-      {
-        limit?: number
-        filters?: Record<string, any>
-      } & BaseQueryParams
-    >({
-      query: (params) => ({
-        url: "/places/recommended/",
-        params,
-      }),
-      providesTags: ["Place"],
-      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
-    }),
-
-    getRecommendedExperiences: builder.query<
-      PaginatedResponse<Experience>,
-      {
-        limit?: number
-        filters?: Record<string, any>
-      } & BaseQueryParams
-    >({
-      query: (params) => ({
-        url: "/experiences/recommended/",
-        params,
-      }),
-      providesTags: ["Experience"],
-      keepUnusedDataFor: CACHE_LIFETIME.USER_DATA,
-    }),
-
     getPersonalizedBox: builder.mutation<
       Box,
       {
-        destination_id: string
-        destination_type: "city" | "region" | "country"
+        destination_id?: string
+        // destination_type: "city" | "region" | "country"
         duration_days?: number
         budget?: number
+        travelers?: number
         theme?: string
-        start_date?: string
+        interests?: string[]
+        variation?: string
       }
     >({
       query: (body) => ({
@@ -1173,11 +1143,6 @@ export const {
   useMarkNotificationAsReadMutation,
   useMarkAllNotificationsAsReadMutation,
 
-  // Recommendation
-  useGetRecommendedPlacesQuery,
-  useGetRecommendedExperiencesQuery,
-  useGetPersonalizedBoxMutation,
-
   // Geographic data
   useGetCountriesQuery,
   useGetCountryQuery,
@@ -1193,5 +1158,6 @@ export const {
   useGetCitiesInRegionQuery,
   useUniversalSearchQuery,
 
+  useGetPersonalizedBoxMutation,
   useGetRecommendationsQuery,
 } = api

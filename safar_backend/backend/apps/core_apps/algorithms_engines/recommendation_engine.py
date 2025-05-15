@@ -293,18 +293,37 @@ class PersonalizedRecommendationStrategy(RecommendationStrategy):
             logger.error(f"Error applying interaction boost: {str(e)}", exc_info=True)
             return query
     
-    def _apply_popularity_boost(self, query: QuerySet) -> QuerySet:
+    def _apply_popularity_boost(self, query):
         """Boost items based on overall popularity"""
-        return query.annotate(
-            recent_popularity=Case(
-                When(view_count__gte=1000, then=0.9),
-                When(view_count__gte=500, then=0.7),
-                When(view_count__gte=100, then=0.5),
-                When(view_count__gte=50, then=0.3),
-                default=0.1,
-                output_field=FloatField()
+        try:
+            # Check if the model has a 'metadata' field with popularity information
+            return query.annotate(
+                recent_popularity=Case(
+                    # Use metadata__popularity if available
+                    When(metadata__has_key='popularity', then=Case(
+                        When(metadata__popularity__gte=1000, then=Value(0.9)),
+                        When(metadata__popularity__gte=500, then=Value(0.7)),
+                        When(metadata__popularity__gte=100, then=Value(0.5)),
+                        When(metadata__popularity__gte=50, then=Value(0.3)),
+                        default=Value(0.1),
+                        output_field=FloatField()
+                    )),
+                    # Fallback to rating as a proxy for popularity
+                    default=Case(
+                        When(rating__gte=4.5, then=Value(0.9)),
+                        When(rating__gte=4.0, then=Value(0.7)),
+                        When(rating__gte=3.5, then=Value(0.5)),
+                        When(rating__gte=3.0, then=Value(0.3)),
+                        default=Value(0.1),
+                        output_field=FloatField()
+                    ),
+                    output_field=FloatField()
+                )
             )
-        )
+        except Exception as e:
+            logger.error(f"Error applying popularity boost: {str(e)}", exc_info=True)
+            # Return query with default popularity value if there's an error
+            return query.annotate(recent_popularity=Value(0.5, FloatField()))
     
     def _apply_rating_boost(self, query: QuerySet) -> QuerySet:
         """Boost items based on rating"""

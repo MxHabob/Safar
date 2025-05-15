@@ -258,7 +258,6 @@ class RecommendationViewSet(BaseViewSet):
         }
         """
         try:
-            # Validate required fields
             required_fields = ['destination_id', 'destination_type', 'duration_days']
             for field in required_fields:
                 if field not in request.data:
@@ -266,8 +265,7 @@ class RecommendationViewSet(BaseViewSet):
                         {'error': f'Missing required field: {field}'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
-            
-            # Parse request data
+
             destination_id = request.data.get('destination_id')
             destination_type = request.data.get('destination_type')
             duration_days = int(request.data.get('duration_days', 3))
@@ -275,14 +273,12 @@ class RecommendationViewSet(BaseViewSet):
             interests = request.data.get('interests', [])
             start_date = request.data.get('start_date')
             
-            # Validate destination type
             if destination_type not in ['city', 'region', 'country']:
                 return Response(
                     {'error': 'Invalid destination_type. Must be city, region, or country.'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
-            # Get destination
+
             destination = self._get_destination(destination_id, destination_type)
             if not destination:
                 return Response(
@@ -290,17 +286,13 @@ class RecommendationViewSet(BaseViewSet):
                     status=status.HTTP_404_NOT_FOUND
                 )
             
-            # Get user and context
             user = request.user if request.user.is_authenticated else None
             context = self._get_request_context(request)
             
-            # Initialize recommendation service
             recommendation_service = RecommendationEngine()
-            
-            # Get personalized recommendations for the destination
+  
             filters = {destination_type: destination_id}
-            
-            # Get places
+
             places = recommendation_service.get_recommendations(
                 rec_type='personalized',
                 user=user,
@@ -309,10 +301,9 @@ class RecommendationViewSet(BaseViewSet):
                 location=context.get('location'),
                 device_type=context.get('device_type', 'desktop'),
                 filters=filters,
-                limit=duration_days * 2  # 2 places per day
+                limit=duration_days * 2
             )
             
-            # Get experiences
             experiences = recommendation_service.get_recommendations(
                 rec_type='personalized',
                 user=user,
@@ -321,10 +312,9 @@ class RecommendationViewSet(BaseViewSet):
                 location=context.get('location'),
                 device_type=context.get('device_type', 'desktop'),
                 filters=filters,
-                limit=duration_days  # 1 experience per day
+                limit=duration_days
             )
             
-            # Prepare response
             response_data = {
                 'destination': self._serialize_destination(destination, destination_type),
                 'duration_days': duration_days,
@@ -332,15 +322,12 @@ class RecommendationViewSet(BaseViewSet):
                 'experiences': ExperienceSerializer(experiences, many=True).data
             }
             
-            # Add budget information if provided
             if budget:
                 response_data['budget'] = budget
             
-            # Add interests if provided
             if interests:
                 response_data['interests'] = interests
             
-            # Add start date if provided
             if start_date:
                 response_data['start_date'] = start_date
             
@@ -364,7 +351,6 @@ class RecommendationViewSet(BaseViewSet):
         - limit: Maximum number of similar items to return. Default: 5
         """
         try:
-            # Validate required parameters
             item_id = request.query_params.get('item_id')
             item_type = request.query_params.get('item_type')
             
@@ -382,7 +368,6 @@ class RecommendationViewSet(BaseViewSet):
             
             limit = int(request.query_params.get('limit', 5))
             
-            # Get the reference item
             try:
                 if item_type == 'place':
                     item = Place.objects.get(id=item_id, is_deleted=False)
@@ -394,10 +379,8 @@ class RecommendationViewSet(BaseViewSet):
                     status=status.HTTP_404_NOT_FOUND
                 )
             
-            # Find similar items
             similar_items = self._find_similar_items(item, item_type, limit)
             
-            # Serialize response
             if item_type == 'place':
                 serializer = PlaceSerializer(similar_items, many=True)
             else:
@@ -438,7 +421,6 @@ class RecommendationViewSet(BaseViewSet):
     def _find_similar_items(self, item, item_type, limit):
         """Find items similar to the given item"""
         if item_type == 'place':
-            # Find places with same category and/or location
             similar_items = Place.objects.filter(
                 Q(category=item.category) | 
                 Q(country=item.country) |
@@ -449,8 +431,7 @@ class RecommendationViewSet(BaseViewSet):
                 is_available=True,
                 is_deleted=False
             ).distinct()
-            
-            # If item has location, boost by proximity
+     
             if item.location:
                 from django.contrib.gis.db.models.functions import Distance
                 similar_items = similar_items.annotate(
@@ -471,7 +452,6 @@ class RecommendationViewSet(BaseViewSet):
                 is_deleted=False
             ).distinct()
             
-            # Order by rating
             similar_items = similar_items.order_by('-rating')
         
         return similar_items[:limit]
@@ -669,36 +649,6 @@ class PlaceViewSet(BaseViewSet):
             
         return queryset
 
-    @action(detail=False, methods=['get'])
-    def recommended(self, request):
-        limit = int(request.query_params.get('limit', 5))
-        
-        user = request.user if request.user.is_authenticated else None
-        recommendation_engine = RecommendationEngine(user)
-        
-        try:
-            places = recommendation_engine.recommend_places(limit=limit)
-            
-            # Check if we got results
-            if not places.exists():
-                logger.warning("Recommendation engine returned empty results, using fallback")
-                places = Place.objects.filter(
-                    is_available=True, 
-                    is_deleted=False
-                ).order_by('-rating')[:limit]
-                
-                # If still empty, get any places
-                if not places.exists():
-                    places = Place.objects.all()[:limit]
-                    
-            serializer = self.get_serializer(places, many=True)
-            return Response(serializer.data)
-        except Exception as e:
-            logger.error(f"Error in place recommendations: {str(e)}", exc_info=True)
-            # Ensure we return something
-            places = Place.objects.all().order_by('-created_at')[:limit]
-            serializer = self.get_serializer(places, many=True)
-            return Response(serializer.data)
     
     @action(detail=True, methods=['get'])
     def similar(self, request, pk=None):
@@ -718,30 +668,6 @@ class ExperienceViewSet(BaseViewSet):
     filterset_fields = ['category','place', 'is_available']
     search_fields = ['title', 'description']
     ordering_fields = ['rating', 'price_per_person', 'duration']
-
-    @action(detail=False, methods=['get'])
-    def recommended(self, request):
-        limit = int(request.query_params.get('limit', 5))
-        
-        filters = {
-            'is_available': True
-        }
-        
-        user = request.user if request.user.is_authenticated else None
-        recommendation_engine = RecommendationEngine(user)
-        
-        try:
-            experiences = recommendation_engine.recommend_experiences(limit=limit, filters=filters)
-            serializer = self.get_serializer(experiences, many=True)
-            return Response(serializer.data)
-        except Exception as e:
-            logger.error(f"Error in experience recommendations: {str(e)}", exc_info=True)
-            experiences = Experience.objects.filter(
-                is_available=True, 
-                is_deleted=False
-            ).order_by('-rating')[:limit]
-            serializer = self.get_serializer(experiences, many=True)
-            return Response(serializer.data)
 
     @action(detail=True, methods=['get'])
     def availability(self, request, pk=None):
@@ -791,28 +717,98 @@ class BoxViewSet(BaseViewSet):
     @action(detail=False, methods=['post'])
     def generate(self, request):
         """
-        Generate a custom box based on user preferences
+        Generate a custom box based on user preferences using the BoxGenerationService.
+        
+        Request Body:
+        {
+            "destination_id": "uuid",
+            "destination_type": "city|region|country",
+            "duration_days": 5,
+            "budget": 1000,
+            "start_date": "2023-06-15",
+            "theme": "adventure|relaxation|cultural|family|budget",
+            "strategy_type": "standard|budget|family"
+        }
         """
         try:
-            user = request.user
+            # Validate required fields
+            required_fields = ['destination_id', 'destination_type', 'duration_days']
+            for field in required_fields:
+                if field not in request.data:
+                    return Response(
+                        {'error': f'Missing required field: {field}'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Extract request data
+            user = request.user if request.user.is_authenticated else None
             destination_id = request.data.get('destination_id')
             destination_type = request.data.get('destination_type')
             duration_days = int(request.data.get('duration_days', 3))
             budget = request.data.get('budget')
             theme = request.data.get('theme')
             start_date = request.data.get('start_date')
+            strategy_type = request.data.get('strategy_type', 'standard')
             
+            # Validate strategy type
+            valid_strategies = ['standard', 'budget', 'family']
+            if strategy_type not in valid_strategies:
+                strategy_type = 'standard'
+                logger.warning(f"Invalid strategy type '{strategy_type}', falling back to standard")
+            
+            # Parse start date if provided
+            if start_date:
+                from datetime import datetime
+                try:
+                    start_date = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+                except (ValueError, TypeError):
+                    return Response(
+                        {'error': 'Invalid start_date format. Use ISO format (YYYY-MM-DD).'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Get destination
             destination = self._get_destination(destination_id, destination_type)
             
-            generator = BoxGenerator(user)
-            box = generator.generate_box(
+            # Initialize BoxGenerationService
+            from apps.core_apps.algorithms_engines.box_generation_service import BoxGenerationService
+            box_service = BoxGenerationService()
+            
+            # Add custom constraints if needed
+            constraints = request.data.get('constraints')
+            
+            # Generate box with appropriate strategy
+            box = box_service.generate_box(
+                user=user,
                 destination=destination,
                 duration_days=duration_days,
                 budget=budget,
                 start_date=start_date,
-                theme=theme
+                theme=theme,
+                strategy_type=strategy_type,
+                constraints=constraints
             )
             
+            # Log box generation for analytics
+            if user:
+                from apps.authentication.models import UserInteraction
+                try:
+                    UserInteraction.log_interaction(
+                        user=user,
+                        content_object=box,
+                        interaction_type_code='box_generated',
+                        metadata={
+                            'destination_type': destination_type,
+                            'destination_id': str(destination_id),
+                            'duration_days': duration_days,
+                            'theme': theme,
+                            'strategy_type': strategy_type
+                        }
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to log box generation interaction: {str(e)}")
+            
+            # Return serialized box
             return Response(
                 BoxSerializer(box).data,
                 status=status.HTTP_201_CREATED
