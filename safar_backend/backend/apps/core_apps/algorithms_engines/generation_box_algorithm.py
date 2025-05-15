@@ -102,7 +102,7 @@ class BoxGenerationContext:
         self.budget = budget
         self.start_date = start_date
         self.theme = theme
-        self.recommendation_engine = recommendation_engine or RecommendationEngine(user)
+        self.recommendation_engine = recommendation_engine or RecommendationEngine()
         self.constraints = {**self.DEFAULT_CONSTRAINTS, **(constraints or {})}
         
         # Apply theme-specific constraints
