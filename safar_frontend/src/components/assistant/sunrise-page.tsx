@@ -71,7 +71,7 @@ export default function SunrisePage() {
     {
       id: "welcome",
       content:
-        "Hi there! I'm Blue, your travel assistant. Where would you like to travel? You can select a destination or tell me about your dream trip.",
+        "Hi there! I'm Sunrise, your travel assistant. Where would you like to travel? You can select a destination or tell me about your dream trip.",
       sender: "assistant",
       timestamp: new Date(),
       suggestions: ["I want to visit Paris", "Plan a beach vacation", "Family trip to Japan", "Weekend getaway"]

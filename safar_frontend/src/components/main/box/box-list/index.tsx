@@ -13,10 +13,10 @@ type Props = {
   selected?: string
 } & SwiperProps
 
-export const ListBox = ({ overlay, selected, ...rest }: Props) => {
+export const ListBox = ({ overlay, ...rest }: Props) => {
   const searchParams = useSearchParams()
   const category = searchParams.get('category')
-  const { data: boxes, isLoading, error } = useGetBoxesQuery({ page_size: 10,category:category || undefined })
+  const { data: boxes, isLoading, error } = useGetBoxesQuery({ page_size: 10, category: category || undefined })
 
   if (error) {
     return (
@@ -28,18 +28,19 @@ export const ListBox = ({ overlay, selected, ...rest }: Props) => {
 
   return (
     <Slider 
-      slidesPerView="auto" 
+      slidesPerView={3}
       spaceBetween={24} 
-      loop={(boxes?.count ?? 0) > 3} 
-      freeMode 
+      centeredSlides={true}
+      loop={(boxes?.count ?? 0) > 1} 
+      freeMode={false}
       overlay={overlay} 
       breakpoints={{
-        320: { slidesPerView: 1.2, spaceBetween: 16 },
-        640: { slidesPerView: 1.5, spaceBetween: 20 },
-        768: { slidesPerView: 2, spaceBetween: 20 },
-        1024: { slidesPerView: 2.5, spaceBetween: 24 },
-        1280: { slidesPerView: 3, spaceBetween: 24 },
-        1536: { slidesPerView: 3.5, spaceBetween: 32 },
+        320: { slidesPerView: 1 },
+        640: { slidesPerView: 1 },
+        768: { slidesPerView: 1 },
+        1024: { slidesPerView: 2 },
+        1280: { slidesPerView: 2 },
+        1536: { slidesPerView: 2 },
       }}
       {...rest}
     >
@@ -47,11 +48,11 @@ export const ListBox = ({ overlay, selected, ...rest }: Props) => {
         boxes?.results.map((box: Box) => (
           <SwiperSlide
             key={box.id}
-            className={`w-full transition-all duration-200 ${
-              selected === box.id ? "scale-[1.05] md:scale-[1.05]" : ""
-            }`}
+            className="w-full h-full flex justify-center items-center"
           >
-            <BoxCard box={box} />
+            <div className="w-full max-w-2xl mx-auto">
+              <BoxCard box={box} />
+            </div>
           </SwiperSlide>
         ))
       ) : !isLoading ? (
@@ -62,9 +63,11 @@ export const ListBox = ({ overlay, selected, ...rest }: Props) => {
 
       {isLoading && (
         <>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <SwiperSlide key={i} className="w-full">
-              <BoxCard.Skeleton />
+          {[1, 2, 3].map((i) => (
+            <SwiperSlide key={i} className="w-full h-full flex justify-center items-center">
+              <div className="w-full max-w-2xl mx-auto">
+                <BoxCard.Skeleton />
+              </div>
             </SwiperSlide>
           ))}
         </>
