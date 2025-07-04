@@ -45,7 +45,15 @@ export const MediaGallery = ({
             aspectRatio === "wide" && "aspect-[16/9]",
           )}
         >
-          <Image src="/placeholder.svg" alt="No image available" fill className="object-cover w-full h-full" />
+          <Image 
+           src="/placeholder.svg" 
+           alt="No image available" 
+           fill 
+           priority
+           placeholder="blur"
+           blurDataURL="data:image/jpeg;base64,..."
+           className="object-cover w-full h-full"
+          />
         </div>
       </div>
     )
@@ -91,6 +99,8 @@ export const MediaGallery = ({
             sizes={size}
             className="object-cover"
             priority={index === 0 && priority}
+            placeholder="blur"
+            blurDataURL="data:image/jpeg;base64,..."
           />
         )}
       </div>
@@ -194,6 +204,8 @@ export const MediaGallery = ({
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover transition-transform duration-700 hover:scale-110"
               priority={priority}
+              placeholder="blur"
+              blurDataURL="data:image/jpeg;base64,..."
             />
           )}
         </div>
