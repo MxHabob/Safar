@@ -24,7 +24,7 @@ RUN pip install --upgrade pip && \
 
 COPY . .
 
-EXPOSE 8000
+EXPOSE 8001
 
 CMD ["sh", "-c", "\
     echo 'Running migrations...' && \
@@ -38,4 +38,4 @@ CMD ["sh", "-c", "\
     # python manage.py import_geodata && \
     # echo 'Generate a fake`ers 50 --places 60 --experiences 50 --boxes 20 --flights 0 --bookings 0 --skip-errors && \
     echo 'Starting Daphne...' && \
-    daphne -b 0.0.0.0 -p 8000 core.asgi:application"]
+    daphne -b 0.0.0.0 -p 8001 core.asgi:application"]

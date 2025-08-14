@@ -5,19 +5,19 @@ services:
     container_name: safar_backend
     env_file: .env
     ports:
-      - "8000:8000"
+      - "8001:8001"
     depends_on:
       - db
       - redis
     networks:
-      - mynetwork
+      - safarnetwork
     volumes:
       - ./backend:/app:z
       - ./static:/app/static
       - ./backend/safar_firebase_credentials.json:/app/safar_firebase_credentials.json:ro,z
       - ./staticfiles:/app/staticfiles:z
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8001/health/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -33,7 +33,7 @@ services:
       - redis
       - backend
     networks:
-      - mynetwork
+      - safarnetwork
     volumes:
       - ./backend:/app:z
     command: ["celery", "-A", "core", "worker", "--loglevel=info"]
@@ -51,7 +51,7 @@ services:
       - backend
       - celery
     networks:
-      - mynetwork
+      - safarnetwork
     volumes:
       - ./backend:/app:z
     command: ["celery", "-A", "core", "flower", "--port=5555", "--loglevel=info", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler"]
@@ -60,7 +60,7 @@ services:
     image: redis:latest
     container_name: safar_redis
     networks:
-      - mynetwork
+      - safarnetwork
     volumes:
       - redis_data:/data
     healthcheck:
@@ -79,25 +79,13 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - mynetwork
+      - safarnetwork
     volumes:
       - postgis_data:/var/lib/postgresql/data:z
 
-  nginx:
-    image: nginx:latest
-    container_name: safar_nginx
-    ports:
-      - "80:80"
-    volumes:
-      - ./infrastructure/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-    command: ["nginx", "-g", "daemon off;"]
-    depends_on:
-      - backend
-    networks:
-      - mynetwork
-      
+   
 networks:
-  mynetwork:
+  safarnetwork:
     driver: bridge
 
 volumes:
