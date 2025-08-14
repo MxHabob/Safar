@@ -68,9 +68,9 @@ services:
     image: postgis/postgis:latest
     container_name: safar_postgres
     environment:
-      PGDATABASE: ${PGDATABASE}
-      PGUSER: ${PGUSER}
-      PGPASSWORD: ${PGPASSWORD}
+      POSTGRES_DB: ${PGDATABASE}
+      POSTGRES_USER: ${PGUSER}
+      POSTGRES_PASSWORD: ${PGPASSWORD}
     ports:
       - "5432:5432"
     networks:
