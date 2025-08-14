@@ -463,19 +463,7 @@ SITE_NAME = env("SITE_NAME", default="Safer")
 SITE_URL = env("SITE_URL", default="http://localhost:3000")
 
 # Firebase settings
-FIREBASE_CREDENTIALS = {
-    "type": "service_account",
-    "project_id": "safar-671ee",
-    "private_key_id": "43e8e07771c22ec1465e719669f48cdeb279c195",
-    "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC/R2nUasHLp23s\n0N8G6bqqqRVlVCGLoLdqw4q+JPBhmEtIhPncfTt5inkRjSLtN2VLvbXK8/TTMQQa\ntNjkcPs7IWNR13nTfCVLfSkNpmDipWEY44g2phdkpwNOZ17HP8EfL4v1KkQPJN2d\nonn2u4bflwGNd39v5TzT7ADAszUZLOmcMxgQP7P+sO/kxGR4D2Hl4lAf6RImws9R\n9S7WhHnfGRpoB6qG19DJ1IRQQ2NgnO39g03r32wIn/u99qsW0GVJ8qI/b9x9h6KS\n4C4LnSHA49oEeL9r6pTxmdAB7CnFUNjttfKB4flQfg7fwgMrC3G486yL7hsokL/L\nkdMIYOljAgMBAAECggEAFdHbrLOQ795ll8Ir7unytU0cd7alLPxkb/VmelJUaY2p\n6NfieNiAVFkLfokPFuhe0ckOV9yEbSMGSNWgeE67Gf+xCMD/0LQ0vOvGJxx3qOMc\ntG4gN7uyp3S119fK5AfNy/TsjkcIBII8FaNXLmIt/IuJTc3355fK3JHrdA/9WqWm\nLEDQy7Nx/0DhprwDzT/5BL239Y/okb61iueczXnI523CW3dvi46IKkFBVl2H2TwM\nPAiJTnp6BvitNQQRCgWU8oHoAgIVz1z8DA8TMAIblHNAfQUGuBWsIkVxURhsq8ia\nghIPSN2junbneTw3rziSA/bHsvaHg7wfA8qhsojIQQKBgQD13f0rcgMCKWyf3bDG\n04lQgQaNKngq6qGZjwemgzZNkR3VT3zee3pw3/L0duvVf7SMuIE5AQy+go0CRvMw\nFeFSKgvBPVbLeDJSXgnDT3ARKJ92VzZY2s3FEyd+RpVOHSH8gLaTpaOD80C5bJ4d\n56BYT3WbqEN4X1Nm3FFoWOaKCwKBgQDHKX57vFzTKWfk7dEZAsSWGFWkcE8in7uZ\n+CuXN9KLDCTZHsgOpakhJ1UuEHGAxYRXIYGOceJpiUTTdz5x5Fqh+6TFwPb3fpgs\n+A1eTVJV0Jo9Cp9GwFq3N0mEDOot1TP8y+ZCIhFf2ynRRHGG6LwB1aw8qRp09cSU\ny08Fj3qNCQKBgQCAFxHRc4lrs+cadmWlgAlWvpGKM+j8+tYL6T8kGdHNoV+4hLva\nMNw+N/4cLGR7CxgmA+2WpBxemCccW5hQoeWMZ8lN+EXipREaZlGRxi3tUouZHKB8\ntClllbAKkn0wf+733JrB2xaQJMfAknzhuY2I1ITB/myAJrGNshRbV41rtwKBgF6a\nDSSFUqpS7rDFbh8tO2f4YyXa2xwdN6VpRntr3qyBtjcT8f9THUVMQ5+/28pJCBXD\nKqEY420x8OlpqNW8nHh46cmtYSIqleo2YVM78zIkBj+cfg/DatPAhUEeSVZAAZPA\n3rznJc2ccv6ePjbQ8g0FC+08ff60hw4OjJidkJ7RAoGAd346O7toJQlq4iIRQI3b\nD2gjtmQ/Hqx+QomGZCkJu+KlfwArJD6CYs2yVSBqRzxZC6whlan4anz/b7j53DKy\n8PRaXFVFNUmQtxe+E5qkJdW4oXbff6PdO4Iqwpqw/LpzZKg5EQJ8AhMPSwvxNYhf\n+3Z1ZDA7myS8fpmHYZRo88s=\n-----END PRIVATE KEY-----\n",
-    "client_email": "firebase-adminsdk-fbsvc@safar-671ee.iam.gserviceaccount.com",
-    "client_id": "100262175898074849890",
-    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-    "token_uri": "https://oauth2.googleapis.com/token",
-    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40safar-671ee.iam.gserviceaccount.com",
-    "universe_domain": "googleapis.com"
-}
+FIREBASE_CREDENTIALS = env('FIREBASE_CREDENTIALS', default="")
 
 # Phone number field settings
 PHONENUMBER_DEFAULT_REGION = "YE"

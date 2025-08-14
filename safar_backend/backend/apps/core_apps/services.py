@@ -10,15 +10,26 @@ from twilio.rest import Client
 from firebase_admin import messaging
 import firebase_admin
 from firebase_admin import credentials
+import requests
 
 logger = logging.getLogger(__name__)
 
 try:
     if not firebase_admin._apps:
-        cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS)
+        response = requests.get(settings.FIREBASE_CREDENTIALS, timeout=10)
+        response.raise_for_status()
+        cred_dict = response.json()
+        cred = credentials.Certificate(cred_dict)
         firebase_admin.initialize_app(cred)
+except requests.exceptions.RequestException as e:
+    logger.error(f"Failed to fetch Firebase credentials from {settings.FIREBASE_CREDENTIALS}: {str(e)}", exc_info=True)
+    raise
+except ValueError as e:
+    logger.error(f"Invalid JSON in Firebase credentials: {str(e)}", exc_info=True)
+    raise
 except Exception as e:
-    logger.error(f"Failed to initialize Firebase: {str(e)}")
+    logger.error(f"Failed to initialize Firebase: {str(e)}", exc_info=True)
+    raise
 
 class NotificationService:
     """
