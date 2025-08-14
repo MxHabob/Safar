@@ -71,9 +71,6 @@ else:
 #  APPLICATION DEFINITION
 # ======================
 INSTALLED_APPS = [
-    # ASGI server must come before staticfiles
-    "daphne",
-
     # Django core apps
     "django.contrib.admin",
     "django.contrib.auth",
@@ -484,3 +481,13 @@ if DEVELOPMENT_MODE:
         'http://localhost:3000',
         'http://127.0.0.1:3000'
     ]
+
+# ======================
+# Uvicorn Configuration
+# ======================
+UVICORN_WORKERS = env.int('UVICORN_WORKERS', default=os.cpu_count() * 2 + 1)
+UVICORN_PORT = env.int('UVICORN_PORT', default=8000)
+UVICORN_HOST = env('UVICORN_HOST', default='0.0.0.0')
+UVICORN_LOG_LEVEL = env('UVICORN_LOG_LEVEL', default='info' if not DEBUG else 'debug')
+UVICORN_RELOAD = DEVELOPMENT_MODE
+UVICORN_TIMEOUT_KEEP_ALIVE = env.int('UVICORN_TIMEOUT_KEEP_ALIVE', default=65)

@@ -37,5 +37,5 @@ CMD ["sh", "-c", "\
     # echo 'Downloading essential geographic data...' && \
     # python manage.py import_geodata && \
     # echo 'Generate a fake`ers 50 --places 60 --experiences 50 --boxes 20 --flights 0 --bookings 0 --skip-errors && \
-    echo 'Starting Daphne...' && \
-    daphne -b 0.0.0.0 -p 8001 core.asgi:application"]
+    echo 'Starting uvicorn...' && \
+    uvicorn core.asgi:application --host 0.0.0.0 --port 8001"]
