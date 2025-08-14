@@ -33,7 +33,6 @@ services:
       - backend
     networks:
       - safarnetwork
-    volumes:
     command: ["celery", "-A", "core", "worker", "--loglevel=info"]
 
   celery-flower:
@@ -50,7 +49,6 @@ services:
       - celery
     networks:
       - safarnetwork
-    volumes:
     command: ["celery", "-A", "core", "flower", "--port=5555", "--loglevel=info", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler"]
 
   redis:
