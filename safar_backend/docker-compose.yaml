@@ -23,7 +23,7 @@ services:
 
   celery:
     build:
-      context: ./safar_backend
+      context: ./backend
       dockerfile: ../infrastructure/celery/celery-flower/Dockerfile
     container_name: safar_celery
     env_file: .env
@@ -37,7 +37,7 @@ services:
 
   celery-flower:
     build:
-      context: ./safar_backend
+      context: ./backend
       dockerfile: ../infrastructure/celery/celery-flower/Dockerfile
     container_name: safar_celery_flower
     env_file: .env
