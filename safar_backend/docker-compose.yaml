@@ -12,7 +12,6 @@ services:
     networks:
       - safarnetwork
     volumes:
-      - ./backend:/app:z
       - ./static:/app/static
       - ./backend/safar_firebase_credentials.json:/app/safar_firebase_credentials.json:ro,z
       - ./staticfiles:/app/staticfiles:z
@@ -24,7 +23,7 @@ services:
 
   celery:
     build:
-      context: ./backend
+      context: ./safar_backend
       dockerfile: ../infrastructure/celery/celery-flower/Dockerfile
     container_name: safar_celery
     env_file: .env
@@ -35,12 +34,11 @@ services:
     networks:
       - safarnetwork
     volumes:
-      - ./backend:/app:z
     command: ["celery", "-A", "core", "worker", "--loglevel=info"]
 
   celery-flower:
     build:
-      context: ./backend
+      context: ./safar_backend
       dockerfile: ../infrastructure/celery/celery-flower/Dockerfile
     container_name: safar_celery_flower
     env_file: .env
@@ -53,7 +51,6 @@ services:
     networks:
       - safarnetwork
     volumes:
-      - ./backend:/app:z
     command: ["celery", "-A", "core", "flower", "--port=5555", "--loglevel=info", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler"]
 
   redis:
