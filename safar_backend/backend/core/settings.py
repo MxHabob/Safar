@@ -36,8 +36,8 @@ ALLOWED_HOSTS = env.list(
         "127.0.0.1",
         "localhost",
         "backend",
-        "safar-sable.vercel.app",  # Added frontend host
-        "172.16.21.41",  # Added development host IP
+        "safar-sable.vercel.app",
+        "172.16.21.41",
     ],
 )
 
@@ -57,12 +57,11 @@ CSRF_TRUSTED_ORIGINS = env.list(
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:8000",
-        "http://172.16.21.41:8001",  # Added development link
-        "https://safar-sable.vercel.app",  # Added frontend link
+        "http://172.16.21.41:8001",
+        "https://safar-sable.vercel.app",
     ],
 )
 
-# Content Security Policy (CSP) - Configured only in production
 # Consider using django-csp package for better management
 if not DEVELOPMENT_MODE:
     CSP_DEFAULT_SRC = ("'self'",)
@@ -80,12 +79,12 @@ CORS_ALLOWED_ORIGINS = env.list(
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:8000",
-        "http://172.16.21.41:8001",  # Added development link
-        "https://safar-sable.vercel.app",  # Added frontend link
+        "http://172.16.21.41:8001",
+        "https://safar-sable.vercel.app",
     ],
 )
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = DEVELOPMENT_MODE  # Allow all in dev, restrict in prod
+CORS_ALLOW_ALL_ORIGINS = DEVELOPMENT_MODE
 
 # ======================
 # APPLICATION DEFINITION
@@ -167,7 +166,7 @@ DATABASES = {
         "USER": env("PGUSER"),
         "PASSWORD": env("PGPASSWORD"),
         "HOST": env("PGHOST"),
-        "OPTIONS": {"timeout": 20},
+        "OPTIONS": {"connect_timeout": 20},
     }
 }
 
