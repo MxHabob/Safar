@@ -1,10 +1,12 @@
 import os
-from pathlib import Path
-import environ
-from django.core.management.utils import get_random_secret_key
-from django.core.exceptions import ImproperlyConfigured
 from datetime import timedelta
+from pathlib import Path
 
+import environ
+from django.core.exceptions import ImproperlyConfigured
+from django.core.management.utils import get_random_secret_key
+
+# Initialize environment variables
 env = environ.Env(
     DEBUG=(bool, False),
     DEVELOPMENT_MODE=(bool, False),
@@ -12,38 +14,56 @@ env = environ.Env(
 )
 
 # ======================
-#  PATH CONFIGURATION
+# PATH CONFIGURATION
 # ======================
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # ======================
-#  ENVIRONMENT SETUP
+# ENVIRONMENT SETUP
 # ======================
 ENVIRONMENT = env("ENVIRONMENT", default="development")
 DEVELOPMENT_MODE = env("DEVELOPMENT_MODE", default=(ENVIRONMENT == "development"))
 DEBUG = env("DEBUG", default=DEVELOPMENT_MODE)
 
 # ======================
-#  SECURITY SETTINGS
+# SECURITY SETTINGS
 # ======================
 SECRET_KEY = env("DJANGO_SECRET_KEY", default=get_random_secret_key())
+ALLOWED_HOSTS = env.list(
+    "ALLOWED_HOSTS",
+    default=[
+        "127.0.0.1",
+        "localhost",
+        "backend",
+        "safar-sable.vercel.app",  # Added frontend host
+        "172.16.21.41",  # Added development host IP
+    ],
+)
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[
-    "127.0.0.1",
-    "localhost",
-    "backend",
-])
-
-# Security middleware settings
+# HSTS and SSL settings (disabled in development for flexibility)
 SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=3600 if not DEVELOPMENT_MODE else 0)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=not DEVELOPMENT_MODE)
 SECURE_HSTS_PRELOAD = env.bool("SECURE_HSTS_PRELOAD", default=not DEVELOPMENT_MODE)
 SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=not DEVELOPMENT_MODE)
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https") if not DEVELOPMENT_MODE else None
 SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=not DEVELOPMENT_MODE)
 CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=not DEVELOPMENT_MODE)
-CSRF_TRUSTED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
-# Content Security Policy (if using django-csp)
+
+# CSRF trusted origins (align with CORS for consistency)
+CSRF_TRUSTED_ORIGINS = env.list(
+    "CSRF_TRUSTED_ORIGINS",
+    default=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+        "http://172.16.21.41:8001",  # Added development link
+        "https://safar-sable.vercel.app",  # Added frontend link
+    ],
+)
+
+# Content Security Policy (CSP) - Configured only in production
+# Consider using django-csp package for better management
 if not DEVELOPMENT_MODE:
     CSP_DEFAULT_SRC = ("'self'",)
     CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "https://trusted.cdn.com")
@@ -52,23 +72,23 @@ if not DEVELOPMENT_MODE:
     CSP_CONNECT_SRC = ("'self'", "https://api.example.com")
 
 # ======================
-#  CORS & CSRF SETTINGS
+# CORS SETTINGS
 # ======================
-CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:8000",
-])
-
-if DEVELOPMENT_MODE:
-    CORS_ALLOW_ALL_ORIGINS = True
-    CORS_ALLOW_CREDENTIALS = True
-else:
-    CORS_ALLOW_ALL_ORIGINS = False
-    CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = env.list(
+    "CORS_ALLOWED_ORIGINS",
+    default=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+        "http://172.16.21.41:8001",  # Added development link
+        "https://safar-sable.vercel.app",  # Added frontend link
+    ],
+)
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = DEVELOPMENT_MODE  # Allow all in dev, restrict in prod
 
 # ======================
-#  APPLICATION DEFINITION
+# APPLICATION DEFINITION
 # ======================
 INSTALLED_APPS = [
     # Django core apps
@@ -79,7 +99,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.gis",
-    
     # Third-party apps
     "corsheaders",
     "drf_yasg",
@@ -93,15 +112,14 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "django_celery_results",
     "channels",
-    
     # Local apps
     "apps.authentication",
     "apps.safar",
     "apps.real_time",
     "apps.geographic_data",
     "apps.core_apps",
-    'apps.marketing',
-    'apps.languages',
+    "apps.marketing",
+    "apps.languages",
 ]
 
 MIDDLEWARE = [
@@ -140,7 +158,7 @@ WSGI_APPLICATION = "core.wsgi.application"
 ASGI_APPLICATION = "core.asgi.application"
 
 # ======================
-#  DATABASE CONFIGURATION
+# DATABASE CONFIGURATION
 # ======================
 DATABASES = {
     "default": {
@@ -149,15 +167,12 @@ DATABASES = {
         "USER": env("PGUSER"),
         "PASSWORD": env("PGPASSWORD"),
         "HOST": env("PGHOST"),
+        "OPTIONS": {"timeout": 20},
     }
 }
 
-DATABASE_OPTIONS = {
-    'timeout': 20,
-}
-
 # ======================
-#  AUTHENTICATION
+# AUTHENTICATION
 # ======================
 AUTH_USER_MODEL = "authentication.User"
 
@@ -175,7 +190,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # ======================
-#  INTERNATIONALIZATION
+# INTERNATIONALIZATION
 # ======================
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
@@ -183,61 +198,63 @@ USE_I18N = True
 USE_TZ = True
 
 # ======================
-#  STATIC & MEDIA FILES CONFIGURATION
+# STATIC & MEDIA FILES
 # ======================
-STATIC_DIR = env("STATIC_DIR", default="/app/static")
-STATICFILES_DIR = BASE_DIR / 'staticfiles'
-MEDIA_DIR = BASE_DIR / 'media'
-
-if env.bool("USE_S3", default=False):
-    AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID")
-    AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY")
-    AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME")
-    AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="us-east-1")
-    AWS_S3_CUSTOM_DOMAIN = env('AWS_S3_CUSTOM_DOMAIN', default=f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com')
-    
-    AWS_S3_OBJECT_PARAMETERS = {
-        "CacheControl": "max-age=86400",
-    }
-    
-    AWS_DEFAULT_ACL = None
-    AWS_QUERYSTRING_AUTH = False
-    AWS_S3_FILE_OVERWRITE = False
-    
-    AWS_S3_ADDRESSING_STYLE = 'virtual'
-    AWS_S3_SIGNATURE_VERSION = 's3v4'
-    
-    STATIC_LOCATION = "static"
-    STATICFILES_STORAGE = "core.storage_backends.StaticStorage"
-    STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATIC_LOCATION}/"
-
-    PUBLIC_MEDIA_LOCATION = "media"
-    DEFAULT_FILE_STORAGE = "core.storage_backends.MediaStorage"
-    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{PUBLIC_MEDIA_LOCATION}/"
-    
-    STATIC_ROOT = STATICFILES_DIR
-    
-    STORAGES_DEBUG = True
-    
-else:
-    STATIC_URL = '/static/'
-    STATIC_ROOT = BASE_DIR / 'staticfiles'
-    MEDIA_URL = "/media/"
-    MEDIA_ROOT = BASE_DIR / 'media'
-    if not DEVELOPMENT_MODE:
-        STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-    else:
-        STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
-
+STATIC_DIR = env("STATIC_DIR", default=os.path.join(BASE_DIR, "static"))
 STATICFILES_DIRS = [STATIC_DIR]
 STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.FileSystemFinder",
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 ]
 
+USE_S3 = env.bool("USE_S3", default=False)
+
+if USE_S3:
+    # AWS S3 configuration for production
+    AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY")
+    AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME")
+    AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="us-east-1")
+    AWS_S3_CUSTOM_DOMAIN = env(
+        "AWS_S3_CUSTOM_DOMAIN",
+        default=f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com",
+    )
+    AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = False
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_S3_ADDRESSING_STYLE = "virtual"
+    AWS_S3_SIGNATURE_VERSION = "s3v4"
+
+    # Static files
+    STATIC_LOCATION = "static"
+    STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATIC_LOCATION}/"
+    STATICFILES_STORAGE = "core.storage_backends.StaticStorage"
+
+    # Media files
+    PUBLIC_MEDIA_LOCATION = "media"
+    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{PUBLIC_MEDIA_LOCATION}/"
+    DEFAULT_FILE_STORAGE = "core.storage_backends.MediaStorage"
+
+    STATIC_ROOT = BASE_DIR / "staticfiles"
+else:
+    # Local storage for development
+    STATIC_URL = "/static/"
+    STATIC_ROOT = BASE_DIR / "staticfiles"
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = BASE_DIR / "media"
+    STATICFILES_STORAGE = (
+        "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        if not DEVELOPMENT_MODE
+        else "django.contrib.staticfiles.storage.StaticFilesStorage"
+    )
+
 FILE_UPLOAD_PERMISSIONS = 0o644
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
 
+# ======================
+# REST FRAMEWORK
+# ======================
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "apps.authentication.authentication.CustomJWTAuthentication",
@@ -251,15 +268,14 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
     ],
-    'DEFAULT_THROTTLE_CLASSES': [],
     "DEFAULT_THROTTLE_RATES": {
         "anon": "100/day",
-        "user": "1000/day"
+        "user": "1000/day",
     },
 }
 
 # ======================
-#  DJOSER (AUTH)
+# DJOSER CONFIGURATION
 # ======================
 DJOSER = {
     "PASSWORD_RESET_CONFIRM_URL": "password-reset/{uid}/{token}",
@@ -270,47 +286,43 @@ DJOSER = {
     "TOKEN_MODEL": None,
     "SOCIAL_AUTH_ALLOWED_REDIRECT_URIS": env.list("REDIRECT_URLS", default=[]),
     "SERIALIZERS": {
-        'current_user': 'apps.authentication.serializers.UserPublicSerializer',
-        'user': 'apps.authentication.serializers.UserPublicSerializer',
+        "current_user": "apps.authentication.serializers.UserPublicSerializer",
+        "user": "apps.authentication.serializers.UserPublicSerializer",
     },
-    'PERMISSIONS': {
-        'user': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],
-        # 'user_list': ['rest_framework.permissions.AllowAny'],
+    "PERMISSIONS": {
+        "user": ["rest_framework.permissions.IsAuthenticatedOrReadOnly"],
     },
 }
 
 # ======================
-#  COOKIE SETTINGS
+# COOKIE SETTINGS
 # ======================
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
-SESSION_COOKIE_AGE = 1209600
-SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=not DEVELOPMENT_MODE)
+SESSION_COOKIE_AGE = 1209600  # 2 weeks
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = "None"
+SESSION_COOKIE_SAMESITE = "None" if not DEVELOPMENT_MODE else "Lax"
 
-# Auth cookie settings
-AUTH_COOKIE_DOMAIN = env("DOMAIN", default="localhost:3000")
 AUTH_COOKIE = "access"
-AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
-AUTH_COOKIE_SECURE = env.bool("AUTH_COOKIE_SECURE", default=not DEVELOPMENT_MODE)
+AUTH_COOKIE_DOMAIN = env("DOMAIN", default="localhost:3000")
+AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7  # 1 week
 AUTH_COOKIE_HTTP_ONLY = True
 AUTH_COOKIE_PATH = "/"
-AUTH_COOKIE_SAMESITE = "None"
+AUTH_COOKIE_SAMESITE = "None" if not DEVELOPMENT_MODE else "Lax"
 
 # ======================
-#  SOCIAL AUTH
+# SOCIAL AUTH
 # ======================
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = env("GOOGLE_AUTH_KEY")
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = env("GOOGLE_AUTH_SECRET_KEY")
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = env("GOOGLE_AUTH_KEY", default="")
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = env("GOOGLE_AUTH_SECRET_KEY", default="")
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
     "https://www.googleapis.com/auth/userinfo.email",
     "https://www.googleapis.com/auth/userinfo.profile",
-    "openid"
+    "openid",
 ]
 SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ["first_name", "last_name"]
 
 # ======================
-#  CELERY & REDIS
+# CELERY & REDIS
 # ======================
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://redis:6379/0")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://redis:6379/0")
@@ -321,7 +333,7 @@ CELERY_TIMEZONE = "UTC"
 CELERY_TASK_RESULT_EXPIRES = 3600
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
-# Redis cache
+# Redis cache configuration
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -332,44 +344,46 @@ CACHES = {
     }
 }
 
-# Channels (WebSockets)
+# Channels configuration for WebSockets
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        'CONFIG': {
+        "CONFIG": {
             "hosts": [env("REDIS_CACHE_URL", default="redis://redis:6379/0")],
-            'capacity': 1500,  
-            'expiry': 10,
+            "capacity": 1500,
+            "expiry": 10,
         },
     },
 }
 
 # ======================
-#  EMAIL CONFIGURATION
+# EMAIL CONFIGURATION
 # ======================
 EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
 EMAIL_HOST = env("EMAIL_HOST", default="smtp.gmail.com")
 EMAIL_PORT = env.int("EMAIL_PORT", default=587)
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
-EMAIL_HOST_USER = env("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default=f"{env('SITE_NAME', default='Safer')} <{EMAIL_HOST_USER}>")
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+DEFAULT_FROM_EMAIL = env(
+    "DEFAULT_FROM_EMAIL", default=f"{env('SITE_NAME', default='Safer')} <{EMAIL_HOST_USER}>"
+)
 SUPPORT_EMAIL = env("SUPPORT_EMAIL", default=EMAIL_HOST_USER)
 
 # ======================
-#  THIRD-PARTY SERVICES
+# THIRD-PARTY SERVICES
 # ======================
 # Stripe
-STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET")
+STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
+STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 
 # Twilio
-TWILIO_ACCOUNT_SID = env("TWILIO_ACCOUNT_SID")
-TWILIO_AUTH_TOKEN = env("TWILIO_AUTH_TOKEN")
-TWILIO_FROM_NUMBER = env("TWILIO_FROM_NUMBER")
+TWILIO_ACCOUNT_SID = env("TWILIO_ACCOUNT_SID", default="")
+TWILIO_AUTH_TOKEN = env("TWILIO_AUTH_TOKEN", default="")
+TWILIO_FROM_NUMBER = env("TWILIO_FROM_NUMBER", default="")
 
 # ======================
-#  LOGGING CONFIGURATION
+# LOGGING CONFIGURATION
 # ======================
 LOGGING_DIR = BASE_DIR / "logs"
 try:
@@ -423,71 +437,56 @@ LOGGING = {
             "level": "DEBUG" if DEBUG else "INFO",
             "propagate": False,
         },
-        'boto3': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
+        "boto3": {
+            "handlers": ["console"],
+            "level": "DEBUG",
         },
-        'botocore': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
+        "botocore": {
+            "handlers": ["console"],
+            "level": "DEBUG",
         },
-        's3transfer': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
+        "s3transfer": {
+            "handlers": ["console"],
+            "level": "DEBUG",
         },
-        'channels': {
-            'handlers': ['console'],
-            'level': 'WARNING',
-            'propagate': False,
+        "channels": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
         },
     },
 }
 
 # ======================
-#  MISC SETTINGS
+# MISC SETTINGS
 # ======================
-# Default auto field
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Domain and site settings
 DOMAIN = env("DOMAIN", default="localhost:3000")
-
-# Notification Settings
-NOTIFICATION_RETENTION_DAYS = 90
-ENABLE_EMAIL_RATE_LIMITING = True
-ENABLE_SMS_RATE_LIMITING = True
 SITE_NAME = env("SITE_NAME", default="Safer")
 SITE_URL = env("SITE_URL", default="http://localhost:3000")
 
+# Notification settings
+NOTIFICATION_RETENTION_DAYS = 90
+ENABLE_EMAIL_RATE_LIMITING = True
+ENABLE_SMS_RATE_LIMITING = True
+
 # Firebase settings
-FIREBASE_CREDENTIALS = env('FIREBASE_CREDENTIALS', default="")
+FIREBASE_CREDENTIALS = env("FIREBASE_CREDENTIALS", default="")
 
 # Phone number field settings
 PHONENUMBER_DEFAULT_REGION = "YE"
 PHONENUMBER_DB_FORMAT = "E164"
 
 # ======================
-#  ENVIRONMENT SPECIFIC
+# UVICORN CONFIGURATION
 # ======================
-if DEVELOPMENT_MODE:
-    SECURE_SSL_REDIRECT = False
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
-    SESSION_COOKIE_SAMESITE = 'Lax'
-    
-    CSRF_TRUSTED_ORIGINS = [
-        'http://localhost:8000',
-        'http://127.0.0.1:8000',
-        'http://localhost:3000',
-        'http://127.0.0.1:3000'
-    ]
-
-# ======================
-# Uvicorn Configuration
-# ======================
-UVICORN_WORKERS = env.int('UVICORN_WORKERS', default=os.cpu_count() * 2 + 1)
-UVICORN_PORT = env.int('UVICORN_PORT', default=8000)
-UVICORN_HOST = env('UVICORN_HOST', default='0.0.0.0')
-UVICORN_LOG_LEVEL = env('UVICORN_LOG_LEVEL', default='info' if not DEBUG else 'debug')
+# These are typically set in deployment scripts or env, not settings.py
+# Included here for reference, but consider moving to a separate config
+UVICORN_WORKERS = env.int("UVICORN_WORKERS", default=os.cpu_count() * 2 + 1)
+UVICORN_PORT = env.int("UVICORN_PORT", default=8000)
+UVICORN_HOST = env("UVICORN_HOST", default="0.0.0.0")
+UVICORN_LOG_LEVEL = env("UVICORN_LOG_LEVEL", default="info" if not DEBUG else "debug")
 UVICORN_RELOAD = DEVELOPMENT_MODE
-UVICORN_TIMEOUT_KEEP_ALIVE = env.int('UVICORN_TIMEOUT_KEEP_ALIVE', default=65)
+UVICORN_TIMEOUT_KEEP_ALIVE = env.int("UVICORN_TIMEOUT_KEEP_ALIVE", default=65)
