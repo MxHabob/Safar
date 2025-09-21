@@ -3,6 +3,7 @@ services:
     build:
       context: ./backend
     container_name: safar_backend
+    restart: unless-stopped
     env_file: .env
     ports:
       - "8001:8001"
@@ -26,6 +27,7 @@ services:
       context: ./backend
       dockerfile: ../infrastructure/celery/celery-flower/Dockerfile
     container_name: safar_celery
+    restart: unless-stopped
     env_file: .env
     depends_on:
       - db
@@ -40,6 +42,7 @@ services:
       context: ./backend
       dockerfile: ../infrastructure/celery/celery-flower/Dockerfile
     container_name: safar_celery_flower
+    restart: unless-stopped
     env_file: .env
     ports:
       - "5555:5555"
@@ -54,6 +57,7 @@ services:
   redis:
     image: redis:latest
     container_name: safar_redis
+    restart: unless-stopped
     networks:
       - safarnetwork
     volumes:
@@ -67,6 +71,7 @@ services:
   db:
     image: postgis/postgis:latest
     container_name: safar_postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${PGDATABASE}
       POSTGRES_USER: ${PGUSER}
