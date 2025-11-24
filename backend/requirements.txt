@@ -63,6 +63,7 @@ pytz==2024.2
 babel==2.15.0
 phonenumbers==8.13.40
 psutil==5.9.8
+base58==2.1.1
 
 # Search
 pgvector==0.3.3
