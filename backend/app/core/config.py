@@ -112,7 +112,7 @@ class Settings(BaseSettings):
     TWILIO_PHONE_NUMBER: Optional[str] = None
     
     # File Storage
-    STORAGE_TYPE: str = "local"  # local, s3, cloudinary
+    STORAGE_TYPE: str = "local"  # local, s3, minio, cloudinary
     AWS_ACCESS_KEY_ID: Optional[str] = None
     AWS_SECRET_ACCESS_KEY: Optional[str] = None
     AWS_REGION: str = "us-east-1"
@@ -120,6 +120,25 @@ class Settings(BaseSettings):
     CLOUDINARY_CLOUD_NAME: Optional[str] = None
     CLOUDINARY_API_KEY: Optional[str] = None
     CLOUDINARY_API_SECRET: Optional[str] = None
+    # MinIO Configuration
+    MINIO_ENDPOINT: str = Field(default="localhost")
+    MINIO_PORT: int = Field(default=9000)
+    MINIO_ACCESS_KEY: str = Field(default="minioadmin")
+    MINIO_SECRET_KEY: str = Field(default="minioadmin")
+    MINIO_BUCKET_NAME: str = Field(default="safar-files")
+    MINIO_USE_SSL: bool = Field(default=False)
+    MINIO_URL: Optional[str] = None
+    
+    @validator("MINIO_URL", pre=True)
+    def assemble_minio_url(cls, v: Optional[str], values: dict) -> str:
+        """بناء رابط MinIO - Build MinIO URL"""
+        if isinstance(v, str):
+            return v
+        protocol = "https" if values.get("MINIO_USE_SSL", False) else "http"
+        endpoint = values.get("MINIO_ENDPOINT", "localhost")
+        port = values.get("MINIO_PORT", 9000)
+        return f"{protocol}://{endpoint}:{port}"
+    
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
     
     # Email

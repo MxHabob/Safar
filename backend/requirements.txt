@@ -43,6 +43,7 @@ stripe==11.0.0
 
 # File Storage
 boto3==1.35.0
+minio==7.2.3
 pillow==11.0.0
 
 # Email

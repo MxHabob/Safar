@@ -3,6 +3,7 @@
 """
 import os
 import secrets
+import logging
 from pathlib import Path
 from typing import Optional, Tuple
 from fastapi import UploadFile, HTTPException, status
@@ -10,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.modules.files.models import File, FileType, FileCategory
+
+logger = logging.getLogger(__name__)
 
 # Try to import magic for file content validation
 try:
@@ -177,6 +180,10 @@ async def save_file(
     # Generate unique filename
     unique_filename = generate_unique_filename(file.filename)
     
+    # Read file content
+    content = await file.read()
+    file_size = len(content)
+    
     # Determine storage path based on category
     if settings.STORAGE_TYPE == "local":
         # Local storage
@@ -189,10 +196,28 @@ async def save_file(
         
         # Save file
         with open(file_path, "wb") as f:
-            content = await file.read()
             f.write(content)
+    
+    elif settings.STORAGE_TYPE == "minio":
+        # MinIO storage
+        from app.infrastructure.storage.minio_service import get_minio_service
         
-        file_size = len(content)
+        minio_service = get_minio_service()
+        category_path = category.value
+        object_name = f"{category_path}/{unique_filename}"
+        
+        # Upload to MinIO
+        file_url = minio_service.upload_file(
+            file_data=content,
+            object_name=object_name,
+            content_type=file.content_type,
+            metadata={
+                "original_filename": file.filename,
+                "category": category.value,
+                "file_type": file_type.value
+            }
+        )
+        file_path = object_name  # Store object name as path
     
     elif settings.STORAGE_TYPE == "s3":
         # S3 storage (to be implemented)
@@ -225,4 +250,43 @@ async def save_file(
     await db.refresh(file_record)
     
     return file_record
+
+
+async def delete_file(
+    file_record: File,
+    db: AsyncSession
+) -> bool:
+    """
+    حذف ملف - Delete file
+    """
+    from app.core.config import get_settings
+    settings = get_settings()
+    
+    try:
+        # Delete from storage
+        if settings.STORAGE_TYPE == "local":
+            # Delete local file
+            file_path = Path(file_record.file_path)
+            if file_path.exists():
+                file_path.unlink()
+        
+        elif settings.STORAGE_TYPE == "minio":
+            # Delete from MinIO
+            from app.infrastructure.storage.minio_service import get_minio_service
+            minio_service = get_minio_service()
+            minio_service.delete_file(file_record.file_path)  # file_path contains object_name for MinIO
+        
+        elif settings.STORAGE_TYPE == "s3":
+            # S3 deletion (to be implemented)
+            pass
+        
+        # Delete database record
+        await db.delete(file_record)
+        await db.commit()
+        
+        return True
+    except Exception as e:
+        logger.error(f"Error deleting file: {e}")
+        await db.rollback()
+        return False
 

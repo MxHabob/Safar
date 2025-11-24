@@ -1,13 +1,21 @@
-# Production Docker Compose Override
-# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-
-version: '3.8'
-
 services:
   backend:
     environment:
       - DEBUG=False
       - ENVIRONMENT=production
+      # MinIO Configuration
+      - MINIO_ENDPOINT=minio
+      - MINIO_PORT=9000  # Internal port (always 9000 inside container)
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-safar-files}
+      - MINIO_USE_SSL=False
+      - STORAGE_TYPE=minio
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"  # Backend API: external:internal
+    depends_on:
+      minio:
+        condition: service_healthy
     command: >
       sh -c "
         alembic upgrade head &&
@@ -26,6 +34,17 @@ services:
   celery_worker:
     command: celery -A app.core.celery_app worker --loglevel=warning --concurrency=8
     restart: always
+    environment:
+      - MINIO_ENDPOINT=minio
+      - MINIO_PORT=9000  # Internal port (always 9000 inside container)
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-safar-files}
+      - MINIO_USE_SSL=False
+      - STORAGE_TYPE=minio
+    depends_on:
+      minio:
+        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -34,6 +53,17 @@ services:
 
   celery_beat:
     restart: always
+    environment:
+      - MINIO_ENDPOINT=minio
+      - MINIO_PORT=9000  # Internal port (always 9000 inside container)
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-safar-files}
+      - MINIO_USE_SSL=False
+      - STORAGE_TYPE=minio
+    depends_on:
+      minio:
+        condition: service_healthy
 
   postgres:
     restart: always
@@ -46,4 +76,36 @@ services:
   redis:
     restart: always
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD} --maxmemory 512mb --maxmemory-policy allkeys-lru
+
+  minio:
+    image: minio/minio:latest
+    container_name: safar_minio
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    ports:
+      - "${MINIO_API_PORT:-19000}:9000"  # Changed default to 19000 to avoid conflicts
+      - "${MINIO_CONSOLE_PORT:-19001}:9001"  # Changed default to 19001 to avoid conflicts
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 40s
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+volumes:
+  minio_data:
+    driver: local
 

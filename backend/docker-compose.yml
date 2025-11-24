@@ -11,7 +11,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-safar_db}
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5432}:5432"  # PostgreSQL: external:internal
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -31,7 +31,7 @@ services:
     container_name: safar_redis
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "${REDIS_PORT:-6379}:6379"  # Redis: external:internal
     volumes:
       - redis_data:/data
     healthcheck:
@@ -103,6 +103,12 @@ services:
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-}
       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-}
       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-}
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT:-minio}
+      - MINIO_PORT=9000  # Internal port (always 9000 inside container)
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
+      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-safar-files}
+      - MINIO_USE_SSL=${MINIO_USE_SSL:-False}
       - MAX_UPLOAD_SIZE=${MAX_UPLOAD_SIZE:-10485760}
       
       # Email
@@ -153,7 +159,7 @@ services:
       - WEBSOCKET_ENABLED=${WEBSOCKET_ENABLED:-True}
       - WEBSOCKET_HEARTBEAT_INTERVAL=${WEBSOCKET_HEARTBEAT_INTERVAL:-30}
     ports:
-      - "${PORT:-8000}:8000"
+      - "${BACKEND_PORT:-8000}:8000"  # Backend API: external:internal
     volumes:
       - ./app:/app/app:ro
       - ./alembic:/app/alembic:ro
@@ -203,12 +209,21 @@ services:
       - SECRET_KEY=${SECRET_KEY:-change-this-secret-key-in-production}
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - DEBUG=${DEBUG:-False}
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT:-minio}
+      - MINIO_PORT=9000  # Internal port (always 9000 inside container)
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
+      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-safar-files}
+      - MINIO_USE_SSL=${MINIO_USE_SSL:-False}
+      - STORAGE_TYPE=${STORAGE_TYPE:-local}
     volumes:
       - ./app:/app/app:ro
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     command: celery -A app.core.celery_app worker --loglevel=info --concurrency=4
     networks:
@@ -233,6 +248,13 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - SECRET_KEY=${SECRET_KEY:-change-this-secret-key-in-production}
       - ENVIRONMENT=${ENVIRONMENT:-development}
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT:-minio}
+      - MINIO_PORT=9000  # Internal port (always 9000 inside container)
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
+      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-safar-files}
+      - MINIO_USE_SSL=${MINIO_USE_SSL:-False}
+      - STORAGE_TYPE=${STORAGE_TYPE:-local}
     volumes:
       - ./app:/app/app:ro
     depends_on:
@@ -240,7 +262,32 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      minio:
+        condition: service_healthy
     command: celery -A app.core.celery_app beat --loglevel=info
+    networks:
+      - safar_network
+    restart: unless-stopped
+
+  # MinIO Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: safar_minio
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    ports:
+      - "${MINIO_API_PORT:-19000}:9000"  # MinIO API: external:internal (changed from 9000 to avoid conflicts)
+      - "${MINIO_CONSOLE_PORT:-19001}:9001"  # MinIO Console: external:internal (changed from 9001 to avoid conflicts)
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 40s
     networks:
       - safar_network
     restart: unless-stopped
@@ -255,7 +302,7 @@ services:
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-}@redis:6379/${REDIS_DB:-0}
       - FLOWER_PORT=5555
     ports:
-      - "5555:5555"
+      - "${FLOWER_PORT:-5555}:5555"  # Flower (Celery Monitoring): external:internal
     depends_on:
       - redis
       - celery_worker
@@ -272,6 +319,8 @@ volumes:
   redis_data:
     driver: local
   uploads:
+    driver: local
+  minio_data:
     driver: local
 
 networks:
