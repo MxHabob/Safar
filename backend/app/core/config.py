@@ -11,7 +11,7 @@ import os
 import json
 import warnings
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, PostgresDsn, validator, root_validator, ConfigDict, field_validator
+from pydantic import Field, PostgresDsn, validator, root_validator, ConfigDict, field_validator, model_validator
 from typing import List
 
 
@@ -266,18 +266,15 @@ class Settings(BaseSettings):
     # CORS Configuration
     # ============================================================================
     # Store as str to prevent pydantic-settings from auto-parsing JSON
-    # field_validator will convert to list
+    # model_validator will read from env directly
     cors_origins: str = Field(
         default="http://localhost:3000,http://localhost:8000",
-        env="CORS_ORIGINS",
     )
     cors_allow_methods: str = Field(
         default="GET,POST,PUT,DELETE,PATCH,OPTIONS",
-        env="CORS_ALLOW_METHODS",
     )
     cors_allow_headers: str = Field(
         default="Content-Type,Authorization,Accept,X-Requested-With,X-CSRF-Token",
-        env="CORS_ALLOW_HEADERS",
     )
     cors_allow_credentials: bool = Field(default=True, env="CORS_ALLOW_CREDENTIALS")
     
@@ -300,13 +297,11 @@ class Settings(BaseSettings):
     default_language: str = Field(default="ar", env="DEFAULT_LANGUAGE")
     supported_languages: str = Field(
         default="ar,en,fr,es",
-        env="SUPPORTED_LANGUAGES",
     )
     
     default_currency: str = Field(default="USD", env="DEFAULT_CURRENCY")
     supported_currencies: str = Field(
         default="USD,EUR,GBP,SAR,AED,EGP",
-        env="SUPPORTED_CURRENCIES",
     )
     
     # ============================================================================
@@ -324,6 +319,39 @@ class Settings(BaseSettings):
     # ============================================================================
     # Validators
     # ============================================================================
+    
+    @model_validator(mode='before')
+    @classmethod
+    def read_cors_env_vars(cls, data: dict) -> dict:
+        """
+        Read CORS environment variables directly to bypass pydantic-settings JSON parsing.
+        
+        This runs before pydantic-settings tries to parse values, preventing JSON parsing errors.
+        """
+        if isinstance(data, dict):
+            # Read CORS variables directly from environment
+            cors_origins = os.getenv("CORS_ORIGINS", "")
+            if cors_origins:
+                data["cors_origins"] = cors_origins.strip()
+            
+            cors_methods = os.getenv("CORS_ALLOW_METHODS", "")
+            if cors_methods:
+                data["cors_allow_methods"] = cors_methods.strip()
+            
+            cors_headers = os.getenv("CORS_ALLOW_HEADERS", "")
+            if cors_headers:
+                data["cors_allow_headers"] = cors_headers.strip()
+            
+            # Read localization variables
+            supported_languages = os.getenv("SUPPORTED_LANGUAGES", "")
+            if supported_languages:
+                data["supported_languages"] = supported_languages.strip()
+            
+            supported_currencies = os.getenv("SUPPORTED_CURRENCIES", "")
+            if supported_currencies:
+                data["supported_currencies"] = supported_currencies.strip()
+        
+        return data
     
     @field_validator('cors_origins', mode='after')
     @classmethod
