@@ -84,13 +84,13 @@ async def _send_sms_notification_async(notification_id: int):
             return
         
         # Send SMS via Twilio
-        if settings.TWILIO_ACCOUNT_SID and settings.TWILIO_AUTH_TOKEN:
+        if settings.twilio_account_sid and settings.twilio_auth_token:
             try:
                 from twilio.rest import Client
-                client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+                client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
                 message = client.messages.create(
                     body=notification.message,
-                    from_=settings.TWILIO_PHONE_NUMBER,
+                    from_=settings.twilio_phone_number,
                     to=user.phone_number
                 )
                 if message.sid:

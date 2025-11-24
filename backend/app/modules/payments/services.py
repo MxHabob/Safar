@@ -14,8 +14,8 @@ from app.modules.bookings.models import BookingStatus
 settings = get_settings()
 
 # Initialize Stripe if key is available
-if settings.STRIPE_SECRET_KEY:
-    stripe.api_key = settings.STRIPE_SECRET_KEY
+if settings.stripe_secret_key:
+    stripe.api_key = settings.stripe_secret_key
 
 
 class PaymentService:
@@ -29,7 +29,7 @@ class PaymentService:
         currency: str = "USD"
     ) -> dict:
         """إنشاء payment intent - Create payment intent"""
-        if not settings.STRIPE_SECRET_KEY:
+        if not settings.stripe_secret_key:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Payment service is not configured"
@@ -73,7 +73,7 @@ class PaymentService:
             )
         
         # Verify payment intent with Stripe
-        if settings.STRIPE_SECRET_KEY:
+        if settings.stripe_secret_key:
             try:
                 intent = stripe.PaymentIntent.retrieve(payment_intent_id)
                 if intent.status != "succeeded":

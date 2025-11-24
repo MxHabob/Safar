@@ -21,9 +21,9 @@ Base = declarative_base()
 
 # Async Engine
 engine: AsyncEngine = create_async_engine(
-    str(settings.DATABASE_URL),
-    echo=settings.DEBUG,
-    poolclass=NullPool if settings.ENVIRONMENT == "test" else None,
+    str(settings.database_url),
+    echo=settings.debug,
+    poolclass=NullPool if settings.environment == "test" else None,
     pool_pre_ping=True,
     pool_size=20,
     max_overflow=40,

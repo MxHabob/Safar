@@ -42,8 +42,8 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.APP_VERSION,
+    title=settings.app_name,
+    version=settings.app_version,
     description="""
     Safar API - منصة سفر متكاملة متقدمة
     
@@ -64,17 +64,17 @@ app = FastAPI(
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
-    allow_methods=settings.CORS_ALLOW_METHODS,
-    allow_headers=settings.CORS_ALLOW_HEADERS,
+    allow_origins=settings.cors_origins,
+    allow_credentials=settings.cors_allow_credentials,
+    allow_methods=settings.cors_allow_methods,
+    allow_headers=settings.cors_allow_headers,
 )
 
 # Security Headers Middleware
 app.add_middleware(SecurityHeadersMiddleware)
 
 # Rate Limiting Middleware
-if settings.RATE_LIMIT_ENABLED:
+if settings.rate_limit_enabled:
     app.add_middleware(RateLimitMiddleware)
 
 
@@ -173,7 +173,7 @@ async def root():
     """الصفحة الرئيسية - Root endpoint"""
     return {
         "message": "Welcome to Safar API",
-        "version": settings.APP_VERSION,
+        "version": settings.app_version,
         "docs": "/docs",
         "redoc": "/redoc"
     }
@@ -185,6 +185,6 @@ if __name__ == "__main__":
         "app.main:app",
         host=settings.HOST,
         port=settings.PORT,
-        reload=settings.DEBUG
+        reload=settings.debug
     )
 

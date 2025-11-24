@@ -36,13 +36,13 @@ class AITravelPlannerService:
         توليد خطة سفر باستخدام الذكاء الاصطناعي
         Generate travel plan using AI
         """
-        if not settings.OPENAI_API_KEY:
+        if not settings.openai_api_key:
             raise ValueError("OpenAI API key is not configured")
         
         try:
             from openai import AsyncOpenAI
             
-            client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+            client = AsyncOpenAI(api_key=settings.openai_api_key)
             
             # Build prompt
             prompt = get_travel_plan_prompt(
@@ -60,7 +60,7 @@ class AITravelPlannerService:
             
             # Call OpenAI API
             response = await client.chat.completions.create(
-                model=settings.OPENAI_MODEL,
+                model=settings.openai_model,
                 messages=[
                     {
                         "role": "system",
@@ -102,7 +102,7 @@ class AITravelPlannerService:
                 estimated_food_cost=Decimal(str(ai_response.get("costs", {}).get("food", 0))),
                 estimated_transportation_cost=Decimal(str(ai_response.get("costs", {}).get("transportation", 0))),
                 total_estimated_cost=Decimal(str(ai_response.get("costs", {}).get("total", 0))),
-                ai_model_used=settings.OPENAI_MODEL,
+                ai_model_used=settings.openai_model,
                 ai_prompt=prompt,
                 ai_response=ai_response,
                 is_saved=False,

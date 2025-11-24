@@ -10,8 +10,8 @@ settings = get_settings()
 # Create Celery app
 celery_app = Celery(
     "safar",
-    broker=settings.REDIS_URL,
-    backend=settings.REDIS_URL,
+    broker=settings.redis_url,
+    backend=settings.redis_url,
     include=[
         "app.modules.notifications.tasks",
         "app.modules.payments.tasks",

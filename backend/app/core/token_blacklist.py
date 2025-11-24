@@ -17,7 +17,7 @@ async def add_token_to_blacklist(token: str, expires_in: Optional[int] = None) -
         redis = await get_redis()
         # Extract expiration from token if not provided
         if expires_in is None:
-            expires_in = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+            expires_in = settings.access_token_expire_minutes * 60
         
         # Store token with expiration
         key = f"blacklist:token:{token}"
@@ -51,7 +51,7 @@ async def revoke_user_tokens(user_id: int) -> bool:
         key = f"blacklist:user:{user_id}"
         await redis.setex(
             key,
-            settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+            settings.refresh_token_expire_days * 24 * 60 * 60,
             str(datetime.utcnow().timestamp())
         )
         return True

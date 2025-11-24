@@ -27,14 +27,14 @@ class EmailService:
         """
         إرسال بريد إلكتروني - Send email
         """
-        if not settings.SMTP_HOST:
+        if not settings.smtp_host:
             # If SMTP is not configured, log and return False
             print(f"⚠️ SMTP not configured. Email would be sent to {to_email}: {subject}")
             return False
         
         try:
-            from_email = from_email or settings.SMTP_FROM_EMAIL
-            from_name = from_name or settings.SMTP_FROM_NAME
+            from_email = from_email or settings.smtp_from_email
+            from_name = from_name or settings.smtp_from_name
             
             # Create message
             message = MIMEMultipart("alternative")
@@ -53,11 +53,11 @@ class EmailService:
             # Send email
             await aiosmtplib.send(
                 message,
-                hostname=settings.SMTP_HOST,
-                port=settings.SMTP_PORT,
-                username=settings.SMTP_USER,
-                password=settings.SMTP_PASSWORD,
-                use_tls=settings.SMTP_PORT == 587,
+                hostname=settings.smtp_host,
+                port=settings.smtp_port,
+                username=settings.smtp_user,
+                password=settings.smtp_password,
+                use_tls=settings.smtp_port == 587,
             )
             
             return True

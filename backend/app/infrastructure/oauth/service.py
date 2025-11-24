@@ -15,7 +15,7 @@ class OAuthService:
     @staticmethod
     async def verify_google_token(token: str) -> Dict[str, Any]:
         """التحقق من Google token - Verify Google token"""
-        if not settings.GOOGLE_CLIENT_ID:
+        if not settings.google_client_id:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Google OAuth is not configured"
@@ -31,7 +31,7 @@ class OAuthService:
                 data = response.json()
                 
                 # Verify audience
-                if data.get("aud") != settings.GOOGLE_CLIENT_ID:
+                if data.get("aud") != settings.google_client_id:
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="Invalid token audience"
@@ -60,7 +60,7 @@ class OAuthService:
     @staticmethod
     async def verify_apple_token(token: str) -> Dict[str, Any]:
         """التحقق من Apple token - Verify Apple token"""
-        if not settings.APPLE_CLIENT_ID:
+        if not settings.apple_client_id:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Apple OAuth is not configured"
@@ -101,7 +101,7 @@ class OAuthService:
                 token,
                 public_key,
                 algorithms=["RS256"],
-                audience=settings.APPLE_CLIENT_ID
+                audience=settings.apple_client_id
             )
             
             return {

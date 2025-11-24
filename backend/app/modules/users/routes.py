@@ -83,7 +83,7 @@ async def login(
     
     return {
         **tokens,
-        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        "expires_in": settings.access_token_expire_minutes * 60
     }
 
 
@@ -116,7 +116,7 @@ async def refresh_token(
         # Create new tokens
         access_token = create_access_token(
             data={"sub": user.id, "email": user.email, "role": user.role.value},
-            expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
         )
         refresh_token = create_refresh_token(
             data={"sub": user.id, "email": user.email}
@@ -126,7 +126,7 @@ async def refresh_token(
             "access_token": access_token,
             "refresh_token": refresh_token,
             "token_type": "bearer",
-            "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+            "expires_in": settings.access_token_expire_minutes * 60
         }
     except HTTPException:
         raise
@@ -314,6 +314,6 @@ async def oauth_login(
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",
-        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        "expires_in": settings.access_token_expire_minutes * 60
     }
 

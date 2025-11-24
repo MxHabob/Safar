@@ -24,12 +24,12 @@ class MinIOStorageService:
     def __init__(self):
         """تهيئة عميل MinIO - Initialize MinIO client"""
         self.client = Minio(
-            f"{settings.MINIO_ENDPOINT}:{settings.MINIO_PORT}",
-            access_key=settings.MINIO_ACCESS_KEY,
-            secret_key=settings.MINIO_SECRET_KEY,
-            secure=settings.MINIO_USE_SSL
+            f"{settings.minio_endpoint}:{settings.minio_port}",
+            access_key=settings.minio_access_key,
+            secret_key=settings.minio_secret_key,
+            secure=settings.minio_use_ssl
         )
-        self.bucket_name = settings.MINIO_BUCKET_NAME
+        self.bucket_name = settings.minio_bucket_name
         self._ensure_bucket_exists()
     
     def _ensure_bucket_exists(self):
@@ -191,7 +191,7 @@ class MinIOStorageService:
         Returns:
             رابط الملف - File URL
         """
-        base_url = settings.MINIO_URL
+        base_url = settings.minio_url
         return urljoin(base_url, f"{self.bucket_name}/{object_name}")
     
     def get_presigned_url(self, object_name: str, expires_seconds: int = 3600) -> str:

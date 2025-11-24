@@ -32,7 +32,7 @@ async def create_travel_plan(
     المستخدم يكتب وصف طبيعي مثل:
     "سفر عائلي إلى باريس 5 أيام بميزانية 3000 دولار"
     """
-    if not settings.OPENAI_API_KEY:
+    if not settings.openai_api_key:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="AI service is not configured"

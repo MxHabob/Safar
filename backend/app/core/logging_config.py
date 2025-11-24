@@ -52,7 +52,7 @@ def setup_logging():
     
     # Root logger
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG if settings.DEBUG else logging.INFO)
+    root_logger.setLevel(logging.DEBUG if settings.debug else logging.INFO)
     
     # Remove existing handlers
     root_logger.handlers.clear()
@@ -76,7 +76,7 @@ def setup_logging():
     file_handler.setLevel(logging.DEBUG)
     
     # Use JSON formatter in production
-    if settings.ENVIRONMENT == "production":
+    if settings.environment == "production":
         file_formatter = JSONFormatter()
     else:
         file_formatter = logging.Formatter(

@@ -17,7 +17,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     """Middleware للحد من الطلبات - Rate limiting middleware"""
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        if not settings.RATE_LIMIT_ENABLED:
+        if not settings.rate_limit_enabled:
             return await call_next(request)
         
         # Get client IP
@@ -29,7 +29,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             redis = await get_redis()
             current = await redis.get(key)
             
-            if current and int(current) >= settings.RATE_LIMIT_PER_MINUTE:
+            if current and int(current) >= settings.rate_limit_per_minute:
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                     detail="Too many requests. Please try again later."

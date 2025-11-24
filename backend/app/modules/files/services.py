@@ -95,8 +95,8 @@ def validate_file_size(file: UploadFile, file_type: FileType) -> Tuple[bool, Opt
         FileType.DOCUMENT: MAX_DOCUMENT_SIZE,
         FileType.VIDEO: MAX_VIDEO_SIZE,
         FileType.AUDIO: MAX_AUDIO_SIZE,
-        FileType.OTHER: settings.MAX_UPLOAD_SIZE
-    }.get(file_type, settings.MAX_UPLOAD_SIZE)
+        FileType.OTHER: settings.max_upload_size
+    }.get(file_type, settings.max_upload_size)
     
     if file_size > max_size:
         max_mb = max_size / (1024 * 1024)
@@ -185,7 +185,7 @@ async def save_file(
     file_size = len(content)
     
     # Determine storage path based on category
-    if settings.STORAGE_TYPE == "local":
+    if settings.storage_type == "local":
         # Local storage
         category_path = category.value
         upload_dir = Path("uploads") / category_path
@@ -198,7 +198,7 @@ async def save_file(
         with open(file_path, "wb") as f:
             f.write(content)
     
-    elif settings.STORAGE_TYPE == "minio":
+    elif settings.storage_type == "minio":
         # MinIO storage
         from app.infrastructure.storage.minio_service import get_minio_service
         
@@ -219,7 +219,7 @@ async def save_file(
         )
         file_path = object_name  # Store object name as path
     
-    elif settings.STORAGE_TYPE == "s3":
+    elif settings.storage_type == "s3":
         # S3 storage (to be implemented)
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
@@ -229,7 +229,7 @@ async def save_file(
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Storage type {settings.STORAGE_TYPE} is not supported"
+            detail=f"Storage type {settings.storage_type} is not supported"
         )
     
     # Create file record
@@ -264,19 +264,19 @@ async def delete_file(
     
     try:
         # Delete from storage
-        if settings.STORAGE_TYPE == "local":
+        if settings.storage_type == "local":
             # Delete local file
             file_path = Path(file_record.file_path)
             if file_path.exists():
                 file_path.unlink()
         
-        elif settings.STORAGE_TYPE == "minio":
+        elif settings.storage_type == "minio":
             # Delete from MinIO
             from app.infrastructure.storage.minio_service import get_minio_service
             minio_service = get_minio_service()
             minio_service.delete_file(file_record.file_path)  # file_path contains object_name for MinIO
         
-        elif settings.STORAGE_TYPE == "s3":
+        elif settings.storage_type == "s3":
             # S3 deletion (to be implemented)
             pass
         

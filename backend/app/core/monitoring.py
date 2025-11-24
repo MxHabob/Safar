@@ -81,8 +81,8 @@ class HealthChecker:
                 "database": db_status,
                 "redis": redis_status
             },
-            "version": settings.APP_VERSION,
-            "environment": settings.ENVIRONMENT
+            "version": settings.app_version,
+            "environment": settings.environment
         }
 
 
