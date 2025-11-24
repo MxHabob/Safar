@@ -11,7 +11,8 @@ import os
 import json
 import warnings
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, PostgresDsn, validator, root_validator, ConfigDict
+from pydantic import Field, PostgresDsn, validator, root_validator, ConfigDict, field_validator
+from typing import List
 
 
 def parse_list_from_env(value: Union[str, list, None]) -> list[str]:
@@ -264,44 +265,27 @@ class Settings(BaseSettings):
     # ============================================================================
     # CORS Configuration
     # ============================================================================
-    # Store as Optional[str] to prevent pydantic-settings from auto-parsing JSON
-    # Read directly from environment to bypass pydantic-settings JSON parsing
-    # Use private field names (underscore prefix) to prevent auto-matching from env
-    _cors_origins_raw: Optional[str] = Field(default=None, exclude=True)
-    _cors_allow_methods_raw: Optional[str] = Field(default=None, exclude=True)
-    _cors_allow_headers_raw: Optional[str] = Field(default=None, exclude=True)
-    
-    # These will be populated by root_validator - don't read from env to prevent auto-parsing
-    cors_origins: list[str] = Field(default_factory=list, exclude=True)
+    # Use Union[List[str], str] to allow both formats, field_validator will parse it
+    cors_origins: Union[List[str], str] = Field(
+        default=["http://localhost:3000", "http://localhost:8000"],
+        env="CORS_ORIGINS",
+    )
+    cors_allow_methods: Union[List[str], str] = Field(
+        default=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        env="CORS_ALLOW_METHODS",
+    )
+    cors_allow_headers: Union[List[str], str] = Field(
+        default=[
+            "Content-Type",
+            "Authorization",
+            "Accept",
+            "X-Requested-With",
+            "X-CSRF-Token"
+        ],
+        env="CORS_ALLOW_HEADERS",
+    )
     cors_allow_credentials: bool = Field(default=True, env="CORS_ALLOW_CREDENTIALS")
-    cors_allow_methods: list[str] = Field(default_factory=list, exclude=True)
-    cors_allow_headers: list[str] = Field(default_factory=list, exclude=True)
     
-    @root_validator(pre=True)
-    def read_list_env_vars(cls, values: dict) -> dict:
-        """
-        Read list-type environment variables directly to bypass pydantic-settings JSON parsing.
-        
-        This runs before any field validation and prevents pydantic-settings from
-        trying to parse empty or invalid JSON strings.
-        """
-        # Read CORS variables directly from environment, handling empty strings
-        cors_origins = os.getenv("CORS_ORIGINS", "").strip()
-        cors_methods = os.getenv("CORS_ALLOW_METHODS", "").strip()
-        cors_headers = os.getenv("CORS_ALLOW_HEADERS", "").strip()
-        
-        values["_cors_origins_raw"] = cors_origins if cors_origins else None
-        values["_cors_allow_methods_raw"] = cors_methods if cors_methods else None
-        values["_cors_allow_headers_raw"] = cors_headers if cors_headers else None
-        
-        # Read localization variables directly from environment
-        supported_languages = os.getenv("SUPPORTED_LANGUAGES", "").strip()
-        supported_currencies = os.getenv("SUPPORTED_CURRENCIES", "").strip()
-        
-        values["_supported_languages_raw"] = supported_languages if supported_languages else None
-        values["_supported_currencies_raw"] = supported_currencies if supported_currencies else None
-        
-        return values
     
     # ============================================================================
     # Rate Limiting
@@ -319,12 +303,16 @@ class Settings(BaseSettings):
     # Localization
     # ============================================================================
     default_language: str = Field(default="ar", env="DEFAULT_LANGUAGE")
-    _supported_languages_raw: Optional[str] = Field(default=None, exclude=True)
-    supported_languages: list[str] = Field(default_factory=list, exclude=True)
+    supported_languages: Union[List[str], str] = Field(
+        default=["ar", "en", "fr", "es"],
+        env="SUPPORTED_LANGUAGES",
+    )
     
     default_currency: str = Field(default="USD", env="DEFAULT_CURRENCY")
-    _supported_currencies_raw: Optional[str] = Field(default=None, exclude=True)
-    supported_currencies: list[str] = Field(default_factory=list, exclude=True)
+    supported_currencies: Union[List[str], str] = Field(
+        default=["USD", "EUR", "GBP", "SAR", "AED", "EGP"],
+        env="SUPPORTED_CURRENCIES",
+    )
     
     # ============================================================================
     # Search Configuration
@@ -342,10 +330,10 @@ class Settings(BaseSettings):
     # Validators
     # ============================================================================
     
+    @field_validator('cors_origins', mode='before')
     @classmethod
     def parse_cors_origins(cls, v):
         """Parse CORS origins from environment variable."""
-        import json
         if v is None or v == '':
             return ["http://localhost:3000", "http://localhost:8000"]
         if isinstance(v, str):
@@ -357,80 +345,182 @@ class Settings(BaseSettings):
                 return [origin.strip() for origin in v.split(',') if origin.strip()]
         return v
     
-    @root_validator
-    def parse_list_fields(cls, values: dict) -> dict:
-        """
-        Parse all list fields from environment variables.
-        
-        This validator runs after all fields are loaded and converts
-        string values (JSON or comma-separated) to lists.
-        """
-        # Parse CORS_ORIGINS using the custom parser
-        cors_origins_str = values.get("_cors_origins_raw")
-        
-        # Check if CORS_ORIGINS was actually provided (not None/empty)
-        if cors_origins_str is None or not cors_origins_str.strip():
-            # No value provided, use environment-based defaults
-            env = values.get("environment", "development")
-            values["cors_origins"] = (
-                ["*"] if env == "development"
-                else ["http://localhost:3000", "http://localhost:8000"]
-            )
+    @property
+    def cors_origins_list(self) -> List[str]:
+        """Get CORS origins as list."""
+        if isinstance(self.cors_origins, list):
+            origins = self.cors_origins
+        elif isinstance(self.cors_origins, str):
+            if not self.cors_origins.strip():
+                origins = ["http://localhost:3000", "http://localhost:8000"]
+            else:
+                try:
+                    origins = json.loads(self.cors_origins)
+                except json.JSONDecodeError:
+                    origins = [origin.strip() for origin in self.cors_origins.split(',') if origin.strip()]
         else:
-            # Value provided, parse it using the custom parser
-            parsed_origins = cls.parse_cors_origins(cors_origins_str)
-            values["cors_origins"] = parsed_origins if parsed_origins else ["http://localhost:3000", "http://localhost:8000"]
+            origins = ["http://localhost:3000", "http://localhost:8000"]
         
-        # Parse CORS_ALLOW_METHODS
-        methods_str = values.get("_cors_allow_methods_raw")
-        parsed_methods = parse_list_from_env(methods_str)
-        values["cors_allow_methods"] = (
-            parsed_methods if parsed_methods
-            else ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
-        )
+        # Handle development environment - use "*" if no origins specified
+        if not origins or origins == ["http://localhost:3000", "http://localhost:8000"]:
+            if self.environment == "development":
+                origins = ["*"]
         
-        # Parse CORS_ALLOW_HEADERS
-        headers_str = values.get("_cors_allow_headers_raw")
-        parsed_headers = parse_list_from_env(headers_str)
-        values["cors_allow_headers"] = (
-            parsed_headers if parsed_headers
-            else [
+        # Never allow wildcard in production
+        if self.environment == "production" and "*" in origins:
+            warnings.warn(
+                "⚠️ WARNING: CORS_ORIGINS contains '*' in production. This is a security risk!",
+                UserWarning
+            )
+            origins = [o for o in origins if o != "*"]
+        
+        # Add localhost variants in debug mode
+        if self.debug:
+            debug_origins = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8000"]
+            origins = list(set(origins + debug_origins))
+        
+        return origins
+    
+    @property
+    def cors_allow_methods_list(self) -> List[str]:
+        """Get CORS allow methods as list."""
+        if isinstance(self.cors_allow_methods, list):
+            return self.cors_allow_methods
+        elif isinstance(self.cors_allow_methods, str):
+            if not self.cors_allow_methods.strip():
+                return ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+            try:
+                return json.loads(self.cors_allow_methods)
+            except json.JSONDecodeError:
+                return [method.strip() for method in self.cors_allow_methods.split(',') if method.strip()]
+        return ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+    
+    @property
+    def cors_allow_headers_list(self) -> List[str]:
+        """Get CORS allow headers as list."""
+        if isinstance(self.cors_allow_headers, list):
+            return self.cors_allow_headers
+        elif isinstance(self.cors_allow_headers, str):
+            if not self.cors_allow_headers.strip():
+                return [
+                    "Content-Type",
+                    "Authorization",
+                    "Accept",
+                    "X-Requested-With",
+                    "X-CSRF-Token"
+                ]
+            try:
+                return json.loads(self.cors_allow_headers)
+            except json.JSONDecodeError:
+                return [header.strip() for header in self.cors_allow_headers.split(',') if header.strip()]
+        return [
+            "Content-Type",
+            "Authorization",
+            "Accept",
+            "X-Requested-With",
+            "X-CSRF-Token"
+        ]
+    
+    @property
+    def supported_languages_list(self) -> List[str]:
+        """Get supported languages as list."""
+        if isinstance(self.supported_languages, list):
+            return self.supported_languages
+        elif isinstance(self.supported_languages, str):
+            if not self.supported_languages.strip():
+                return ["ar", "en", "fr", "es"]
+            try:
+                return json.loads(self.supported_languages)
+            except json.JSONDecodeError:
+                return [lang.strip() for lang in self.supported_languages.split(',') if lang.strip()]
+        return ["ar", "en", "fr", "es"]
+    
+    @property
+    def supported_currencies_list(self) -> List[str]:
+        """Get supported currencies as list."""
+        if isinstance(self.supported_currencies, list):
+            return self.supported_currencies
+        elif isinstance(self.supported_currencies, str):
+            if not self.supported_currencies.strip():
+                return ["USD", "EUR", "GBP", "SAR", "AED", "EGP"]
+            try:
+                return json.loads(self.supported_currencies)
+            except json.JSONDecodeError:
+                return [curr.strip() for curr in self.supported_currencies.split(',') if curr.strip()]
+        return ["USD", "EUR", "GBP", "SAR", "AED", "EGP"]
+    
+    @field_validator('cors_allow_methods', mode='before')
+    @classmethod
+    def parse_cors_methods(cls, v):
+        """Parse CORS allow methods from environment variable."""
+        if v is None or v == '':
+            return ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+        if isinstance(v, str):
+            if not v.strip():
+                return ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return [method.strip() for method in v.split(',') if method.strip()]
+        return v
+    
+    @field_validator('cors_allow_headers', mode='before')
+    @classmethod
+    def parse_cors_headers(cls, v):
+        """Parse CORS allow headers from environment variable."""
+        if v is None or v == '':
+            return [
                 "Content-Type",
                 "Authorization",
                 "Accept",
                 "X-Requested-With",
                 "X-CSRF-Token"
             ]
-        )
-        
-        # Parse SUPPORTED_LANGUAGES
-        languages_str = values.get("_supported_languages_raw")
-        parsed_languages = parse_list_from_env(languages_str)
-        values["supported_languages"] = (
-            parsed_languages if parsed_languages
-            else ["ar", "en", "fr", "es"]
-        )
-        
-        # Parse SUPPORTED_CURRENCIES
-        currencies_str = values.get("_supported_currencies_raw")
-        parsed_currencies = parse_list_from_env(currencies_str)
-        values["supported_currencies"] = (
-            parsed_currencies if parsed_currencies
-            else ["USD", "EUR", "GBP", "SAR", "AED", "EGP"]
-        )
-        
-        return values
-    
-    @validator("cors_origins")
-    def validate_cors_origins(cls, v: list[str], values: dict) -> list[str]:
-        """Validate CORS origins and warn about security issues"""
-        env = values.get("environment", "development")
-        if env == "production" and "*" in v:
-            warnings.warn(
-                "⚠️ WARNING: CORS_ORIGINS contains '*' in production. This is a security risk!",
-                UserWarning
-            )
+        if isinstance(v, str):
+            if not v.strip():
+                return [
+                    "Content-Type",
+                    "Authorization",
+                    "Accept",
+                    "X-Requested-With",
+                    "X-CSRF-Token"
+                ]
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return [header.strip() for header in v.split(',') if header.strip()]
         return v
+    
+    @field_validator('supported_languages', mode='before')
+    @classmethod
+    def parse_supported_languages(cls, v):
+        """Parse supported languages from environment variable."""
+        if v is None or v == '':
+            return ["ar", "en", "fr", "es"]
+        if isinstance(v, str):
+            if not v.strip():
+                return ["ar", "en", "fr", "es"]
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return [lang.strip() for lang in v.split(',') if lang.strip()]
+        return v
+    
+    @field_validator('supported_currencies', mode='before')
+    @classmethod
+    def parse_supported_currencies(cls, v):
+        """Parse supported currencies from environment variable."""
+        if v is None or v == '':
+            return ["USD", "EUR", "GBP", "SAR", "AED", "EGP"]
+        if isinstance(v, str):
+            if not v.strip():
+                return ["USD", "EUR", "GBP", "SAR", "AED", "EGP"]
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return [curr.strip() for curr in v.split(',') if curr.strip()]
+        return v
+    
 
 
 @lru_cache()
