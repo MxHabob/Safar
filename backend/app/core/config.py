@@ -11,7 +11,7 @@ import os
 import json
 import warnings
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, PostgresDsn, validator, root_validator
+from pydantic import Field, PostgresDsn, validator, root_validator, ConfigDict
 
 
 def parse_list_from_env(value: Union[str, list, None]) -> list[str]:
@@ -66,7 +66,8 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
-        extra="ignore"
+        extra="ignore",
+        env_ignore_empty=True
     )
     
     # ============================================================================
@@ -268,11 +269,11 @@ class Settings(BaseSettings):
     cors_allow_methods_raw: Optional[str] = Field(None, env="CORS_ALLOW_METHODS")
     cors_allow_headers_raw: Optional[str] = Field(None, env="CORS_ALLOW_HEADERS")
     
-    # These will be populated by root_validator
-    cors_origins: list[str] = Field(default_factory=list)
+    # These will be populated by root_validator - don't read from env to prevent auto-parsing
+    cors_origins: list[str] = Field(default_factory=list, exclude=True)
     cors_allow_credentials: bool = Field(default=True, env="CORS_ALLOW_CREDENTIALS")
-    cors_allow_methods: list[str] = Field(default_factory=list)
-    cors_allow_headers: list[str] = Field(default_factory=list)
+    cors_allow_methods: list[str] = Field(default_factory=list, exclude=True)
+    cors_allow_headers: list[str] = Field(default_factory=list, exclude=True)
     
     # ============================================================================
     # Rate Limiting
@@ -291,11 +292,11 @@ class Settings(BaseSettings):
     # ============================================================================
     default_language: str = Field(default="ar", env="DEFAULT_LANGUAGE")
     supported_languages_raw: Optional[str] = Field(None, env="SUPPORTED_LANGUAGES")
-    supported_languages: list[str] = Field(default_factory=list)
+    supported_languages: list[str] = Field(default_factory=list, exclude=True)
     
     default_currency: str = Field(default="USD", env="DEFAULT_CURRENCY")
     supported_currencies_raw: Optional[str] = Field(None, env="SUPPORTED_CURRENCIES")
-    supported_currencies: list[str] = Field(default_factory=list)
+    supported_currencies: list[str] = Field(default_factory=list, exclude=True)
     
     # ============================================================================
     # Search Configuration
