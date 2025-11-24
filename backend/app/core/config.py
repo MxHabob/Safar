@@ -265,15 +265,42 @@ class Settings(BaseSettings):
     # CORS Configuration
     # ============================================================================
     # Store as Optional[str] to prevent pydantic-settings from auto-parsing JSON
-    cors_origins_raw: Optional[str] = Field(None, env="CORS_ORIGINS")
-    cors_allow_methods_raw: Optional[str] = Field(None, env="CORS_ALLOW_METHODS")
-    cors_allow_headers_raw: Optional[str] = Field(None, env="CORS_ALLOW_HEADERS")
+    # Read directly from environment to bypass pydantic-settings JSON parsing
+    cors_origins_raw: Optional[str] = Field(default=None)
+    cors_allow_methods_raw: Optional[str] = Field(default=None)
+    cors_allow_headers_raw: Optional[str] = Field(default=None)
     
     # These will be populated by root_validator - don't read from env to prevent auto-parsing
     cors_origins: list[str] = Field(default_factory=list, exclude=True)
     cors_allow_credentials: bool = Field(default=True, env="CORS_ALLOW_CREDENTIALS")
     cors_allow_methods: list[str] = Field(default_factory=list, exclude=True)
     cors_allow_headers: list[str] = Field(default_factory=list, exclude=True)
+    
+    @root_validator(pre=True)
+    def read_list_env_vars(cls, values: dict) -> dict:
+        """
+        Read list-type environment variables directly to bypass pydantic-settings JSON parsing.
+        
+        This runs before any field validation and prevents pydantic-settings from
+        trying to parse empty or invalid JSON strings.
+        """
+        # Read CORS variables directly from environment, handling empty strings
+        cors_origins = os.getenv("CORS_ORIGINS", "").strip()
+        cors_methods = os.getenv("CORS_ALLOW_METHODS", "").strip()
+        cors_headers = os.getenv("CORS_ALLOW_HEADERS", "").strip()
+        
+        values["cors_origins_raw"] = cors_origins if cors_origins else None
+        values["cors_allow_methods_raw"] = cors_methods if cors_methods else None
+        values["cors_allow_headers_raw"] = cors_headers if cors_headers else None
+        
+        # Read localization variables directly from environment
+        supported_languages = os.getenv("SUPPORTED_LANGUAGES", "").strip()
+        supported_currencies = os.getenv("SUPPORTED_CURRENCIES", "").strip()
+        
+        values["supported_languages_raw"] = supported_languages if supported_languages else None
+        values["supported_currencies_raw"] = supported_currencies if supported_currencies else None
+        
+        return values
     
     # ============================================================================
     # Rate Limiting
@@ -291,11 +318,11 @@ class Settings(BaseSettings):
     # Localization
     # ============================================================================
     default_language: str = Field(default="ar", env="DEFAULT_LANGUAGE")
-    supported_languages_raw: Optional[str] = Field(None, env="SUPPORTED_LANGUAGES")
+    supported_languages_raw: Optional[str] = Field(default=None)
     supported_languages: list[str] = Field(default_factory=list, exclude=True)
     
     default_currency: str = Field(default="USD", env="DEFAULT_CURRENCY")
-    supported_currencies_raw: Optional[str] = Field(None, env="SUPPORTED_CURRENCIES")
+    supported_currencies_raw: Optional[str] = Field(default=None)
     supported_currencies: list[str] = Field(default_factory=list, exclude=True)
     
     # ============================================================================
