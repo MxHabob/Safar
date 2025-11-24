@@ -266,9 +266,10 @@ class Settings(BaseSettings):
     # ============================================================================
     # Store as Optional[str] to prevent pydantic-settings from auto-parsing JSON
     # Read directly from environment to bypass pydantic-settings JSON parsing
-    cors_origins_raw: Optional[str] = Field(default=None)
-    cors_allow_methods_raw: Optional[str] = Field(default=None)
-    cors_allow_headers_raw: Optional[str] = Field(default=None)
+    # Use private field names (underscore prefix) to prevent auto-matching from env
+    _cors_origins_raw: Optional[str] = Field(default=None, exclude=True)
+    _cors_allow_methods_raw: Optional[str] = Field(default=None, exclude=True)
+    _cors_allow_headers_raw: Optional[str] = Field(default=None, exclude=True)
     
     # These will be populated by root_validator - don't read from env to prevent auto-parsing
     cors_origins: list[str] = Field(default_factory=list, exclude=True)
@@ -289,16 +290,16 @@ class Settings(BaseSettings):
         cors_methods = os.getenv("CORS_ALLOW_METHODS", "").strip()
         cors_headers = os.getenv("CORS_ALLOW_HEADERS", "").strip()
         
-        values["cors_origins_raw"] = cors_origins if cors_origins else None
-        values["cors_allow_methods_raw"] = cors_methods if cors_methods else None
-        values["cors_allow_headers_raw"] = cors_headers if cors_headers else None
+        values["_cors_origins_raw"] = cors_origins if cors_origins else None
+        values["_cors_allow_methods_raw"] = cors_methods if cors_methods else None
+        values["_cors_allow_headers_raw"] = cors_headers if cors_headers else None
         
         # Read localization variables directly from environment
         supported_languages = os.getenv("SUPPORTED_LANGUAGES", "").strip()
         supported_currencies = os.getenv("SUPPORTED_CURRENCIES", "").strip()
         
-        values["supported_languages_raw"] = supported_languages if supported_languages else None
-        values["supported_currencies_raw"] = supported_currencies if supported_currencies else None
+        values["_supported_languages_raw"] = supported_languages if supported_languages else None
+        values["_supported_currencies_raw"] = supported_currencies if supported_currencies else None
         
         return values
     
@@ -318,11 +319,11 @@ class Settings(BaseSettings):
     # Localization
     # ============================================================================
     default_language: str = Field(default="ar", env="DEFAULT_LANGUAGE")
-    supported_languages_raw: Optional[str] = Field(default=None)
+    _supported_languages_raw: Optional[str] = Field(default=None, exclude=True)
     supported_languages: list[str] = Field(default_factory=list, exclude=True)
     
     default_currency: str = Field(default="USD", env="DEFAULT_CURRENCY")
-    supported_currencies_raw: Optional[str] = Field(default=None)
+    _supported_currencies_raw: Optional[str] = Field(default=None, exclude=True)
     supported_currencies: list[str] = Field(default_factory=list, exclude=True)
     
     # ============================================================================
@@ -341,6 +342,21 @@ class Settings(BaseSettings):
     # Validators
     # ============================================================================
     
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Parse CORS origins from environment variable."""
+        import json
+        if v is None or v == '':
+            return ["http://localhost:3000", "http://localhost:8000"]
+        if isinstance(v, str):
+            if not v.strip():
+                return ["http://localhost:3000", "http://localhost:8000"]
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return [origin.strip() for origin in v.split(',') if origin.strip()]
+        return v
+    
     @root_validator
     def parse_list_fields(cls, values: dict) -> dict:
         """
@@ -349,20 +365,24 @@ class Settings(BaseSettings):
         This validator runs after all fields are loaded and converts
         string values (JSON or comma-separated) to lists.
         """
-        # Parse CORS_ORIGINS
-        cors_origins_str = values.get("cors_origins_raw")
-        parsed_origins = parse_list_from_env(cors_origins_str)
-        if not parsed_origins:
+        # Parse CORS_ORIGINS using the custom parser
+        cors_origins_str = values.get("_cors_origins_raw")
+        
+        # Check if CORS_ORIGINS was actually provided (not None/empty)
+        if cors_origins_str is None or not cors_origins_str.strip():
+            # No value provided, use environment-based defaults
             env = values.get("environment", "development")
             values["cors_origins"] = (
                 ["*"] if env == "development"
                 else ["http://localhost:3000", "http://localhost:8000"]
             )
         else:
-            values["cors_origins"] = parsed_origins
+            # Value provided, parse it using the custom parser
+            parsed_origins = cls.parse_cors_origins(cors_origins_str)
+            values["cors_origins"] = parsed_origins if parsed_origins else ["http://localhost:3000", "http://localhost:8000"]
         
         # Parse CORS_ALLOW_METHODS
-        methods_str = values.get("cors_allow_methods_raw")
+        methods_str = values.get("_cors_allow_methods_raw")
         parsed_methods = parse_list_from_env(methods_str)
         values["cors_allow_methods"] = (
             parsed_methods if parsed_methods
@@ -370,7 +390,7 @@ class Settings(BaseSettings):
         )
         
         # Parse CORS_ALLOW_HEADERS
-        headers_str = values.get("cors_allow_headers_raw")
+        headers_str = values.get("_cors_allow_headers_raw")
         parsed_headers = parse_list_from_env(headers_str)
         values["cors_allow_headers"] = (
             parsed_headers if parsed_headers
@@ -384,7 +404,7 @@ class Settings(BaseSettings):
         )
         
         # Parse SUPPORTED_LANGUAGES
-        languages_str = values.get("supported_languages_raw")
+        languages_str = values.get("_supported_languages_raw")
         parsed_languages = parse_list_from_env(languages_str)
         values["supported_languages"] = (
             parsed_languages if parsed_languages
@@ -392,7 +412,7 @@ class Settings(BaseSettings):
         )
         
         # Parse SUPPORTED_CURRENCIES
-        currencies_str = values.get("supported_currencies_raw")
+        currencies_str = values.get("_supported_currencies_raw")
         parsed_currencies = parse_list_from_env(currencies_str)
         values["supported_currencies"] = (
             parsed_currencies if parsed_currencies
