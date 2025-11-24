@@ -265,23 +265,18 @@ class Settings(BaseSettings):
     # ============================================================================
     # CORS Configuration
     # ============================================================================
-    # Use Union[List[str], str] to allow both formats, field_validator will parse it
-    cors_origins: Union[List[str], str] = Field(
-        default=["http://localhost:3000", "http://localhost:8000"],
+    # Store as str to prevent pydantic-settings from auto-parsing JSON
+    # field_validator will convert to list
+    cors_origins: str = Field(
+        default="http://localhost:3000,http://localhost:8000",
         env="CORS_ORIGINS",
     )
-    cors_allow_methods: Union[List[str], str] = Field(
-        default=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    cors_allow_methods: str = Field(
+        default="GET,POST,PUT,DELETE,PATCH,OPTIONS",
         env="CORS_ALLOW_METHODS",
     )
-    cors_allow_headers: Union[List[str], str] = Field(
-        default=[
-            "Content-Type",
-            "Authorization",
-            "Accept",
-            "X-Requested-With",
-            "X-CSRF-Token"
-        ],
+    cors_allow_headers: str = Field(
+        default="Content-Type,Authorization,Accept,X-Requested-With,X-CSRF-Token",
         env="CORS_ALLOW_HEADERS",
     )
     cors_allow_credentials: bool = Field(default=True, env="CORS_ALLOW_CREDENTIALS")
@@ -303,14 +298,14 @@ class Settings(BaseSettings):
     # Localization
     # ============================================================================
     default_language: str = Field(default="ar", env="DEFAULT_LANGUAGE")
-    supported_languages: Union[List[str], str] = Field(
-        default=["ar", "en", "fr", "es"],
+    supported_languages: str = Field(
+        default="ar,en,fr,es",
         env="SUPPORTED_LANGUAGES",
     )
     
     default_currency: str = Field(default="USD", env="DEFAULT_CURRENCY")
-    supported_currencies: Union[List[str], str] = Field(
-        default=["USD", "EUR", "GBP", "SAR", "AED", "EGP"],
+    supported_currencies: str = Field(
+        default="USD,EUR,GBP,SAR,AED,EGP",
         env="SUPPORTED_CURRENCIES",
     )
     
@@ -330,36 +325,29 @@ class Settings(BaseSettings):
     # Validators
     # ============================================================================
     
-    @field_validator('cors_origins', mode='before')
+    @field_validator('cors_origins', mode='after')
     @classmethod
-    def parse_cors_origins(cls, v):
-        """Parse CORS origins from environment variable."""
+    def parse_cors_origins(cls, v: str) -> str:
+        """Parse CORS origins from environment variable - keep as string for storage."""
         if v is None or v == '':
-            return ["http://localhost:3000", "http://localhost:8000"]
+            return "http://localhost:3000,http://localhost:8000"
         if isinstance(v, str):
             if not v.strip():
-                return ["http://localhost:3000", "http://localhost:8000"]
-            try:
-                return json.loads(v)
-            except json.JSONDecodeError:
-                return [origin.strip() for origin in v.split(',') if origin.strip()]
-        return v
+                return "http://localhost:3000,http://localhost:8000"
+            # Return as-is, parsing will happen in property
+            return v
+        return str(v)
     
     @property
     def cors_origins_list(self) -> List[str]:
         """Get CORS origins as list."""
-        if isinstance(self.cors_origins, list):
-            origins = self.cors_origins
-        elif isinstance(self.cors_origins, str):
-            if not self.cors_origins.strip():
-                origins = ["http://localhost:3000", "http://localhost:8000"]
-            else:
-                try:
-                    origins = json.loads(self.cors_origins)
-                except json.JSONDecodeError:
-                    origins = [origin.strip() for origin in self.cors_origins.split(',') if origin.strip()]
-        else:
+        if not self.cors_origins or not self.cors_origins.strip():
             origins = ["http://localhost:3000", "http://localhost:8000"]
+        else:
+            try:
+                origins = json.loads(self.cors_origins)
+            except json.JSONDecodeError:
+                origins = [origin.strip() for origin in self.cors_origins.split(',') if origin.strip()]
         
         # Handle development environment - use "*" if no origins specified
         if not origins or origins == ["http://localhost:3000", "http://localhost:8000"]:
@@ -384,91 +372,17 @@ class Settings(BaseSettings):
     @property
     def cors_allow_methods_list(self) -> List[str]:
         """Get CORS allow methods as list."""
-        if isinstance(self.cors_allow_methods, list):
-            return self.cors_allow_methods
-        elif isinstance(self.cors_allow_methods, str):
-            if not self.cors_allow_methods.strip():
-                return ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
-            try:
-                return json.loads(self.cors_allow_methods)
-            except json.JSONDecodeError:
-                return [method.strip() for method in self.cors_allow_methods.split(',') if method.strip()]
-        return ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+        if not self.cors_allow_methods or not self.cors_allow_methods.strip():
+            return ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+        try:
+            return json.loads(self.cors_allow_methods)
+        except json.JSONDecodeError:
+            return [method.strip() for method in self.cors_allow_methods.split(',') if method.strip()]
     
     @property
     def cors_allow_headers_list(self) -> List[str]:
         """Get CORS allow headers as list."""
-        if isinstance(self.cors_allow_headers, list):
-            return self.cors_allow_headers
-        elif isinstance(self.cors_allow_headers, str):
-            if not self.cors_allow_headers.strip():
-                return [
-                    "Content-Type",
-                    "Authorization",
-                    "Accept",
-                    "X-Requested-With",
-                    "X-CSRF-Token"
-                ]
-            try:
-                return json.loads(self.cors_allow_headers)
-            except json.JSONDecodeError:
-                return [header.strip() for header in self.cors_allow_headers.split(',') if header.strip()]
-        return [
-            "Content-Type",
-            "Authorization",
-            "Accept",
-            "X-Requested-With",
-            "X-CSRF-Token"
-        ]
-    
-    @property
-    def supported_languages_list(self) -> List[str]:
-        """Get supported languages as list."""
-        if isinstance(self.supported_languages, list):
-            return self.supported_languages
-        elif isinstance(self.supported_languages, str):
-            if not self.supported_languages.strip():
-                return ["ar", "en", "fr", "es"]
-            try:
-                return json.loads(self.supported_languages)
-            except json.JSONDecodeError:
-                return [lang.strip() for lang in self.supported_languages.split(',') if lang.strip()]
-        return ["ar", "en", "fr", "es"]
-    
-    @property
-    def supported_currencies_list(self) -> List[str]:
-        """Get supported currencies as list."""
-        if isinstance(self.supported_currencies, list):
-            return self.supported_currencies
-        elif isinstance(self.supported_currencies, str):
-            if not self.supported_currencies.strip():
-                return ["USD", "EUR", "GBP", "SAR", "AED", "EGP"]
-            try:
-                return json.loads(self.supported_currencies)
-            except json.JSONDecodeError:
-                return [curr.strip() for curr in self.supported_currencies.split(',') if curr.strip()]
-        return ["USD", "EUR", "GBP", "SAR", "AED", "EGP"]
-    
-    @field_validator('cors_allow_methods', mode='before')
-    @classmethod
-    def parse_cors_methods(cls, v):
-        """Parse CORS allow methods from environment variable."""
-        if v is None or v == '':
-            return ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
-        if isinstance(v, str):
-            if not v.strip():
-                return ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
-            try:
-                return json.loads(v)
-            except json.JSONDecodeError:
-                return [method.strip() for method in v.split(',') if method.strip()]
-        return v
-    
-    @field_validator('cors_allow_headers', mode='before')
-    @classmethod
-    def parse_cors_headers(cls, v):
-        """Parse CORS allow headers from environment variable."""
-        if v is None or v == '':
+        if not self.cors_allow_headers or not self.cors_allow_headers.strip():
             return [
                 "Content-Type",
                 "Authorization",
@@ -476,50 +390,78 @@ class Settings(BaseSettings):
                 "X-Requested-With",
                 "X-CSRF-Token"
             ]
-        if isinstance(v, str):
-            if not v.strip():
-                return [
-                    "Content-Type",
-                    "Authorization",
-                    "Accept",
-                    "X-Requested-With",
-                    "X-CSRF-Token"
-                ]
-            try:
-                return json.loads(v)
-            except json.JSONDecodeError:
-                return [header.strip() for header in v.split(',') if header.strip()]
-        return v
+        try:
+            return json.loads(self.cors_allow_headers)
+        except json.JSONDecodeError:
+            return [header.strip() for header in self.cors_allow_headers.split(',') if header.strip()]
     
-    @field_validator('supported_languages', mode='before')
-    @classmethod
-    def parse_supported_languages(cls, v):
-        """Parse supported languages from environment variable."""
-        if v is None or v == '':
+    @property
+    def supported_languages_list(self) -> List[str]:
+        """Get supported languages as list."""
+        if not self.supported_languages or not self.supported_languages.strip():
             return ["ar", "en", "fr", "es"]
-        if isinstance(v, str):
-            if not v.strip():
-                return ["ar", "en", "fr", "es"]
-            try:
-                return json.loads(v)
-            except json.JSONDecodeError:
-                return [lang.strip() for lang in v.split(',') if lang.strip()]
-        return v
+        try:
+            return json.loads(self.supported_languages)
+        except json.JSONDecodeError:
+            return [lang.strip() for lang in self.supported_languages.split(',') if lang.strip()]
     
-    @field_validator('supported_currencies', mode='before')
-    @classmethod
-    def parse_supported_currencies(cls, v):
-        """Parse supported currencies from environment variable."""
-        if v is None or v == '':
+    @property
+    def supported_currencies_list(self) -> List[str]:
+        """Get supported currencies as list."""
+        if not self.supported_currencies or not self.supported_currencies.strip():
             return ["USD", "EUR", "GBP", "SAR", "AED", "EGP"]
+        try:
+            return json.loads(self.supported_currencies)
+        except json.JSONDecodeError:
+            return [curr.strip() for curr in self.supported_currencies.split(',') if curr.strip()]
+    
+    @field_validator('cors_allow_methods', mode='after')
+    @classmethod
+    def parse_cors_methods(cls, v: str) -> str:
+        """Parse CORS allow methods from environment variable - keep as string for storage."""
+        if v is None or v == '':
+            return "GET,POST,PUT,DELETE,PATCH,OPTIONS"
         if isinstance(v, str):
             if not v.strip():
-                return ["USD", "EUR", "GBP", "SAR", "AED", "EGP"]
-            try:
-                return json.loads(v)
-            except json.JSONDecodeError:
-                return [curr.strip() for curr in v.split(',') if curr.strip()]
-        return v
+                return "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+            return v
+        return str(v)
+    
+    @field_validator('cors_allow_headers', mode='after')
+    @classmethod
+    def parse_cors_headers(cls, v: str) -> str:
+        """Parse CORS allow headers from environment variable - keep as string for storage."""
+        if v is None or v == '':
+            return "Content-Type,Authorization,Accept,X-Requested-With,X-CSRF-Token"
+        if isinstance(v, str):
+            if not v.strip():
+                return "Content-Type,Authorization,Accept,X-Requested-With,X-CSRF-Token"
+            return v
+        return str(v)
+    
+    @field_validator('supported_languages', mode='after')
+    @classmethod
+    def parse_supported_languages(cls, v: str) -> str:
+        """Parse supported languages from environment variable - keep as string for storage."""
+        if v is None or v == '':
+            return "ar,en,fr,es"
+        if isinstance(v, str):
+            if not v.strip():
+                return "ar,en,fr,es"
+            return v
+        return str(v)
+    
+    @field_validator('supported_currencies', mode='after')
+    @classmethod
+    def parse_supported_currencies(cls, v: str) -> str:
+        """Parse supported currencies from environment variable - keep as string for storage."""
+        if v is None or v == '':
+            return "USD,EUR,GBP,SAR,AED,EGP"
+        if isinstance(v, str):
+            if not v.strip():
+                return "USD,EUR,GBP,SAR,AED,EGP"
+            return v
+        return str(v)
     
 
 
