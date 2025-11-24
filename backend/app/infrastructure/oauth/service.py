@@ -1,0 +1,117 @@
+"""
+خدمة OAuth2 - OAuth2 Service
+"""
+from typing import Optional, Dict, Any
+import httpx
+from fastapi import HTTPException, status
+from app.core.config import get_settings
+
+settings = get_settings()
+
+
+class OAuthService:
+    """خدمة OAuth2 - OAuth2 service"""
+    
+    @staticmethod
+    async def verify_google_token(token: str) -> Dict[str, Any]:
+        """التحقق من Google token - Verify Google token"""
+        if not settings.GOOGLE_CLIENT_ID:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Google OAuth is not configured"
+            )
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                # Verify token with Google
+                response = await client.get(
+                    f"https://www.googleapis.com/oauth2/v3/tokeninfo?id_token={token}"
+                )
+                response.raise_for_status()
+                data = response.json()
+                
+                # Verify audience
+                if data.get("aud") != settings.GOOGLE_CLIENT_ID:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Invalid token audience"
+                    )
+                
+                return {
+                    "email": data.get("email"),
+                    "name": data.get("name"),
+                    "given_name": data.get("given_name"),
+                    "family_name": data.get("family_name"),
+                    "picture": data.get("picture"),
+                    "sub": data.get("sub"),  # Google user ID
+                    "email_verified": data.get("email_verified", False)
+                }
+        except httpx.HTTPStatusError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid Google token"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Error verifying Google token: {str(e)}"
+            )
+    
+    @staticmethod
+    async def verify_apple_token(token: str) -> Dict[str, Any]:
+        """التحقق من Apple token - Verify Apple token"""
+        if not settings.APPLE_CLIENT_ID:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Apple OAuth is not configured"
+            )
+        
+        try:
+            # Apple uses JWT tokens, need to decode and verify
+            from jose import jwt
+            from jose import jwk
+            import json
+            
+            # Get Apple public keys
+            async with httpx.AsyncClient() as client:
+                response = await client.get("https://appleid.apple.com/auth/keys")
+                response.raise_for_status()
+                keys = response.json()
+            
+            # Decode token header to get key ID
+            unverified_header = jwt.get_unverified_header(token)
+            kid = unverified_header.get("kid")
+            
+            # Find the matching key
+            key = None
+            for key_data in keys.get("keys", []):
+                if key_data.get("kid") == kid:
+                    key = key_data
+                    break
+            
+            if not key:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid Apple token key"
+                )
+            
+            # Verify and decode token
+            public_key = jwk.construct(key)
+            payload = jwt.decode(
+                token,
+                public_key,
+                algorithms=["RS256"],
+                audience=settings.APPLE_CLIENT_ID
+            )
+            
+            return {
+                "email": payload.get("email"),
+                "sub": payload.get("sub"),  # Apple user ID
+                "email_verified": payload.get("email_verified", False)
+            }
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Error verifying Apple token: {str(e)}"
+            )
+

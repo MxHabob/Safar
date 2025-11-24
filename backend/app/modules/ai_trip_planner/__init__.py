@@ -1,0 +1,2 @@
+"""AI Trip Planner module"""
+

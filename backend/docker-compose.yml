@@ -1,88 +1,280 @@
-services:
-  postgres:
-    image: postgis/postgis:16-3.4
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: safar
-      POSTGRES_PASSWORD: safar
-      POSTGRES_DB: safar
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+version: '3.8'
 
+services:
+  # PostgreSQL Database with PostGIS
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: safar_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-safar_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-safar_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-safar_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-safar_user} -d ${POSTGRES_DB:-safar_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - safar_network
+    restart: unless-stopped
+
+  # Redis Cache
   redis:
     image: redis:7-alpine
-    restart: unless-stopped
-    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    container_name: safar_redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
     ports:
-      - "6379:6379"
-
-  nats:
-    image: nats:2.10-alpine
-    restart: unless-stopped
-    command: ["-js", "-sd", "/data"]
-    ports:
-      - "4222:4222"
-      - "8222:8222"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
-      - nats-data:/data
-
-  temporal:
-    image: temporalio/auto-setup:1.25.0
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - safar_network
     restart: unless-stopped
-    environment:
-      - DB=postgresql
-      - DB_PORT=5432
-      - POSTGRES_USER=safar
-      - POSTGRES_PWD=safar
-      - POSTGRES_SEEDS=postgres
-      - POSTGRES_DB=safar_temporal
-    ports:
-      - "7233:7233"
-    depends_on:
-      - postgres
 
-  meilisearch:
-    image: getmeili/meilisearch:v1.10
-    restart: unless-stopped
-    environment:
-      MEILI_MASTER_KEY: masterKey
-    ports:
-      - "7700:7700"
-
-  jaeger:
-    image: jaegertracing/all-in-one:1.60
-    restart: unless-stopped
-    ports:
-      - "16686:16686"
-      - "4318:4318"
-
-  safar-api:
+  # Backend API
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
-    env_file: .env.example
+    container_name: safar_backend
     environment:
-      NODE_ENV: development
-      SERVICE_NAME: api-gateway
-      PORT: 4000
-      DATABASE_URL: postgresql://safar:safar@postgres:5432/safar?schema=public
-      REDIS_HOST: redis
-      NATS_URL: nats://nats:4222
-      TEMPORAL_ADDRESS: temporal:7233
-      MEILISEARCH_HOST: http://meilisearch:7700
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      # Application
+      - APP_NAME=${APP_NAME:-Safar API}
+      - APP_VERSION=${APP_VERSION:-1.0.0}
+      - API_V1_PREFIX=${API_V1_PREFIX:-/api/v1}
+      - DEBUG=${DEBUG:-False}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      
+      # Server
+      - HOST=0.0.0.0
+      - PORT=8000
+      
+      # Database
+      - POSTGRES_USER=${POSTGRES_USER:-safar_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-safar_pass}
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-safar_db}
+      - DATABASE_URL=${DATABASE_URL:-}
+      
+      # Redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=${REDIS_DB:-0}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_URL=${REDIS_URL:-}
+      
+      # Security
+      - SECRET_KEY=${SECRET_KEY:-change-this-secret-key-in-production}
+      - ALGORITHM=${ALGORITHM:-HS256}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      - REFRESH_TOKEN_EXPIRE_DAYS=${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      
+      # OAuth2
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - APPLE_CLIENT_ID=${APPLE_CLIENT_ID:-}
+      - APPLE_CLIENT_SECRET=${APPLE_CLIENT_SECRET:-}
+      
+      # SMS/OTP
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER:-}
+      
+      # File Storage
+      - STORAGE_TYPE=${STORAGE_TYPE:-local}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET:-}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-}
+      - MAX_UPLOAD_SIZE=${MAX_UPLOAD_SIZE:-10485760}
+      
+      # Email
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL:-noreply@safar.com}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-Safar}
+      
+      # Payments
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID:-}
+      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET:-}
+      
+      # AI Services
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+      
+      # Monitoring
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-development}
+      
+      # CORS
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      
+      # Rate Limiting
+      - RATE_LIMIT_ENABLED=${RATE_LIMIT_ENABLED:-True}
+      - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-60}
+      - RATE_LIMIT_PER_HOUR=${RATE_LIMIT_PER_HOUR:-1000}
+      
+      # Multi-tenancy
+      - MULTI_TENANCY_ENABLED=${MULTI_TENANCY_ENABLED:-True}
+      
+      # Languages & Currencies
+      - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-ar}
+      - SUPPORTED_LANGUAGES=${SUPPORTED_LANGUAGES:-ar,en,fr,es}
+      - DEFAULT_CURRENCY=${DEFAULT_CURRENCY:-USD}
+      - SUPPORTED_CURRENCIES=${SUPPORTED_CURRENCIES:-USD,EUR,GBP,SAR,AED,EGP}
+      
+      # Search
+      - ENABLE_VECTOR_SEARCH=${ENABLE_VECTOR_SEARCH:-True}
+      - SEARCH_RESULTS_LIMIT=${SEARCH_RESULTS_LIMIT:-50}
+      
+      # WebSocket
+      - WEBSOCKET_ENABLED=${WEBSOCKET_ENABLED:-True}
+      - WEBSOCKET_HEARTBEAT_INTERVAL=${WEBSOCKET_HEARTBEAT_INTERVAL:-30}
     ports:
-      - "4000:4000"
+      - "${PORT:-8000}:8000"
+    volumes:
+      - ./app:/app/app:ro
+      - ./alembic:/app/alembic:ro
+      - ./scripts:/app/scripts:ro
+      - uploads:/app/uploads
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        until python -c 'import asyncpg; import asyncio; asyncio.run(asyncpg.connect(\"postgresql://${POSTGRES_USER:-safar_user}:${POSTGRES_PASSWORD:-safar_pass}@postgres:5432/${POSTGRES_DB:-safar_db}\"))' 2>/dev/null; do
+          sleep 1
+        done &&
+        echo 'Database is ready!' &&
+        alembic upgrade head &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+    networks:
+      - safar_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Celery Worker
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: safar_celery_worker
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-safar_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-safar_pass}
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-safar_db}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=${REDIS_DB:-0}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SECRET_KEY=${SECRET_KEY:-change-this-secret-key-in-production}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DEBUG=${DEBUG:-False}
+    volumes:
+      - ./app:/app/app:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A app.core.celery_app worker --loglevel=info --concurrency=4
+    networks:
+      - safar_network
+    restart: unless-stopped
+
+  # Celery Beat (Scheduler)
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: safar_celery_beat
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-safar_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-safar_pass}
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-safar_db}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=${REDIS_DB:-0}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SECRET_KEY=${SECRET_KEY:-change-this-secret-key-in-production}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+    volumes:
+      - ./app:/app/app:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A app.core.celery_app beat --loglevel=info
+    networks:
+      - safar_network
+    restart: unless-stopped
+
+  # Flower (Celery Monitoring)
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: safar_flower
+    environment:
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-}@redis:6379/${REDIS_DB:-0}
+      - FLOWER_PORT=5555
+    ports:
+      - "5555:5555"
+    depends_on:
       - redis
-      - nats
-      - temporal
-      - meilisearch
+      - celery_worker
+    command: celery -A app.core.celery_app flower --port=5555
+    networks:
+      - safar_network
+    restart: unless-stopped
+    profiles:
+      - monitoring
 
 volumes:
-  pgdata:
-  nats-data:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  uploads:
+    driver: local
 
+networks:
+  safar_network:
+    driver: bridge
+    name: safar_network

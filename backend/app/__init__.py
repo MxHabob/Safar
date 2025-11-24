@@ -1,0 +1,2 @@
+"""Safar API Application"""
+

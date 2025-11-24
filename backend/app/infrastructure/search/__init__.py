@@ -1,0 +1,2 @@
+"""Search infrastructure module"""
+
