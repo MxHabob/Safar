@@ -1,5 +1,8 @@
 services:
   backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
       - DEBUG=False
       - ENVIRONMENT=production
@@ -32,6 +35,9 @@ services:
           memory: 1G
 
   celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
     command: celery -A app.core.celery_app worker --loglevel=warning --concurrency=8
     restart: always
     environment:
@@ -52,6 +58,10 @@ services:
           memory: 1G
 
   celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A app.core.celery_app beat --loglevel=info
     restart: always
     environment:
       - MINIO_ENDPOINT=minio
