@@ -76,6 +76,24 @@ services:
         condition: service_healthy
 
   postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: safar_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-safar_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-safar_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-safar_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"  # PostgreSQL: external:internal
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-safar_user} -d ${POSTGRES_DB:-safar_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: always
     deploy:
       resources:
@@ -84,8 +102,20 @@ services:
           memory: 1G
 
   redis:
-    restart: always
+    image: redis:7-alpine
+    container_name: safar_redis
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD} --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "${REDIS_PORT:-6379}:6379"  # Redis: external:internal
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: always
 
   minio:
     image: minio/minio:latest
@@ -116,6 +146,10 @@ services:
           memory: 512M
 
 volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
   minio_data:
     driver: local
 
