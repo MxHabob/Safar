@@ -1,0 +1,90 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: safar
+      POSTGRES_PASSWORD: safar
+      POSTGRES_DB: safar
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+
+  nats:
+    image: nats:2.10-alpine
+    restart: unless-stopped
+    command: ["-js", "-sd", "/data"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+      - nats-data:/data
+
+  temporal:
+    image: temporalio/auto-setup:1.25.0
+    restart: unless-stopped
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=safar
+      - POSTGRES_PWD=safar
+      - POSTGRES_SEEDS=postgres
+      - POSTGRES_DB=safar_temporal
+    ports:
+      - "7233:7233"
+    depends_on:
+      - postgres
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.10
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: masterKey
+    ports:
+      - "7700:7700"
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    restart: unless-stopped
+    ports:
+      - "16686:16686"
+      - "4318:4318"
+
+  safar-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env.example
+    environment:
+      NODE_ENV: development
+      SERVICE_NAME: api-gateway
+      PORT: 4000
+      DATABASE_URL: postgresql://safar:safar@postgres:5432/safar?schema=public
+      REDIS_HOST: redis
+      NATS_URL: nats://nats:4222
+      TEMPORAL_ADDRESS: temporal:7233
+      MEILISEARCH_HOST: http://meilisearch:7700
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres
+      - redis
+      - nats
+      - temporal
+      - meilisearch
+
+volumes:
+  pgdata:
+  nats-data:
+

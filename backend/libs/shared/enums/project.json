@@ -1,0 +1,19 @@
+{
+  "name": "enums",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/shared/enums/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/shared/enums",
+        "main": "libs/shared/enums/src/index.ts",
+        "tsConfig": "libs/shared/enums/tsconfig.lib.json",
+        "assets": ["libs/shared/enums/*.md"]
+      }
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2015",
+    "module": "esnext",
+    "lib": ["es2020", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@backend/dto": ["shared/src/index.ts"],
+      "@backend/entities": ["shared/src/index.ts"],
+      "@backend/events": ["libs/shared/src/index.ts"],
+      "@backend/filters": ["libs/shared/filters/src/index.ts"],
+      "@backend/errors": ["libs/shared/errors/src/index.ts"],
+      "@backend/guards": ["libs/shared/guards/src/index.ts"],
+      "@backend/decorators": ["libs/shared/decorators/src/index.ts"],
+      "@backend/interceptors": ["libs/shared/interceptors/src/index.ts"],
+      "@backend/pipes": ["libs/shared/pipes/src/index.ts"],
+      "@backend/utils": ["libs/shared/utils/src/index.ts"],
+      "@backend/constants": ["libs/shared/constants/src/index.ts"],
+      "@backend/enums": ["libs/shared/enums/src/index.ts"],
+      "@backend/validators": ["libs/shared/validators/src/index.ts"],
+      "@backend/config": ["libs/shared/config/src/index.ts"],
+      "@backend/types": ["libs/shared/types/src/index.ts"],
+      "@backend/testing": ["libs/shared/testing/src/index.ts"],
+      "@backend/prisma": ["libs/shared/prisma/src/index.ts"],
+      "@safar/shared/entities": ["libs/shared/entities/src/index.ts"],
+      "@backend/common": ["libs/src/index.ts"],
+      "@backend/infrastructure": ["libs/infrastructure/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}
