@@ -3,11 +3,32 @@
 Application Core Configuration
 """
 from functools import lru_cache
-from typing import Optional
+from typing import Optional, Union
 import os
+import json
 import warnings
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, PostgresDsn, validator
+
+
+def parse_list_value(value: Union[str, list]) -> list:
+    """
+    Parse a list value from environment variable.
+    Supports both JSON format and comma-separated strings.
+    """
+    if isinstance(value, list):
+        return value
+    if not value or not value.strip():
+        return []
+    # Try JSON first
+    try:
+        parsed = json.loads(value)
+        if isinstance(parsed, list):
+            return parsed
+    except (json.JSONDecodeError, ValueError):
+        pass
+    # Fall back to comma-separated
+    return [item.strip() for item in value.split(",") if item.strip()]
 
 
 class Settings(BaseSettings):
@@ -62,7 +83,6 @@ class Settings(BaseSettings):
     
     @validator("REDIS_URL", pre=True)
     def assemble_redis_connection(cls, v: Optional[str], values: dict) -> str:
-        """بناء رابط Redis - Build Redis connection URL"""
         if isinstance(v, str):
             return v
         password = values.get("REDIS_PASSWORD", "")
@@ -79,7 +99,6 @@ class Settings(BaseSettings):
     
     @validator("SECRET_KEY")
     def validate_secret_key(cls, v: str) -> str:
-        """التحقق من قوة SECRET_KEY - Validate SECRET_KEY strength"""
         weak_keys = [
             "your-secret-key-change-in-production-use-openssl-rand-hex-32",
             "secret",
@@ -131,7 +150,6 @@ class Settings(BaseSettings):
     
     @validator("MINIO_URL", pre=True)
     def assemble_minio_url(cls, v: Optional[str], values: dict) -> str:
-        """بناء رابط MinIO - Build MinIO URL"""
         if isinstance(v, str):
             return v
         protocol = "https" if values.get("MINIO_USE_SSL", False) else "http"
@@ -185,9 +203,17 @@ class Settings(BaseSettings):
         ]
     )
     
+    @validator("CORS_ORIGINS", pre=True)
+    def parse_cors_origins(cls, v: Union[str, list]) -> list[str]:
+        parsed = parse_list_value(v)
+        # If empty and no default was provided, use default
+        if not parsed:
+            env = os.getenv("ENVIRONMENT", "development")
+            return ["*"] if env == "development" else ["http://localhost:3000", "http://localhost:8000"]
+        return parsed
+    
     @validator("CORS_ORIGINS")
     def validate_cors_origins(cls, v: list[str], values: dict) -> list[str]:
-        """التحقق من CORS origins - Validate CORS origins"""
         env = values.get("ENVIRONMENT", "development")
         if env == "production" and "*" in v:
             warnings.warn(
@@ -195,6 +221,22 @@ class Settings(BaseSettings):
                 UserWarning
             )
         return v
+    
+    @validator("CORS_ALLOW_METHODS", pre=True)
+    def parse_cors_methods(cls, v: Union[str, list]) -> list[str]:
+        parsed = parse_list_value(v)
+        return parsed if parsed else ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+    
+    @validator("CORS_ALLOW_HEADERS", pre=True)
+    def parse_cors_headers(cls, v: Union[str, list]) -> list[str]:
+        parsed = parse_list_value(v)
+        return parsed if parsed else [
+            "Content-Type",
+            "Authorization",
+            "Accept",
+            "X-Requested-With",
+            "X-CSRF-Token"
+        ]
     
     # Rate Limiting
     RATE_LIMIT_ENABLED: bool = True
@@ -212,6 +254,16 @@ class Settings(BaseSettings):
         default_factory=lambda: ["USD", "EUR", "GBP", "SAR", "AED", "EGP"]
     )
     
+    @validator("SUPPORTED_LANGUAGES", pre=True)
+    def parse_supported_languages(cls, v: Union[str, list]) -> list[str]:
+        parsed = parse_list_value(v)
+        return parsed if parsed else ["ar", "en", "fr", "es"]
+    
+    @validator("SUPPORTED_CURRENCIES", pre=True)
+    def parse_supported_currencies(cls, v: Union[str, list]) -> list[str]:
+        parsed = parse_list_value(v)
+        return parsed if parsed else ["USD", "EUR", "GBP", "SAR", "AED", "EGP"]
+    
     # Search
     ENABLE_VECTOR_SEARCH: bool = True
     SEARCH_RESULTS_LIMIT: int = 50
@@ -223,6 +275,5 @@ class Settings(BaseSettings):
 
 @lru_cache()
 def get_settings() -> Settings:
-    """الحصول على إعدادات التطبيق - Get application settings (cached)"""
     return Settings()
 
