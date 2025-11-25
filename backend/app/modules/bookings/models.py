@@ -49,8 +49,8 @@ class PayoutStatus(str, enum.Enum):
     CANCELLED = "cancelled"  # ملغي
 
 
-class PaymentMethod(str, enum.Enum):
-    """طرق الدفع - Payment methods"""
+class PaymentMethodType(str, enum.Enum):
+    """طرق الدفع - Payment method types"""
     CREDIT_CARD = "credit_card"
     DEBIT_CARD = "debit_card"
     PAYPAL = "paypal"
@@ -104,7 +104,7 @@ class Booking(BaseModel):
     
     # Payment
     payment_id = Column(String(40), ForeignKey("payments.id", ondelete="SET NULL"), nullable=True, index=True)
-    payment_method = Column(SQLEnum(PaymentMethod), nullable=True)
+    payment_method = Column(SQLEnum(PaymentMethodType), nullable=True)
     payment_intent_id = Column(String(255), nullable=True, index=True)  # Stripe payment intent
     paid_at = Column(DateTime(timezone=True), nullable=True)
     
@@ -205,7 +205,7 @@ class Payment(BaseModel):
     payment_metadata = Column("metadata", JSONB, default=dict, nullable=True)
     
     # Legacy fields for backward compatibility
-    payment_method = Column(SQLEnum(PaymentMethod), nullable=True)
+    payment_method = Column(SQLEnum(PaymentMethodType), nullable=True)
     stripe_payment_intent_id = Column(String(255), nullable=True, index=True)
     paypal_order_id = Column(String(255), nullable=True, index=True)
     transaction_id = Column(String(255), nullable=True, index=True)
