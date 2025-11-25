@@ -49,7 +49,7 @@ class File(BaseModel):
     
     # Metadata
     description = Column(Text, nullable=True)
-    metadata = Column(Text, nullable=True)  # JSON string
+    file_metadata = Column("metadata", Text, nullable=True)  # JSON string
     
     # Relationships
     uploader = relationship("User", lazy="selectin")

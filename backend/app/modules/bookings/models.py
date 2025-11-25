@@ -118,7 +118,7 @@ class Booking(BaseModel):
     refund_amount = Column(Numeric(10, 2), default=0, nullable=False)
     
     # Metadata
-    metadata = Column(JSONB, default=dict, nullable=True)
+    booking_metadata = Column("metadata", JSONB, default=dict, nullable=True)
     
     # Relationships - Existing
     listing = relationship("Listing", foreign_keys=[listing_id], back_populates="bookings", lazy="selectin")
@@ -202,7 +202,7 @@ class Payment(BaseModel):
     amount = Column(Numeric(10, 2), nullable=False)
     currency = Column(String(10), default="USD", nullable=False)
     captured_at = Column(DateTime(timezone=True), nullable=True)
-    metadata = Column(JSONB, default=dict, nullable=True)
+    payment_metadata = Column("metadata", JSONB, default=dict, nullable=True)
     
     # Legacy fields for backward compatibility
     payment_method = Column(SQLEnum(PaymentMethod), nullable=True)

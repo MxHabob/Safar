@@ -61,7 +61,7 @@ class TravelPlan(BaseModel):
     ai_response = Column(JSONB, nullable=True)
     
     # Metadata
-    metadata = Column(JSONB, default=dict, nullable=True)
+    travel_plan_metadata = Column("metadata", JSONB, default=dict, nullable=True)
     
     # Relationships
     user = relationship("User", lazy="selectin")

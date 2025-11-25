@@ -108,7 +108,7 @@ class Listing(BaseModel):
     review_count = Column(Integer, default=0, nullable=False)
     
     # Metadata
-    metadata = Column(JSONB, default=dict, nullable=True)
+    listing_metadata = Column("metadata", JSONB, default=dict, nullable=True)
     
     # Relationships - Existing
     host = relationship("User", foreign_keys=[host_id], lazy="selectin")
@@ -403,7 +403,7 @@ class PricingModel(BaseModel):
     listing_id = Column(String(40), ForeignKey("listings.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     strategy = Column(String(50), default="dynamic", nullable=False)  # dynamic, static, ml
     provider = Column(String(50), default="safar-ml", nullable=False)
-    metadata = Column(JSONB, default=dict, nullable=True)
+    pricing_metadata = Column("metadata", JSONB, default=dict, nullable=True)
     
     # Relationships
     listing = relationship("Listing", back_populates="pricing_model", uselist=False, lazy="selectin")

@@ -65,7 +65,7 @@ class Coupon(BaseModel):
     applicable_to_users = Column(JSONB, default=list, nullable=True)  # List of user IDs (for targeted coupons)
     
     # Metadata
-    metadata = Column(JSONB, default=dict, nullable=True)
+    coupon_metadata = Column("metadata", JSONB, default=dict, nullable=True)
     
     __table_args__ = (
         Index("idx_coupon_code_active", "code", "is_active"),
@@ -108,7 +108,7 @@ class Promotion(BaseModel):
     advance_booking_days = Column(Integer, nullable=True)  # For last-minute deals
     
     # Metadata
-    metadata = Column(JSONB, default=dict, nullable=True)
+    promotion_metadata = Column("metadata", JSONB, default=dict, nullable=True)
     
     # Relationships
     listing = relationship("Listing", foreign_keys=[listing_id], lazy="selectin")

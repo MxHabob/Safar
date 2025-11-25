@@ -45,7 +45,7 @@ class AuditLog(BaseModel):
     action = Column(String(100), nullable=False, index=True)
     resource = Column(String(100), nullable=False, index=True)
     resource_id = Column(String(255), nullable=True, index=True)
-    metadata = Column(JSONB, default=dict, nullable=True)
+    audit_metadata = Column("metadata", JSONB, default=dict, nullable=True)
     
     # Relationships
     actor = relationship("User", foreign_keys=[actor_id], back_populates="audit_logs", lazy="selectin")

@@ -79,7 +79,7 @@ class Message(BaseModel):
     attachments = Column(JSONB, default=list, nullable=True)  # List of file URLs
     
     # Metadata
-    metadata = Column(JSONB, default=dict, nullable=True)
+    message_metadata = Column("metadata", JSONB, default=dict, nullable=True)
     
     # Relationships
     conversation = relationship("Conversation", back_populates="messages", lazy="selectin")

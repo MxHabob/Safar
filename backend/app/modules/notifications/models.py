@@ -66,7 +66,7 @@ class Notification(BaseModel):
     action_url = Column(String(500), nullable=True)
     
     # Metadata
-    metadata = Column(JSONB, default=dict, nullable=True)
+    notification_metadata = Column("metadata", JSONB, default=dict, nullable=True)
     
     # Relationships
     user = relationship("User", lazy="selectin")

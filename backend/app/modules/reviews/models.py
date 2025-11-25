@@ -57,7 +57,7 @@ class Review(BaseModel):
     helpful_count = Column(Integer, default=0, nullable=False)
     
     # Metadata
-    metadata = Column(JSONB, default=dict, nullable=True)
+    review_metadata = Column("metadata", JSONB, default=dict, nullable=True)
     
     # Relationships
     booking = relationship("Booking", back_populates="reviews", lazy="selectin")
