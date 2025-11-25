@@ -86,7 +86,7 @@ class User(BaseModel):
     # Metadata
     last_login_at = Column(DateTime(timezone=True), nullable=True)
     last_login_ip = Column(INET, nullable=True)
-    metadata = Column(JSONB, default=dict, nullable=True)
+    user_metadata = Column("metadata", JSONB, default=dict, nullable=True)
     
     # Relationships - Existing
     listings = relationship("Listing", foreign_keys="Listing.host_id", back_populates="host", lazy="selectin")
@@ -217,7 +217,7 @@ class UserDevice(BaseModel):
     fingerprint = Column(String(255), nullable=False, index=True)
     last_seen_at = Column(DateTime(timezone=True), server_default="now()", nullable=False)
     is_trusted = Column(Boolean, default=False, nullable=False)
-    metadata = Column(JSONB, default=dict, nullable=True)
+    device_metadata = Column("metadata", JSONB, default=dict, nullable=True)
     
     # Relationships
     user = relationship("User", back_populates="devices", lazy="selectin")
