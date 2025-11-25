@@ -11,7 +11,7 @@ from app.core.dependencies import get_current_active_user
 from app.core.config import get_settings
 from app.modules.users.models import User
 from app.modules.ai_trip_planner.schemas import (
-    TravelPlanRequest, TravelPlanResponse, TravelPlanCreate
+    TravelPlanRequest, TravelPlanResponse
 )
 from app.modules.ai_trip_planner.services import AITravelPlannerService
 
@@ -72,7 +72,6 @@ async def get_travel_plan(
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
-    الحصول على خطة سفر
     Get travel plan
     """
     from app.modules.ai_trip_planner.models import TravelPlan
@@ -102,10 +101,6 @@ async def list_travel_plans(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    قائمة خطط السفر للمستخدم
-    List user's travel plans
-    """
     from app.modules.ai_trip_planner.models import TravelPlan
     from sqlalchemy import select
     
