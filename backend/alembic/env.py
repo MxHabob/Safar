@@ -4,7 +4,7 @@ Alembic Environment Configuration
 from logging.config import fileConfig
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy.ext.asyncio import async_engine_from_config, create_async_engine
 
 from alembic import context
 
@@ -18,7 +18,8 @@ config = context.config
 
 # Get database URL from settings
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", str(settings.database_url).replace("+asyncpg", ""))
+# Keep async driver for async migrations
+config.set_main_option("sqlalchemy.url", str(settings.database_url))
 
 # Interpret the config file for Python logging.
 if config.config_file_name is not None:
@@ -36,8 +37,10 @@ target_metadata = Base.metadata
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
     url = config.get_main_option("sqlalchemy.url")
+    # For offline mode, use sync driver (psycopg2)
+    sync_url = url.replace("+asyncpg", "+psycopg2") if "+asyncpg" in url else url
     context.configure(
-        url=url,
+        url=sync_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -56,12 +59,29 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_async_migrations() -> None:
     """Run migrations in 'online' mode with async engine."""
-    configuration = config.get_section(config.config_ini_section)
-    configuration["sqlalchemy.url"] = str(settings.database_url).replace("+asyncpg", "")
+    # Ensure we have async driver in the URL
+    # Pydantic's PostgresDsn might normalize the scheme, so we need to ensure +asyncpg is present
+    db_url = str(settings.database_url)
     
-    connectable = async_engine_from_config(
-        configuration,
-        prefix="sqlalchemy.",
+    # If URL already has +asyncpg, use it as-is
+    if "+asyncpg" in db_url:
+        pass  # Already has async driver
+    # If URL has a different driver (like +psycopg2), replace it
+    elif "+" in db_url and "://" in db_url:
+        # Extract scheme and rest of URL
+        scheme_part, rest = db_url.split("://", 1)
+        # Remove any existing driver
+        base_scheme = scheme_part.split("+")[0]
+        db_url = f"{base_scheme}+asyncpg://{rest}"
+    # If URL has no driver, add +asyncpg
+    elif db_url.startswith("postgresql://"):
+        db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    elif db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
+    
+    # Use create_async_engine directly for better control
+    connectable = create_async_engine(
+        db_url,
         poolclass=pool.NullPool,
     )
 
