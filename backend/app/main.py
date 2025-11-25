@@ -1,5 +1,5 @@
 """
-تطبيق FastAPI الرئيسي - Main FastAPI Application
+Main FastAPI Application
 """
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -16,7 +16,6 @@ from app.core.database import init_db, close_db
 from app.core.middleware import RateLimitMiddleware, SecurityHeadersMiddleware
 from app.api.v1.router import api_router
 
-# Configure logging
 from app.core.logging_config import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -26,37 +25,23 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """إدارة دورة حياة التطبيق - Application lifespan management"""
-    # Startup
     logger.info("Starting Safar API...")
     await init_db()
     logger.info("Database initialized")
     
     yield
-    
-    # Shutdown
     logger.info("Shutting down Safar API...")
     await close_db()
     logger.info("Database connections closed")
 
 
-# Create FastAPI app
+# Create FastAPI app (disable docs in production for security)
+docs_enabled = settings.environment.lower() != "production"
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
-    description="""
-    Safar API - منصة سفر متكاملة متقدمة
-    
-    Safar is a comprehensive travel platform with advanced features:
-    - Property listings and bookings
-    - AI-powered travel planning
-    - Smart promotions and discounts
-    - Multi-language and multi-currency support
-    - Real-time messaging
-    - Advanced reviews and ratings
-    """,
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url="/docs" if docs_enabled else None,
+    redoc_url="/redoc" if docs_enabled else None,
     openapi_url="/openapi.json",
     lifespan=lifespan
 )
@@ -81,7 +66,6 @@ if settings.rate_limit_enabled:
 # Request timing middleware
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
-    """إضافة وقت المعالجة - Add processing time header"""
     start_time = time.time()
     response = await call_next(request)
     process_time = time.time() - start_time
@@ -92,7 +76,6 @@ async def add_process_time_header(request: Request, call_next):
 # Exception handlers
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    """معالج أخطاء HTTP - HTTP exception handler"""
     return JSONResponse(
         status_code=exc.status_code,
         content={
@@ -105,7 +88,6 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """معالج أخطاء التحقق - Validation exception handler"""
     return JSONResponse(
         status_code=422,
         content={
@@ -119,7 +101,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    """معالج الأخطاء العامة - General exception handler"""
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
@@ -134,14 +115,12 @@ async def general_exception_handler(request: Request, exc: Exception):
 # Health check
 @app.get("/health")
 async def health_check():
-    """فحص صحة التطبيق - Health check endpoint"""
     from app.core.monitoring import HealthChecker
     return await HealthChecker.get_health_status()
 
 
 @app.get("/health/ready")
 async def readiness_check():
-    """فحص جاهزية التطبيق - Readiness check endpoint"""
     from app.core.monitoring import HealthChecker
     health = await HealthChecker.get_health_status()
     
@@ -157,7 +136,6 @@ async def readiness_check():
 
 @app.get("/health/live")
 async def liveness_check():
-    """فحص حياة التطبيق - Liveness check endpoint"""
     return {
         "status": "alive",
         "timestamp": datetime.utcnow().isoformat()
@@ -170,12 +148,15 @@ app.include_router(api_router, prefix=settings.api_v1_prefix)
 
 @app.get("/")
 async def root():
-    """الصفحة الرئيسية - Root endpoint"""
     return {
         "message": "Welcome to Safar API",
         "version": settings.app_version,
-        "docs": "/docs",
-        "redoc": "/redoc"
+        "openapi": "/openapi.json",
+        "docs": "/docs" if docs_enabled else None,
+        "health": "/health" if docs_enabled else None,
+        "ready": "/health/ready" if docs_enabled else None,
+        "live": "/health/live" if docs_enabled else None,
+        "redoc": "/redoc" if docs_enabled else None
     }
 
 

@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.pool import NullPool
+from sqlalchemy import text
 
 from app.core.config import get_settings
 
@@ -55,11 +56,28 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
+DB_INIT_LOCK_KEY = 874512987  # Arbitrary constant for advisory lock
+
+
 async def init_db() -> None:
     """تهيئة قاعدة البيانات - Initialize database"""
     async with engine.begin() as conn:
-        # Create all tables
-        await conn.run_sync(Base.metadata.create_all)
+        lock_acquired = False
+        if conn.dialect.name == "postgresql":
+            await conn.execute(
+                text("SELECT pg_advisory_lock(:lock_id)"),
+                {"lock_id": DB_INIT_LOCK_KEY},
+            )
+            lock_acquired = True
+        try:
+            # Create all tables
+            await conn.run_sync(Base.metadata.create_all)
+        finally:
+            if lock_acquired:
+                await conn.execute(
+                    text("SELECT pg_advisory_unlock(:lock_id)"),
+                    {"lock_id": DB_INIT_LOCK_KEY},
+                )
 
 
 async def close_db() -> None:
