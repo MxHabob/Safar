@@ -18,8 +18,8 @@ from app.core.database import Base
 conversation_participants = Table(
     'conversation_participants',
     Base.metadata,
-    Column('conversation_id', Integer, ForeignKey('conversations.id', ondelete='CASCADE'), primary_key=True),
-    Column('user_id', Integer, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True),
+    Column('conversation_id', String(40), ForeignKey('conversations.id', ondelete='CASCADE'), primary_key=True),
+    Column('user_id', String(40), ForeignKey('users.id', ondelete='CASCADE'), primary_key=True),
     Index('idx_conv_participants', 'conversation_id', 'user_id')
 )
 
@@ -43,7 +43,7 @@ class Conversation(BaseModel):
     
     __table_args__ = (
         Index("idx_conversation_booking", "booking_id"),
-        Index("idx_conversation_property", "property_id"),
+        Index("idx_conversation_listing", "listing_id"),
     )
 
 
@@ -62,8 +62,8 @@ class Message(BaseModel):
     receiver_id = Column(String(40), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
     
     # Related entities (optional)
-    listing_id = Column(Integer, ForeignKey("listings.id", ondelete="SET NULL"), nullable=True, index=True)
-    booking_id = Column(Integer, ForeignKey("bookings.id", ondelete="SET NULL"), nullable=True, index=True)
+    listing_id = Column(String(40), ForeignKey("listings.id", ondelete="SET NULL"), nullable=True, index=True)
+    booking_id = Column(String(40), ForeignKey("bookings.id", ondelete="SET NULL"), nullable=True, index=True)
     
     # Message Content
     source = Column(String(50), default="guest", nullable=False)  # guest, host, system
@@ -102,7 +102,7 @@ class MessageAutomation(BaseModel):
     """
     __tablename__ = "message_automations"
     
-    conversation_id = Column(Integer, ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True)
+    conversation_id = Column(String(40), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(100), nullable=False)
     type = Column(String(50), nullable=False)  # auto_reply, reminder, etc.
     config = Column(JSONB, default=dict, nullable=False)
