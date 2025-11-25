@@ -100,7 +100,7 @@ class ReviewResponse(BaseModel):
     """
     __tablename__ = "review_responses"
     
-    review_id = Column(Integer, ForeignKey("reviews.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    review_id = Column(String(40), ForeignKey("reviews.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     host_profile_id = Column(String(40), ForeignKey("host_profiles.id", ondelete="CASCADE"), nullable=False, index=True)
     comment = Column(Text, nullable=False)
     

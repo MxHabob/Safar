@@ -194,7 +194,7 @@ class Payment(BaseModel):
     """
     __tablename__ = "payments"
     
-    booking_id = Column(Integer, ForeignKey("bookings.id", ondelete="CASCADE"), nullable=True, index=True)
+    booking_id = Column(String(40), ForeignKey("bookings.id", ondelete="CASCADE"), nullable=True, index=True)
     method_id = Column(String(40), ForeignKey("payment_methods.id", ondelete="SET NULL"), nullable=True, index=True)
     processor = Column(String(50), nullable=False)  # stripe, paypal, etc.
     processor_ref = Column(String(255), nullable=True, index=True)  # External reference

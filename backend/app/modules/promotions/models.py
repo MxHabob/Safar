@@ -128,7 +128,7 @@ class CounterOffer(BaseModel):
     """
     __tablename__ = "counter_offers"
     
-    listing_id = Column(Integer, ForeignKey("listings.id", ondelete="CASCADE"), nullable=False, index=True)
+    listing_id = Column(String(40), ForeignKey("listings.id", ondelete="CASCADE"), nullable=False, index=True)
     guest_id = Column(String(40), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     
     # Offer Details
@@ -149,7 +149,7 @@ class CounterOffer(BaseModel):
     responded_at = Column(DateTime(timezone=True), nullable=True)
     
     # If accepted, create booking
-    booking_id = Column(Integer, ForeignKey("bookings.id", ondelete="SET NULL"), nullable=True)
+    booking_id = Column(String(40), ForeignKey("bookings.id", ondelete="SET NULL"), nullable=True)
     
     # Relationships
     listing = relationship("Listing", foreign_keys=[listing_id], lazy="selectin")
@@ -170,8 +170,8 @@ class PromotionRedemption(BaseModel):
     __tablename__ = "promotion_redemptions"
     
     promotion_id = Column(String(40), ForeignKey("promotions.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    booking_id = Column(Integer, ForeignKey("bookings.id", ondelete="SET NULL"), nullable=True, index=True)
+    user_id = Column(String(40), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    booking_id = Column(String(40), ForeignKey("bookings.id", ondelete="SET NULL"), nullable=True, index=True)
     amount = Column(Numeric(10, 2), nullable=False)
     
     # Relationships
