@@ -205,7 +205,7 @@ async def update_listing(
     return listing_model
 
 
-@router.delete("/{listing_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
+@router.delete("/{listing_id}", response_class=Response)
 async def delete_listing(
     listing_id: ID,
     current_user: User = Depends(require_host),
