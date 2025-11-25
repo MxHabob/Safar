@@ -277,7 +277,7 @@ class HostProfile(BaseModel):
     """
     __tablename__ = "host_profiles"
     
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    user_id = Column(String(40), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     legal_name = Column(String(255), nullable=False)
     status = Column(String(50), default="pending", nullable=False, index=True)  # pending, approved, rejected
     badges = Column(ARRAY(String), default=[], nullable=False)
