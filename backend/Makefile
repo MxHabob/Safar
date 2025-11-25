@@ -63,3 +63,4 @@ rebuild: ## Rebuild and restart services
 
 health: ## Check health of all services
 	docker-compose ps
+
