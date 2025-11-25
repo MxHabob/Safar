@@ -3,7 +3,7 @@
 Using Services with Repository Pattern
 """
 from typing import Any, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -224,7 +224,7 @@ async def delete_listing(
         is_admin=is_admin
     )
     
-    return None
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/{listing_id}/location", response_model=ListingResponse)
