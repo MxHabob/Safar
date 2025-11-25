@@ -101,7 +101,6 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: safar_redis
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD} --maxmemory 512mb --maxmemory-policy allkeys-lru
     ports:
       - "${REDIS_PORT:-6379}:6379"
@@ -117,7 +116,6 @@ services:
 
   minio:
     image: minio/minio:latest
-    container_name: safar_minio
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
