@@ -75,7 +75,6 @@ def do_run_migrations(connection: Connection) -> None:
 async def wait_for_database(db_url: str, max_retries: int = 30, retry_delay: float = 1.0) -> None:
     """Wait for database to be available with retry logic."""
     import asyncpg
-    import socket
     from urllib.parse import urlparse
     
     # Parse database URL to extract connection parameters
@@ -86,35 +85,23 @@ async def wait_for_database(db_url: str, max_retries: int = 30, retry_delay: flo
     password = parsed.password or settings.postgres_password
     database = parsed.path.lstrip('/') or settings.postgres_db
     
-    logger.info(f"Waiting for database at {host}:{port}...")
+    logger.info(f"Waiting for database at {host}:{port} (max {max_retries} attempts)...")
     
-    # Check if hostname can be resolved
-    try:
-        socket.gethostbyname(host)
-    except socket.gaierror as e:
-        error_msg = (
-            f"DNS resolution failed for database host '{host}'. "
-            f"This usually means the hostname cannot be resolved.\n"
-            f"Common causes:\n"
-            f"  1. In Docker: Use the service name (e.g., 'postgres') not 'localhost'\n"
-            f"  2. Check POSTGRES_SERVER environment variable is set correctly\n"
-            f"  3. Ensure the database service is running and on the same network\n"
-            f"Current POSTGRES_SERVER value: {settings.postgres_server}"
-        )
-        logger.error(error_msg)
-        raise ConnectionError(error_msg) from e
-    
+    last_error = None
     for attempt in range(max_retries):
         try:
+            # Use a longer timeout for the first few attempts to allow DNS resolution
+            timeout = 5.0 if attempt < 3 else 2.0
             conn = await asyncio.wait_for(
                 asyncpg.connect(
                     host=host,
                     port=port,
                     user=user,
                     password=password,
-                    database=database
+                    database=database,
+                    timeout=timeout
                 ),
-                timeout=2.0
+                timeout=timeout + 1.0
             )
             await conn.close()
             logger.info(f"Database is ready after {attempt + 1} attempt(s)")
@@ -122,25 +109,59 @@ async def wait_for_database(db_url: str, max_retries: int = 30, retry_delay: flo
         except (asyncpg.exceptions.ConnectionDoesNotExistError, 
                 asyncpg.exceptions.InvalidPasswordError,
                 OSError,
-                asyncio.TimeoutError) as e:
+                asyncio.TimeoutError,
+                Exception) as e:
+            last_error = e
+            error_type = type(e).__name__
+            error_msg = str(e)
+            
+            # Check if it's a DNS resolution error
+            if "name resolution" in error_msg.lower() or "temporary failure" in error_msg.lower() or "gaierror" in error_type.lower():
+                logger.warning(
+                    f"DNS resolution issue (attempt {attempt + 1}/{max_retries}): {error_msg}. "
+                    f"This might be temporary - retrying..."
+                )
+            else:
+                logger.warning(f"Database connection attempt {attempt + 1}/{max_retries} failed: {error_type}: {error_msg}")
+            
             if attempt < max_retries - 1:
-                logger.warning(f"Database connection attempt {attempt + 1}/{max_retries} failed: {e}. Retrying in {retry_delay}s...")
                 await asyncio.sleep(retry_delay)
             else:
+                # Final attempt failed
                 logger.error(f"Failed to connect to database after {max_retries} attempts")
                 logger.error(f"Database host: {host}")
                 logger.error(f"Database port: {port}")
                 logger.error(f"Database name: {database}")
                 logger.error(f"User: {user}")
-                error_msg = (
-                    f"Could not connect to database at {host}:{port} after {max_retries} attempts.\n"
-                    f"Please ensure:\n"
-                    f"  1. The database service is running\n"
-                    f"  2. The hostname is correct (use service name in Docker, not 'localhost')\n"
-                    f"  3. Network connectivity is available\n"
-                    f"  4. Credentials are correct"
-                )
-                raise ConnectionError(error_msg) from e
+                logger.error(f"Last error: {error_type}: {error_msg}")
+                
+                # Provide helpful error message based on error type
+                if "name resolution" in error_msg.lower() or "temporary failure" in error_msg.lower() or "gaierror" in error_type.lower():
+                    error_msg_final = (
+                        f"DNS resolution failed for database host '{host}'.\n"
+                        f"Common causes:\n"
+                        f"  1. In Docker: Ensure you're using the service name (e.g., 'postgres') not 'localhost'\n"
+                        f"  2. Check POSTGRES_SERVER environment variable is set correctly\n"
+                        f"  3. Ensure the database service is running: docker-compose ps\n"
+                        f"  4. Ensure containers are on the same network: docker network ls\n"
+                        f"  5. Try restarting the database service: docker-compose restart postgres\n"
+                        f"Current POSTGRES_SERVER value: {settings.postgres_server}"
+                    )
+                else:
+                    error_msg_final = (
+                        f"Could not connect to database at {host}:{port} after {max_retries} attempts.\n"
+                        f"Last error: {error_type}: {error_msg}\n"
+                        f"Please ensure:\n"
+                        f"  1. The database service is running\n"
+                        f"  2. The hostname is correct (use service name in Docker, not 'localhost')\n"
+                        f"  3. Network connectivity is available\n"
+                        f"  4. Credentials are correct\n"
+                        f"  5. The database is accepting connections"
+                    )
+                raise ConnectionError(error_msg_final) from last_error
+    
+    # Should never reach here, but just in case
+    raise ConnectionError(f"Failed to connect to database after {max_retries} attempts") from last_error
 
 
 async def run_async_migrations() -> None:
