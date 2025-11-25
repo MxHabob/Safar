@@ -8,7 +8,7 @@ from sqlalchemy import select
 from fastapi import HTTPException, status
 
 from app.core.config import get_settings
-from app.modules.bookings.models import Booking, Payment, PaymentStatus, PaymentMethod
+from app.modules.bookings.models import Booking, Payment, PaymentStatus, PaymentMethodType
 from app.modules.bookings.models import BookingStatus
 
 settings = get_settings()
@@ -57,7 +57,7 @@ class PaymentService:
         db: AsyncSession,
         booking_id: int,
         payment_intent_id: str,
-        payment_method: PaymentMethod
+        payment_method: PaymentMethodType
     ) -> Payment:
         """معالجة دفعة - Process payment"""
         # Get booking

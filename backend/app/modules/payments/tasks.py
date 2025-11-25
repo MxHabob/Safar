@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.celery_app import celery_app
 from app.core.database import AsyncSessionLocal
-from app.modules.payments.models import Payment
+from app.modules.bookings.models import Payment
 from app.modules.payments.services import PaymentService
 
 
