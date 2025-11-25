@@ -11,7 +11,7 @@ import os
 import json
 import warnings
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, PostgresDsn, validator, root_validator, ConfigDict, field_validator, model_validator
+from pydantic import Field, PostgresDsn, validator, field_validator, model_validator
 from typing import List
 
 
@@ -425,7 +425,6 @@ class Settings(BaseSettings):
     
     @property
     def supported_languages_list(self) -> List[str]:
-        """Get supported languages as list."""
         if not self.supported_languages or not self.supported_languages.strip():
             return ["ar", "en", "fr", "es"]
         try:
@@ -435,7 +434,6 @@ class Settings(BaseSettings):
     
     @property
     def supported_currencies_list(self) -> List[str]:
-        """Get supported currencies as list."""
         if not self.supported_currencies or not self.supported_currencies.strip():
             return ["USD", "EUR", "GBP", "SAR", "AED", "EGP"]
         try:

@@ -6,16 +6,15 @@ services:
     environment:
       - DEBUG=False
       - ENVIRONMENT=production
-      # MinIO Configuration
       - MINIO_ENDPOINT=minio
-      - MINIO_PORT=9000  # Internal port (always 9000 inside container)
+      - MINIO_PORT=9000
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
       - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-safar-files}
       - MINIO_USE_SSL=False
       - STORAGE_TYPE=minio
     ports:
-      - "${BACKEND_PORT:-8000}:8000"  # Backend API: external:internal
+      - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       minio:
         condition: service_healthy
@@ -42,7 +41,7 @@ services:
     restart: always
     environment:
       - MINIO_ENDPOINT=minio
-      - MINIO_PORT=9000  # Internal port (always 9000 inside container)
+      - MINIO_PORT=9000
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
       - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-safar-files}
@@ -65,7 +64,7 @@ services:
     restart: always
     environment:
       - MINIO_ENDPOINT=minio
-      - MINIO_PORT=9000  # Internal port (always 9000 inside container)
+      - MINIO_PORT=9000
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
       - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-safar-files}
@@ -77,14 +76,13 @@ services:
 
   postgres:
     image: postgis/postgis:16-3.4-alpine
-    container_name: safar_postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-safar_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-safar_pass}
       POSTGRES_DB: ${POSTGRES_DB:-safar_db}
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"  # PostgreSQL: external:internal
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -106,7 +104,7 @@ services:
     container_name: safar_redis
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD} --maxmemory 512mb --maxmemory-policy allkeys-lru
     ports:
-      - "${REDIS_PORT:-6379}:6379"  # Redis: external:internal
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -125,8 +123,8 @@ services:
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
     command: server /data --console-address ":9001"
     ports:
-      - "${MINIO_API_PORT:-19000}:9000"  # Changed default to 19000 to avoid conflicts
-      - "${MINIO_CONSOLE_PORT:-19001}:9001"  # Changed default to 19001 to avoid conflicts
+      - "${MINIO_API_PORT:-19000}:9000"
+      - "${MINIO_CONSOLE_PORT:-19001}:9001"
     volumes:
       - minio_data:/data
     healthcheck:
