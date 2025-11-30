@@ -46,6 +46,38 @@ target_metadata = Base.metadata
 # ... etc.
 
 
+def include_object(object, name, type_, reflected, compare_to):
+    """
+    Filter out PostGIS extension tables and system tables from migrations.
+    This prevents Alembic from trying to drop tables that belong to extensions.
+    """
+    # List of PostGIS extension tables that should be ignored
+    postgis_tables = {
+        'geocode_settings',
+        'geocode_settings_default',
+        'loader_platform',
+        'loader_variables',
+        'loader_lookuptables',
+        'tiger',
+        'tiger_data',
+        'topology',
+        'spatial_ref_sys',
+        'geometry_columns',
+        'geography_columns',
+    }
+    
+    # Ignore PostGIS extension tables
+    if type_ == 'table' and name in postgis_tables:
+        return False
+    
+    # Ignore tables in PostGIS schemas
+    if type_ == 'table' and hasattr(object, 'schema') and object.schema:
+        if object.schema in ('tiger', 'tiger_data', 'topology'):
+            return False
+    
+    return True
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
     url = config.get_main_option("sqlalchemy.url")
@@ -56,6 +88,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -63,7 +96,11 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection, 
+        target_metadata=target_metadata,
+        include_object=include_object
+    )
 
     with context.begin_transaction():
         context.run_migrations()
