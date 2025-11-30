@@ -141,9 +141,18 @@ def main():
     migration_files = find_migration_files()
     
     if not migration_files:
-        print("\n❌ No migration files found to fix")
+        print("\nℹ️  No migration files found to fix")
         print("   Expected location: /app/alembic/versions/*.py")
-        sys.exit(1)
+        print()
+        print("💡 This is normal if migrations haven't been created yet.")
+        print("   To create migrations, run:")
+        print("   docker exec <container_id> alembic revision --autogenerate -m \"initial\"")
+        print("   or use: ./scripts/create_initial_migration_auto.sh")
+        print()
+        print("=" * 60)
+        print("✅ No migrations to fix (this is OK)")
+        print("=" * 60)
+        sys.exit(0)  # Exit successfully - no migrations means nothing to fix
     
     print()
     fixed_count = 0
