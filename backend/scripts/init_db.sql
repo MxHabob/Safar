@@ -6,6 +6,10 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS postgis_topology;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- CRITICAL: btree_gist extension required for booking exclusion constraint
+-- This prevents double-booking at the database level
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
 -- Create additional extensions if needed
 -- CREATE EXTENSION IF NOT EXISTS pg_trgm;  -- For text search
 -- CREATE EXTENSION IF NOT EXISTS pgcrypto;  -- For encryption functions
