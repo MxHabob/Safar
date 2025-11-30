@@ -20,18 +20,45 @@ import re
 from pathlib import Path
 
 # PostGIS extension tables that should not be dropped
+# This includes tables from postgis, postgis_topology, and postgis_tiger_geocoder extensions
 POSTGIS_TABLES = {
-    'geocode_settings',
-    'geocode_settings_default',
-    'loader_platform',
-    'loader_variables',
-    'loader_lookuptables',
-    'tiger',
-    'tiger_data',
-    'topology',
+    # PostGIS core tables
     'spatial_ref_sys',
     'geometry_columns',
     'geography_columns',
+    
+    # PostGIS topology tables
+    'topology',
+    
+    # PostGIS tiger geocoder tables
+    'addr',
+    'addrfeat',
+    'countysub',
+    'county',
+    'direction_lookup',
+    'edges',
+    'faces',
+    'featnames',
+    'geocode_settings',
+    'geocode_settings_default',
+    'loader_lookuptables',
+    'loader_platform',
+    'loader_variables',
+    'pagc_gaz',
+    'pagc_lex',
+    'pagc_norm',
+    'place',
+    'place_lookup',
+    'secondary_unit_lookup',
+    'state',
+    'state_lookup',
+    'street',
+    'street_type_lookup',
+    'tabblock',
+    'tract',
+    'zcta5',
+    'tiger',
+    'tiger_data',
 }
 
 
@@ -119,22 +146,29 @@ def fix_migration_file(file_path: Path) -> bool:
     original_content = content
     modified = False
     
-    # Pattern to match op.drop_table('table_name')
-    pattern = r'op\.drop_table\([\'"]([^\'"]+)[\'"].*?\)'
-    
+    # Pattern to match op.drop_table('table_name') - handles both single and double quotes
+    # Also handles multi-line statements and schema-qualified tables
     def should_remove_drop(match):
-        table_name = match.group(1)
-        if table_name in POSTGIS_TABLES:
-            print(f"  ⚠️  Removing: op.drop_table('{table_name}')")
-            return ''  # Remove the line
+        # Extract table name from the match
+        full_match = match.group(0)
+        # Try to extract table name from various patterns
+        table_match = re.search(r'[\'"]([^\'"]+)[\'"]', full_match)
+        if table_match:
+            table_full = table_match.group(1)
+            # Handle schema-qualified tables (e.g., 'schema.table' or just 'table')
+            if '.' in table_full:
+                table_name = table_full.split('.')[-1]  # Get just the table name
+            else:
+                table_name = table_full
+            
+            if table_name in POSTGIS_TABLES:
+                print(f"  ⚠️  Removing: op.drop_table('{table_full}')")
+                return ''  # Remove the entire drop_table call
         return match.group(0)  # Keep the line
     
-    # Remove PostGIS table drops
-    content = re.sub(pattern, should_remove_drop, content, flags=re.MULTILINE)
-    
-    # Handle multi-line drop_table statements
-    multiline_pattern = r'op\.drop_table\([\'"]([^\'"]+)[\'"][^)]*\)'
-    content = re.sub(multiline_pattern, should_remove_drop, content, flags=re.MULTILINE | re.DOTALL)
+    # Single pattern that handles all cases: single-line, multi-line, with/without schema
+    drop_table_pattern = r'op\.drop_table\([\'"]([^\'"]+)[\'"][^)]*\)'
+    content = re.sub(drop_table_pattern, should_remove_drop, content, flags=re.MULTILINE | re.DOTALL)
     
     # Add exclusion constraint if needed
     content, constraint_added = add_exclusion_constraint(content)
