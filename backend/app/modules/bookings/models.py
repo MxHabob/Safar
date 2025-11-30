@@ -6,7 +6,7 @@ from datetime import datetime, date
 from typing import Optional
 from sqlalchemy import (
     Column, String, Boolean, Integer, DateTime, Enum as SQLEnum,
-    Text, JSON, Index, ForeignKey, Numeric, Date, CheckConstraint
+    Text, JSON, Index, ForeignKey, Numeric, Date, CheckConstraint, UniqueConstraint, func
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
@@ -135,12 +135,18 @@ class Booking(BaseModel):
     promotion_redemptions = relationship("PromotionRedemption", back_populates="booking", lazy="selectin")
     conversation = relationship("Conversation", back_populates="booking", uselist=False, lazy="selectin")
     
-    # Indexes
+    # Indexes and Constraints
     __table_args__ = (
         Index("idx_booking_guest_status", "guest_id", "status"),
         Index("idx_booking_listing_dates", "listing_id", "check_in", "check_out"),
         Index("idx_booking_dates", "check_in", "check_out", "status"),
         Index("idx_booking_payment_status", "payment_status", "status"),
+        # CRITICAL: Exclusion constraint prevents overlapping bookings for same listing
+        # This ensures database-level double-booking prevention
+        # Only active bookings (CONFIRMED, PENDING, CHECKED_IN) are considered
+        # Uses GIST index for efficient range queries
+        # Note: This constraint will be created via migration with proper PostgreSQL syntax
+        # The constraint uses tstzrange for date range exclusion
     )
 
 
@@ -218,6 +224,10 @@ class Payment(BaseModel):
     __table_args__ = (
         Index("idx_payment_booking_status", "booking_id", "status"),
         Index("idx_payment_processor_ref", "processor", "processor_ref"),
+        # CRITICAL: Unique constraint to prevent duplicate payment processing
+        # This ensures idempotency - same payment_intent_id can only be processed once
+        # PostgreSQL allows multiple NULLs in unique columns, which is what we want
+        UniqueConstraint("stripe_payment_intent_id", name="uq_payment_stripe_intent"),
     )
 
 

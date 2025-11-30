@@ -11,6 +11,8 @@ from app.modules.bookings.routes import router as bookings_router
 from app.modules.reviews.routes import router as reviews_router
 from app.modules.search.routes import router as search_router
 from app.modules.messages.routes import router as messages_router
+from app.modules.payments.routes import router as payments_router
+from app.modules.webhooks.routes import router as webhooks_router
 
 api_router = APIRouter()
 
@@ -23,4 +25,6 @@ api_router.include_router(bookings_router)
 api_router.include_router(reviews_router)
 api_router.include_router(search_router)
 api_router.include_router(messages_router)
+api_router.include_router(payments_router)
+api_router.include_router(webhooks_router)
 

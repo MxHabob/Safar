@@ -94,15 +94,23 @@ class BaseRepository(IRepository[T]):
         return [self._model_to_entity(model) for model in models]
     
     async def create(self, entity: T) -> T:
-        """Create new entity"""
+        """Create new entity
+        
+        NOTE: Does NOT commit transaction. UnitOfWork manages commits.
+        This allows multiple operations in a single transaction.
+        """
         model = self._entity_to_model(entity)
         self.db.add(model)
-        await self.db.commit()
+        await self.db.flush()  # Flush to get ID, but don't commit
         await self.db.refresh(model)
         return self._model_to_entity(model)
     
     async def update(self, entity: T) -> T:
-        """Update entity"""
+        """Update entity
+        
+        NOTE: Does NOT commit transaction. UnitOfWork manages commits.
+        This allows multiple operations in a single transaction.
+        """
         from sqlalchemy import select
         result = await self.db.execute(
             select(self.model_class).where(self.model_class.id == entity.id)
@@ -117,12 +125,16 @@ class BaseRepository(IRepository[T]):
             if not key.startswith('_') and hasattr(model, key):
                 setattr(model, key, value)
         
-        await self.db.commit()
+        await self.db.flush()  # Flush changes, but don't commit
         await self.db.refresh(model)
         return self._model_to_entity(model)
     
     async def delete(self, id: ID) -> bool:
-        """Delete entity by ID"""
+        """Delete entity by ID
+        
+        NOTE: Does NOT commit transaction. UnitOfWork manages commits.
+        This allows multiple operations in a single transaction.
+        """
         from sqlalchemy import select
         result = await self.db.execute(
             select(self.model_class).where(self.model_class.id == id)
@@ -133,7 +145,7 @@ class BaseRepository(IRepository[T]):
             return False
         
         await self.db.delete(model)
-        await self.db.commit()
+        await self.db.flush()  # Flush changes, but don't commit
         return True
     
     async def count(self, filters: Optional[Dict[str, Any]] = None) -> int:

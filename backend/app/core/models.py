@@ -70,9 +70,7 @@ from app.modules.analytics.models import (
 )
 
 # Webhooks
-from app.modules.webhooks.models import (
-    WebhookSubscription, WebhookEvent
-)
+from app.modules.webhooks.models import WebhookEvent
 
 # Base
 from app.shared.base import BaseModel, StringIDBaseModel
@@ -164,6 +162,5 @@ __all__ = [
     "SearchSnapshot",
     
     # Webhooks
-    "WebhookSubscription",
     "WebhookEvent",
 ]

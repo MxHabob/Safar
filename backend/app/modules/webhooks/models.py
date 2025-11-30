@@ -1,53 +1,40 @@
 """
-نماذج Webhooks - Webhook Models
-From Prisma Schema
+Webhook Events Model - For tracking processed webhook events
+CRITICAL: Prevents duplicate processing of webhook events
 """
-from datetime import datetime
-from sqlalchemy import (
-    Column, String, Boolean, Integer, DateTime, Index, ForeignKey, ARRAY
-)
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, String, DateTime, Text, Index, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
+from datetime import datetime
 
 from app.shared.base import BaseModel
 
 
-class WebhookSubscription(BaseModel):
-    """
-    جدول اشتراكات Webhooks
-    Webhook subscriptions table
-    """
-    __tablename__ = "webhook_subscriptions"
-    
-    target_url = Column(String(500), nullable=False)
-    secret = Column(String(255), nullable=False)
-    events = Column(ARRAY(String), default=[], nullable=False)  # List of event types
-    is_active = Column(Boolean, default=True, nullable=False, index=True)
-    
-    # Relationships
-    events_sent = relationship("WebhookEvent", back_populates="subscription", lazy="selectin")
-    
-    __table_args__ = (
-        Index("idx_webhook_subscription_active", "is_active", "target_url"),
-    )
-
-
 class WebhookEvent(BaseModel):
     """
-    جدول أحداث Webhooks
-    Webhook events table
+    جدول أحداث Webhook المعالجة
+    Processed webhook events table
+    
+    CRITICAL: Tracks all processed webhook events to ensure idempotency.
+    Prevents duplicate processing when Stripe retries webhook events.
     """
     __tablename__ = "webhook_events"
     
-    subscription_id = Column(String(40), ForeignKey("webhook_subscriptions.id", ondelete="CASCADE"), nullable=False, index=True)
-    payload = Column(JSONB, default=dict, nullable=False)
-    status = Column(String(50), default="pending", nullable=False, index=True)  # pending, delivered, failed
-    delivered_at = Column(DateTime(timezone=True), nullable=True)
+    # Event identification
+    event_id = Column(String(255), unique=True, nullable=False, index=True)  # Stripe event ID
+    event_type = Column(String(100), nullable=False, index=True)  # payment_intent.succeeded, etc.
+    source = Column(String(50), default="stripe", nullable=False, index=True)  # stripe, paypal, etc.
     
-    # Relationships
-    subscription = relationship("WebhookSubscription", back_populates="events_sent", lazy="selectin")
+    # Event data
+    payload = Column(JSONB, default=dict, nullable=True)  # Full event payload
+    processed_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    
+    # Processing status
+    status = Column(String(50), default="processed", nullable=False, index=True)  # processed, failed, retrying
+    error_message = Column(Text, nullable=True)  # Error if processing failed
     
     __table_args__ = (
-        Index("idx_webhook_event_subscription_status", "subscription_id", "status", "created_at"),
+        # CRITICAL: Unique constraint ensures same event_id is only processed once
+        UniqueConstraint("event_id", name="uq_webhook_event_id"),
+        Index("idx_webhook_event_type_status", "event_type", "status", "processed_at"),
+        Index("idx_webhook_source_event_id", "source", "event_id"),
     )
-

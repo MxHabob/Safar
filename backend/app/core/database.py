@@ -21,6 +21,9 @@ settings = get_settings()
 Base = declarative_base()
 
 # Async Engine
+# CRITICAL: Set explicit isolation level for booking transactions
+# REPEATABLE READ prevents phantom reads and ensures consistency for concurrent bookings
+# For asyncpg, we set this via connect_args which is applied per connection
 engine: AsyncEngine = create_async_engine(
     str(settings.database_url),
     echo=settings.debug,
@@ -28,6 +31,13 @@ engine: AsyncEngine = create_async_engine(
     pool_pre_ping=True,
     pool_size=20,
     max_overflow=40,
+    # Set default isolation level to REPEATABLE READ for better consistency
+    # This prevents phantom reads in concurrent booking scenarios
+    connect_args={
+        "server_settings": {
+            "default_transaction_isolation": "repeatable read"
+        }
+    } if settings.environment != "test" else {},
 )
 
 # Async Session Factory

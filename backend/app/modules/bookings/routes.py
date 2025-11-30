@@ -3,7 +3,8 @@
 Enhanced with new features
 """
 from typing import Any, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+import secrets
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
@@ -25,6 +26,7 @@ router = APIRouter(prefix="/bookings", tags=["Bookings"])
 @router.post("", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
 async def create_booking(
     booking_data: BookingCreate,
+    request: Request,
     current_user: User = Depends(get_current_active_user),
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
@@ -32,8 +34,11 @@ async def create_booking(
     إنشاء حجز جديد
     Create new booking
     """
+    # Generate request ID for logging
+    request_id = request.headers.get("X-Request-ID") or f"req_{secrets.token_urlsafe(8)}"
+    
     booking_entity = await BookingService.create_booking(
-        uow, booking_data, current_user.id
+        uow, booking_data, current_user.id, request_id=request_id
     )
     
     # Get full booking model for response
@@ -194,7 +199,7 @@ async def cancel_booking(
 
 @router.post("/{booking_id}/confirm", response_model=BookingResponse)
 async def confirm_booking(
-    booking_id: int,
+    booking_id: ID,
     current_user: User = Depends(require_host),
     db: AsyncSession = Depends(get_db)
 ) -> Any:

@@ -2,9 +2,9 @@
 Schemas للحجوزات - Booking Schemas
 Enhanced with new features
 """
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Optional, List
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from app.modules.bookings.models import BookingStatus, PaymentStatus, PaymentMethod
 from app.core.id import ID
 
@@ -21,6 +21,70 @@ class BookingCreate(BaseModel):
     special_requests: Optional[str] = None
     guest_message: Optional[str] = None
     coupon_code: Optional[str] = None
+    
+    @field_validator('check_in', 'check_out')
+    @classmethod
+    def validate_datetime_not_past(cls, v: datetime) -> datetime:
+        """Validate that dates are not in the past"""
+        if v.tzinfo is None:
+            # If no timezone, assume UTC
+            from datetime import timezone
+            v = v.replace(tzinfo=timezone.utc)
+        
+        now = datetime.now(v.tzinfo)
+        if v < now:
+            raise ValueError(f"Date cannot be in the past. Provided: {v}, Current: {now}")
+        return v
+    
+    @model_validator(mode='after')
+    def validate_booking_data(self):
+        """Validate booking data including dates and guest counts"""
+        from datetime import timezone
+        from app.core.config import get_settings
+        
+        settings = get_settings()
+        check_in = self.check_in
+        check_out = self.check_out
+        
+        # Ensure timezone-aware
+        if check_in.tzinfo is None:
+            check_in = check_in.replace(tzinfo=timezone.utc)
+        if check_out.tzinfo is None:
+            check_out = check_out.replace(tzinfo=timezone.utc)
+        
+        # CRITICAL: check_out must be after check_in
+        if check_out <= check_in:
+            raise ValueError(
+                f"check_out ({check_out}) must be after check_in ({check_in})"
+            )
+        
+        # Validate minimum stay (at least 1 night)
+        nights = (check_out - check_in).days
+        if nights < 1:
+            raise ValueError(
+                f"Booking must be for at least 1 night. "
+                f"Duration: {check_out - check_in}"
+            )
+        
+        # Validate maximum booking window (from config)
+        if nights > settings.booking_max_window_days:
+            raise ValueError(
+                f"Booking cannot exceed {settings.booking_max_window_days} days. "
+                f"Requested: {nights} nights"
+            )
+        
+        # Validate guest counts consistency
+        total_guests = self.adults + self.children + self.infants
+        if self.guests != total_guests:
+            raise ValueError(
+                f"Total guests ({self.guests}) must equal adults ({self.adults}) + "
+                f"children ({self.children}) + infants ({self.infants}) = {total_guests}"
+            )
+        
+        # Note: Minimum/maximum advance booking validation is handled in service layer
+        # for business logic flexibility (can vary by listing type, etc.)
+        
+        return self
 
 
 class BookingUpdate(BaseModel):

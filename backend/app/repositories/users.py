@@ -125,7 +125,7 @@ class UserRepository(BaseRepository[UserEntity], IUserRepository):
         )
         
         self.db.add(model)
-        await self.db.commit()
+        await self.db.flush()  # Flush to get ID, but don't commit (UnitOfWork manages commits)
         await self.db.refresh(model)
         return self._model_to_entity(model)
 

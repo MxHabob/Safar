@@ -10,6 +10,7 @@ from typing import Optional, Union
 import os
 import json
 import warnings
+import logging
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, PostgresDsn, validator, field_validator, model_validator
 from typing import List
@@ -148,18 +149,25 @@ class Settings(BaseSettings):
     
     @validator("secret_key")
     def validate_secret_key(cls, v: str) -> str:
-        """Validate SECRET_KEY strength"""
+        """Validate SECRET_KEY strength - CRITICAL: Fail hard in production"""
         weak_keys = [
             "your-secret-key-change-in-production-use-openssl-rand-hex-32",
             "secret",
             "changeme",
             "default",
+            "change-this-secret-key-in-production",
+            "change-this-secret-key-generate-using-openssl-rand-hex-32",
         ]
         
-        if v in weak_keys or len(v) < 32:
-            if os.getenv("ENVIRONMENT") == "production":
+        is_weak = v in weak_keys or len(v) < 32
+        
+        if is_weak:
+            env = os.getenv("ENVIRONMENT", "").lower()
+            if env == "production":
+                # CRITICAL: Fail startup in production if SECRET_KEY is weak
                 raise ValueError(
-                    "SECRET_KEY must be at least 32 characters long and not use default values in production. "
+                    "SECRET_KEY is weak or default. This is a CRITICAL security risk in production. "
+                    "SECRET_KEY must be at least 32 characters long and not use default values. "
                     "Generate a strong key using: openssl rand -hex 32"
                 )
             else:
@@ -287,6 +295,25 @@ class Settings(BaseSettings):
     rate_limit_per_hour: int = Field(default=1000, env="RATE_LIMIT_PER_HOUR")
     
     # ============================================================================
+    # Booking Configuration
+    # ============================================================================
+    booking_max_window_days: int = Field(
+        default=365,
+        env="BOOKING_MAX_WINDOW_DAYS",
+        description="Maximum booking window in days (default: 365)"
+    )
+    booking_min_advance_hours: int = Field(
+        default=0,
+        env="BOOKING_MIN_ADVANCE_HOURS",
+        description="Minimum advance booking time in hours (0 = same day allowed)"
+    )
+    booking_max_advance_days: int = Field(
+        default=730,
+        env="BOOKING_MAX_ADVANCE_DAYS",
+        description="Maximum advance booking time in days (default: 730 = 2 years)"
+    )
+    
+    # ============================================================================
     # Multi-tenancy
     # ============================================================================
     multi_tenancy_enabled: bool = Field(default=True, env="MULTI_TENANCY_ENABLED")
@@ -377,18 +404,28 @@ class Settings(BaseSettings):
             except json.JSONDecodeError:
                 origins = [origin.strip() for origin in self.cors_origins.split(',') if origin.strip()]
         
-        # Handle development environment - use "*" if no origins specified
-        if not origins or origins == ["http://localhost:3000", "http://localhost:8000"]:
-            if self.environment == "development":
-                origins = ["*"]
-        
-        # Never allow wildcard in production
-        if self.environment == "production" and "*" in origins:
-            warnings.warn(
-                "⚠️ WARNING: CORS_ORIGINS contains '*' in production. This is a security risk!",
-                UserWarning
-            )
-            origins = [o for o in origins if o != "*"]
+        # CRITICAL: Never allow wildcard in any environment - security risk
+        # Always require explicit origins, even in development
+        if "*" in origins:
+            if self.environment == "production":
+                raise ValueError(
+                    "CORS_ORIGINS contains '*' in production. This is a CRITICAL security risk! "
+                    "You must specify explicit allowed origins in production. "
+                    "Set CORS_ORIGINS to a comma-separated list of allowed domains."
+                )
+            else:
+                # In development, replace wildcard with common localhost origins
+                logger = logging.getLogger(__name__)
+                logger.warning(
+                    "CORS_ORIGINS contains '*'. Replacing with localhost origins for security. "
+                    "Set explicit origins in CORS_ORIGINS environment variable."
+                )
+                origins = [
+                    "http://localhost:3000",
+                    "http://localhost:8000",
+                    "http://127.0.0.1:3000",
+                    "http://127.0.0.1:8000"
+                ]
         
         # Add localhost variants in debug mode
         if self.debug:

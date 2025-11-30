@@ -72,6 +72,22 @@ class ListingRepository(BaseRepository[ListingEntity], IListingRepository):
     def __init__(self, db: AsyncSession):
         super().__init__(db, Listing, ListingEntity)
     
+    async def get_by_id(self, id: ID, with_lock: bool = False) -> Optional[ListingEntity]:
+        """Get listing by ID with optional row-level locking
+        
+        Args:
+            id: Listing ID
+            with_lock: If True, use SELECT FOR UPDATE NOWAIT to lock the row (prevents double-booking)
+        """
+        query = select(Listing).where(Listing.id == id)
+        
+        if with_lock:
+            query = query.with_for_update(nowait=True)
+        
+        result = await self.db.execute(query)
+        model = result.scalar_one_or_none()
+        return self._model_to_entity(model) if model else None
+    
     def _model_to_entity(self, model) -> Optional[ListingEntity]:
         """Convert SQLAlchemy model to domain entity"""
         if not model:
@@ -270,12 +286,15 @@ class ListingRepository(BaseRepository[ListingEntity], IListingRepository):
         )
         
         self.db.add(model)
-        await self.db.commit()
+        await self.db.flush()  # Flush to get ID, but don't commit (UnitOfWork manages commits)
         await self.db.refresh(model)
         return self._model_to_entity(model)
     
     async def update(self, entity: ListingEntity) -> ListingEntity:
-        """Update listing"""
+        """Update listing
+        
+        NOTE: Does NOT commit transaction. UnitOfWork manages commits.
+        """
         result = await self.db.execute(
             select(Listing).where(Listing.id == entity.id)
         )
@@ -315,7 +334,7 @@ class ListingRepository(BaseRepository[ListingEntity], IListingRepository):
         model.check_in_time = entity.check_in_time
         model.check_out_time = entity.check_out_time
         
-        await self.db.commit()
+        await self.db.flush()  # Flush changes, but don't commit (UnitOfWork manages commits)
         await self.db.refresh(model)
         return self._model_to_entity(model)
 
