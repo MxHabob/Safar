@@ -7,6 +7,8 @@ Usage:
     python scripts/create_initial_migration.py
     or
     docker-compose exec backend python scripts/create_initial_migration.py
+    or
+    docker exec <container_id> python scripts/create_initial_migration.py
 """
 import os
 import sys
