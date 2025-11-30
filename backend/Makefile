@@ -43,6 +43,9 @@ migrate: ## Run database migrations
 migrate-create: ## Create new migration (usage: make migrate-create MESSAGE="description")
 	docker-compose exec backend alembic revision --autogenerate -m "$(MESSAGE)"
 
+migrate-initial: ## Create initial migration (001_initial)
+	docker-compose exec backend alembic revision --autogenerate -m "initial"
+
 init-db: ## Initialize database
 	docker-compose exec backend python scripts/init_db.py
 
