@@ -7,6 +7,7 @@ from typing import Optional, Dict
 from decimal import Decimal
 import secrets
 from fastapi import HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.unit_of_work import IUnitOfWork
 from app.domain.entities.booking import BookingEntity
