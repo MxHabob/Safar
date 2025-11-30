@@ -32,9 +32,6 @@ config.set_main_option("sqlalchemy.url", str(settings.database_url))
 
 # Log database connection info (without password)
 db_url_safe = str(settings.database_url).split('@')[-1] if '@' in str(settings.database_url) else str(settings.database_url)
-logger.info(f"Database host: {settings.postgres_server}")
-logger.info(f"Database name: {settings.postgres_db}")
-logger.info(f"Database URL (safe): postgresql://...@{db_url_safe}")
 
 # Interpret the config file for Python logging.
 if config.config_file_name is not None:

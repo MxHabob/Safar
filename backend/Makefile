@@ -46,6 +46,10 @@ migrate-create: ## Create new migration (usage: make migrate-create MESSAGE="des
 migrate-initial: ## Create initial migration (001_initial)
 	docker-compose exec backend alembic revision --autogenerate -m "initial"
 
+migrate-fix-and-create: ## Fix Alembic error and create initial migration
+	docker-compose exec backend python scripts/fix_and_create_migration.py && \
+	docker-compose exec backend alembic revision --autogenerate -m "initial"
+
 init-db: ## Initialize database
 	docker-compose exec backend python scripts/init_db.py
 
