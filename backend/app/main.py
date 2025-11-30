@@ -13,7 +13,13 @@ import logging
 
 from app.core.config import get_settings
 from app.core.database import init_db, close_db
-from app.core.middleware import RateLimitMiddleware, SecurityHeadersMiddleware
+from app.core.middleware import (
+    RateLimitMiddleware,
+    EnhancedRateLimitMiddleware,
+    BotDetectionMiddleware,
+    SecurityHeadersMiddleware,
+    RequestMonitoringMiddleware
+)
 from app.api.v1.router import api_router
 
 from app.core.logging_config import setup_logging
@@ -98,30 +104,23 @@ app.add_middleware(
     allow_headers=settings.cors_allow_headers_list,
 )
 
-# Security Headers Middleware
+# Security Middleware (order matters - apply in reverse order)
+# 1. Request Monitoring (outermost - logs all requests)
+app.add_middleware(RequestMonitoringMiddleware)
+
+# 2. Security Headers
 app.add_middleware(SecurityHeadersMiddleware)
 
-# Rate Limiting Middleware
+# 3. Bot Detection (before rate limiting)
+app.add_middleware(BotDetectionMiddleware)
+
+# 4. Rate Limiting (innermost - applied last)
 if settings.rate_limit_enabled:
-    app.add_middleware(RateLimitMiddleware)
+    app.add_middleware(EnhancedRateLimitMiddleware)
 
 
-# Request logging & timing middleware
-@app.middleware("http")
-async def log_and_time_requests(request: Request, call_next):
-    start_time = time.time()
-    response = await call_next(request)
-    process_time = (time.time() - start_time) * 1000
-    response.headers["X-Process-Time"] = f"{process_time:.2f}ms"
-    
-    logger.info(
-        "HTTP %s %s -> %s (%.2f ms)",
-        request.method,
-        request.url.path,
-        response.status_code,
-        process_time,
-    )
-    return response
+# Request logging is now handled by RequestMonitoringMiddleware
+# Removed duplicate logging middleware
 
 
 # Exception handlers

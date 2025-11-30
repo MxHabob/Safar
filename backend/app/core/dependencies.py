@@ -1,7 +1,7 @@
 """
 Dependencies for FastAPI
 """
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import select
@@ -94,3 +94,58 @@ async def require_host(
             detail="Host privileges required"
         )
     return current_user
+
+
+async def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
+    db: AsyncSession = Depends(get_db)
+) -> Optional[User]:
+    """
+    Optional authentication dependency that returns None for unregistered users.
+    Use this for routes that should work for both authenticated and unauthenticated users.
+    
+    Returns:
+        User if authenticated, None if not authenticated
+    """
+    if not credentials or credentials.scheme.lower() != "bearer":
+        return None
+    
+    try:
+        token = credentials.credentials
+        payload = decode_token(token, token_type="access")
+        user_id = payload.get("sub")
+        
+        if not user_id:
+            return None
+        
+        if await is_token_blacklisted(token):
+            return None
+        
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+        
+        return user
+    except (HTTPException, Exception):
+        # If token is invalid, expired, or any error occurs, return None
+        # This allows unregistered users to access the route
+        return None
+
+
+async def get_optional_active_user(
+    optional_user: Optional[User] = Depends(get_optional_user)
+) -> Optional[User]:
+    """
+    Optional active user - returns None if not authenticated or if user is inactive.
+    Use this when you want to ensure only active users are considered authenticated,
+    but still allow unregistered users to access the route.
+    """
+    if optional_user is None:
+        return None
+    
+    if not optional_user.is_active:
+        return None
+    
+    if optional_user.status in {UserStatus.SUSPENDED, UserStatus.INACTIVE}:
+        return None
+    
+    return optional_user

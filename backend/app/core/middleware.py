@@ -5,16 +5,51 @@ from fastapi import Request, HTTPException, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 import time
+import logging
 from typing import Callable
 
 from app.infrastructure.cache.redis import get_redis, CacheService
 from app.core.config import get_settings
+from app.core.security_utils import (
+    is_bot_request,
+    get_client_ip,
+    get_rate_limit_for_request,
+    check_suspicious_activity,
+    log_request,
+    increment_request_count,
+    is_public_route,
+)
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
-class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Middleware للحد من الطلبات - Rate limiting middleware
+class BotDetectionMiddleware(BaseHTTPMiddleware):
+    """Middleware للكشف عن Bots - Bot detection middleware"""
+    
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        # Allow health check endpoints
+        if request.url.path in ["/health", "/health/live", "/health/ready"]:
+            return await call_next(request)
+        
+        # Check if request is from a bot
+        if is_bot_request(request):
+            client_ip = get_client_ip(request)
+            user_agent = request.headers.get("user-agent", "unknown")
+            logger.warning(
+                f"Bot detected and blocked: user_agent={user_agent}, "
+                f"client_ip={client_ip}, path={request.url.path}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Automated access not allowed. Please use a web browser."
+            )
+        
+        return await call_next(request)
+
+
+class EnhancedRateLimitMiddleware(BaseHTTPMiddleware):
+    """Enhanced rate limiting middleware with different limits for authenticated/unauthenticated users
     
     CRITICAL: Implements circuit breaker pattern - fails closed in production when Redis is unavailable.
     In production, rate limiting is critical for security. Service should not operate without it.
@@ -31,14 +66,17 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if not settings.rate_limit_enabled:
             return await call_next(request)
         
-        # Get client IP
-        client_ip = request.client.host if request.client else "unknown"
+        # Get client IP (handles proxies)
+        client_ip = get_client_ip(request)
+        
+        # Check if user is authenticated
+        auth_header = request.headers.get("authorization", "")
+        is_authenticated = auth_header.startswith("Bearer ")
+        
+        # Get appropriate rate limit
+        rate_limit = get_rate_limit_for_request(request, is_authenticated)
         
         # Check circuit breaker
-        import time
-        import logging
-        logger = logging.getLogger(__name__)
-        
         if self._circuit_open:
             # Check if we should reset circuit
             if self._circuit_last_failure and \
@@ -65,16 +103,21 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     )
                     return await call_next(request)
         
-        # Check rate limit
-        key = f"rate_limit:{client_ip}"
+        # Check rate limit with route-specific key
+        path = request.url.path
+        key = f"rate_limit:{client_ip}:{path}"
         try:
             redis = await get_redis()
             current = await redis.get(key)
             
-            if current and int(current) >= settings.rate_limit_per_minute:
+            if current and int(current) >= rate_limit:
+                logger.warning(
+                    f"Rate limit exceeded: client_ip={client_ip}, "
+                    f"path={path}, limit={rate_limit}, current={int(current)}"
+                )
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail="Too many requests. Please try again later."
+                    detail=f"Too many requests. Limit: {rate_limit} requests per minute. Please try again later."
                 )
             
             # Increment counter
@@ -82,6 +125,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             pipe.incr(key)
             pipe.expire(key, 60)  # 1 minute window
             await pipe.execute()
+            
+            # Track request count for monitoring
+            await increment_request_count(client_ip)
             
             # Reset circuit breaker on success
             if self._circuit_failure_count > 0:
@@ -138,6 +184,79 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
         
         return response
+
+
+class RequestMonitoringMiddleware(BaseHTTPMiddleware):
+    """Middleware لتسجيل ومراقبة الطلبات - Request monitoring middleware"""
+    
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        start_time = time.time()
+        status_code = 500  # Default in case of error
+        
+        # Get request info
+        client_ip = get_client_ip(request)
+        user_agent = request.headers.get("user-agent", "")
+        auth_header = request.headers.get("authorization", "")
+        is_authenticated = auth_header.startswith("Bearer ")
+        
+        # Check for suspicious activity
+        if await check_suspicious_activity(client_ip):
+            logger.warning(
+                f"Suspicious activity detected: client_ip={client_ip}, "
+                f"path={request.url.path}"
+            )
+            # Don't block, but log for monitoring
+        
+        # Process request
+        try:
+            response = await call_next(request)
+            status_code = response.status_code
+            response_time = (time.time() - start_time) * 1000  # Convert to milliseconds
+            
+            # Add response headers
+            response.headers["X-Process-Time"] = f"{response_time:.2f}ms"
+            
+            # Log request (non-blocking)
+            try:
+                await log_request(
+                    endpoint=request.url.path,
+                    client_ip=client_ip,
+                    user_agent=user_agent,
+                    is_authenticated=is_authenticated,
+                    status_code=status_code,
+                    response_time=response_time,
+                    method=request.method
+                )
+            except Exception as log_error:
+                # Don't fail request if logging fails
+                logger.error(f"Error logging request: {log_error}")
+            
+            return response
+            
+        except HTTPException as e:
+            status_code = e.status_code
+            response_time = (time.time() - start_time) * 1000
+            
+            # Log error request
+            try:
+                await log_request(
+                    endpoint=request.url.path,
+                    client_ip=client_ip,
+                    user_agent=user_agent,
+                    is_authenticated=is_authenticated,
+                    status_code=status_code,
+                    response_time=response_time,
+                    method=request.method
+                )
+            except Exception:
+                pass  # Ignore logging errors
+            
+            raise
+
+
+# Keep old RateLimitMiddleware for backward compatibility
+RateLimitMiddleware = EnhancedRateLimitMiddleware
 

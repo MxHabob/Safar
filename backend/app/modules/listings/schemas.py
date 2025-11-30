@@ -108,8 +108,79 @@ class ListingLocationResponse(BaseModel):
     # coordinates will be handled separately for PostGIS
 
 
+class PublicListingLocationResponse(BaseModel):
+    """Public location response - limited data for unauthenticated users"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    city: str
+    country: str
+    neighborhood: Optional[str] = None
+    # Approximate coordinates only (rounded to 1 decimal place)
+    approximate_latitude: Optional[Decimal] = None
+    approximate_longitude: Optional[Decimal] = None
+    # No exact address, no precise coordinates
+
+
+class PublicListingResponse(BaseModel):
+    """Public listing response - limited data for unauthenticated users"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: ID
+    slug: str
+    title: str
+    summary: Optional[str] = None
+    description: Optional[str] = None
+    listing_type: ListingType
+    status: ListingStatus
+    rating: Decimal
+    review_count: int
+    
+    # Location - limited data
+    city: str
+    country: str
+    state: Optional[str] = None
+    approximate_location: Optional[PublicListingLocationResponse] = None
+    
+    # Pricing
+    base_price: Decimal
+    currency: str
+    cleaning_fee: Optional[Decimal] = 0
+    service_fee: Optional[Decimal] = 0
+    
+    # Basic info
+    capacity: int
+    bedrooms: int
+    beds: int
+    bathrooms: Decimal
+    max_guests: int
+    square_meters: Optional[int] = None
+    
+    # Images
+    photos: List[ListingPhotoResponse] = []
+    images: List[ListingImageResponse] = []
+    
+    # Booking info
+    booking_type: BookingType
+    min_stay_nights: Optional[int] = 1
+    max_stay_nights: Optional[int] = None
+    check_in_time: Optional[str] = "15:00"
+    check_out_time: Optional[str] = "11:00"
+    
+    # Host - limited info
+    host_id: Optional[ID] = None
+    # No host contact details, no host profile details
+    
+    # Metadata
+    created_at: datetime
+    updated_at: datetime
+    
+    # Personalized data (None for unauthenticated)
+    is_favorite: bool = False
+    can_book: bool = False
+
+
 class ListingResponse(ListingBase):
-    """Schema لاستجابة القائمة - Listing response schema"""
+    """Full listing response schema - complete data for authenticated users"""
     model_config = ConfigDict(from_attributes=True)
     
     id: ID
@@ -124,6 +195,11 @@ class ListingResponse(ListingBase):
     location: Optional[ListingLocationResponse] = None
     created_at: datetime
     updated_at: datetime
+    
+    # Personalized data for authenticated users
+    is_favorite: Optional[bool] = False
+    can_book: Optional[bool] = True
+    viewed_recently: Optional[bool] = False
 
 
 class ListingListResponse(BaseModel):
