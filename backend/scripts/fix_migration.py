@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """
-سكريبت واحد لإصلاح مشكلة PostGIS في ملفات الـ Migration
-Single script to fix PostGIS migration issue
+سكريبت واحد لإصلاح مشكلة PostGIS في ملفات الـ Migration وإضافة قيد الاستبعاد
+Single script to fix PostGIS migration issue and add exclusion constraint
 
 يعمل داخل الحاوية ويحل المشكلة كاملة
 Runs inside container and fixes the issue completely
+
+This script:
+1. Removes PostGIS table drops from migrations
+2. Adds the exclusion constraint (excl_booking_overlap) to prevent double-booking
 
 Usage:
     python scripts/fix_migration.py
@@ -57,8 +61,53 @@ def find_migration_files() -> list[Path]:
     return []
 
 
+def add_exclusion_constraint(content: str) -> tuple[str, bool]:
+    """Add exclusion constraint to migration if bookings table is created and constraint is missing"""
+    # Check if this migration creates the bookings table
+    has_bookings_table = ('create_table' in content and "'bookings'" in content) or \
+                        ('op.create_table' in content and 'bookings' in content)
+    
+    # Check if constraint already exists
+    has_constraint = 'excl_booking_overlap' in content
+    
+    if not has_bookings_table or has_constraint:
+        return content, False
+    
+    # Find where to insert the constraint - after bookings table creation
+    # Look for the end of create_table('bookings', ...) block
+    create_table_pattern = r"(op\.create_table\([\'\"]bookings[\'\"].*?\)\s*\n)"
+    match = re.search(create_table_pattern, content, re.DOTALL)
+    
+    if match:
+        # Find a good insertion point - after the create_table call
+        insert_pos = match.end()
+        # Look for the next op. statement or end of upgrade function
+        next_op = re.search(r'\n\s+op\.', content[insert_pos:])
+        if next_op:
+            insert_pos = insert_pos + next_op.start()
+        
+        # Add constraint after table creation
+        constraint_code = '''
+    # CRITICAL: Add exclusion constraint to prevent double-booking
+    # This constraint ensures no overlapping bookings for the same listing
+    # Only active bookings (CONFIRMED, PENDING, CHECKED_IN) are considered
+    op.execute("""
+        ALTER TABLE bookings 
+        ADD CONSTRAINT excl_booking_overlap 
+        EXCLUDE USING gist (
+            listing_id WITH =,
+            tstzrange(check_in, check_out) WITH &&
+        ) WHERE (status IN ('CONFIRMED', 'PENDING', 'CHECKED_IN'))
+    """)
+'''
+        content = content[:insert_pos] + constraint_code + content[insert_pos:]
+        return content, True
+    
+    return content, False
+
+
 def fix_migration_file(file_path: Path) -> bool:
-    """Fix a migration file by removing PostGIS table drops"""
+    """Fix a migration file by removing PostGIS table drops and adding exclusion constraint"""
     print(f"\n📄 Processing: {file_path.name}")
     
     try:
@@ -68,6 +117,7 @@ def fix_migration_file(file_path: Path) -> bool:
         return False
     
     original_content = content
+    modified = False
     
     # Pattern to match op.drop_table('table_name')
     pattern = r'op\.drop_table\([\'"]([^\'"]+)[\'"].*?\)'
@@ -86,10 +136,16 @@ def fix_migration_file(file_path: Path) -> bool:
     multiline_pattern = r'op\.drop_table\([\'"]([^\'"]+)[\'"][^)]*\)'
     content = re.sub(multiline_pattern, should_remove_drop, content, flags=re.MULTILINE | re.DOTALL)
     
+    # Add exclusion constraint if needed
+    content, constraint_added = add_exclusion_constraint(content)
+    if constraint_added:
+        print(f"  ✅ Added exclusion constraint 'excl_booking_overlap'")
+        modified = True
+    
     # Clean up extra empty lines
     content = re.sub(r'\n{3,}', '\n\n', content)
     
-    if content != original_content:
+    if modified:
         try:
             # Try to write directly
             file_path.write_text(content, encoding='utf-8')
@@ -127,14 +183,17 @@ def fix_migration_file(file_path: Path) -> bool:
             print(f"❌ Error writing file: {e}")
             return False
     else:
-        print(f"ℹ️  No PostGIS table drops found (already fixed or not needed)")
+        print(f"ℹ️  No fixes needed (already fixed or not needed)")
         return False
 
 
 def main():
     """Main function"""
     print("=" * 60)
-    print("🔧 Fixing PostGIS Migration Issue")
+    print("🔧 Fixing Migration Issues")
+    print("=" * 60)
+    print("   - Removing PostGIS table drops")
+    print("   - Adding exclusion constraint for bookings")
     print("=" * 60)
     print()
     

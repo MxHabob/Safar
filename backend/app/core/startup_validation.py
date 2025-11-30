@@ -106,6 +106,24 @@ class StartupValidator:
     async def _validate_exclusion_constraint() -> None:
         """Validate that exclusion constraint exists (CRITICAL for double-booking prevention)"""
         async with AsyncSessionLocal() as session:
+            # First check if bookings table exists
+            table_check = text("""
+                SELECT EXISTS(
+                    SELECT 1 
+                    FROM information_schema.tables 
+                    WHERE table_name = 'bookings'
+                )
+            """)
+            result = await session.execute(table_check)
+            table_exists = result.scalar()
+            
+            if not table_exists:
+                raise StartupValidationError(
+                    "CRITICAL: Bookings table does not exist. "
+                    "Migrations have not been run. "
+                    "Run migration: alembic upgrade head"
+                )
+            
             # Check if constraint exists
             query = text("""
                 SELECT constraint_name 
@@ -121,6 +139,7 @@ class StartupValidator:
                 raise StartupValidationError(
                     "CRITICAL: Exclusion constraint 'excl_booking_overlap' not found on bookings table. "
                     "This constraint is REQUIRED to prevent double-booking. "
+                    "The constraint should be created in a migration. "
                     "Run migration: alembic upgrade head"
                 )
     
