@@ -1,15 +1,18 @@
 #!/bin/bash
 # Quick fix for migration that tries to drop PostGIS tables
 # This script removes the problematic drop_table statement from the migration file
-# Usage: docker exec <container_id> bash scripts/quick_fix_migration.sh
+# Usage: docker exec <container_id> bash /app/scripts/quick_fix_migration.sh
+# Or: docker exec <container_id> bash -c "$(cat scripts/quick_fix_migration.sh)"
 
 set -e
 
 MIGRATION_DIR="/app/alembic/versions"
-MIGRATION_FILE=$(find "$MIGRATION_DIR" -name "*initial*.py" -o -name "*.py" | grep -v __ | head -1)
+MIGRATION_FILE=$(find "$MIGRATION_DIR" -name "*initial*.py" -o -name "*.py" 2>/dev/null | grep -v __ | grep -v __pycache__ | head -1)
 
 if [ -z "$MIGRATION_FILE" ]; then
     echo "❌ No migration file found in $MIGRATION_DIR"
+    echo "   Looking in: $MIGRATION_DIR"
+    ls -la "$MIGRATION_DIR" 2>/dev/null || echo "   Directory does not exist"
     exit 1
 fi
 

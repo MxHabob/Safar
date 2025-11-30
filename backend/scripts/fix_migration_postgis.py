@@ -74,9 +74,23 @@ def fix_migration_file(file_path: Path) -> bool:
 
 def find_migration_files() -> list[Path]:
     """Find all migration files in alembic/versions"""
-    versions_dir = Path(__file__).parent.parent / 'alembic' / 'versions'
-    if not versions_dir.exists():
-        print(f"❌ Versions directory not found: {versions_dir}")
+    # Try multiple possible paths
+    possible_paths = [
+        Path(__file__).parent.parent / 'alembic' / 'versions',  # Relative to script
+        Path('/app/alembic/versions'),  # Absolute path in container
+        Path('alembic/versions'),  # Current directory
+    ]
+    
+    versions_dir = None
+    for path in possible_paths:
+        if path.exists():
+            versions_dir = path
+            break
+    
+    if not versions_dir:
+        print(f"❌ Versions directory not found. Tried:")
+        for path in possible_paths:
+            print(f"   - {path}")
         return []
     
     migration_files = list(versions_dir.glob('*.py'))
