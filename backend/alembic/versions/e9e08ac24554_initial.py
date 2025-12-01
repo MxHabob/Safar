@@ -865,7 +865,6 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index('idx_listing_location_coords', 'listing_locations', ['coordinates'], unique=False, postgresql_using='gist')
-    op.create_index('idx_listing_locations_coordinates', 'listing_locations', ['coordinates'], unique=False, postgresql_using='gist')
     op.create_index(op.f('ix_listing_locations_id'), 'listing_locations', ['id'], unique=False)
     op.create_index(op.f('ix_listing_locations_listing_id'), 'listing_locations', ['listing_id'], unique=True)
     op.create_table('listing_photos',
