@@ -100,9 +100,8 @@ def upgrade() -> None:
     sa.Column('id', sa.String(length=40), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['guest_id'], ['users.id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['listing_id'], ['listings.id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['payment_id'], ['payments.id'], ondelete='SET NULL'),
+    # NOTE: Foreign keys to users, listings, and payments are added in a later migration
+    # to avoid "relation does not exist" errors during initial schema creation.
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index('idx_booking_dates', 'bookings', ['check_in', 'check_out', 'status'], unique=False)
@@ -183,7 +182,8 @@ def upgrade() -> None:
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['booking_id'], ['bookings.id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['method_id'], ['payment_methods.id'], ondelete='SET NULL'),
+    # NOTE: Foreign key to payment_methods is added in a later migration
+    # to avoid referencing a table that has not yet been created.
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('stripe_payment_intent_id', name='uq_payment_stripe_intent')
     )

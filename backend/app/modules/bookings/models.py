@@ -103,9 +103,8 @@ class Booking(BaseModel):
     payment_status = Column(String(50), default="pending", nullable=False, index=True)  # Changed to String
     
     # Payment
-    payment_id = Column(String(40), ForeignKey("payments.id", ondelete="SET NULL"), nullable=True, index=True)
     payment_method = Column(SQLEnum(PaymentMethodType), nullable=True)
-    payment_intent_id = Column(String(255), nullable=True, index=True)  # Stripe payment intent
+    payment_intent_id = Column(String(255), nullable=True, index=True)
     paid_at = Column(DateTime(timezone=True), nullable=True)
     
     # Special Requests
@@ -124,7 +123,6 @@ class Booking(BaseModel):
     listing = relationship("Listing", foreign_keys=[listing_id], back_populates="bookings", lazy="selectin")
     guest = relationship("User", foreign_keys=[guest_id], back_populates="bookings_as_guest", lazy="selectin")
     payments = relationship("Payment", back_populates="booking", lazy="selectin")
-    payment = relationship("Payment", foreign_keys=[payment_id], uselist=False, lazy="selectin")
     reviews = relationship("Review", back_populates="booking", lazy="selectin")
     
     # Relationships - New from Prisma
