@@ -22,17 +22,28 @@ from pathlib import Path
 # PostGIS extension tables that should not be dropped
 # This includes tables from postgis, postgis_topology, and postgis_tiger_geocoder extensions
 POSTGIS_TABLES = {
-    # Core PostGIS
-    'spatial_ref_sys', 'geometry_columns', 'geography_columns',
+    # Core
+    'spatial_ref_sys', 'geometry_columns', 'geography_columns', 'raster_columns', 'raster_overviews',
+    
     # Topology
     'topology', 'layer',
-    # Tiger Geocoder - ALL tables (very important!)
+    
+    # Tiger Geocoder - ALL possible tables across versions
     'addr', 'addrfeat', 'county', 'countysub', 'cousub', 'edges', 'faces', 'featnames',
     'place', 'state', 'zip_lookup', 'zip_lookup_base', 'zcta5', 'tabblock', 'bg',
     'tract', 'loader_lookuptables', 'loader_platform', 'loader_variables',
     'geocode_settings', 'geocode_settings_default', 'pagc_lex', 'pagc_gaz',
     'pagc_norm', 'pagc_rules', 'direction_lookup', 'place_lookup', 'secondary_unit_lookup',
-    'street_type_lookup', 'zip_state', 'zip_state_loc', 'tiger_data'
+    'street_type_lookup', 'zip_state', 'zip_state_loc', 'tiger_data',
+
+    # New in PostGIS 3.3+ (Census 2020 tables)
+    'tabblock10', 'tabblock20',
+    'zcta510', 'zcta520',
+    'bg10', 'bg20',
+    'tract10', 'tract20',
+    'county10', 'county20',
+    'cousub10', 'cousub20',
+    'state10', 'state20',
 }
 
 
