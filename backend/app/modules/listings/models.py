@@ -17,7 +17,7 @@ from app.shared.base import BaseModel
 
 
 class ListingType(str, enum.Enum):
-    """أنواع القوائم - Listing types"""
+    """Listing types"""
     APARTMENT = "apartment"
     HOUSE = "house"
     VILLA = "villa"
