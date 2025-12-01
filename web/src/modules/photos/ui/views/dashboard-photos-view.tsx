@@ -16,7 +16,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Button } from "@/components/ui/button";
-import { IconAlertTriangle, IconPhotoOff } from "@tabler/icons-react";
+import { AlertTriangle, ImageOff } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -63,7 +63,7 @@ const EmptyStatus = () => {
     <Empty className="border border-dashed">
       <EmptyHeader>
         <EmptyMedia variant="icon">
-          <IconPhotoOff />
+          <ImageOff />
         </EmptyMedia>
         <EmptyTitle>No photos found</EmptyTitle>
         <EmptyDescription>
@@ -87,7 +87,7 @@ export const ErrorStatus = () => {
       <Empty className="border border-dashed">
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <IconAlertTriangle />
+            <AlertTriangle />
           </EmptyMedia>
           <EmptyTitle>Something went wrong</EmptyTitle>
           <EmptyDescription>Please try again later.</EmptyDescription>

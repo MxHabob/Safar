@@ -11,7 +11,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
-import { IconLivePhoto } from "@tabler/icons-react";
+import { Camera } from "lucide-react";
 import { User } from "@/modules/auth/lib/auth-types";
 import { getSession } from "@/modules/auth/lib/get-session";
 
@@ -74,7 +74,7 @@ export const DashboardSidebar = async ({
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <Link href="/">
-                <IconLivePhoto />
+                <Camera />
                 <span className="text-base font-semibold">Photography</span>
               </Link>
             </SidebarMenuButton>

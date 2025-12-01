@@ -1,11 +1,11 @@
 import Link from "next/link";
 import WordRotate from "../word-rotate";
-import { RiCameraLensFill } from "react-icons/ri";
+import { Camera } from "lucide-react";
 
 const Logo = () => {
   return (
     <Link href="/" className="flex gap-2 items-center">
-      <RiCameraLensFill size={18} />
+      <Camera size={18} />
       <WordRotate label="ECarry" label2="Photo" style="font-medium uppercase" />
     </Link>
   );

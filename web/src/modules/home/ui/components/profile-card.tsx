@@ -3,7 +3,7 @@ import Link from "next/link";
 
 // Internal dependencies - UI Components
 import ContactCard from "../../../../components/contact-card";
-import { PiArrowUpRight } from "react-icons/pi";
+import { ArrowUpRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const ProfileCard = () => {
@@ -37,7 +37,7 @@ const ProfileCard = () => {
           </div>
 
           <div className="absolute top-8 right-8 opacity-0 group-hover:top-6 group-hover:right-6 group-hover:opacity-100 transition-all duration-300 ease-in-out">
-            <PiArrowUpRight size={18} />
+            <ArrowUpRight size={18} />
           </div>
         </Link>
       </div>

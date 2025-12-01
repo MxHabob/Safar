@@ -1,22 +1,38 @@
-import { headers } from "next/headers";
+/**
+ * Next.js Middleware
+ * 
+ * Main entry point for Next.js middleware.
+ * Combines authentication, CSRF protection, and rate limiting.
+ * 
+ * @security This is the first line of defense - validates all requests
+ */
 
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { authMiddleware } from './lib/auth/middleware'
 
-// This function can be marked `async` if using `await` inside
 export async function proxy(request: NextRequest) {
-  // const session = await auth.api.getSession({
-  //   headers: await headers(),
-  // });
+  // Run authentication middleware
+  const response = await authMiddleware(request)
 
-  // if (!session) {
-  //   return NextResponse.redirect(new URL("/sign-in", request.url));
-  // }
+  // If middleware returns a response, use it (redirect, error, etc.)
+  if (response) {
+    return response
+  }
 
-  return NextResponse.next();
+  // Otherwise, continue with the request
+  return NextResponse.next()
 }
 
-// See "Matching Paths" below to learn more
 export const config = {
-  matcher: ["/dashboard", "/dashboard/:path*"],
-};
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+}

@@ -1,11 +1,11 @@
 "use client";
 
 import {
-  IconDotsVertical,
-  IconHomeShare,
-  IconLogout,
-  IconUserCircle,
-} from "@tabler/icons-react";
+  MoreVertical,
+  Home,
+  LogOut,
+  UserCircle,
+} from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -62,7 +62,7 @@ export function NavUser({ user }: Props) {
                   {user.email}
                 </span>
               </div>
-              <IconDotsVertical className="ml-auto size-4" />
+              <MoreVertical className="ml-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -89,7 +89,7 @@ export function NavUser({ user }: Props) {
             <DropdownMenuGroup>
               <Link href="/dashboard/profile">
                 <DropdownMenuItem>
-                  <IconUserCircle />
+                  <UserCircle />
                   Profile
                 </DropdownMenuItem>
               </Link>
@@ -97,12 +97,12 @@ export function NavUser({ user }: Props) {
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/">
-                <IconHomeShare />
+                <Home />
                 Exit Dashboard
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleLogout}>
-              <IconLogout />
+              <LogOut />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

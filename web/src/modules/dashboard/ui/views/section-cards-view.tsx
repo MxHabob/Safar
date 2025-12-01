@@ -1,6 +1,6 @@
 "use client";
 
-import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
@@ -32,11 +32,11 @@ export function SectionCardsView() {
             <Badge variant="outline">
               {stats.thisYearPercentChange >= 0 ? (
                 <>
-                  <IconTrendingUp />+{stats.thisYearPercentChange}%
+                  <TrendingUp />+{stats.thisYearPercentChange}%
                 </>
               ) : (
                 <>
-                  <IconTrendingDown />
+                  <TrendingDown />
                   {stats.thisYearPercentChange}%
                 </>
               )}
@@ -48,7 +48,7 @@ export function SectionCardsView() {
             {stats.thisYearPercentChange >= 0
               ? "Growth this year"
               : "Decline this year"}{" "}
-            <IconTrendingUp className="size-4" />
+            <TrendingUp className="size-4" />
           </div>
           <div className="text-muted-foreground">
             {Math.abs(stats.thisYearPercentChange)}%{" "}
@@ -67,11 +67,11 @@ export function SectionCardsView() {
             <Badge variant="outline">
               {stats.thisYearPercentChange >= 0 ? (
                 <>
-                  <IconTrendingUp />+{stats.thisYearPercentChange}%
+                  <TrendingUp />+{stats.thisYearPercentChange}%
                 </>
               ) : (
                 <>
-                  <IconTrendingDown />
+                  <TrendingDown />
                   {stats.thisYearPercentChange}%
                 </>
               )}
@@ -83,7 +83,7 @@ export function SectionCardsView() {
             {stats.thisYearPercentChange >= 0
               ? "Year-over-year growth"
               : "Year-over-year decline"}{" "}
-            <IconTrendingUp className="size-4" />
+            <TrendingUp className="size-4" />
           </div>
           <div className="text-muted-foreground">
             {Math.abs(stats.thisYearPercentChange)}%{" "}
@@ -102,11 +102,11 @@ export function SectionCardsView() {
             <Badge variant="outline">
               {stats.countriesPercentChange >= 0 ? (
                 <>
-                  <IconTrendingUp />+{stats.countriesPercentChange}%
+                  <TrendingUp />+{stats.countriesPercentChange}%
                 </>
               ) : (
                 <>
-                  <IconTrendingDown />
+                  <TrendingDown />
                   {stats.countriesPercentChange}%
                 </>
               )}
@@ -118,7 +118,7 @@ export function SectionCardsView() {
             {stats.countriesPercentChange >= 0
               ? "New countries"
               : "Countries decreased"}{" "}
-            <IconTrendingUp className="size-4" />
+            <TrendingUp className="size-4" />
           </div>
           <div className="text-muted-foreground">
             {Math.abs(stats.countriesPercentChange)}%{" "}
@@ -137,11 +137,11 @@ export function SectionCardsView() {
             <Badge variant="outline">
               {stats.citiesPercentChange >= 0 ? (
                 <>
-                  <IconTrendingUp />+{stats.citiesPercentChange}%
+                  <TrendingUp />+{stats.citiesPercentChange}%
                 </>
               ) : (
                 <>
-                  <IconTrendingDown />
+                  <TrendingDown />
                   {stats.citiesPercentChange}%
                 </>
               )}
@@ -151,7 +151,7 @@ export function SectionCardsView() {
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
             {stats.citiesPercentChange >= 0 ? "New cities" : "Cities decreased"}{" "}
-            <IconTrendingUp className="size-4" />
+            <TrendingUp className="size-4" />
           </div>
           <div className="text-muted-foreground">
             {Math.abs(stats.citiesPercentChange)}%{" "}

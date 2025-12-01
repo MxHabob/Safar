@@ -1,10 +1,10 @@
 import {
-  IconLayoutDashboard,
-  IconPhoto,
-  IconUser,
-  IconBuildingPavilion,
-  IconNotebook,
-} from "@tabler/icons-react";
+  LayoutDashboard,
+  Image,
+  User,
+  Building,
+  FileText,
+} from "lucide-react";
 
 interface IconMapProps {
   icon: string;
@@ -13,17 +13,17 @@ interface IconMapProps {
 const IconMap = ({ icon }: IconMapProps) => {
   switch (icon) {
     case "dashboard":
-      return <IconLayoutDashboard />;
+      return <LayoutDashboard />;
     case "photo":
-      return <IconPhoto />;
+      return <Image />;
     case "user":
-      return <IconUser />;
+      return <User />;
     case "city":
-      return <IconBuildingPavilion />;
+      return <Building />;
     case "post":
-      return <IconNotebook />;
+      return <FileText />;
     default:
-      return <IconLayoutDashboard />;
+      return <LayoutDashboard />;
   }
 };
 

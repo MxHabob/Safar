@@ -14,7 +14,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { IconNotebookOff } from "@tabler/icons-react";
+import { FileText } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -60,7 +60,7 @@ const EmptyStatus = () => {
     <Empty className="border border-dashed">
       <EmptyHeader>
         <EmptyMedia variant="icon">
-          <IconNotebookOff />
+          <FileText />
         </EmptyMedia>
         <EmptyTitle>No posts found</EmptyTitle>
         <EmptyDescription>
