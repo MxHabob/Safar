@@ -1,5 +1,5 @@
 """
-مسارات الملفات - File Routes
+File routes.
 """
 from typing import List
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
@@ -22,10 +22,7 @@ async def upload_file(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    رفع ملف
-    Upload file
-    """
+    """Upload a single file and return its metadata."""
     file_record = await save_file(file, category, current_user.id, db)
     
     return {
@@ -41,10 +38,7 @@ async def upload_multiple_files(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    رفع عدة ملفات
-    Upload multiple files
-    """
+    """Upload multiple files in a single request and return their metadata."""
     if len(files) > 10:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

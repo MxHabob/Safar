@@ -1,6 +1,6 @@
 """
-خدمات الحجوزات - Booking Services
-Using Repository Pattern and Domain Entities
+Booking services.
+Implements booking workflows using the repository pattern and domain entities.
 """
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict
@@ -21,11 +21,11 @@ settings = get_settings()
 
 
 class BookingService:
-    """خدمة الحجوزات - Booking service using repositories"""
+    """Booking service using repositories and domain entities."""
     
     @staticmethod
     def generate_booking_number() -> str:
-        """إنشاء رقم حجز فريد - Generate unique booking number"""
+        """Generate a unique booking number."""
         return f"BK{secrets.token_urlsafe(8).upper()}"
     
     @staticmethod
@@ -35,7 +35,7 @@ class BookingService:
         check_in: datetime,
         check_out: datetime
     ) -> bool:
-        """التحقق من توفر القائمة - Check listing availability"""
+        """Check if a listing is available for the given date range."""
         # Get listing using domain logic
         listing = await uow.listings.get_by_id(listing_id)
         
@@ -65,7 +65,7 @@ class BookingService:
         guests: int,
         coupon_code: Optional[str] = None
     ) -> Dict[str, Decimal]:
-        """حساب سعر الحجز - Calculate booking price"""
+        """Calculate booking price and return a detailed price breakdown."""
         listing = await uow.listings.get_by_id(listing_id)
         
         if not listing:
@@ -121,10 +121,10 @@ class BookingService:
         guest_id: ID,
         request_id: Optional[str] = None
     ) -> BookingEntity:
-        """إنشاء حجز جديد - Create new booking
+        """Create a new booking.
         
-        Uses SELECT FOR UPDATE NOWAIT to prevent double-booking race conditions.
-        CRITICAL: Handles exclusion constraint violations gracefully.
+        Uses row-level locking (`SELECT ... FOR UPDATE NOWAIT`) to prevent double-booking
+        race conditions and handles exclusion constraint violations gracefully.
         """
         import logging
         from sqlalchemy.exc import IntegrityError
@@ -368,7 +368,7 @@ class BookingService:
         uow: IUnitOfWork,
         booking_id: ID
     ) -> Optional[BookingEntity]:
-        """الحصول على حجز بالمعرف - Get booking by ID"""
+        """Get a booking by its ID."""
         return await uow.bookings.get_by_id(booking_id)
     
     @staticmethod
@@ -376,7 +376,7 @@ class BookingService:
         uow: IUnitOfWork,
         booking_number: str
     ) -> Optional[BookingEntity]:
-        """الحصول على حجز برقم الحجز - Get booking by booking number"""
+        """Get a booking by its booking number."""
         return await uow.bookings.get_by_booking_number(booking_number)
     
     @staticmethod
@@ -386,7 +386,7 @@ class BookingService:
         skip: int = 0,
         limit: int = 100
     ) -> list[BookingEntity]:
-        """الحصول على حجوزات الضيف - Get guest bookings"""
+        """Get bookings for a specific guest (paginated)."""
         return await uow.bookings.get_by_guest(guest_id, skip=skip, limit=limit)
     
     @staticmethod
@@ -396,7 +396,7 @@ class BookingService:
         user_id: ID,
         reason: Optional[str] = None
     ) -> BookingEntity:
-        """إلغاء حجز - Cancel booking"""
+        """Cancel a booking if the user is authorized and rules allow it."""
         booking = await uow.bookings.get_by_id(booking_id)
         
         if not booking:
@@ -435,7 +435,7 @@ class BookingService:
         booking_id: ID,
         host_id: ID
     ):
-        """تأكيد حجز (للمضيف) - Confirm booking (for host)
+        """Confirm a booking on behalf of the host.
         
         CRITICAL: Uses row-level locking to prevent race conditions.
         """

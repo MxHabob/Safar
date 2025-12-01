@@ -1,6 +1,5 @@
 """
-مسارات التقييمات - Review Routes
-Enhanced with new features
+Review routes with extended functionality.
 """
 from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -27,10 +26,7 @@ async def create_review(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    إنشاء تقييم جديد
-    Create new review
-    """
+    """Create a new review."""
     review = await ReviewService.create_review(db, review_data, current_user.id)
     
     await db.refresh(review, ["listing", "guest", "host", "response"])
@@ -44,10 +40,7 @@ async def get_listing_reviews(
     limit: int = Query(50, ge=1, le=100),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    الحصول على تقييمات قائمة
-    Get listing reviews
-    """
+    """Get reviews for a listing."""
     query = select(Review).where(
         Review.listing_id == listing_id,
         Review.is_public == True,
@@ -83,10 +76,7 @@ async def get_review(
     review_id: int,
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    الحصول على تفاصيل تقييم
-    Get review details
-    """
+    """Get review details by ID."""
     result = await db.execute(
         select(Review)
         .where(Review.id == review_id)
@@ -115,10 +105,7 @@ async def create_review_response(
     current_user: User = Depends(require_host),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    إنشاء رد المضيف على التقييم
-    Create host response to review
-    """
+    """Create a host response to a review."""
     # Get host profile
     from app.modules.users.models import HostProfile
     host_profile_result = await db.execute(
@@ -146,10 +133,7 @@ async def mark_review_helpful(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    تقييم المراجعة كمفيدة
-    Mark review as helpful
-    """
+    """Mark a review as helpful or not helpful for the current user."""
     await ReviewService.mark_helpful(db, review_id, current_user.id, helpful_data.is_helpful)
     
     return {"message": "Review marked as helpful"}

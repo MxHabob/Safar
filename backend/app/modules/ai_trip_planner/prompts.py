@@ -1,5 +1,5 @@
 """
-Prompts للذكاء الاصطناعي - AI Prompts
+AI prompts for travel planning.
 """
 import json
 from typing import Dict, Any, Optional
@@ -17,10 +17,7 @@ def get_travel_plan_prompt(
     preferences: Optional[Dict[str, Any]] = None,
     natural_language_request: Optional[str] = None
 ) -> str:
-    """
-    بناء prompt لخطة السفر
-    Build travel plan prompt
-    """
+    """Build the prompt used to generate a travel plan."""
     prompt = f"""Create a detailed travel plan in JSON format with the following structure:
 
 {{

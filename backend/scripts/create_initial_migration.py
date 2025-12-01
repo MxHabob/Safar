@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-سكريبت لإنشاء Migration الأولي
-Script to create initial migration for Safar Backend
+Script to create the initial Alembic migration for the Safar backend.
 
 Usage:
     python scripts/create_initial_migration.py
@@ -58,7 +57,7 @@ def create_migration():
     print("🚀 Creating initial migration for Safar Backend...")
     print()
     
-    # Check docker-compose
+    # Check docker-compose availability
     if not check_docker_compose():
         print("❌ Error: docker-compose is not installed")
         sys.exit(1)
@@ -79,7 +78,7 @@ def create_migration():
             print("❌ Please start services first: docker-compose up -d")
             sys.exit(1)
     
-    # Check existing migrations
+    # Check for existing migrations
     existing = check_existing_migrations()
     if existing:
         print("⚠️  Warning: There are existing migrations:")

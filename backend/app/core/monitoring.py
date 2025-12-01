@@ -1,5 +1,5 @@
 """
-نظام المراقبة والـ Health Checks - Monitoring & Health Checks
+Monitoring and health checks.
 """
 from datetime import datetime
 from typing import Dict, Any
@@ -15,11 +15,11 @@ settings = get_settings()
 
 
 class HealthChecker:
-    """فحص صحة النظام - Health checker"""
+    """Health checker utilities."""
     
     @staticmethod
     async def check_database() -> Dict[str, Any]:
-        """فحص قاعدة البيانات - Check database"""
+        """Check database connectivity."""
         try:
             async with AsyncSessionLocal() as session:
                 result = await session.execute(text("SELECT 1"))
@@ -36,7 +36,7 @@ class HealthChecker:
     
     @staticmethod
     async def check_redis() -> Dict[str, Any]:
-        """فحص Redis - Check Redis"""
+        """Check Redis connectivity."""
         try:
             redis = await get_redis()
             await redis.ping()
@@ -52,7 +52,7 @@ class HealthChecker:
     
     @staticmethod
     async def check_stripe() -> Dict[str, Any]:
-        """فحص Stripe - Check Stripe configuration"""
+        """Check Stripe configuration."""
         try:
             if not settings.stripe_secret_key:
                 return {
@@ -77,7 +77,7 @@ class HealthChecker:
     
     @staticmethod
     async def get_system_info() -> Dict[str, Any]:
-        """الحصول على معلومات النظام - Get system info"""
+        """Get basic system information metrics."""
         import psutil
         import os
         
@@ -122,7 +122,7 @@ class HealthChecker:
     
     @staticmethod
     async def get_health_status() -> Dict[str, Any]:
-        """الحصول على حالة الصحة العامة - Get overall health status"""
+        """Get overall health status for core services."""
         db_status = await HealthChecker.check_database()
         redis_status = await HealthChecker.check_redis()
         stripe_status = await HealthChecker.check_stripe()

@@ -1,6 +1,6 @@
 """
-Schemas للحجوزات - Booking Schemas
-Enhanced with new features
+Booking schemas.
+Enhanced with new features.
 """
 from datetime import date, datetime, timedelta
 from typing import Optional, List
@@ -10,7 +10,7 @@ from app.core.id import ID
 
 
 class BookingCreate(BaseModel):
-    """Schema لإنشاء حجز - Create booking schema"""
+    """Schema for creating a booking."""
     listing_id: ID
     check_in: datetime
     check_out: datetime
@@ -88,13 +88,13 @@ class BookingCreate(BaseModel):
 
 
 class BookingUpdate(BaseModel):
-    """Schema لتحديث حجز - Update booking schema"""
+    """Schema for updating a booking."""
     special_requests: Optional[str] = None
     guest_message: Optional[str] = None
 
 
 class BookingTimelineEventResponse(BaseModel):
-    """Schema لحدث الجدول الزمني - Timeline event response"""
+    """Timeline event response schema."""
     model_config = ConfigDict(from_attributes=True)
     
     id: ID
@@ -104,7 +104,7 @@ class BookingTimelineEventResponse(BaseModel):
 
 
 class BookingResponse(BaseModel):
-    """Schema لاستجابة الحجز - Booking response schema"""
+    """Booking response schema."""
     model_config = ConfigDict(from_attributes=True)
     
     id: ID
@@ -135,7 +135,7 @@ class BookingResponse(BaseModel):
 
 
 class BookingListResponse(BaseModel):
-    """Schema لقائمة الحجوزات - Booking list response"""
+    """Booking list response schema."""
     items: List[BookingResponse]
     total: int
     skip: int
@@ -143,12 +143,12 @@ class BookingListResponse(BaseModel):
 
 
 class BookingCancel(BaseModel):
-    """Schema لإلغاء حجز - Cancel booking schema"""
+    """Cancel booking schema."""
     cancellation_reason: Optional[str] = None
 
 
 class PaymentMethodResponse(BaseModel):
-    """Schema لطريقة الدفع - Payment method response"""
+    """Payment method response schema."""
     model_config = ConfigDict(from_attributes=True)
     
     id: ID
@@ -160,7 +160,7 @@ class PaymentMethodResponse(BaseModel):
 
 
 class PaymentResponse(BaseModel):
-    """Schema لاستجابة الدفع - Payment response"""
+    """Payment response schema."""
     model_config = ConfigDict(from_attributes=True)
     
     id: ID
@@ -175,7 +175,7 @@ class PaymentResponse(BaseModel):
 
 
 class PayoutResponse(BaseModel):
-    """Schema لاستجابة الدفع للمضيف - Payout response"""
+    """Payout response schema (host payout)."""
     model_config = ConfigDict(from_attributes=True)
     
     id: ID

@@ -1,5 +1,5 @@
 """
-Schemas للملفات - File Schemas
+File schemas.
 """
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
@@ -7,7 +7,7 @@ from app.modules.files.models import FileType, FileCategory
 
 
 class FileResponse(BaseModel):
-    """Schema لاستجابة الملف - File response schema"""
+    """File response schema."""
     model_config = ConfigDict(from_attributes=True)
     
     id: int
@@ -24,7 +24,7 @@ class FileResponse(BaseModel):
 
 
 class FileUploadResponse(BaseModel):
-    """Schema لاستجابة رفع الملف - File upload response"""
+    """File upload response schema."""
     message: str
     file: FileResponse
 

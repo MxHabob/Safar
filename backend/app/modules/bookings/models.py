@@ -1,6 +1,6 @@
 """
-نماذج الحجوزات والمدفوعات - Booking and Payment Models
-Enhanced with Timeline Events, Payment Methods, and Payout System
+Booking and payment models.
+Enhanced with timeline events, payment methods, and payout system.
 """
 from datetime import datetime, date
 from typing import Optional
@@ -16,22 +16,22 @@ from app.shared.base import BaseModel
 
 
 class BookingStatus(str, enum.Enum):
-    """حالات الحجز - Booking statuses"""
-    PENDING = "pending"  # في انتظار الموافقة
-    CONFIRMED = "confirmed"  # مؤكد
-    CANCELLED = "cancelled"  # ملغي
-    CHECKED_IN = "checked_in"  # تم تسجيل الدخول
-    CHECKED_OUT = "checked_out"  # تم تسجيل الخروج
-    COMPLETED = "completed"  # مكتمل
-    REJECTED = "rejected"  # مرفوض
-    REFUNDED = "refunded"  # مسترد
+    """Booking statuses."""
+    PENDING = "pending"  # Waiting for host approval
+    CONFIRMED = "confirmed"  # Booking is confirmed
+    CANCELLED = "cancelled"  # Booking was cancelled
+    CHECKED_IN = "checked_in"  # Guest has checked in
+    CHECKED_OUT = "checked_out"  # Guest has checked out
+    COMPLETED = "completed"  # Stay completed successfully
+    REJECTED = "rejected"  # Booking request was rejected
+    REFUNDED = "refunded"  # Payment was refunded
 
 
 class PaymentStatus(str, enum.Enum):
-    """حالات الدفع - Payment statuses"""
-    INITIATED = "initiated"  # تم البدء
-    AUTHORIZED = "authorized"  # مصرح
-    CAPTURED = "captured"  # تم الاستيلاء
+    """Payment statuses."""
+    INITIATED = "initiated"  # Payment flow started
+    AUTHORIZED = "authorized"  # Authorized by payment provider
+    CAPTURED = "captured"  # Funds captured
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
@@ -41,16 +41,16 @@ class PaymentStatus(str, enum.Enum):
 
 
 class PayoutStatus(str, enum.Enum):
-    """حالات الدفع للمضيف - Payout statuses"""
-    SCHEDULED = "scheduled"  # مجدول
-    IN_FLIGHT = "in_flight"  # قيد المعالجة
-    SETTLED = "settled"  # مستقر
-    FAILED = "failed"  # فشل
-    CANCELLED = "cancelled"  # ملغي
+    """Payout statuses for hosts."""
+    SCHEDULED = "scheduled"  # Scheduled for processing
+    IN_FLIGHT = "in_flight"  # Currently being processed
+    SETTLED = "settled"  # Successfully paid out
+    FAILED = "failed"  # Failed to payout
+    CANCELLED = "cancelled"  # Payout was cancelled
 
 
 class PaymentMethodType(str, enum.Enum):
-    """طرق الدفع - Payment method types"""
+    """Payment method types."""
     CREDIT_CARD = "credit_card"
     DEBIT_CARD = "debit_card"
     PAYPAL = "paypal"
@@ -61,8 +61,8 @@ class PaymentMethodType(str, enum.Enum):
 
 class Booking(BaseModel):
     """
-    جدول الحجوزات الرئيسي
-    Main bookings table
+    Main bookings table.
+    Stores core reservation details, pricing, status, and relationships.
     """
     __tablename__ = "bookings"
     
@@ -150,8 +150,8 @@ class Booking(BaseModel):
 
 class BookingTimelineEvent(BaseModel):
     """
-    جدول أحداث الجدول الزمني للحجز (من Prisma Schema)
-    Booking timeline events table from Prisma Schema
+    Booking timeline events table.
+    Imported and adapted from the original Prisma schema.
     """
     __tablename__ = "booking_timeline_events"
     
@@ -169,8 +169,8 @@ class BookingTimelineEvent(BaseModel):
 
 class PaymentMethod(BaseModel):
     """
-    جدول طرق الدفع المحفوظة (من Prisma Schema)
-    Saved payment methods table from Prisma Schema
+    Saved payment methods table.
+    Imported and adapted from the original Prisma schema.
     """
     __tablename__ = "payment_methods"
     
@@ -193,8 +193,8 @@ class PaymentMethod(BaseModel):
 
 class Payment(BaseModel):
     """
-    جدول المدفوعات
-    Payments table
+    Payments table.
+    Stores payment records for bookings and processors.
     """
     __tablename__ = "payments"
     
@@ -231,8 +231,8 @@ class Payment(BaseModel):
 
 class PayoutBatch(BaseModel):
     """
-    جدول دفعات الدفع للمضيفين (من Prisma Schema)
-    Payout batches table from Prisma Schema
+    Payout batches table.
+    Groups payouts to hosts for batch processing.
     """
     __tablename__ = "payout_batches"
     
@@ -252,8 +252,8 @@ class PayoutBatch(BaseModel):
 
 class Payout(BaseModel):
     """
-    جدول المدفوعات للمضيفين (من Prisma Schema)
-    Payouts to hosts table from Prisma Schema
+    Payouts to hosts table.
+    Represents individual payouts from Safar to hosts.
     """
     __tablename__ = "payouts"
     

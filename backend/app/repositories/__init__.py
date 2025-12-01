@@ -1,5 +1,4 @@
 """
-Repository Layer - Data Access
-طبقة المستودعات - الوصول للبيانات
+Repository layer for data access.
 """
 

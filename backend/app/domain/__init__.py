@@ -1,5 +1,4 @@
 """
-Domain Layer - Business Logic and Entities
-طبقة النطاق - منطق الأعمال والكيانات
+Domain layer containing business logic and entities.
 """
 

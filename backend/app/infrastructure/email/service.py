@@ -1,5 +1,5 @@
 """
-خدمة البريد الإلكتروني - Email Service
+Email service utilities for sending plain and templated messages.
 """
 import aiosmtplib
 from email.mime.text import MIMEText
@@ -13,7 +13,7 @@ settings = get_settings()
 
 
 class EmailService:
-    """خدمة إرسال البريد الإلكتروني - Email service"""
+    """Service for sending transactional emails."""
     
     @staticmethod
     async def send_email(
@@ -24,8 +24,10 @@ class EmailService:
         from_email: Optional[str] = None,
         from_name: Optional[str] = None
     ) -> bool:
-        """
-        إرسال بريد إلكتروني - Send email
+        """Send an email message.
+
+        This supports both plain-text and optional HTML bodies.
+        Returns True on success, False otherwise.
         """
         if not settings.smtp_host:
             # If SMTP is not configured, log and return False
@@ -74,9 +76,7 @@ class EmailService:
         from_email: Optional[str] = None,
         from_name: Optional[str] = None
     ) -> bool:
-        """
-        إرسال بريد إلكتروني من template - Send email from template
-        """
+        """Render and send an email based on a simple in-memory template."""
         # Simple template rendering (in production, use proper template loader)
         templates = {
             "welcome": {

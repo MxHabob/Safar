@@ -1,5 +1,5 @@
 """
-مخططات المدفوعات - Payment Schemas
+Payment schemas.
 """
 from typing import Optional
 from decimal import Decimal

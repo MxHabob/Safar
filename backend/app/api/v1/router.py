@@ -1,5 +1,5 @@
 """
-Router الرئيسي لـ API v1 - Main API v1 Router
+Main API v1 router.
 """
 from fastapi import APIRouter
 

@@ -1,5 +1,5 @@
 """
-نماذج العروض والخصومات - Promotion Models
+Promotion and discount models.
 """
 from datetime import datetime, date
 from typing import Optional
@@ -15,14 +15,14 @@ from app.shared.base import BaseModel
 
 
 class DiscountType(str, enum.Enum):
-    """أنواع الخصومات - Discount types"""
+    """Discount types."""
     PERCENTAGE = "percentage"
     FIXED_AMOUNT = "fixed_amount"
     FREE_NIGHTS = "free_nights"
 
 
 class PromotionType(str, enum.Enum):
-    """أنواع العروض - Promotion types"""
+    """Promotion types."""
     FLASH_SALE = "flash_sale"
     COUPON = "coupon"
     GROUP_DISCOUNT = "group_discount"
@@ -32,10 +32,7 @@ class PromotionType(str, enum.Enum):
 
 
 class Coupon(BaseModel):
-    """
-    جدول الكوبونات
-    Coupons table
-    """
+    """Coupons table."""
     __tablename__ = "coupons"
     
     # Basic Info
@@ -74,10 +71,7 @@ class Coupon(BaseModel):
 
 
 class Promotion(BaseModel):
-    """
-    جدول العروض الترويجية
-    Promotions table
-    """
+    """Promotions table."""
     __tablename__ = "promotions"
     
     # Basic Info
@@ -122,10 +116,7 @@ class Promotion(BaseModel):
 
 
 class CounterOffer(BaseModel):
-    """
-    جدول العروض المضادة (Name Your Price)
-    Counter offers table
-    """
+    """Counter offers table (Name Your Price)."""
     __tablename__ = "counter_offers"
     
     listing_id = Column(String(40), ForeignKey("listings.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -163,10 +154,7 @@ class CounterOffer(BaseModel):
 
 
 class PromotionRedemption(BaseModel):
-    """
-    جدول استرداد العروض الترويجية (من Prisma Schema)
-    Promotion redemptions table from Prisma Schema
-    """
+    """Promotion redemptions table (from Prisma schema)."""
     __tablename__ = "promotion_redemptions"
     
     promotion_id = Column(String(40), ForeignKey("promotions.id", ondelete="CASCADE"), nullable=False, index=True)

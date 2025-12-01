@@ -1,5 +1,5 @@
 """
-مسارات البحث - Search Routes
+Search API routes.
 """
 from typing import Any
 from fastapi import APIRouter, Depends, Query
@@ -33,10 +33,7 @@ async def search_listings(
     limit: int = Query(50, ge=1, le=100),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    بحث في القوائم
-    Search listings
-    """
+    """Search listings with text, filter, and location parameters."""
     listings, total = await SearchService.search_listings(
         db=db,
         query=query,
@@ -70,10 +67,7 @@ async def get_search_suggestions(
     limit: int = Query(10, ge=1, le=20),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    الحصول على اقتراحات البحث
-    Get search suggestions
-    """
+    """Get search suggestions for the given query string."""
     suggestions = await SearchService.get_search_suggestions(db, query, limit)
     
     return {"suggestions": suggestions}

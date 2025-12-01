@@ -1,6 +1,5 @@
 """
-Script لتهيئة قاعدة البيانات
-Database initialization script
+Database initialization script.
 """
 import asyncio
 from app.core.database import init_db, engine
@@ -8,7 +7,7 @@ from app.core.models import *  # Import all models
 
 
 async def main():
-    """تهيئة قاعدة البيانات - Initialize database"""
+    """Initialize the database."""
     print("Initializing database...")
     await init_db()
     print("Database initialized successfully!")

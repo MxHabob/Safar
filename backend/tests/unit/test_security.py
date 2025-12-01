@@ -1,5 +1,5 @@
 """
-Unit tests للأمان - Security unit tests
+Security unit tests.
 """
 import pytest
 from app.core.security import (

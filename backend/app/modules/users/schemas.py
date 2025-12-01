@@ -1,6 +1,5 @@
 """
-Schemas للمستخدمين - User Schemas
-Enhanced with new security features
+User schemas, enhanced with additional security-related structures.
 """
 from datetime import datetime
 from typing import Optional, List
@@ -10,7 +9,7 @@ from app.core.id import ID
 
 
 class UserBase(BaseModel):
-    """Base schema للمستخدم - Base user schema"""
+    """Base user schema."""
     email: EmailStr
     phone_number: Optional[str] = None
     first_name: Optional[str] = None
@@ -20,7 +19,7 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    """Schema لإنشاء مستخدم جديد - Create user schema"""
+    """Schema for creating a new user."""
     password: str = Field(..., min_length=8)
     language: str = "ar"
     locale: str = "en"
@@ -28,7 +27,7 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(BaseModel):
-    """Schema لتحديث المستخدم - Update user schema"""
+    """Schema for updating an existing user."""
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     full_name: Optional[str] = None
@@ -44,7 +43,7 @@ class UserUpdate(BaseModel):
 
 
 class UserResponse(UserBase):
-    """Schema لاستجابة المستخدم - User response schema"""
+    """Schema returned in user responses."""
     model_config = ConfigDict(from_attributes=True)
     
     id: ID
@@ -65,7 +64,7 @@ class UserResponse(UserBase):
 
 
 class AccountResponse(BaseModel):
-    """Schema لاستجابة الحساب - Account response"""
+    """Schema returned in account responses."""
     model_config = ConfigDict(from_attributes=True)
     
     id: ID
@@ -77,7 +76,7 @@ class AccountResponse(BaseModel):
 
 
 class UserDeviceResponse(BaseModel):
-    """Schema لاستجابة جهاز المستخدم - User device response"""
+    """Schema returned in user device responses."""
     model_config = ConfigDict(from_attributes=True)
     
     id: ID
@@ -89,7 +88,7 @@ class UserDeviceResponse(BaseModel):
 
 
 class HostProfileResponse(BaseModel):
-    """Schema لاستجابة ملف المضيف - Host profile response"""
+    """Schema returned in host profile responses."""
     model_config = ConfigDict(from_attributes=True)
     
     id: ID
@@ -104,26 +103,26 @@ class HostProfileResponse(BaseModel):
 
 
 class HostProfileCreate(BaseModel):
-    """Schema لإنشاء ملف مضيف - Create host profile schema"""
+    """Schema for creating a host profile."""
     legal_name: str = Field(..., min_length=2)
     bio: Optional[str] = None
 
 
 class HostProfileUpdate(BaseModel):
-    """Schema لتحديث ملف مضيف - Update host profile schema"""
+    """Schema for updating a host profile."""
     legal_name: Optional[str] = None
     bio: Optional[str] = None
     status: Optional[str] = None
 
 
 class UserLogin(BaseModel):
-    """Schema لتسجيل الدخول - Login schema"""
+    """Schema for user login requests."""
     email: EmailStr
     password: str
 
 
 class TokenResponse(BaseModel):
-    """Schema لاستجابة Token - Token response schema"""
+    """Schema returned when issuing access and refresh tokens."""
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
@@ -131,41 +130,41 @@ class TokenResponse(BaseModel):
 
 
 class RefreshTokenRequest(BaseModel):
-    """Schema لطلب Refresh Token - Refresh token request"""
+    """Schema for refresh-token requests."""
     refresh_token: str
 
 
 class OAuthLogin(BaseModel):
-    """Schema لتسجيل الدخول عبر OAuth - OAuth login schema"""
+    """Schema for OAuth-based login requests."""
     provider: AccountProvider
     token: str
     provider_id: Optional[str] = None
 
 
 class OTPRequest(BaseModel):
-    """Schema لطلب OTP - OTP request schema"""
+    """Schema for requesting a one-time password (OTP)."""
     phone_number: str
 
 
 class OTPVerify(BaseModel):
-    """Schema للتحقق من OTP - OTP verification schema"""
+    """Schema for verifying a one-time password (OTP)."""
     phone_number: str
     code: str
 
 
 class PasskeyRegisterRequest(BaseModel):
-    """Schema لتسجيل Passkey - Passkey registration request"""
+    """Schema for registering a passkey credential."""
     credential_id: str
     public_key: str
     transports: List[str] = []
 
 
 class TwoFactorSetupRequest(BaseModel):
-    """Schema لإعداد المصادقة الثنائية - 2FA setup request"""
+    """Schema for configuring two-factor authentication (2FA)."""
     method: str = Field(..., pattern="^(totp|sms|email)$")
 
 
 class TwoFactorVerifyRequest(BaseModel):
-    """Schema للتحقق من المصادقة الثنائية - 2FA verification request"""
+    """Schema for verifying two-factor authentication (2FA)."""
     code: str
     method: str

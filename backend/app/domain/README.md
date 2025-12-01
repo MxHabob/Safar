@@ -1,4 +1,4 @@
-# Domain Layer - طبقة النطاق
+# Domain Layer
 
 ## Overview
 This layer contains business logic and domain entities, independent of infrastructure concerns.

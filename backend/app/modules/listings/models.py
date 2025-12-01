@@ -1,6 +1,6 @@
 """
-نماذج القوائم - Listing Models
-Enhanced with PostGIS and advanced features from Prisma Schema
+Listing models.
+Enhanced with PostGIS support and advanced features adapted from the original Prisma schema.
 """
 from datetime import datetime, date
 from typing import Optional
@@ -34,7 +34,7 @@ class ListingType(str, enum.Enum):
 
 
 class ListingStatus(str, enum.Enum):
-    """حالة القائمة - Listing status"""
+    """Listing status."""
     DRAFT = "draft"
     ACTIVE = "active"
     INACTIVE = "inactive"
@@ -43,15 +43,15 @@ class ListingStatus(str, enum.Enum):
 
 
 class BookingType(str, enum.Enum):
-    """نوع الحجز - Booking type"""
-    INSTANT = "instant"  # حجز فوري
-    REQUEST = "request"  # حجز بطلب موافقة
+    """Booking type."""
+    INSTANT = "instant"  # Instant booking
+    REQUEST = "request"  # Request-to-book (requires host approval)
 
 
 class Listing(BaseModel):
     """
-    جدول القوائم الرئيسي
-    Main listings table
+    Main listings table.
+    Stores core listing details, pricing, and relationships.
     """
     __tablename__ = "listings"
     
@@ -147,8 +147,8 @@ class Listing(BaseModel):
 
 class ListingLocation(BaseModel):
     """
-    جدول مواقع القوائم مع PostGIS
-    Listing locations with PostGIS support
+    Listing locations with PostGIS support.
+    Stores geospatial and neighborhood data.
     """
     __tablename__ = "listing_locations"
     
@@ -167,8 +167,7 @@ class ListingLocation(BaseModel):
 
 class ListingPhoto(BaseModel):
     """
-    جدول صور القوائم (Legacy - kept for backward compatibility)
-    Listing photos table
+    Legacy listing photos table (kept for backward compatibility).
     """
     __tablename__ = "listing_photos"
     
@@ -190,8 +189,7 @@ class ListingPhoto(BaseModel):
 
 class ListingImage(BaseModel):
     """
-    جدول صور القوائم (New from Prisma)
-    Listing images table
+    Listing images table (newer model adapted from Prisma).
     """
     __tablename__ = "listing_images"
     
@@ -210,8 +208,8 @@ class ListingImage(BaseModel):
 
 class Amenity(BaseModel):
     """
-    جدول المرافق العامة
-    Amenities master table
+    Amenities master table.
+    Defines reusable amenities that can be attached to listings.
     """
     __tablename__ = "amenities"
     
@@ -230,8 +228,7 @@ class Amenity(BaseModel):
 
 class ListingAmenity(BaseModel):
     """
-    جدول علاقة القوائم بالمرافق
-    Listing-Amenity relationship table
+    Listing–amenity relationship table.
     """
     __tablename__ = "listing_amenities"
     
@@ -248,10 +245,7 @@ class ListingAmenity(BaseModel):
 
 
 class ListingRule(BaseModel):
-    """
-    جدول قواعد القائمة
-    Listing rules table
-    """
+    """Listing rules table."""
     __tablename__ = "listing_rules"
     
     listing_id = Column(String(40), ForeignKey("listings.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -267,8 +261,7 @@ class ListingRule(BaseModel):
 
 class ListingAvailability(BaseModel):
     """
-    جدول توفر القائمة (Calendar) - Legacy simple version
-    Listing availability calendar - Simple version
+    Listing availability calendar (legacy simple version).
     """
     __tablename__ = "listing_availability"
     
@@ -290,8 +283,8 @@ class ListingAvailability(BaseModel):
 
 class Calendar(BaseModel):
     """
-    جدول التقويم المتقدم (من Prisma Schema)
-    Advanced calendar table from Prisma Schema
+    Advanced calendar table.
+    Imported and adapted from the original Prisma schema.
     """
     __tablename__ = "calendars"
     
@@ -306,8 +299,8 @@ class Calendar(BaseModel):
 
 class AvailabilityWindow(BaseModel):
     """
-    جدول نوافذ التوفر (من Prisma Schema)
-    Availability windows table from Prisma Schema
+    Availability windows table.
+    Imported and adapted from the original Prisma schema.
     """
     __tablename__ = "availability_windows"
     
@@ -327,8 +320,8 @@ class AvailabilityWindow(BaseModel):
 
 class BlockedDate(BaseModel):
     """
-    جدول التواريخ المحظورة
-    Blocked dates table
+    Blocked dates table.
+    Stores dates when a listing cannot be booked.
     """
     __tablename__ = "blocked_dates"
     
@@ -346,8 +339,8 @@ class BlockedDate(BaseModel):
 
 class SeasonalOverride(BaseModel):
     """
-    جدول التجاوزات الموسمية
-    Seasonal overrides table
+    Seasonal overrides table.
+    Used to adjust minimum nights and pricing for specific seasons.
     """
     __tablename__ = "seasonal_overrides"
     
@@ -368,8 +361,7 @@ class SeasonalOverride(BaseModel):
 
 class PricingRule(BaseModel):
     """
-    جدول قواعد التسعير الديناميكي
-    Dynamic pricing rules table
+    Dynamic pricing rules table.
     """
     __tablename__ = "pricing_rules"
     
@@ -395,8 +387,8 @@ class PricingRule(BaseModel):
 
 class PricingModel(BaseModel):
     """
-    جدول نماذج التسعير (من Prisma Schema)
-    Pricing models table from Prisma Schema
+    Pricing models table.
+    Imported and adapted from the original Prisma schema.
     """
     __tablename__ = "pricing_models"
     
@@ -412,8 +404,8 @@ class PricingModel(BaseModel):
 
 class PricingModelRule(BaseModel):
     """
-    جدول قواعد نماذج التسعير (من Prisma Schema)
-    Pricing model rules table from Prisma Schema
+    Pricing model rules table.
+    Imported and adapted from the original Prisma schema.
     """
     __tablename__ = "pricing_model_rules"
     
@@ -427,8 +419,8 @@ class PricingModelRule(BaseModel):
 
 class PriceCalendar(BaseModel):
     """
-    جدول تقويم الأسعار (من Prisma Schema)
-    Price calendar table from Prisma Schema
+    Price calendar table.
+    Imported and adapted from the original Prisma schema.
     """
     __tablename__ = "price_calendars"
     
@@ -449,8 +441,8 @@ class PriceCalendar(BaseModel):
 
 class ListingDraft(BaseModel):
     """
-    جدول مسودات القوائم (من Prisma Schema)
-    Listing drafts table from Prisma Schema
+    Listing drafts table.
+    Imported and adapted from the original Prisma schema.
     """
     __tablename__ = "listing_drafts"
     

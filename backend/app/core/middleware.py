@@ -1,5 +1,5 @@
 """
-Middleware مخصص - Custom Middleware
+Custom middleware for bot detection, rate limiting, security headers, and request monitoring.
 """
 from fastapi import Request, HTTPException, status
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class BotDetectionMiddleware(BaseHTTPMiddleware):
-    """Middleware للكشف عن Bots - Bot detection middleware"""
+    """Bot detection middleware."""
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Allow health check endpoints
@@ -173,7 +173,7 @@ class EnhancedRateLimitMiddleware(BaseHTTPMiddleware):
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    """Middleware لرؤوس الأمان - Security headers middleware"""
+    """Security headers middleware."""
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         response = await call_next(request)
@@ -190,7 +190,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class RequestMonitoringMiddleware(BaseHTTPMiddleware):
-    """Middleware لتسجيل ومراقبة الطلبات - Request monitoring middleware"""
+    """Request logging and monitoring middleware."""
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         start_time = time.time()

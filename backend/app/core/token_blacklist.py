@@ -1,5 +1,5 @@
 """
-نظام إلغاء Tokens - Token Blacklist System
+Token blacklist system for revoking and invalidating JWTs.
 """
 from datetime import datetime, timedelta
 from typing import Optional
@@ -10,9 +10,7 @@ settings = get_settings()
 
 
 async def add_token_to_blacklist(token: str, expires_in: Optional[int] = None) -> bool:
-    """
-    إضافة token إلى القائمة السوداء - Add token to blacklist
-    """
+    """Add a token to the blacklist with an optional expiry in seconds."""
     try:
         redis = await get_redis()
         # Extract expiration from token if not provided
@@ -28,9 +26,7 @@ async def add_token_to_blacklist(token: str, expires_in: Optional[int] = None) -
 
 
 async def is_token_blacklisted(token: str) -> bool:
-    """
-    التحقق من وجود token في القائمة السوداء - Check if token is blacklisted
-    """
+    """Check whether a token is present in the blacklist."""
     try:
         redis = await get_redis()
         key = f"blacklist:token:{token}"
@@ -42,9 +38,7 @@ async def is_token_blacklisted(token: str) -> bool:
 
 
 async def revoke_user_tokens(user_id: int) -> bool:
-    """
-    إلغاء جميع tokens للمستخدم - Revoke all user tokens
-    """
+    """Revoke all tokens for a given user by recording a revocation timestamp."""
     try:
         redis = await get_redis()
         # Store user revocation timestamp
@@ -60,9 +54,7 @@ async def revoke_user_tokens(user_id: int) -> bool:
 
 
 async def get_user_revocation_time(user_id: int) -> Optional[datetime]:
-    """
-    الحصول على وقت إلغاء tokens للمستخدم - Get user token revocation time
-    """
+    """Get the revocation timestamp for a user's tokens, if any."""
     try:
         redis = await get_redis()
         key = f"blacklist:user:{user_id}"

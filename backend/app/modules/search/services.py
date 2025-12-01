@@ -1,5 +1,5 @@
 """
-خدمات البحث - Search Services
+Search services for listings.
 """
 from typing import List, Optional
 from sqlalchemy import select, func, or_, and_
@@ -13,7 +13,7 @@ settings = get_settings()
 
 
 class SearchService:
-    """خدمة البحث - Search service"""
+    """Search service for listings."""
     
     @staticmethod
     async def search_listings(
@@ -33,9 +33,7 @@ class SearchService:
         skip: int = 0,
         limit: int = 50
     ) -> tuple[List[Listing], int]:
-        """
-        بحث في القوائم - Search listings
-        """
+        """Search listings with text, location, and filtering options."""
         # Base query
         search_query = select(Listing).where(Listing.status == ListingStatus.ACTIVE.value)
         
@@ -114,9 +112,7 @@ class SearchService:
         query: str,
         limit: int = 10
     ) -> List[dict]:
-        """
-        الحصول على اقتراحات البحث - Get search suggestions
-        """
+        """Return city and country search suggestions for the given query."""
         suggestions = []
         
         # City suggestions

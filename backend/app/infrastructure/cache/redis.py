@@ -1,5 +1,5 @@
 """
-إعداد Redis للـ Caching - Redis Cache Setup
+Redis cache setup and connection management.
 """
 import json
 from typing import Optional, Any
@@ -8,12 +8,12 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
-# Global Redis connection
+# Global Redis connection instance
 redis_client: Optional[aioredis.Redis] = None
 
 
 async def get_redis() -> aioredis.Redis:
-    """الحصول على اتصال Redis - Get Redis connection"""
+    """Get a shared Redis connection instance."""
     global redis_client
     if redis_client is None:
         redis_client = await aioredis.from_url(
@@ -25,7 +25,7 @@ async def get_redis() -> aioredis.Redis:
 
 
 async def close_redis():
-    """إغلاق اتصال Redis - Close Redis connection"""
+    """Close the shared Redis connection, if it exists."""
     global redis_client
     if redis_client:
         await redis_client.close()
@@ -33,11 +33,14 @@ async def close_redis():
 
 
 class CacheService:
-    """خدمة الـ Cache - Cache service"""
+    """High-level cache operations backed by Redis."""
     
     @staticmethod
     async def get(key: str) -> Optional[Any]:
-        """الحصول على قيمة من Cache - Get value from cache"""
+        """Get a value from cache by key.
+
+        The value is JSON-decoded when possible.
+        """
         redis = await get_redis()
         value = await redis.get(key)
         if value:
@@ -49,7 +52,7 @@ class CacheService:
     
     @staticmethod
     async def set(key: str, value: Any, expire: int = 3600) -> bool:
-        """حفظ قيمة في Cache - Set value in cache"""
+        """Set a value in cache with an expiration time in seconds."""
         redis = await get_redis()
         if isinstance(value, (dict, list)):
             value = json.dumps(value)
@@ -57,25 +60,25 @@ class CacheService:
     
     @staticmethod
     async def delete(key: str) -> bool:
-        """حذف قيمة من Cache - Delete value from cache"""
+        """Delete a value from cache by key."""
         redis = await get_redis()
         return await redis.delete(key) > 0
     
     @staticmethod
     async def exists(key: str) -> bool:
-        """التحقق من وجود مفتاح - Check if key exists"""
+        """Return True if a cache key exists."""
         redis = await get_redis()
         return await redis.exists(key) > 0
     
     @staticmethod
     async def increment(key: str, amount: int = 1) -> int:
-        """زيادة قيمة - Increment value"""
+        """Atomically increment an integer value stored at key."""
         redis = await get_redis()
         return await redis.incrby(key, amount)
     
     @staticmethod
     async def decrement(key: str, amount: int = 1) -> int:
-        """تقليل قيمة - Decrement value"""
+        """Atomically decrement an integer value stored at key."""
         redis = await get_redis()
         return await redis.decrby(key, amount)
 

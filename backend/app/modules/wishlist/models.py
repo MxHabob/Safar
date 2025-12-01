@@ -1,5 +1,5 @@
 """
-نماذج قوائم الأمنيات - Wishlist Models
+Wishlist models.
 """
 from datetime import datetime
 from sqlalchemy import (
@@ -13,8 +13,7 @@ from app.shared.base import BaseModel
 
 class Wishlist(BaseModel):
     """
-    جدول قوائم الأمنيات
-    Wishlists table
+    Wishlists table.
     """
     __tablename__ = "wishlists"
     

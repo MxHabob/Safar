@@ -1,5 +1,5 @@
 """
-خدمات مخطط السفر بالذكاء الاصطناعي - AI Travel Planner Services
+AI travel planner services.
 """
 from datetime import date, datetime
 from typing import Optional, Dict, Any, List
@@ -15,7 +15,7 @@ settings = get_settings()
 
 
 class AITravelPlannerService:
-    """خدمة مخطط السفر بالذكاء الاصطناعي - AI Travel Planner Service"""
+    """AI travel planner service."""
     
     @staticmethod
     async def generate_travel_plan(
@@ -32,10 +32,7 @@ class AITravelPlannerService:
         user_preferences: Optional[Dict[str, Any]] = None,
         natural_language_request: Optional[str] = None
     ) -> TravelPlan:
-        """
-        توليد خطة سفر باستخدام الذكاء الاصطناعي
-        Generate travel plan using AI
-        """
+        """Generate a travel plan using AI."""
         if not settings.openai_api_key:
             raise ValueError("OpenAI API key is not configured")
         

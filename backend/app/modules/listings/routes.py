@@ -1,6 +1,6 @@
 """
-مسارات القوائم - Listing Routes
-Using Services with Repository Pattern
+Listing routes.
+Expose listing CRUD and location endpoints using services with the repository pattern.
 """
 from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Response
@@ -43,8 +43,7 @@ async def list_listings(
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
-    قائمة القوائم مع فلترة
-    List listings with filters
+    List listings with optional filters (city, country, type, price, guests, status).
     """
     listings, total = await ListingService.list_listings(
         uow=uow,
@@ -98,11 +97,10 @@ async def get_listing(
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
-    الحصول على تفاصيل قائمة
-    Get listing details
+    Get listing details.
     
-    - Public access: Returns limited data (no exact address, limited host info)
-    - Authenticated access: Returns full data with personalized information
+    - Public access: returns limited data (no exact address, limited host info).
+    - Authenticated access: returns full data with personalized information.
     """
     listing = await ListingService.get_listing_by_id(uow, listing_id)
     
@@ -229,8 +227,7 @@ async def create_listing(
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
-    إنشاء قائمة جديدة
-    Create new listing
+    Create a new listing for the current host.
     """
     listing = await ListingService.create_listing(
         uow=uow,
@@ -265,8 +262,7 @@ async def update_listing(
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
-    تحديث قائمة
-    Update listing
+    Update an existing listing (host or admin only).
     """
     is_admin = current_user.role.value in ["admin", "super_admin"]
     
@@ -303,8 +299,7 @@ async def delete_listing(
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
-    حذف قائمة
-    Delete listing
+    Delete a listing (host or admin only).
     """
     is_admin = current_user.role.value in ["admin", "super_admin"]
     
@@ -326,8 +321,7 @@ async def create_listing_location(
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
-    إنشاء أو تحديث موقع القائمة مع PostGIS
-    Create or update listing location with PostGIS
+    Create or update the listing location with PostGIS coordinates.
     """
     # Check listing exists and user owns it
     listing = await ListingService.get_listing_by_id(uow, listing_id)

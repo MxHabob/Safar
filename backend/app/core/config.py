@@ -1,9 +1,8 @@
 """
-إعدادات التطبيق الرئيسية
-Application Core Configuration
+Application core configuration.
 
-This module contains all application settings and configuration.
-Supports loading from environment variables with proper type conversion.
+This module contains all application settings and configuration, and supports
+loading from environment variables with proper type conversion.
 """
 from functools import lru_cache
 from typing import Optional, Union
@@ -58,10 +57,10 @@ def parse_list_from_env(value: Union[str, list, None]) -> list[str]:
 
 class Settings(BaseSettings):
     """
-    Application Settings Class
+    Application settings class.
     
-    جميع إعدادات التطبيق يتم تحميلها من متغيرات البيئة أو القيم الافتراضية.
-    All application settings are loaded from environment variables or default values.
+    All application settings are loaded from environment variables or sensible
+    default values.
     """
     
     model_config = SettingsConfigDict(

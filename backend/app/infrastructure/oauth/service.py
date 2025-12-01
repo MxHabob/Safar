@@ -1,5 +1,5 @@
 """
-خدمة OAuth2 - OAuth2 Service
+OAuth2 service.
 """
 from typing import Optional, Dict, Any
 import httpx
@@ -10,11 +10,11 @@ settings = get_settings()
 
 
 class OAuthService:
-    """خدمة OAuth2 - OAuth2 service"""
+    """OAuth2 service."""
     
     @staticmethod
     async def verify_google_token(token: str) -> Dict[str, Any]:
-        """التحقق من Google token - Verify Google token"""
+        """Verify a Google ID token."""
         if not settings.google_client_id:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -59,7 +59,7 @@ class OAuthService:
     
     @staticmethod
     async def verify_apple_token(token: str) -> Dict[str, Any]:
-        """التحقق من Apple token - Verify Apple token"""
+        """Verify an Apple ID token."""
         if not settings.apple_client_id:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

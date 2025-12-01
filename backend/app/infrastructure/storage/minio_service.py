@@ -1,5 +1,5 @@
 """
-خدمة MinIO للتخزين - MinIO Storage Service
+MinIO storage service for managing object uploads, downloads, and metadata.
 """
 import io
 from typing import Optional, BinaryIO
@@ -19,10 +19,10 @@ settings = get_settings()
 
 
 class MinIOStorageService:
-    """خدمة تخزين الملفات باستخدام MinIO - MinIO file storage service"""
+    """File storage service backed by a MinIO object store."""
     
     def __init__(self):
-        """تهيئة عميل MinIO - Initialize MinIO client"""
+        """Initialize the MinIO client and ensure the bucket exists."""
         self.client = Minio(
             f"{settings.minio_endpoint}:{settings.minio_port}",
             access_key=settings.minio_access_key,
@@ -33,7 +33,7 @@ class MinIOStorageService:
         self._ensure_bucket_exists()
     
     def _ensure_bucket_exists(self):
-        """التأكد من وجود الـ bucket - Ensure bucket exists"""
+        """Ensure the configured bucket exists, creating it if necessary."""
         try:
             if not self.client.bucket_exists(self.bucket_name):
                 self.client.make_bucket(self.bucket_name)
@@ -51,18 +51,7 @@ class MinIOStorageService:
         content_type: Optional[str] = None,
         metadata: Optional[dict] = None
     ) -> str:
-        """
-        رفع ملف إلى MinIO - Upload file to MinIO
-        
-        Args:
-            file_data: محتوى الملف - File content as bytes
-            object_name: اسم الملف في MinIO - Object name in MinIO
-            content_type: نوع المحتوى - Content type (MIME type)
-            metadata: بيانات إضافية - Additional metadata
-        
-        Returns:
-            رابط الملف - File URL
-        """
+        """Upload a file object to MinIO and return its public URL."""
         try:
             # Convert bytes to file-like object
             file_obj = io.BytesIO(file_data)
@@ -87,15 +76,7 @@ class MinIOStorageService:
             raise
     
     def download_file(self, object_name: str) -> bytes:
-        """
-        تحميل ملف من MinIO - Download file from MinIO
-        
-        Args:
-            object_name: اسم الملف في MinIO - Object name in MinIO
-        
-        Returns:
-            محتوى الملف - File content as bytes
-        """
+        """Download a file from MinIO and return its content as bytes."""
         try:
             response = self.client.get_object(
                 bucket_name=self.bucket_name,
@@ -110,15 +91,7 @@ class MinIOStorageService:
             raise
     
     def delete_file(self, object_name: str) -> bool:
-        """
-        حذف ملف من MinIO - Delete file from MinIO
-        
-        Args:
-            object_name: اسم الملف في MinIO - Object name in MinIO
-        
-        Returns:
-            True إذا تم الحذف بنجاح - True if deleted successfully
-        """
+        """Delete a single object from MinIO."""
         try:
             self.client.remove_object(
                 bucket_name=self.bucket_name,
@@ -131,15 +104,7 @@ class MinIOStorageService:
             return False
     
     def delete_files(self, object_names: list[str]) -> list[str]:
-        """
-        حذف عدة ملفات - Delete multiple files
-        
-        Args:
-            object_names: قائمة أسماء الملفات - List of object names
-        
-        Returns:
-            قائمة الملفات المحذوفة - List of deleted files
-        """
+        """Delete multiple objects from MinIO and return the deleted ones."""
         try:
             delete_objects = [DeleteObject(name) for name in object_names]
             errors = self.client.remove_objects(
@@ -163,15 +128,7 @@ class MinIOStorageService:
             return []
     
     def file_exists(self, object_name: str) -> bool:
-        """
-        التحقق من وجود ملف - Check if file exists
-        
-        Args:
-            object_name: اسم الملف في MinIO - Object name in MinIO
-        
-        Returns:
-            True إذا كان الملف موجوداً - True if file exists
-        """
+        """Check whether a given object exists in the bucket."""
         try:
             self.client.stat_object(
                 bucket_name=self.bucket_name,
@@ -182,29 +139,12 @@ class MinIOStorageService:
             return False
     
     def get_file_url(self, object_name: str) -> str:
-        """
-        الحصول على رابط الملف - Get file URL
-        
-        Args:
-            object_name: اسم الملف في MinIO - Object name in MinIO
-        
-        Returns:
-            رابط الملف - File URL
-        """
+        """Build a public URL for an object."""
         base_url = settings.minio_url
         return urljoin(base_url, f"{self.bucket_name}/{object_name}")
     
     def get_presigned_url(self, object_name: str, expires_seconds: int = 3600) -> str:
-        """
-        الحصول على رابط مؤقت للملف - Get presigned URL for file
-        
-        Args:
-            object_name: اسم الملف في MinIO - Object name in MinIO
-            expires_seconds: مدة صلاحية الرابط بالثواني - URL expiration in seconds
-        
-        Returns:
-            رابط مؤقت - Presigned URL
-        """
+        """Generate a presigned URL for temporary access to an object."""
         try:
             url = self.client.presigned_get_object(
                 bucket_name=self.bucket_name,
@@ -217,15 +157,7 @@ class MinIOStorageService:
             raise
     
     def get_file_info(self, object_name: str) -> dict:
-        """
-        الحصول على معلومات الملف - Get file information
-        
-        Args:
-            object_name: اسم الملف في MinIO - Object name in MinIO
-        
-        Returns:
-            معلومات الملف - File information
-        """
+        """Return basic metadata about an object stored in MinIO."""
         try:
             stat = self.client.stat_object(
                 bucket_name=self.bucket_name,
@@ -248,7 +180,7 @@ _minio_service: Optional[MinIOStorageService] = None
 
 
 def get_minio_service() -> MinIOStorageService:
-    """الحصول على خدمة MinIO - Get MinIO service instance"""
+    """Return a singleton instance of the MinIO storage service."""
     global _minio_service
     if _minio_service is None:
         _minio_service = MinIOStorageService()

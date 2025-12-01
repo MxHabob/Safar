@@ -1,6 +1,7 @@
 """
-نظام الأمان والمصادقة - Security & Authentication
-JWT, Password Hashing, OAuth2
+Security and authentication utilities.
+
+Includes JWT handling, password hashing, and related helpers.
 """
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
@@ -17,20 +18,17 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """التحقق من كلمة المرور - Verify password"""
+    """Verify a plain-text password against its hashed value."""
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
-    """تشفير كلمة المرور - Hash password"""
+    """Hash a password for secure storage."""
     return pwd_context.hash(password)
 
 
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
-    """
-    إنشاء JWT Access Token
-    Create JWT access token
-    """
+    """Create a signed JWT access token."""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -43,10 +41,7 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
 
 
 def create_refresh_token(data: Dict[str, Any]) -> str:
-    """
-    إنشاء JWT Refresh Token
-    Create JWT refresh token
-    """
+    """Create a signed JWT refresh token."""
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
     to_encode.update({"exp": expire, "type": "refresh"})
@@ -55,10 +50,7 @@ def create_refresh_token(data: Dict[str, Any]) -> str:
 
 
 def decode_token(token: str, token_type: str = "access") -> Dict[str, Any]:
-    """
-    فك تشفير JWT Token
-    Decode JWT token
-    """
+    """Decode and validate a JWT token for the given token type."""
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
         if payload.get("type") != token_type:
@@ -75,20 +67,22 @@ def decode_token(token: str, token_type: str = "access") -> Dict[str, Any]:
 
 
 def generate_otp() -> str:
-    """إنشاء رمز OTP آمن - Generate secure OTP code"""
+    """Generate a secure one-time password (OTP) code."""
     import secrets
     return str(secrets.randbelow(900000) + 100000)  # 100000-999999
 
 
 def verify_otp(stored_otp: str, provided_otp: str) -> bool:
-    """التحقق من رمز OTP - Verify OTP code"""
+    """Verify that the provided OTP matches the stored value."""
     return stored_otp == provided_otp
 
 
 def validate_password_strength(password: str) -> tuple[bool, Optional[str]]:
     """
-    التحقق من قوة كلمة المرور - Validate password strength
-    Returns: (is_valid, error_message)
+    Validate password strength.
+
+    Returns:
+        tuple[bool, Optional[str]]: ``(is_valid, error_message)``.
     """
     if len(password) < 8:
         return False, "Password must be at least 8 characters long"

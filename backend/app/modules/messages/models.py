@@ -1,6 +1,6 @@
 """
-نماذج الرسائل والمحادثات - Message and Conversation Models
-Enhanced with Conversation Model from Prisma Schema
+Message and conversation models.
+Enhanced with the conversation model from the Prisma schema.
 """
 from datetime import datetime
 from typing import Optional
@@ -14,7 +14,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from app.shared.base import BaseModel
 from app.core.database import Base
 
-# Many-to-Many relationship table for conversation participants
+# Many-to-many relationship table for conversation participants
 conversation_participants = Table(
     'conversation_participants',
     Base.metadata,
@@ -25,10 +25,7 @@ conversation_participants = Table(
 
 
 class Conversation(BaseModel):
-    """
-    جدول المحادثات (من Prisma Schema)
-    Conversations table from Prisma Schema
-    """
+    """Conversations table (from Prisma schema)."""
     __tablename__ = "conversations"
     
     booking_id = Column(String(40), ForeignKey("bookings.id", ondelete="SET NULL"), nullable=True, index=True)
@@ -48,10 +45,7 @@ class Conversation(BaseModel):
 
 
 class Message(BaseModel):
-    """
-    جدول الرسائل
-    Messages table
-    """
+    """Messages table."""
     __tablename__ = "messages"
     
     # Conversation-based (new)
@@ -96,10 +90,7 @@ class Message(BaseModel):
 
 
 class MessageAutomation(BaseModel):
-    """
-    جدول أتمتة الرسائل (من Prisma Schema)
-    Message automations table from Prisma Schema
-    """
+    """Message automations table (from Prisma schema)."""
     __tablename__ = "message_automations"
     
     conversation_id = Column(String(40), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True)

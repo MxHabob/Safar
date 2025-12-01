@@ -1,5 +1,5 @@
 """
-نماذج الملفات - File Models
+File models.
 """
 from sqlalchemy import Column, String, Integer, Enum as SQLEnum, ForeignKey, Text
 from sqlalchemy.orm import relationship
@@ -9,7 +9,7 @@ from app.shared.base import BaseModel
 
 
 class FileType(str, enum.Enum):
-    """أنواع الملفات - File types"""
+    """File types."""
     IMAGE = "image"
     DOCUMENT = "document"
     VIDEO = "video"
@@ -18,7 +18,7 @@ class FileType(str, enum.Enum):
 
 
 class FileCategory(str, enum.Enum):
-    """فئات الملفات - File categories"""
+    """File categories."""
     AVATAR = "avatar"
     LISTING_PHOTO = "listing_photo"
     PROPERTY_PHOTO = "property_photo"  # Legacy alias
@@ -28,10 +28,7 @@ class FileCategory(str, enum.Enum):
 
 
 class File(BaseModel):
-    """
-    جدول الملفات
-    Files table
-    """
+    """Files table."""
     __tablename__ = "files"
     
     # File Info

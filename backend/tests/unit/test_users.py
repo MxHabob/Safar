@@ -1,5 +1,5 @@
 """
-Unit tests للمستخدمين - Users unit tests
+Users unit tests.
 """
 import pytest
 from app.modules.users.services import UserService

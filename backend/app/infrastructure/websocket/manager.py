@@ -1,6 +1,5 @@
 """
-WebSocket Manager للدردشة والإشعارات
-WebSocket Manager for chat and notifications
+WebSocket manager for chat and notifications.
 """
 from typing import Dict, Set
 from fastapi import WebSocket, WebSocketDisconnect
@@ -11,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class ConnectionManager:
-    """مدير اتصالات WebSocket - WebSocket connection manager"""
+    """WebSocket connection manager."""
     
     def __init__(self):
         # user_id -> Set[WebSocket]
@@ -20,7 +19,7 @@ class ConnectionManager:
         self.room_connections: Dict[str, Set[WebSocket]] = {}
     
     async def connect(self, websocket: WebSocket, user_id: int):
-        """الاتصال - Connect"""
+        """Accept and register a WebSocket connection for the given user."""
         await websocket.accept()
         if user_id not in self.active_connections:
             self.active_connections[user_id] = set()
@@ -28,7 +27,7 @@ class ConnectionManager:
         logger.info(f"User {user_id} connected via WebSocket")
     
     def disconnect(self, websocket: WebSocket, user_id: int):
-        """قطع الاتصال - Disconnect"""
+        """Remove a WebSocket connection for the given user."""
         if user_id in self.active_connections:
             self.active_connections[user_id].discard(websocket)
             if not self.active_connections[user_id]:
@@ -36,7 +35,7 @@ class ConnectionManager:
         logger.info(f"User {user_id} disconnected from WebSocket")
     
     async def send_personal_message(self, message: dict, user_id: int):
-        """إرسال رسالة شخصية - Send personal message"""
+        """Send a personal message to all active connections for a user."""
         if user_id in self.active_connections:
             disconnected = set()
             for connection in self.active_connections[user_id]:
@@ -51,7 +50,7 @@ class ConnectionManager:
                 self.active_connections[user_id].discard(conn)
     
     async def broadcast(self, message: dict):
-        """بث عام - Broadcast message"""
+        """Broadcast a message to all connected users."""
         disconnected = []
         for user_id, connections in self.active_connections.items():
             for connection in connections:
@@ -67,18 +66,18 @@ class ConnectionManager:
                 self.active_connections[user_id].discard(conn)
     
     async def join_room(self, websocket: WebSocket, room_id: str):
-        """الانضمام إلى غرفة - Join room"""
+        """Join a room identified by room_id."""
         if room_id not in self.room_connections:
             self.room_connections[room_id] = set()
         self.room_connections[room_id].add(websocket)
     
     def leave_room(self, websocket: WebSocket, room_id: str):
-        """مغادرة الغرفة - Leave room"""
+        """Leave a room identified by room_id."""
         if room_id in self.room_connections:
             self.room_connections[room_id].discard(websocket)
     
     async def send_to_room(self, message: dict, room_id: str):
-        """إرسال إلى غرفة - Send to room"""
+        """Send a message to all connections in a room."""
         if room_id in self.room_connections:
             disconnected = set()
             for connection in self.room_connections[room_id]:

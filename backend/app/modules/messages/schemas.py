@@ -1,6 +1,5 @@
 """
-Schemas للرسائل والمحادثات - Message and Conversation Schemas
-Enhanced with Conversation model
+Message and conversation schemas, enhanced with the Conversation model.
 """
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict, Field
@@ -9,7 +8,7 @@ from app.core.id import ID
 
 
 class MessageCreate(BaseModel):
-    """Schema لإنشاء رسالة - Create message schema"""
+    """Schema for creating a message."""
     conversation_id: Optional[ID] = None
     receiver_id: Optional[ID] = None  # For direct messaging (legacy)
     listing_id: Optional[ID] = None
@@ -21,14 +20,14 @@ class MessageCreate(BaseModel):
 
 
 class ConversationCreate(BaseModel):
-    """Schema لإنشاء محادثة - Create conversation schema"""
+    """Schema for creating a conversation."""
     participant_id: ID
     listing_id: Optional[ID] = None
     booking_id: Optional[ID] = None
 
 
 class MessageResponse(BaseModel):
-    """Schema لاستجابة الرسالة - Message response schema"""
+    """Schema returned in message responses."""
     model_config = ConfigDict(from_attributes=True)
     
     id: ID
@@ -45,7 +44,7 @@ class MessageResponse(BaseModel):
 
 
 class ConversationResponse(BaseModel):
-    """Schema للمحادثة - Conversation response"""
+    """Schema returned in conversation responses."""
     model_config = ConfigDict(from_attributes=True)
     
     id: ID
@@ -58,7 +57,7 @@ class ConversationResponse(BaseModel):
 
 
 class ConversationListResponse(BaseModel):
-    """Schema لقائمة المحادثات - Conversation list response"""
+    """Schema for a paginated list of conversations."""
     items: List[ConversationResponse]
     total: int
     skip: int
@@ -66,7 +65,7 @@ class ConversationListResponse(BaseModel):
 
 
 class MessageListResponse(BaseModel):
-    """Schema لقائمة الرسائل - Message list response"""
+    """Schema for a paginated list of messages."""
     items: List[MessageResponse]
     total: int
     skip: int
@@ -74,7 +73,7 @@ class MessageListResponse(BaseModel):
 
 
 class ConversationSummaryResponse(BaseModel):
-    """Schema لملخص المحادثة - Conversation summary response"""
+    """Schema for a summarized view of a conversation."""
     id: ID
     other_user_id: ID
     other_user_name: str

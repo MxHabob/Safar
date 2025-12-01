@@ -1,5 +1,5 @@
 """
-Schemas لمخطط السفر - Travel Planner Schemas
+Travel planner schemas.
 """
 from datetime import date
 from typing import Optional, Dict, Any, List
@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, ConfigDict
 
 
 class TravelPlanRequest(BaseModel):
-    """Schema لطلب خطة سفر - Travel plan request"""
+    """Travel plan request schema."""
     destination: str = Field(..., min_length=2, max_length=200)
     start_date: date
     end_date: date
@@ -19,12 +19,15 @@ class TravelPlanRequest(BaseModel):
     preferences: Optional[Dict[str, Any]] = None
     natural_language_request: Optional[str] = Field(
         None,
-        description="وصف طبيعي للرحلة مثل: 'سفر عائلي إلى باريس 5 أيام بميزانية 3000 دولار'"
+        description=(
+            "Natural language description of the trip, for example: "
+            "'Family trip to Paris for 5 days with a budget of 3000 USD'."
+        ),
     )
 
 
 class DailyItineraryItem(BaseModel):
-    """عنصر في الجدولة اليومية - Daily itinerary item"""
+    """Daily itinerary item."""
     day: int
     date: date
     activities: List[Dict[str, Any]]
@@ -33,7 +36,7 @@ class DailyItineraryItem(BaseModel):
 
 
 class TravelPlanResponse(BaseModel):
-    """Schema لاستجابة خطة السفر - Travel plan response"""
+    """Travel plan response schema."""
     model_config = ConfigDict(from_attributes=True)
     
     id: int

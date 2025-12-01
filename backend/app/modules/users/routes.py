@@ -1,5 +1,6 @@
 """
-مسارات المستخدمين - User Routes
+User routes.
+All authentication, profile, OTP, OAuth, and session-related endpoints.
 """
 from datetime import timedelta
 from typing import Any
@@ -32,8 +33,7 @@ async def register(
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
-    تسجيل مستخدم جديد
-    Register new user
+    Register a new user.
     """
     # Create user using service
     user_entity = await UserService.create_user(uow, user_data)
@@ -59,8 +59,7 @@ async def login(
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
-    تسجيل الدخول
-    Login
+    Login with email and password.
     """
     user_entity = await UserService.authenticate_user(
         uow, credentials.email, credentials.password
@@ -93,8 +92,7 @@ async def refresh_token(
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
-    تحديث Access Token
-    Refresh access token
+    Refresh an access token using a valid refresh token.
     """
     try:
         payload = decode_token(token_data.refresh_token, token_type="refresh")
@@ -142,8 +140,7 @@ async def get_current_user_info(
     current_user: User = Depends(get_current_active_user)
 ) -> Any:
     """
-    الحصول على معلومات المستخدم الحالي
-    Get current user info
+    Get the currently authenticated user profile.
     """
     return current_user
 
@@ -155,8 +152,7 @@ async def update_current_user(
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
-    تحديث بيانات المستخدم الحالي
-    Update current user
+    Update the currently authenticated user profile.
     """
     updated_user = await UserService.update_user(db, current_user, user_data)
     return updated_user
@@ -168,8 +164,7 @@ async def request_otp(
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
-    طلب رمز OTP
-    Request OTP code
+    Request an OTP code for phone verification.
     """
     # In production, send SMS via Twilio or similar
     user = await UserService.get_user_by_email(db, otp_data.phone_number)
@@ -190,8 +185,7 @@ async def verify_otp(
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
-    التحقق من رمز OTP
-    Verify OTP code
+    Verify an OTP code for phone verification.
     """
     user = await UserService.get_user_by_email(db, otp_data.phone_number)
     if not user:
@@ -219,8 +213,7 @@ async def logout(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> Any:
     """
-    تسجيل الخروج وإلغاء Token
-    Logout and revoke token
+    Logout the current user and revoke the current token.
     """
     token = credentials.credentials
     await add_token_to_blacklist(token)
@@ -233,8 +226,7 @@ async def logout_all(
     current_user: User = Depends(get_current_active_user)
 ) -> Any:
     """
-    تسجيل الخروج من جميع الأجهزة
-    Logout from all devices
+    Logout the current user from all devices (revoke all tokens).
     """
     await revoke_user_tokens(current_user.id)
     
@@ -247,8 +239,7 @@ async def oauth_login(
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
-    تسجيل الدخول عبر OAuth (Google, Apple)
-    OAuth login
+    Login via OAuth (Google, Apple).
     """
     from app.infrastructure.oauth.service import OAuthService
     from app.modules.users.models import UserRole, UserStatus

@@ -1,5 +1,5 @@
 """
-مسارات المدفوعات - Payment Routes
+Payment routes.
 """
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -23,10 +23,7 @@ async def create_payment_intent(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    إنشاء payment intent
-    Create payment intent
-    """
+    """Create a payment intent for a booking."""
     result = await PaymentService.create_payment_intent(
         db,
         booking_id=payment_data.booking_id,
@@ -44,10 +41,9 @@ async def process_payment(
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
-    معالجة دفعة
-    Process payment
-    
-    CRITICAL: This endpoint is idempotent. Processing the same payment_intent_id
+    Process a payment.
+
+    CRITICAL: This endpoint is idempotent. Processing the same ``payment_intent_id``
     multiple times will return the existing payment record.
     """
     payment = await PaymentService.process_payment(

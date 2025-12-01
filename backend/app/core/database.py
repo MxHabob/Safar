@@ -1,6 +1,7 @@
 """
-إعداد قاعدة البيانات - Database Configuration
-SQLAlchemy 2.0 Async Setup
+Database configuration.
+
+SQLAlchemy 2.0 async setup.
 """
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import (
@@ -51,10 +52,7 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """
-    Dependency للحصول على جلسة قاعدة البيانات
-    Database session dependency for FastAPI
-    """
+    """FastAPI dependency that provides a database session per request."""
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -70,7 +68,7 @@ DB_INIT_LOCK_KEY = 874512987  # Arbitrary constant for advisory lock
 
 
 async def init_db() -> None:
-    """تهيئة قاعدة البيانات - Initialize database"""
+    """Initialize the database schema in a concurrency-safe way."""
     async with engine.begin() as conn:
         lock_acquired = False
         if conn.dialect.name == "postgresql":
@@ -91,6 +89,6 @@ async def init_db() -> None:
 
 
 async def close_db() -> None:
-    """إغلاق اتصالات قاعدة البيانات - Close database connections"""
+    """Close all database connections and dispose the engine."""
     await engine.dispose()
 

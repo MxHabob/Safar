@@ -1,6 +1,5 @@
 """
-Import جميع النماذج هنا لضمان تسجيلها في Alembic
-Import all models here to ensure they're registered with Alembic
+Import all models here to ensure they are registered with Alembic.
 """
 # Users - Enhanced
 from app.modules.users.models import (

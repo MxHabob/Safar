@@ -1,6 +1,6 @@
 """
-مسارات Webhooks - Webhook Routes
-CRITICAL: Includes Stripe webhook signature verification
+Webhook routes.
+CRITICAL: Includes Stripe webhook signature verification.
 """
 import logging
 from typing import Any

@@ -10,12 +10,10 @@ from app.shared.base import BaseModel
 
 
 class WebhookEvent(BaseModel):
-    """
-    جدول أحداث Webhook المعالجة
-    Processed webhook events table
-    
-    CRITICAL: Tracks all processed webhook events to ensure idempotency.
-    Prevents duplicate processing when Stripe retries webhook events.
+    """Processed webhook events.
+
+    CRITICAL: Tracks all processed webhook events to ensure idempotency and
+    prevents duplicate processing when Stripe retries webhook events.
     """
     __tablename__ = "webhook_events"
     

@@ -1,6 +1,5 @@
 """
-Background Tasks للمدفوعات
-Payment Background Tasks
+Payment background tasks.
 """
 import asyncio
 from sqlalchemy import select
@@ -12,7 +11,7 @@ from app.modules.payments.services import PaymentService
 
 
 async def _process_payment_async(payment_id: int):
-    """معالجة دفعة - Process payment (async)"""
+    """Process a payment asynchronously."""
     async with AsyncSessionLocal() as db:
         result = await db.execute(
             select(Payment).where(Payment.id == payment_id)
@@ -26,18 +25,18 @@ async def _process_payment_async(payment_id: int):
 
 @celery_app.task(name="process_payment")
 def process_payment(payment_id: int):
-    """معالجة دفعة - Process payment"""
+    """Process a payment (Celery task)."""
     asyncio.run(_process_payment_async(payment_id))
 
 
 async def _refund_payment_async(payment_id: int, amount: float = None):
-    """استرداد دفعة - Refund payment (async)"""
+    """Refund a payment asynchronously."""
     async with AsyncSessionLocal() as db:
         await PaymentService.refund_payment(db, payment_id, amount)
 
 
 @celery_app.task(name="refund_payment")
 def refund_payment(payment_id: int, amount: float = None):
-    """استرداد دفعة - Refund payment"""
+    """Refund a payment (Celery task)."""
     asyncio.run(_refund_payment_async(payment_id, amount))
 

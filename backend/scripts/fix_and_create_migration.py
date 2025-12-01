@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-سكريبت لإصلاح مشكلة Alembic وإنشاء Migration الأولي
-Script to fix Alembic revision error and create initial migration
+Script to fix the Alembic revision error and prepare the initial migration.
 
 Usage:
     python scripts/fix_and_create_migration.py

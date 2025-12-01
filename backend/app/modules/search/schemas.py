@@ -1,5 +1,5 @@
 """
-Schemas للبحث - Search Schemas
+Search schemas.
 """
 from typing import Optional
 from pydantic import BaseModel, Field
@@ -7,7 +7,7 @@ from app.modules.listings.schemas import ListingResponse
 
 
 class SearchRequest(BaseModel):
-    """Schema لطلب البحث - Search request schema"""
+    """Schema for search requests."""
     query: Optional[str] = None
     city: Optional[str] = None
     country: Optional[str] = None
@@ -25,7 +25,7 @@ class SearchRequest(BaseModel):
 
 
 class SearchResponse(BaseModel):
-    """Schema لاستجابة البحث - Search response schema"""
+    """Schema for search responses."""
     items: list[ListingResponse]
     total: int
     skip: int
@@ -34,13 +34,13 @@ class SearchResponse(BaseModel):
 
 
 class SearchSuggestion(BaseModel):
-    """Schema لاقتراح البحث - Search suggestion schema"""
+    """Schema for a single search suggestion."""
     type: str
     text: str
     value: str
 
 
 class SearchSuggestionsResponse(BaseModel):
-    """Schema لاستجابة اقتراحات البحث - Search suggestions response"""
+    """Schema for search suggestions response."""
     suggestions: list[SearchSuggestion]
 

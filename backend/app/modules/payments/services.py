@@ -1,5 +1,6 @@
 """
-خدمات المدفوعات - Payment Services
+Payment services.
+Integrates with Stripe and coordinates booking payment workflows.
 """
 import stripe
 from typing import Optional
@@ -20,7 +21,7 @@ if settings.stripe_secret_key:
 
 
 class PaymentService:
-    """خدمة المدفوعات - Payment service"""
+    """Payment service for creating, processing, and refunding payments."""
     
     @staticmethod
     async def create_payment_intent(
@@ -29,7 +30,7 @@ class PaymentService:
         amount: float,
         currency: str = "USD"
     ) -> dict:
-        """إنشاء payment intent - Create payment intent"""
+        """Create a Stripe payment intent for a booking."""
         if not settings.stripe_secret_key:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -60,10 +61,10 @@ class PaymentService:
         payment_intent_id: str,
         payment_method: PaymentMethodType
     ) -> Payment:
-        """معالجة دفعة - Process payment
+        """Process a payment intent and persist the payment.
         
-        CRITICAL: Includes idempotency checks to prevent duplicate payment processing.
-        Uses row-level locking to ensure atomicity.
+        CRITICAL: Includes idempotency checks to prevent duplicate processing and
+        uses row-level locking to ensure atomic operations.
         """
         import logging
         from sqlalchemy.orm import selectinload
@@ -237,7 +238,7 @@ class PaymentService:
         payment_id: int,
         amount: Optional[float] = None
     ) -> Payment:
-        """استرداد دفعة - Refund payment"""
+        """Refund a payment (fully or partially, depending on the amount)."""
         result = await db.execute(
             select(Payment).where(Payment.id == payment_id)
         )

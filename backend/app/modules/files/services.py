@@ -1,5 +1,5 @@
 """
-خدمات الملفات - File Services
+File service utilities for validating, storing, and deleting uploaded files.
 """
 import os
 import secrets
@@ -14,7 +14,7 @@ from app.modules.files.models import File, FileType, FileCategory
 
 logger = logging.getLogger(__name__)
 
-# Try to import magic for file content validation
+# Try to import python-magic for file content validation
 try:
     import magic
     MAGIC_AVAILABLE = True
@@ -23,7 +23,7 @@ except ImportError:
 
 settings = get_settings()
 
-# Allowed file types
+# Allowed file MIME types
 ALLOWED_IMAGE_TYPES = {
     "image/jpeg", "image/jpg", "image/png", "image/gif", 
     "image/webp", "image/svg+xml"
@@ -55,7 +55,7 @@ MAX_AUDIO_SIZE = 10 * 1024 * 1024  # 10MB
 
 
 def get_file_type_from_mime(mime_type: str) -> FileType:
-    """تحديد نوع الملف من MIME type - Determine file type from MIME"""
+    """Determine the high-level file type from a MIME type."""
     if mime_type in ALLOWED_IMAGE_TYPES:
         return FileType.IMAGE
     elif mime_type in ALLOWED_DOCUMENT_TYPES:
@@ -68,9 +68,10 @@ def get_file_type_from_mime(mime_type: str) -> FileType:
 
 
 def validate_file_type(file: UploadFile) -> Tuple[bool, Optional[str]]:
-    """
-    التحقق من نوع الملف - Validate file type
-    Returns: (is_valid, error_message)
+    """Validate that the uploaded file MIME type is allowed.
+
+    Returns:
+        (is_valid, error_message)
     """
     if not file.content_type:
         return False, "File content type is missing"
@@ -82,9 +83,7 @@ def validate_file_type(file: UploadFile) -> Tuple[bool, Optional[str]]:
 
 
 def validate_file_size(file: UploadFile, file_type: FileType) -> Tuple[bool, Optional[str]]:
-    """
-    التحقق من حجم الملف - Validate file size
-    """
+    """Validate uploaded file size against configured limits."""
     # Get file size
     file.file.seek(0, os.SEEK_END)
     file_size = file.file.tell()
@@ -106,9 +105,7 @@ def validate_file_size(file: UploadFile, file_type: FileType) -> Tuple[bool, Opt
 
 
 async def validate_file_content(file: UploadFile) -> Tuple[bool, Optional[str]]:
-    """
-    التحقق من محتوى الملف باستخدام magic - Validate file content
-    """
+    """Validate file content using python-magic when available."""
     if not MAGIC_AVAILABLE:
         # Skip content validation if magic is not available
         return True, None
@@ -135,7 +132,7 @@ async def validate_file_content(file: UploadFile) -> Tuple[bool, Optional[str]]:
 
 
 def generate_unique_filename(original_filename: str) -> str:
-    """إنشاء اسم ملف فريد - Generate unique filename"""
+    """Generate a unique filename while preserving the original extension."""
     ext = Path(original_filename).suffix
     unique_id = secrets.token_urlsafe(16)
     return f"{unique_id}{ext}"
@@ -147,9 +144,7 @@ async def save_file(
     user_id: int,
     db: AsyncSession
 ) -> File:
-    """
-    حفظ الملف - Save file
-    """
+    """Validate and persist an uploaded file to the configured storage backend."""
     # Validate file type
     is_valid, error = validate_file_type(file)
     if not is_valid:
@@ -256,9 +251,7 @@ async def delete_file(
     file_record: File,
     db: AsyncSession
 ) -> bool:
-    """
-    حذف ملف - Delete file
-    """
+    """Delete a file from storage and remove its database record."""
     from app.core.config import get_settings
     settings = get_settings()
     

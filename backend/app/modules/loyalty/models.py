@@ -1,6 +1,5 @@
 """
-نماذج برنامج الولاء - Loyalty Program Models
-From Prisma Schema
+Loyalty program models (from Prisma schema).
 """
 from datetime import datetime
 from sqlalchemy import (
@@ -14,8 +13,7 @@ from app.shared.base import BaseModel
 
 class LoyaltyProgram(BaseModel):
     """
-    جدول برامج الولاء
-    Loyalty programs table
+    Loyalty programs table.
     """
     __tablename__ = "loyalty_programs"
     
@@ -33,8 +31,7 @@ class LoyaltyProgram(BaseModel):
 
 class LoyaltyLedger(BaseModel):
     """
-    جدول سجل نقاط الولاء
-    Loyalty ledger table
+    Loyalty ledger table.
     """
     __tablename__ = "loyalty_ledgers"
     

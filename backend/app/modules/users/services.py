@@ -1,5 +1,5 @@
 """
-خدمات المستخدمين - User Services
+User Services
 Using Repository Pattern and Domain Entities
 """
 from datetime import datetime, timedelta
@@ -19,14 +19,14 @@ from sqlalchemy import select
 
 
 class UserService:
-    """خدمة المستخدمين - User service using repositories"""
+    """User service using repositories."""
     
     @staticmethod
     async def create_user(
         uow: IUnitOfWork,
         user_data: UserCreate
     ) -> UserEntity:
-        """إنشاء مستخدم جديد - Create new user"""
+        """Create a new user."""
         # Validate password strength
         is_valid, error_message = validate_password_strength(user_data.password)
         if not is_valid:
@@ -92,7 +92,7 @@ class UserService:
         uow: IUnitOfWork,
         user_id: ID
     ) -> Optional[UserEntity]:
-        """الحصول على مستخدم بالمعرف - Get user by ID"""
+        """Get user by ID."""
         return await uow.users.get_by_id(user_id)
     
     @staticmethod
@@ -100,7 +100,7 @@ class UserService:
         uow: IUnitOfWork,
         email: str
     ) -> Optional[UserEntity]:
-        """الحصول على مستخدم بالبريد الإلكتروني - Get user by email"""
+        """Get user by email address."""
         return await uow.users.get_by_email(email)
     
     @staticmethod
@@ -108,7 +108,7 @@ class UserService:
         uow: IUnitOfWork,
         username: str
     ) -> Optional[UserEntity]:
-        """الحصول على مستخدم بالاسم - Get user by username"""
+        """Get user by username."""
         return await uow.users.get_by_username(username)
     
     @staticmethod
@@ -117,7 +117,7 @@ class UserService:
         email: str,
         password: str
     ) -> Optional[UserEntity]:
-        """المصادقة على المستخدم - Authenticate user"""
+        """Authenticate user credentials and return the user entity if valid."""
         user_entity = await uow.users.get_by_email(email)
         if not user_entity:
             return None
@@ -146,7 +146,7 @@ class UserService:
         user_id: ID,
         user_data: UserUpdate
     ) -> UserEntity:
-        """تحديث بيانات المستخدم - Update user"""
+        """Update user data."""
         user = await uow.users.get_by_id(user_id)
         
         if not user:
@@ -171,7 +171,7 @@ class UserService:
         user_id: ID,
         verification_type: str
     ) -> UserVerification:
-        """إنشاء رمز التحقق - Create verification code"""
+        """Create a verification code for the given user and type."""
         code = generate_otp()
         expires_at = datetime.utcnow() + timedelta(minutes=10)
         
@@ -194,7 +194,7 @@ class UserService:
         user_id: ID,
         verification_type: str
     ) -> UserEntity:
-        """التحقق من المستخدم - Verify user"""
+        """Mark user as verified for the given verification type."""
         user = await uow.users.get_by_id(user_id)
         
         if not user:
@@ -221,7 +221,7 @@ class UserService:
     async def create_access_token_for_user(
         user: UserEntity
     ) -> dict:
-        """إنشاء access token للمستخدم - Create access token for user"""
+        """Create access and refresh tokens for the given user."""
         from app.core.id import ID
         
         token_data = {

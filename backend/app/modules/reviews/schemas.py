@@ -1,6 +1,5 @@
 """
-Schemas للتقييمات - Review Schemas
-Enhanced with new features
+Review schemas, enhanced with additional features.
 """
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
@@ -9,7 +8,7 @@ from app.core.id import ID
 
 
 class ReviewCreate(BaseModel):
-    """Schema لإنشاء تقييم - Create review schema"""
+    """Schema for creating a review."""
     listing_id: ID
     booking_id: Optional[ID] = None
     overall_rating: float = Field(..., ge=1, le=5)
@@ -24,12 +23,12 @@ class ReviewCreate(BaseModel):
 
 
 class ReviewResponseCreate(BaseModel):
-    """Schema لإنشاء رد المضيف - Create host response schema"""
+    """Schema for creating a host response to a review."""
     comment: str = Field(..., min_length=1)
 
 
 class ReviewResponseResponse(BaseModel):
-    """Schema لاستجابة رد المضيف - Host response response"""
+    """Schema returned for a host's response to a review."""
     model_config = ConfigDict(from_attributes=True)
     
     id: ID
@@ -40,7 +39,7 @@ class ReviewResponseResponse(BaseModel):
 
 
 class ReviewResponse(BaseModel):
-    """Schema لاستجابة التقييم - Review response schema"""
+    """Schema returned for a review, including aggregates and host response."""
     model_config = ConfigDict(from_attributes=True)
     
     id: ID
@@ -67,7 +66,7 @@ class ReviewResponse(BaseModel):
 
 
 class ReviewListResponse(BaseModel):
-    """Schema لقائمة التقييمات - Review list response"""
+    """Schema for a paginated list of reviews."""
     items: list[ReviewResponse]
     total: int
     skip: int
@@ -75,5 +74,5 @@ class ReviewListResponse(BaseModel):
 
 
 class ReviewHelpfulRequest(BaseModel):
-    """Schema لتقييم "مفيد" - Review helpful request"""
+    """Schema for marking a review as helpful or not helpful."""
     is_helpful: bool = True

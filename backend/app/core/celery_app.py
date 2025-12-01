@@ -1,6 +1,5 @@
 """
-إعداد Celery للـ Background Tasks
-Celery Configuration for Background Tasks
+Celery configuration for background tasks.
 """
 from celery import Celery
 from app.core.config import get_settings

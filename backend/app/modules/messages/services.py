@@ -1,6 +1,6 @@
 """
-خدمات الرسائل والمحادثات - Message and Conversation Services
-Enhanced with Conversation model
+Message and conversation services.
+Enhanced with the Conversation model.
 """
 from typing import List, Optional
 from datetime import datetime
@@ -15,7 +15,7 @@ from app.modules.users.models import User
 
 
 class MessageService:
-    """خدمة الرسائل - Message service"""
+    """Service layer for working with messages and conversations."""
     
     @staticmethod
     async def get_or_create_conversation(
@@ -24,7 +24,7 @@ class MessageService:
         listing_id: Optional[int] = None,
         booking_id: Optional[int] = None
     ) -> Conversation:
-        """الحصول على محادثة أو إنشاء واحدة جديدة - Get or create conversation"""
+        """Get an existing conversation for the given participants or create a new one."""
         # Check if conversation exists
         from app.modules.messages.models import conversation_participants
         
@@ -66,7 +66,7 @@ class MessageService:
         message_data: MessageCreate,
         sender_id: int
     ) -> Message:
-        """إنشاء رسالة جديدة - Create new message"""
+        """Create a new message within a conversation or direct thread."""
         conversation_id = message_data.conversation_id
         
         # If conversation_id not provided, get or create one
@@ -119,7 +119,7 @@ class MessageService:
         skip: int = 0,
         limit: int = 50
     ) -> tuple[List[Message], int]:
-        """الحصول على محادثة - Get conversation"""
+        """Get a conversation's messages for a participant, with pagination."""
         # Verify user is participant
         from app.modules.messages.models import conversation_participants
         participant_check = await db.execute(
@@ -158,7 +158,7 @@ class MessageService:
         db: AsyncSession,
         user_id: int
     ) -> List[Conversation]:
-        """الحصول على جميع محادثات المستخدم - Get all user conversations"""
+        """Get all conversations for the given user."""
         from app.modules.messages.models import conversation_participants
         
         query = select(Conversation).join(conversation_participants).where(
@@ -179,7 +179,7 @@ class MessageService:
         message_id: int,
         user_id: int
     ) -> Message:
-        """تحديد رسالة كمقروءة - Mark message as read"""
+        """Mark a single message as read for the given user."""
         result = await db.execute(
             select(Message).where(Message.id == message_id)
         )
@@ -212,7 +212,7 @@ class MessageService:
         conversation_id: int,
         user_id: int
     ) -> int:
-        """تحديد جميع رسائل المحادثة كمقروءة - Mark all conversation messages as read"""
+        """Mark all messages in a conversation as read for the given user."""
         from app.modules.messages.models import conversation_participants
         
         # Verify user is participant

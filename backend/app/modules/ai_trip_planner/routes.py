@@ -1,5 +1,5 @@
 """
-مسارات مخطط السفر بالذكاء الاصطناعي - AI Travel Planner Routes
+AI travel planner routes.
 """
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -25,13 +25,7 @@ async def create_travel_plan(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    إنشاء خطة سفر ذكية باستخدام الذكاء الاصطناعي
-    Create AI-powered travel plan
-    
-    المستخدم يكتب وصف طبيعي مثل:
-    "سفر عائلي إلى باريس 5 أيام بميزانية 3000 دولار"
-    """
+    """Create an AI-powered travel plan from a natural language request."""
     if not settings.openai_api_key:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

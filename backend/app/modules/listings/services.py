@@ -1,5 +1,5 @@
 """
-خدمات القوائم - Listing Services
+Listing Services
 Using Repository Pattern and Domain Entities
 """
 from typing import Optional, List, Tuple
@@ -15,14 +15,14 @@ from app.core.id import generate_typed_id, ID
 
 
 class ListingService:
-    """خدمة القوائم - Listing service using repositories"""
+    """Listing service using repositories."""
     
     @staticmethod
     async def get_listing_by_id(
         uow: IUnitOfWork,
         listing_id: ID
     ) -> Optional[ListingEntity]:
-        """الحصول على قائمة بالمعرف - Get listing by ID"""
+        """Get listing by ID."""
         return await uow.listings.get_by_id(listing_id)
     
     @staticmethod
@@ -30,7 +30,7 @@ class ListingService:
         uow: IUnitOfWork,
         slug: str
     ) -> Optional[ListingEntity]:
-        """الحصول على قائمة بالـ slug - Get listing by slug"""
+        """Get listing by slug."""
         return await uow.listings.get_by_slug(slug)
     
     @staticmethod
@@ -46,7 +46,7 @@ class ListingService:
         min_guests: Optional[int] = None,
         status: Optional[ListingStatus] = ListingStatus.ACTIVE
     ) -> Tuple[List[ListingEntity], int]:
-        """قائمة القوائم مع فلترة - List listings with filters"""
+        """List listings with optional filters."""
         return await uow.listings.search(
             query=None,
             city=city,
@@ -73,7 +73,7 @@ class ListingService:
         skip: int = 0,
         limit: int = 50
     ) -> Tuple[List[ListingEntity], int]:
-        """بحث في القوائم - Search listings"""
+        """Search listings with text and filter criteria."""
         return await uow.listings.search(
             query=query,
             city=city,
@@ -93,7 +93,7 @@ class ListingService:
         listing_data: ListingCreate,
         host_id: ID
     ) -> ListingEntity:
-        """إنشاء قائمة جديدة - Create new listing"""
+        """Create a new listing for the given host."""
         # Generate slug
         slug = ListingService._generate_slug(listing_data.title)
         
@@ -187,7 +187,7 @@ class ListingService:
         user_id: ID,
         is_admin: bool = False
     ) -> ListingEntity:
-        """تحديث قائمة - Update listing"""
+        """Update a listing, ensuring the user is authorized."""
         listing = await uow.listings.get_by_id(listing_id)
         
         if not listing:
@@ -232,7 +232,7 @@ class ListingService:
         user_id: ID,
         is_admin: bool = False
     ) -> bool:
-        """حذف قائمة - Delete listing"""
+        """Delete a listing, ensuring the user is authorized."""
         listing = await uow.listings.get_by_id(listing_id)
         
         if not listing:
@@ -259,12 +259,12 @@ class ListingService:
         skip: int = 0,
         limit: int = 100
     ) -> List[ListingEntity]:
-        """الحصول على قوائم المضيف - Get host listings"""
+        """Get all listings for a given host."""
         return await uow.listings.get_by_host(host_id, skip=skip, limit=limit)
     
     @staticmethod
     def _generate_slug(title: str) -> str:
-        """إنشاء slug من العنوان - Generate slug from title"""
+        """Generate a URL-friendly slug from the given title."""
         slug = re.sub(r'[^\w\s-]', '', title.lower())
         slug = re.sub(r'[-\s]+', '-', slug)
         return slug[:500]  # Limit to 500 chars

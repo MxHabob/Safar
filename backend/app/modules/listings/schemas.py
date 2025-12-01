@@ -1,6 +1,6 @@
 """
-Schemas للقوائم - Listing Schemas
-Enhanced with new features from database restructure
+Listing schemas.
+Enhanced with new features from the database restructure.
 """
 from datetime import datetime, date
 from typing import Optional, List
@@ -11,7 +11,7 @@ from app.core.id import ID
 
 
 class ListingBase(BaseModel):
-    """Base schema للقائمة - Base listing schema"""
+    """Base listing schema."""
     title: str = Field(..., min_length=5, max_length=500)
     summary: Optional[str] = Field(None, max_length=500)
     description: Optional[str] = None
@@ -43,12 +43,12 @@ class ListingBase(BaseModel):
 
 
 class ListingCreate(ListingBase):
-    """Schema لإنشاء قائمة - Create listing schema"""
+    """Schema for creating a listing."""
     pass
 
 
 class ListingUpdate(BaseModel):
-    """Schema لتحديث قائمة - Update listing schema"""
+    """Schema for updating a listing."""
     title: Optional[str] = None
     summary: Optional[str] = None
     description: Optional[str] = None
@@ -77,7 +77,7 @@ class ListingUpdate(BaseModel):
 
 
 class ListingPhotoResponse(BaseModel):
-    """Schema لصورة قائمة - Listing photo response"""
+    """Listing photo response schema."""
     model_config = ConfigDict(from_attributes=True)
     
     id: ID
@@ -89,7 +89,7 @@ class ListingPhotoResponse(BaseModel):
 
 
 class ListingImageResponse(BaseModel):
-    """Schema لصورة قائمة (من Prisma) - Listing image response"""
+    """Listing image response schema (from Prisma)."""
     model_config = ConfigDict(from_attributes=True)
     
     id: ID
@@ -99,7 +99,7 @@ class ListingImageResponse(BaseModel):
 
 
 class ListingLocationResponse(BaseModel):
-    """Schema لموقع القائمة - Listing location response"""
+    """Listing location response schema."""
     model_config = ConfigDict(from_attributes=True)
     
     id: ID
@@ -203,7 +203,7 @@ class ListingResponse(ListingBase):
 
 
 class ListingListResponse(BaseModel):
-    """Schema لقائمة القوائم - Listing list response"""
+    """Listing list response schema."""
     items: List[ListingResponse]
     total: int
     skip: int
@@ -211,7 +211,7 @@ class ListingListResponse(BaseModel):
 
 
 class ListingLocationCreate(BaseModel):
-    """Schema لإنشاء موقع قائمة - Create listing location schema"""
+    """Schema for creating a listing location."""
     timezone: str = "UTC"
     neighborhood: Optional[str] = None
     latitude: Decimal = Field(..., ge=-90, le=90)
@@ -219,7 +219,7 @@ class ListingLocationCreate(BaseModel):
 
 
 class ListingLocationUpdate(BaseModel):
-    """Schema لتحديث موقع قائمة - Update listing location schema"""
+    """Schema for updating a listing location."""
     timezone: Optional[str] = None
     neighborhood: Optional[str] = None
     latitude: Optional[Decimal] = None

@@ -1,6 +1,5 @@
 """
-نماذج النزاعات - Dispute Models
-From Prisma Schema
+Dispute models (from Prisma schema).
 """
 from datetime import datetime
 from sqlalchemy import (
@@ -14,8 +13,7 @@ from app.shared.base import BaseModel
 
 class Dispute(BaseModel):
     """
-    جدول النزاعات
-    Disputes table
+    Disputes table.
     """
     __tablename__ = "disputes"
     
@@ -35,8 +33,7 @@ class Dispute(BaseModel):
 
 class DisputeEvidence(BaseModel):
     """
-    جدول أدلة النزاعات
-    Dispute evidence table
+    Dispute evidence table.
     """
     __tablename__ = "dispute_evidences"
     

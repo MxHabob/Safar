@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 """
-سكريبت واحد لإصلاح مشكلة PostGIS في ملفات الـ Migration وإضافة قيد الاستبعاد
-Single script to fix PostGIS migration issue and add exclusion constraint
+Single script to fix the PostGIS migration issue and add the exclusion constraint.
 
-يعمل داخل الحاوية ويحل المشكلة كاملة
-Runs inside container and fixes the issue completely
+Runs inside the container and resolves the issue end-to-end.
 
 This script:
 1. Removes PostGIS table drops from migrations

@@ -1,5 +1,5 @@
 """
-نماذج مخطط السفر بالذكاء الاصطناعي - AI Travel Planner Models
+AI travel planner models.
 """
 from datetime import datetime, date
 from typing import Optional
@@ -14,10 +14,7 @@ from app.shared.base import BaseModel
 
 
 class TravelPlan(BaseModel):
-    """
-    جدول خطط السفر
-    Travel plans table
-    """
+    """Travel plans table."""
     __tablename__ = "travel_plans"
     
     # User
@@ -74,10 +71,7 @@ class TravelPlan(BaseModel):
 
 
 class TravelPlanBooking(BaseModel):
-    """
-    جدول حجوزات مرتبطة بخطة سفر
-    Travel plan bookings table
-    """
+    """Travel plan bookings table."""
     __tablename__ = "travel_plan_bookings"
     
     travel_plan_id = Column(String(40), ForeignKey("travel_plans.id", ondelete="CASCADE"), nullable=False, index=True)

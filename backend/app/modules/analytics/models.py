@@ -1,6 +1,5 @@
 """
-نماذج التحليلات - Analytics Models
-From Prisma Schema
+Analytics models (from the Prisma schema).
 """
 from datetime import datetime
 from sqlalchemy import (
@@ -13,10 +12,7 @@ from app.shared.base import BaseModel
 
 
 class AnalyticsEvent(BaseModel):
-    """
-    جدول أحداث التحليلات
-    Analytics events table
-    """
+    """Analytics events table."""
     __tablename__ = "analytics_events"
     
     user_id = Column(String(40), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
@@ -35,10 +31,7 @@ class AnalyticsEvent(BaseModel):
 
 
 class AuditLog(BaseModel):
-    """
-    جدول سجلات التدقيق
-    Audit logs table
-    """
+    """Audit logs table."""
     __tablename__ = "audit_logs"
     
     actor_id = Column(String(40), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
@@ -57,10 +50,7 @@ class AuditLog(BaseModel):
 
 
 class SearchSnapshot(BaseModel):
-    """
-    جدول لقطات البحث (من Prisma Schema)
-    Search snapshots table from Prisma Schema
-    """
+    """Search snapshots table (from Prisma schema)."""
     __tablename__ = "search_snapshots"
     
     listing_id = Column(String(40), ForeignKey("listings.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)

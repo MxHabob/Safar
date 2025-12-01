@@ -1,5 +1,5 @@
 """
-نماذج التقييمات والمراجعات - Review Models
+Review and rating models.
 """
 from datetime import datetime
 from typing import Optional
@@ -14,10 +14,7 @@ from app.shared.base import BaseModel
 
 
 class Review(BaseModel):
-    """
-    جدول التقييمات والمراجعات
-    Reviews table
-    """
+    """Reviews table."""
     __tablename__ = "reviews"
     
     # Basic Info
@@ -78,10 +75,7 @@ class Review(BaseModel):
 
 
 class ReviewHelpful(BaseModel):
-    """
-    جدول تقييمات "مفيد" للمراجعات
-    Review helpful votes table
-    """
+    """Review helpful votes table."""
     __tablename__ = "review_helpful"
     
     review_id = Column(String(40), ForeignKey("reviews.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -94,10 +88,7 @@ class ReviewHelpful(BaseModel):
 
 
 class ReviewResponse(BaseModel):
-    """
-    جدول ردود المضيفين على التقييمات (من Prisma Schema)
-    Host responses to reviews table from Prisma Schema
-    """
+    """Host responses to reviews table (from Prisma schema)."""
     __tablename__ = "review_responses"
     
     review_id = Column(String(40), ForeignKey("reviews.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)

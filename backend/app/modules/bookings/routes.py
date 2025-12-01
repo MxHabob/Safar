@@ -1,6 +1,6 @@
 """
-مسارات الحجوزات - Booking Routes
-Enhanced with new features
+Booking routes.
+Enhanced with new features.
 """
 from typing import Any, List, Optional
 import secrets
@@ -30,10 +30,7 @@ async def create_booking(
     current_user: User = Depends(get_current_active_user),
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
-    """
-    إنشاء حجز جديد
-    Create new booking
-    """
+    """Create a new booking."""
     # Generate request ID for logging
     request_id = request.headers.get("X-Request-ID") or f"req_{secrets.token_urlsafe(8)}"
     
@@ -69,10 +66,7 @@ async def list_bookings(
     current_user: User = Depends(get_current_active_user),
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
-    """
-    قائمة حجوزات المستخدم
-    List user bookings
-    """
+    """List bookings for the current user."""
     # Get bookings using service
     booking_entities = await BookingService.get_guest_bookings(
         uow, current_user.id, skip=skip, limit=limit
@@ -124,10 +118,7 @@ async def get_booking(
     current_user: User = Depends(get_current_active_user),
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
-    """
-    الحصول على تفاصيل حجز
-    Get booking details
-    """
+    """Get booking details."""
     booking_entity = await BookingService.get_booking_by_id(uow, booking_id)
     
     if not booking_entity:
@@ -174,10 +165,7 @@ async def cancel_booking(
     current_user: User = Depends(get_current_active_user),
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
-    """
-    إلغاء حجز
-    Cancel booking
-    """
+    """Cancel a booking."""
     booking_entity = await BookingService.cancel_booking(
         uow, booking_id, current_user.id, cancel_data.cancellation_reason
     )
@@ -203,10 +191,7 @@ async def confirm_booking(
     current_user: User = Depends(require_host),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    تأكيد حجز (للمضيف)
-    Confirm booking (for host)
-    """
+    """Confirm a booking (host only)."""
     booking = await BookingService.confirm_booking(
         db, booking_id, current_user.id
     )
@@ -224,10 +209,7 @@ async def list_host_bookings(
     current_user: User = Depends(require_host),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    قائمة حجوزات المضيف
-    List host bookings
-    """
+    """List bookings for the current host."""
     from app.modules.listings.models import Listing
     
     # Get host listings

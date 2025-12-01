@@ -1,5 +1,5 @@
 """
-Integration tests للمصادقة - Authentication integration tests
+Authentication integration tests.
 """
 import pytest
 from httpx import AsyncClient

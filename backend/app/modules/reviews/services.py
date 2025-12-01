@@ -1,6 +1,5 @@
 """
-خدمات التقييمات - Review Services
-Enhanced with new features
+Review services, enhanced with additional features.
 """
 from typing import Optional
 from sqlalchemy import select, func, and_
@@ -15,7 +14,7 @@ from app.modules.listings.models import Listing
 
 
 class ReviewService:
-    """خدمة التقييمات - Review service"""
+    """Service layer for managing reviews and related aggregates."""
     
     @staticmethod
     async def create_review(
@@ -23,7 +22,7 @@ class ReviewService:
         review_data: ReviewCreate,
         guest_id: int
     ) -> Review:
-        """إنشاء تقييم جديد - Create new review"""
+        """Create a new review for a listing and optional booking."""
         # Check if listing exists
         result = await db.execute(
             select(Listing).where(Listing.id == review_data.listing_id)
@@ -107,7 +106,7 @@ class ReviewService:
         db: AsyncSession,
         listing_id: int
     ) -> None:
-        """تحديث تقييم القائمة - Update listing rating"""
+        """Recalculate and update the aggregate rating and review count for a listing."""
         # Calculate average rating
         result = await db.execute(
             select(func.avg(Review.overall_rating), func.count(Review.id))
@@ -137,7 +136,7 @@ class ReviewService:
         host_profile_id: int,
         comment: str
     ) -> ReviewResponse:
-        """إنشاء رد المضيف - Create host response"""
+        """Create a host response for a given review."""
         # Check if review exists
         result = await db.execute(
             select(Review).where(Review.id == review_id)
@@ -180,7 +179,7 @@ class ReviewService:
         user_id: int,
         is_helpful: bool = True
     ) -> ReviewHelpful:
-        """تقييم المراجعة كمفيدة - Mark review as helpful"""
+        """Mark or update whether a review is helpful for a given user."""
         # Check if review exists
         result = await db.execute(
             select(Review).where(Review.id == review_id)

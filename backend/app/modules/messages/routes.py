@@ -1,6 +1,5 @@
 """
-مسارات الرسائل والمحادثات - Message and Conversation Routes
-Enhanced with Conversation model
+Message and conversation routes, including Conversation model support.
 """
 from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query, WebSocket, WebSocketDisconnect
@@ -27,10 +26,7 @@ async def create_message(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    إنشاء رسالة جديدة
-    Create new message
-    """
+    """Create a new message."""
     message = await MessageService.create_message(db, message_data, current_user.id)
     
     # Send via WebSocket if receiver is online
@@ -59,10 +55,7 @@ async def get_conversations(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    الحصول على جميع المحادثات
-    Get all conversations
-    """
+    """Get all conversations for the current user with pagination."""
     conversations = await MessageService.get_user_conversations(db, current_user.id)
     
     total = len(conversations)
@@ -82,10 +75,7 @@ async def create_conversation(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    إنشاء محادثة جديدة
-    Create new conversation
-    """
+    """Create a new conversation or return an existing one for the participants."""
     conversation = await MessageService.get_or_create_conversation(
         db,
         [current_user.id, conversation_data.participant_id],
@@ -105,10 +95,7 @@ async def get_conversation(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    الحصول على محادثة
-    Get conversation
-    """
+    """Get a single conversation by ID for the current user."""
     result = await db.execute(
         select(Conversation)
         .where(Conversation.id == conversation_id)
@@ -144,10 +131,7 @@ async def get_conversation_messages(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    الحصول على رسائل محادثة
-    Get conversation messages
-    """
+    """Get paginated messages for a conversation."""
     messages, total = await MessageService.get_conversation(
         db, conversation_id, current_user.id, skip, limit
     )
@@ -166,10 +150,7 @@ async def mark_conversation_read(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    تحديد جميع رسائل المحادثة كمقروءة
-    Mark all conversation messages as read
-    """
+    """Mark all messages in a conversation as read for the current user."""
     count = await MessageService.mark_conversation_read(db, conversation_id, current_user.id)
     return {"marked_read": count}
 
@@ -180,20 +161,14 @@ async def mark_message_read(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    تحديد رسالة كمقروءة
-    Mark message as read
-    """
+    """Mark a single message as read for the current user."""
     message = await MessageService.mark_as_read(db, message_id, current_user.id)
     return message
 
 
 @router.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
-    """
-    WebSocket endpoint للدردشة
-    WebSocket endpoint for chat
-    """
+    """WebSocket endpoint for real-time chat messaging."""
     try:
         from app.infrastructure.websocket.manager import manager
         await manager.connect(websocket, user_id)

@@ -1,5 +1,5 @@
 """
-إعدادات Logging المحسّنة - Enhanced Logging Configuration
+Enhanced logging configuration for structured JSON and file/console handlers.
 """
 import logging
 import sys
@@ -15,7 +15,7 @@ settings = get_settings()
 
 
 class JSONFormatter(logging.Formatter):
-    """JSON formatter للـ structured logging"""
+    """JSON formatter for structured logging."""
     
     def format(self, record: logging.LogRecord) -> str:
         """Format log record as JSON"""
@@ -45,7 +45,7 @@ class JSONFormatter(logging.Formatter):
 
 
 def setup_logging():
-    """إعداد Logging - Setup logging"""
+    """Configure root logging with console and rotating file handlers."""
     # Create logs directory
     logs_dir = Path("logs")
     logs_dir.mkdir(exist_ok=True)
@@ -104,6 +104,6 @@ def setup_logging():
 
 
 def get_logger(name: str) -> logging.Logger:
-    """الحصول على logger - Get logger"""
+    """Convenience helper to retrieve a named logger."""
     return logging.getLogger(name)
 

@@ -1,5 +1,5 @@
 """
-نماذج الإشعارات - Notification Models
+Notification models.
 """
 from datetime import datetime
 from typing import Optional
@@ -15,7 +15,7 @@ from app.shared.base import BaseModel
 
 
 class NotificationType(str, enum.Enum):
-    """أنواع الإشعارات - Notification types"""
+    """Notification types."""
     BOOKING_CONFIRMED = "booking_confirmed"
     BOOKING_CANCELLED = "booking_cancelled"
     BOOKING_PENDING = "booking_pending"
@@ -27,7 +27,7 @@ class NotificationType(str, enum.Enum):
 
 
 class NotificationChannel(str, enum.Enum):
-    """قنوات الإشعارات - Notification channels"""
+    """Notification delivery channels."""
     EMAIL = "email"
     PUSH = "push"
     SMS = "sms"
@@ -35,10 +35,7 @@ class NotificationChannel(str, enum.Enum):
 
 
 class Notification(BaseModel):
-    """
-    جدول الإشعارات
-    Notifications table
-    """
+    """Notifications table."""
     __tablename__ = "notifications"
     
     # Recipient

@@ -1,6 +1,5 @@
 """
-Background Tasks للإشعارات
-Notification Background Tasks
+Notification background tasks.
 """
 import asyncio
 from sqlalchemy import select
@@ -16,7 +15,7 @@ settings = get_settings()
 
 
 async def _send_email_notification_async(notification_id: int):
-    """إرسال إشعار عبر البريد الإلكتروني - Send email notification (async)"""
+    """Send an email notification asynchronously."""
     async with AsyncSessionLocal() as db:
         # Get notification
         result = await db.execute(
@@ -51,19 +50,19 @@ async def _send_email_notification_async(notification_id: int):
 
 @celery_app.task(name="send_email_notification")
 def send_email_notification(notification_id: int):
-    """إرسال إشعار عبر البريد الإلكتروني - Send email notification"""
+    """Send an email notification (Celery task)."""
     asyncio.run(_send_email_notification_async(notification_id))
 
 
 @celery_app.task(name="send_push_notification")
 def send_push_notification(notification_id: int):
-    """إرسال إشعار Push - Send push notification"""
+    """Send a push notification (Celery task)."""
     # TODO: Implement push notification with FCM or similar
     pass
 
 
 async def _send_sms_notification_async(notification_id: int):
-    """إرسال إشعار SMS - Send SMS notification (async)"""
+    """Send an SMS notification asynchronously."""
     async with AsyncSessionLocal() as db:
         # Get notification
         result = await db.execute(
@@ -104,6 +103,6 @@ async def _send_sms_notification_async(notification_id: int):
 
 @celery_app.task(name="send_sms_notification")
 def send_sms_notification(notification_id: int):
-    """إرسال إشعار SMS - Send SMS notification"""
+    """Send an SMS notification (Celery task)."""
     asyncio.run(_send_sms_notification_async(notification_id))
 

@@ -1,6 +1,5 @@
 """
-نماذج المستخدمين - User Models
-Enhanced with security features from Prisma Schema
+User models, enhanced with security features adapted from the original Prisma schema.
 """
 from datetime import datetime
 from typing import Optional
@@ -16,7 +15,7 @@ from app.shared.base import BaseModel, StringIDBaseModel
 
 
 class UserRole(str, enum.Enum):
-    """أدوار المستخدمين - User roles"""
+    """User roles."""
     GUEST = "guest"
     HOST = "host"
     ADMIN = "admin"
@@ -25,7 +24,7 @@ class UserRole(str, enum.Enum):
 
 
 class UserStatus(str, enum.Enum):
-    """حالة المستخدم - User status"""
+    """User status."""
     ACTIVE = "active"
     INACTIVE = "inactive"
     SUSPENDED = "suspended"
@@ -33,7 +32,7 @@ class UserStatus(str, enum.Enum):
 
 
 class AccountProvider(str, enum.Enum):
-    """مزودو الحسابات - Account providers"""
+    """Account providers."""
     PASSWORD = "password"
     GOOGLE = "google"
     APPLE = "apple"
@@ -43,8 +42,8 @@ class AccountProvider(str, enum.Enum):
 
 class User(BaseModel):
     """
-    جدول المستخدمين الرئيسي
-    Main users table
+    Main users table.
+    Stores core identity, authentication, and profile data.
     """
     __tablename__ = "users"
     
@@ -120,7 +119,7 @@ class User(BaseModel):
     
     @property
     def computed_full_name(self) -> str:
-        """الاسم الكامل المحسوب - Computed full name"""
+        """Computed full name derived from first and last name when available."""
         if self.full_name:
             return self.full_name
         if self.first_name and self.last_name:
@@ -130,8 +129,8 @@ class User(BaseModel):
 
 class Agency(BaseModel):
     """
-    جدول الوكالات (Multi-tenancy)
-    Agencies table for multi-tenancy
+    Agencies table for multi-tenancy.
+    Represents organizations or travel agencies.
     """
     __tablename__ = "agencies"
     
@@ -161,8 +160,7 @@ class Agency(BaseModel):
 
 class UserVerification(BaseModel):
     """
-    جدول التحقق من المستخدمين (OTP, Email verification)
-    User verification table
+    User verification table (OTP, email verification, etc.).
     """
     __tablename__ = "user_verifications"
     
@@ -182,10 +180,7 @@ class UserVerification(BaseModel):
 
 
 class Account(BaseModel):
-    """
-    جدول حسابات OAuth والتحقق
-    OAuth accounts and authentication table
-    """
+    """OAuth accounts and authentication table."""
     __tablename__ = "accounts"
     
     user_id = Column(String(40), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -207,8 +202,7 @@ class Account(BaseModel):
 
 class UserDevice(BaseModel):
     """
-    جدول أجهزة المستخدمين
-    User devices tracking table
+    User devices tracking table.
     """
     __tablename__ = "user_devices"
     
@@ -229,8 +223,7 @@ class UserDevice(BaseModel):
 
 class UserPasskey(BaseModel):
     """
-    جدول Passkeys (WebAuthn)
-    WebAuthn passkeys table
+    WebAuthn passkeys table.
     """
     __tablename__ = "user_passkeys"
     
@@ -251,8 +244,7 @@ class UserPasskey(BaseModel):
 
 class TwoFactorChallenge(BaseModel):
     """
-    جدول تحديات المصادقة الثنائية
-    Two-factor authentication challenges table
+    Two-factor authentication challenges table.
     """
     __tablename__ = "two_factor_challenges"
     
@@ -272,8 +264,7 @@ class TwoFactorChallenge(BaseModel):
 
 class HostProfile(BaseModel):
     """
-    جدول ملفات المضيفين
-    Host profiles table
+    Host profiles table.
     """
     __tablename__ = "host_profiles"
     
@@ -299,8 +290,7 @@ class HostProfile(BaseModel):
 
 class CoHost(BaseModel):
     """
-    جدول المضيفين المساعدين
-    Co-hosts table
+    Co-hosts table.
     """
     __tablename__ = "co_hosts"
     
@@ -319,8 +309,7 @@ class CoHost(BaseModel):
 
 class TaxDocument(BaseModel):
     """
-    جدول الوثائق الضريبية للمضيفين
-    Tax documents table for hosts
+    Tax documents table for hosts.
     """
     __tablename__ = "tax_documents"
     
