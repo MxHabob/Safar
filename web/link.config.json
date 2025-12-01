@@ -41,7 +41,7 @@
     }
   },
   "auth": {
-    "enabled": true,
+    "enabled": false,
     "provider": "next-auth",
     "middleware": true,
     "publicPaths": ["/", "/auth/signin", "/auth/signup", "/api/health"],
@@ -49,17 +49,17 @@
     "authPath": "@/lib/auth",
     "tokenGetter": "auth",
     "oauth": {
-      "enabled": true,
+      "enabled": false,
       "providers": ["google", "github"],
       "callbackUrl": "/api/auth/callback"
     },
     "mfa": {
-      "enabled": true,
+      "enabled": false,
       "totp": true,
       "backupCodes": true
     },
     "passkeys": {
-      "enabled": true,
+      "enabled": false,
       "requireUserVerification": false,
       "timeout": 60000
     },
@@ -69,12 +69,12 @@
       "jwtMaxAge": 604800
     },
     "tokenRefresh": {
-      "enabled": true,
+      "enabled": false,
       "refreshBeforeExpiry": 300
     },
     "accountStatus": {
-      "checkOnRefresh": true,
-      "autoLogoutOnSuspension": true
+      "checkOnRefresh": false,
+      "autoLogoutOnSuspension": false
     }
   },
   "cache": {

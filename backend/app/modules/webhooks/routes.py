@@ -24,7 +24,7 @@ router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
 @router.post("/stripe", status_code=status.HTTP_200_OK)
 async def stripe_webhook(
     request: Request,
-    stripe_signature: str = Header(..., alias="stripe-signature"),
+    stripe_signature: str = Header(..., alias="stripe_signature"),
     db: AsyncSession = Depends(get_db)
 ) -> dict:
     """
