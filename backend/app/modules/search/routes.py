@@ -31,6 +31,7 @@ async def search_listings(
     radius_km: float = Query(None, ge=0, le=1000),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
+    sort_by: str = Query("relevance", description="Sort by: relevance, price_asc, price_desc, rating, newest"),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """Search listings with text, filter, and location parameters."""
@@ -49,7 +50,8 @@ async def search_listings(
         longitude=longitude,
         radius_km=radius_km,
         skip=skip,
-        limit=limit
+        limit=limit,
+        sort_by=sort_by
     )
     
     return {

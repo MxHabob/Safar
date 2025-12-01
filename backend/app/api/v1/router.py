@@ -13,6 +13,10 @@ from app.modules.search.routes import router as search_router
 from app.modules.messages.routes import router as messages_router
 from app.modules.payments.routes import router as payments_router
 from app.modules.webhooks.routes import router as webhooks_router
+from app.modules.recommendations.routes import router as recommendations_router
+from app.modules.analytics.routes import router as analytics_router
+from app.modules.promotions.routes import router as promotions_router
+from app.modules.notifications.routes import router as notifications_router
 
 api_router = APIRouter()
 
@@ -27,4 +31,8 @@ api_router.include_router(search_router)
 api_router.include_router(messages_router)
 api_router.include_router(payments_router)
 api_router.include_router(webhooks_router)
+api_router.include_router(recommendations_router)
+api_router.include_router(analytics_router)
+api_router.include_router(promotions_router)
+api_router.include_router(notifications_router)
 

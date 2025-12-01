@@ -184,6 +184,10 @@ class Settings(BaseSettings):
     google_client_secret: Optional[str] = Field(default=None, env="GOOGLE_CLIENT_SECRET")
     apple_client_id: Optional[str] = Field(default=None, env="APPLE_CLIENT_ID")
     apple_client_secret: Optional[str] = Field(default=None, env="APPLE_CLIENT_SECRET")
+    facebook_app_id: Optional[str] = Field(default=None, env="FACEBOOK_APP_ID")
+    facebook_app_secret: Optional[str] = Field(default=None, env="FACEBOOK_APP_SECRET")
+    github_client_id: Optional[str] = Field(default=None, env="GITHUB_CLIENT_ID")
+    github_client_secret: Optional[str] = Field(default=None, env="GITHUB_CLIENT_SECRET")
     
     # ============================================================================
     # SMS/OTP Configuration (Twilio)
@@ -191,6 +195,13 @@ class Settings(BaseSettings):
     twilio_account_sid: Optional[str] = Field(default=None, env="TWILIO_ACCOUNT_SID")
     twilio_auth_token: Optional[str] = Field(default=None, env="TWILIO_AUTH_TOKEN")
     twilio_phone_number: Optional[str] = Field(default=None, env="TWILIO_PHONE_NUMBER")
+    
+    # ============================================================================
+    # Push Notifications (FCM)
+    # ============================================================================
+    fcm_server_key: Optional[str] = Field(default=None, env="FCM_SERVER_KEY")
+    fcm_project_id: Optional[str] = Field(default=None, env="FCM_PROJECT_ID")
+    fcm_service_account_key: Optional[str] = Field(default=None, env="FCM_SERVICE_ACCOUNT_KEY")
     
     # ============================================================================
     # File Storage Configuration

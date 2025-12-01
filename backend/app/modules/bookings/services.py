@@ -96,8 +96,41 @@ class BookingService:
         # Apply coupon if provided
         discount = Decimal("0")
         if coupon_code:
-            # TODO: Implement coupon logic
-            pass
+            from app.modules.promotions.services import PromotionService
+            from datetime import date
+            import logging
+            
+            logger = logging.getLogger(__name__)
+            
+            # Calculate subtotal before discount for coupon validation
+            subtotal_before_discount = base_price + cleaning_fee + service_fee
+            
+            # Convert datetime to date if needed
+            check_in_date = check_in.date() if isinstance(check_in, datetime) else check_in
+            check_out_date = check_out.date() if isinstance(check_out, datetime) else check_out
+            
+            # Validate and calculate coupon discount
+            # Note: guest_id not available in this context, will validate without user-specific checks
+            try:
+                coupon_info = await PromotionService.validate_coupon(
+                    uow.db,
+                    coupon_code=coupon_code,
+                    listing_id=listing_id,
+                    booking_amount=subtotal_before_discount,
+                    check_in_date=check_in_date,
+                    check_out_date=check_out_date,
+                    nights=nights,
+                    guests=guests,
+                    user_id=None  # Will be validated later when creating booking
+                )
+                discount = coupon_info["discount_amount"]
+            except HTTPException:
+                # If coupon validation fails, raise the exception
+                raise
+            except Exception as e:
+                # Log error but don't fail booking calculation
+                logger.warning(f"Error validating coupon {coupon_code}: {str(e)}")
+                discount = Decimal("0")
         
         subtotal = base_price + cleaning_fee + service_fee
         total = subtotal - discount + security_deposit
@@ -261,19 +294,49 @@ class BookingService:
                     detail="Listing not available for selected dates"
                 )
             
-            # Calculate price
+            # Calculate price (with coupon if provided)
             price_breakdown = await BookingService.calculate_booking_price(
                 uow,
                 booking_data.listing_id,
                 booking_data.check_in,
                 booking_data.check_out,
-                booking_data.guests
+                booking_data.guests,
+                coupon_code=getattr(booking_data, 'coupon_code', None)
             )
             
             # Calculate nights
             nights = (booking_data.check_out - booking_data.check_in).days
             
-            # Create domain entity
+            # Apply coupon if provided and validate with user_id
+            coupon_code = getattr(booking_data, 'coupon_code', None)
+            discount_amount = price_breakdown.get("discount", Decimal("0"))
+            
+            if coupon_code:
+                # Re-validate coupon with actual user_id for user-specific checks
+                from app.modules.promotions.services import PromotionService
+                from datetime import date
+                
+                try:
+                    coupon_info = await PromotionService.validate_coupon(
+                        uow.db,
+                        coupon_code=coupon_code,
+                        listing_id=booking_data.listing_id,
+                        booking_amount=price_breakdown["subtotal"],
+                        check_in_date=booking_data.check_in.date() if hasattr(booking_data.check_in, 'date') else booking_data.check_in,
+                        check_out_date=booking_data.check_out.date() if hasattr(booking_data.check_out, 'date') else booking_data.check_out,
+                        nights=nights,
+                        guests=booking_data.guests,
+                        user_id=guest_id  # Now we have the actual user_id
+                    )
+                    discount_amount = coupon_info["discount_amount"]
+                except HTTPException:
+                    raise  # Re-raise validation errors
+                except Exception as e:
+                    logger.warning(f"Error validating coupon {coupon_code}: {str(e)}")
+                    discount_amount = Decimal("0")
+                    coupon_code = None  # Don't apply invalid coupon
+            
+            # Create domain entity with all pricing details
             booking = BookingEntity(
                 id=generate_typed_id(prefix="BKG"),
                 booking_number=BookingService.generate_booking_number(),
@@ -286,14 +349,33 @@ class BookingService:
                 adults=booking_data.adults or booking_data.guests,
                 children=booking_data.children or 0,
                 infants=booking_data.infants or 0,
-                total_amount=price_breakdown["total"],
-                payout_amount=price_breakdown["subtotal"] * Decimal("0.85"),  # 85% to host
+                total_amount=price_breakdown["total"] - discount_amount,  # Apply discount
+                payout_amount=(price_breakdown["subtotal"] - discount_amount) * Decimal("0.85"),  # 85% to host
                 currency=price_breakdown["currency"],
                 status=BookingStatus.PENDING.value,
                 payment_status=PaymentStatus.PENDING.value,
                 special_requests=booking_data.special_requests,
                 guest_message=booking_data.guest_message
             )
+            
+            # Add pricing fields and coupon to entity for repository mapping
+            booking.base_price = price_breakdown["base_price"]
+            booking.cleaning_fee = price_breakdown.get("cleaning_fee", Decimal("0"))
+            booking.service_fee = price_breakdown.get("service_fee", Decimal("0"))
+            booking.security_deposit = price_breakdown.get("security_deposit", Decimal("0"))
+            booking.discount_amount = discount_amount
+            booking.coupon_code = coupon_code
+            
+            # Save through repository (within locked transaction)
+            created = await uow.bookings.create(booking)
+            
+            # Apply coupon usage increment after booking is created
+            if coupon_code and created:
+                try:
+                    await PromotionService.apply_coupon(uow.db, coupon_code, created.id)
+                except Exception as e:
+                    logger.warning(f"Error applying coupon usage {coupon_code}: {str(e)}")
+                    # Don't fail booking if coupon usage tracking fails
             
             # Use domain logic
             if listing.booking_type == "instant":

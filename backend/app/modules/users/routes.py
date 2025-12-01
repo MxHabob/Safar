@@ -28,6 +28,10 @@ router = APIRouter(prefix="/users", tags=["Users"])
 security = HTTPBearer()
 settings = get_settings()
 
+# Include device routes
+from app.modules.users.device_routes import router as device_router
+router.include_router(device_router)
+
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(
@@ -376,10 +380,16 @@ async def oauth_login(
     elif oauth_data.provider == "apple":
         user_info = await OAuthService.verify_apple_token(oauth_data.token)
         oauth_id_field = "apple_id"
+    elif oauth_data.provider == "facebook":
+        user_info = await OAuthService.verify_facebook_token(oauth_data.token)
+        oauth_id_field = "facebook_id"
+    elif oauth_data.provider == "github":
+        user_info = await OAuthService.verify_github_token(oauth_data.token)
+        oauth_id_field = "github_id"
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid OAuth provider"
+            detail="Invalid OAuth provider. Supported: google, apple, facebook, github"
         )
     
     if not user_info.get("email"):

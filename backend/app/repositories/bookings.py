@@ -96,6 +96,76 @@ class BookingRepository(BaseRepository[BookingEntity], IBookingRepository):
             updated_at=model.updated_at
         )
     
+    def _entity_to_model(self, entity: BookingEntity) -> Booking:
+        """Convert domain entity to SQLAlchemy model"""
+        from app.modules.bookings.models import BookingStatus, PaymentStatus
+        
+        # Get existing model if updating
+        existing = None
+        if entity.id:
+            result = self.db.execute(select(Booking).where(Booking.id == entity.id))
+            existing = result.scalar_one_or_none()
+        
+        if existing:
+            # Update existing model
+            existing.booking_number = entity.booking_number
+            existing.listing_id = entity.listing_id
+            existing.guest_id = entity.guest_id
+            existing.check_in = entity.check_in
+            existing.check_out = entity.check_out
+            existing.nights = entity.nights
+            existing.guests = entity.guests
+            existing.adults = entity.adults
+            existing.children = entity.children
+            existing.infants = entity.infants
+            existing.total_amount = entity.total_amount
+            existing.payout_amount = entity.payout_amount
+            existing.currency = entity.currency
+            existing.status = entity.status
+            existing.payment_status = entity.payment_status
+            existing.special_requests = entity.special_requests
+            existing.guest_message = entity.guest_message
+            existing.cancelled_at = entity.cancelled_at
+            existing.cancellation_reason = entity.cancellation_reason
+            
+            # Handle coupon_code if it exists in entity
+            if hasattr(entity, 'coupon_code'):
+                existing.coupon_code = entity.coupon_code
+            if hasattr(entity, 'discount_amount'):
+                existing.discount_amount = entity.discount_amount
+            
+            return existing
+        else:
+            # Create new model
+            return Booking(
+                id=entity.id,
+                booking_number=entity.booking_number,
+                listing_id=entity.listing_id,
+                guest_id=entity.guest_id,
+                check_in=entity.check_in,
+                check_out=entity.check_out,
+                nights=entity.nights,
+                guests=entity.guests,
+                adults=entity.adults,
+                children=entity.children,
+                infants=entity.infants,
+                base_price=getattr(entity, 'base_price', entity.total_amount),  # Fallback to total if not set
+                cleaning_fee=getattr(entity, 'cleaning_fee', 0),
+                service_fee=getattr(entity, 'service_fee', 0),
+                security_deposit=getattr(entity, 'security_deposit', 0),
+                discount_amount=getattr(entity, 'discount_amount', 0),
+                coupon_code=getattr(entity, 'coupon_code', None),
+                total_amount=entity.total_amount,
+                payout_amount=entity.payout_amount,
+                currency=entity.currency,
+                status=entity.status,
+                payment_status=entity.payment_status,
+                special_requests=entity.special_requests,
+                guest_message=entity.guest_message,
+                cancelled_at=entity.cancelled_at,
+                cancellation_reason=entity.cancellation_reason
+            )
+    
     async def get_by_booking_number(self, booking_number: str) -> Optional[BookingEntity]:
         """Get booking by booking number"""
         result = await self.db.execute(

@@ -156,4 +156,126 @@ class OAuthService:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=f"Error verifying Apple token: {str(e)}"
             )
+    
+    @staticmethod
+    async def verify_facebook_token(token: str) -> Dict[str, Any]:
+        """Verify a Facebook access token."""
+        if not settings.facebook_app_id or not settings.facebook_app_secret:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Facebook OAuth is not configured"
+            )
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                # First, verify the token and get user info
+                response = await client.get(
+                    "https://graph.facebook.com/me",
+                    params={
+                        "access_token": token,
+                        "fields": "id,name,email,picture",
+                        "appsecret_proof": settings.facebook_app_secret  # For security
+                    }
+                )
+                response.raise_for_status()
+                data = response.json()
+                
+                # Verify token is valid for our app
+                debug_response = await client.get(
+                    "https://graph.facebook.com/debug_token",
+                    params={
+                        "input_token": token,
+                        "access_token": f"{settings.facebook_app_id}|{settings.facebook_app_secret}"
+                    }
+                )
+                debug_response.raise_for_status()
+                debug_data = debug_response.json()
+                
+                if debug_data.get("data", {}).get("app_id") != settings.facebook_app_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Invalid Facebook token app ID"
+                    )
+                
+                return {
+                    "email": data.get("email"),
+                    "name": data.get("name"),
+                    "picture": data.get("picture", {}).get("data", {}).get("url") if data.get("picture") else None,
+                    "sub": data.get("id"),  # Facebook user ID
+                    "email_verified": True  # Facebook emails are verified
+                }
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Invalid Facebook token: {e.response.text}"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Error verifying Facebook token: {str(e)}"
+            )
+    
+    @staticmethod
+    async def verify_github_token(token: str) -> Dict[str, Any]:
+        """Verify a GitHub access token."""
+        if not settings.github_client_id or not settings.github_client_secret:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="GitHub OAuth is not configured"
+            )
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                # Get user info from GitHub
+                response = await client.get(
+                    "https://api.github.com/user",
+                    headers={
+                        "Authorization": f"token {token}",
+                        "Accept": "application/vnd.github.v3+json"
+                    }
+                )
+                response.raise_for_status()
+                data = response.json()
+                
+                # Get user email (may require additional request)
+                email = data.get("email")
+                if not email:
+                    # Try to get primary email
+                    email_response = await client.get(
+                        "https://api.github.com/user/emails",
+                        headers={
+                            "Authorization": f"token {token}",
+                            "Accept": "application/vnd.github.v3+json"
+                        }
+                    )
+                    if email_response.status_code == 200:
+                        emails = email_response.json()
+                        primary_email = next((e for e in emails if e.get("primary")), None)
+                        if primary_email:
+                            email = primary_email.get("email")
+                            email_verified = primary_email.get("verified", False)
+                        else:
+                            email_verified = False
+                    else:
+                        email_verified = False
+                else:
+                    email_verified = True
+                
+                return {
+                    "email": email,
+                    "name": data.get("name") or data.get("login"),
+                    "picture": data.get("avatar_url"),
+                    "sub": str(data.get("id")),  # GitHub user ID
+                    "email_verified": email_verified
+                }
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Invalid GitHub token: {e.response.text}"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Error verifying GitHub token: {str(e)}"
+            )
 
