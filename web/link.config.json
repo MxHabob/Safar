@@ -1,5 +1,5 @@
 {
-  "schema": "https://authen.mulverse.com/api/v1/openapi.json",
+  "schema": "https://safar.mulverse.com/openapi.json",
   "outputDir": "src/generated",
   "framework": {
     "type": "nextjs",
@@ -22,11 +22,11 @@
     }
   },
   "api": {
-    "baseUrl": "https://authen.mulverse.com",
+    "baseUrl": "https://safar.mulverse.com",
     "timeout": 30000,
     "retries": 3,
     "headers": {
-      "User-Agent": "Bridge-Client/3.4.9.4",
+      "User-Agent": "Safar-web/1.0.0",
       "Accept": "application/json",
       "Content-Type": "application/json"
     },

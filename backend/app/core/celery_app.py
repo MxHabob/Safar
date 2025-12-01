@@ -30,5 +30,7 @@ celery_app.conf.update(
     task_soft_time_limit=25 * 60,  # 25 minutes
     worker_prefetch_multiplier=4,
     worker_max_tasks_per_child=1000,
+    # Ensure broker connections are retried on startup (Celery 6+ behavior)
+    broker_connection_retry_on_startup=True,
 )
 
