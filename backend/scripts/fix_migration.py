@@ -22,48 +22,17 @@ from pathlib import Path
 # PostGIS extension tables that should not be dropped
 # This includes tables from postgis, postgis_topology, and postgis_tiger_geocoder extensions
 POSTGIS_TABLES = {
-    # PostGIS core tables
-    'spatial_ref_sys',
-    'geometry_columns',
-    'geography_columns',
-    
-    # PostGIS topology tables
-    'topology',
-    'layer',
-    
-    # PostGIS tiger geocoder tables
-    'addr',
-    'addrfeat',
-    'countysub',
-    'county',
-    'county_lookup',
-    'direction_lookup',
-    'edges',
-    'faces',
-    'featnames',
-    'geocode_settings',
-    'geocode_settings_default',
-    'loader_lookuptables',
-    'loader_platform',
-    'loader_variables',
-    'pagc_gaz',
-    'pagc_lex',
-    'pagc_norm',
-    'place',
-    'place_lookup',
-    'secondary_unit_lookup',
-    'state',
-    'state_lookup',
-    'street',
-    'street_type_lookup',
-    'tabblock',
-    'tract',
-    'zcta5',
-    'tiger',
-    'tiger_data',
-    'bg',
-    'zip_state',
-    'zip_lookup',
+    # Core PostGIS
+    'spatial_ref_sys', 'geometry_columns', 'geography_columns',
+    # Topology
+    'topology', 'layer',
+    # Tiger Geocoder - ALL tables (very important!)
+    'addr', 'addrfeat', 'county', 'countysub', 'cousub', 'edges', 'faces', 'featnames',
+    'place', 'state', 'zip_lookup', 'zip_lookup_base', 'zcta5', 'tabblock', 'bg',
+    'tract', 'loader_lookuptables', 'loader_platform', 'loader_variables',
+    'geocode_settings', 'geocode_settings_default', 'pagc_lex', 'pagc_gaz',
+    'pagc_norm', 'pagc_rules', 'direction_lookup', 'place_lookup', 'secondary_unit_lookup',
+    'street_type_lookup', 'zip_state', 'zip_state_loc', 'tiger_data'
 }
 
 
