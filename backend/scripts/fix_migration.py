@@ -59,6 +59,7 @@ POSTGIS_TABLES = {
     'zcta5',
     'tiger',
     'tiger_data',
+    'bg',
 }
 
 
