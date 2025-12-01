@@ -2,9 +2,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { uploadMultipleFilesApiV1FilesUploadMultiplePost } from '@/generated/actions'
-import { validateFile, compressFile, type UploadConfig } from '@/generated/services/uploadUtils'
+import { validateFile, compressFile, createUploadFormData, type UploadConfig } from '@/generated/services/uploadUtils'
 import type { z } from 'zod'
-import type { UploadMultipleFilesApiV1FilesUploadMultiplePostResponseSchema } from '@/generated/schemas'
+import type { UploadMultipleFilesApiV1FilesUploadMultiplePostRequestSchema, UploadMultipleFilesApiV1FilesUploadMultiplePostResponseSchema, UploadMultipleFilesApiV1FilesUploadMultiplePostParamsSchema } from '@/generated/schemas'
 
 
 /**
@@ -152,7 +152,7 @@ export function useUploadMultipleFilesApiV1FilesUploadMultiplePostMutationUpload
       
       // Use server action for upload and extract data from SafeActionResult
       const result = await resolveActionResult<z.infer<typeof UploadMultipleFilesApiV1FilesUploadMultiplePostResponseSchema>>(
-        uploadMultipleFilesApiV1FilesUploadMultiplePost(actionInput as any)
+        uploadMultipleFilesApiV1FilesUploadMultiplePost(actionInput)
       )
       return result
     },

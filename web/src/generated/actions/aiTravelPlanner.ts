@@ -90,7 +90,7 @@ export const listTravelPlansApiV1AiTravelPlannerGet = cache(
       const validatedParams = await validateAndSanitizeInput(ListTravelPlansApiV1AiTravelPlannerGetParamsSchema, parsedInput) as z.infer<typeof ListTravelPlansApiV1AiTravelPlannerGetParamsSchema>
 
         // Execute API call with enhanced error handling
-        const response = await apiClient.aITravelPlanner.listTravelPlansApiV1AiTravelPlannerGet({params: {
+        const response = await apiClient.aiTravelPlanner.listTravelPlansApiV1AiTravelPlannerGet({params: {
 query: validatedParams.query,
     },
           config: {
@@ -154,7 +154,7 @@ export const createTravelPlanApiV1AiTravelPlannerPost = authActionClient
       const validatedBody = await validateAndSanitizeInput(CreateTravelPlanApiV1AiTravelPlannerPostRequestSchema, parsedInput)
 
       // Execute API call with enhanced configuration
-      const response = await apiClient.aITravelPlanner.createTravelPlanApiV1AiTravelPlannerPost({body: validatedBody,
+      const response = await apiClient.aiTravelPlanner.createTravelPlanApiV1AiTravelPlannerPost({body: validatedBody,
         config: {
           timeout: 30000,
           retries: 3,
@@ -230,7 +230,7 @@ export const getTravelPlanApiV1AiTravelPlannerPlanIdGet = cache(
       const validatedParams = await validateAndSanitizeInput(GetTravelPlanApiV1AiTravelPlannerPlanIdGetParamsSchema, parsedInput) as z.infer<typeof GetTravelPlanApiV1AiTravelPlannerPlanIdGetParamsSchema>
 
         // Execute API call with enhanced error handling
-        const response = await apiClient.aITravelPlanner.getTravelPlanApiV1AiTravelPlannerPlanIdGet({params: {
+        const response = await apiClient.aiTravelPlanner.getTravelPlanApiV1AiTravelPlannerPlanIdGet({params: {
 path: {
         plan_id: Number(validatedParams.path.plan_id)
       }

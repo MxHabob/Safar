@@ -8,7 +8,7 @@ import {
   SearchListingsApiV1SearchListingsGetParamsSchema,
   GetSearchSuggestionsApiV1SearchSuggestionsGetResponseSchema,
   GetSearchSuggestionsApiV1SearchSuggestionsGetParamsSchema,
-  ListingTypeSchema
+  type ListingType
 } from '@/generated/schemas'
 import type { z } from 'zod'
 
@@ -57,28 +57,7 @@ async function resolveActionResult<T>(actionPromise: Promise<any>): Promise<T> {
  * Features: URL state sync, infinite loading, optimistic updates
  * @returns useQuery result with data of type z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema>
  */
-export function useSearchListingsApiV1SearchListingsGet(
-  query?: string,
-  city?: string,
-  country?: string,
-  listing_type?: z.infer<typeof ListingTypeSchema>,
-  min_price?: number,
-  max_price?: number,
-  min_guests?: number,
-  min_bedrooms?: number,
-  min_bathrooms?: number,
-  latitude?: number,
-  longitude?: number,
-  radius_km?: number,
-  skip?: number,
-  limit?: number,
-  options?: {
-    enabled?: boolean
-    suspense?: boolean
-    refetchInterval?: number
-    initialData?: z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema>
-  }
-) {
+export function useSearchListingsApiV1SearchListingsGet(query?: string, city?: string, country?: string, listing_type?: ListingType, min_price?: number, max_price?: number, min_guests?: number, min_bedrooms?: number, min_bathrooms?: number, latitude?: number, longitude?: number, radius_km?: number, skip?: number, limit?: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema> }) {
   const [searchParams] = useQueryStates(searchParamsParser)
   const { initialData, ...restOptions } = options ?? {}
   
@@ -87,22 +66,7 @@ export function useSearchListingsApiV1SearchListingsGet(
     queryFn: async ({ signal }: { signal?: AbortSignal }) => {
       try {
         // Build query params object with only the parameters the endpoint expects
-        const queryParams: {
-          query?: string
-          city?: string
-          country?: string
-          listing_type?: z.infer<typeof ListingTypeSchema>
-          min_price?: number
-          max_price?: number
-          min_guests?: number
-          min_bedrooms?: number
-          min_bathrooms?: number
-          latitude?: number
-          longitude?: number
-          radius_km?: number
-          skip?: number
-          limit?: number
-        } = {
+        const queryParams: { query?: string; city?: string; country?: string; listing_type?: ListingType; min_price?: number; max_price?: number; min_guests?: number; min_bedrooms?: number; min_bathrooms?: number; latitude?: number; longitude?: number; radius_km?: number; skip?: number; limit?: number } = {
           query: query || searchParams.search || '',
           city: city !== undefined ? city : undefined,
           country: country !== undefined ? country : undefined,
@@ -117,6 +81,7 @@ export function useSearchListingsApiV1SearchListingsGet(
           radius_km: radius_km !== undefined ? radius_km : undefined,
           skip: skip !== undefined ? skip : undefined,
           limit: limit !== undefined ? limit : searchParams.limit
+          
         }
         const result = await resolveActionResult<z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema>>(searchListingsApiV1SearchListingsGet({ query: queryParams }))
         return result
@@ -148,28 +113,7 @@ export function useSearchListingsApiV1SearchListingsGet(
  * Infinite query version for paginated /api/v1/search/listings
  * @returns useInfiniteQuery result with data of type z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema>
  */
-export function useInfiniteSearchListingsApiV1SearchListingsGet(
-  query?: string,
-  city?: string,
-  country?: string,
-  listing_type?: z.infer<typeof ListingTypeSchema>,
-  min_price?: number,
-  max_price?: number,
-  min_guests?: number,
-  min_bedrooms?: number,
-  min_bathrooms?: number,
-  latitude?: number,
-  longitude?: number,
-  radius_km?: number,
-  skip?: number,
-  limit?: number,
-  options?: {
-    enabled?: boolean
-    suspense?: boolean
-    refetchInterval?: number
-    initialData?: z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema>
-  }
-) {
+export function useInfiniteSearchListingsApiV1SearchListingsGet(query?: string, city?: string, country?: string, listing_type?: ListingType, min_price?: number, max_price?: number, min_guests?: number, min_bedrooms?: number, min_bathrooms?: number, latitude?: number, longitude?: number, radius_km?: number, skip?: number, limit?: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema> }) {
   const [searchParams] = useQueryStates(searchParamsParser)
   const { initialData, ...restOptions } = options ?? {}
 
@@ -179,22 +123,7 @@ export function useInfiniteSearchListingsApiV1SearchListingsGet(
     queryFn: async ({ pageParam = 1, signal }: { pageParam?: number; signal?: AbortSignal }) => {
       try {
         // Build query params object with only the parameters the endpoint expects
-        const queryParams: {
-          query?: string
-          city?: string
-          country?: string
-          listing_type?: z.infer<typeof ListingTypeSchema>
-          min_price?: number
-          max_price?: number
-          min_guests?: number
-          min_bedrooms?: number
-          min_bathrooms?: number
-          latitude?: number
-          longitude?: number
-          radius_km?: number
-          skip?: number
-          limit?: number
-        } = {
+        const queryParams: { query?: string; city?: string; country?: string; listing_type?: ListingType; min_price?: number; max_price?: number; min_guests?: number; min_bedrooms?: number; min_bathrooms?: number; latitude?: number; longitude?: number; radius_km?: number; skip?: number; limit?: number } = {
           query: query || searchParams.search || '',
           city: city !== undefined ? city : undefined,
           country: country !== undefined ? country : undefined,
@@ -254,28 +183,7 @@ export function useInfiniteSearchListingsApiV1SearchListingsGet(
  * Suspense version for /api/v1/search/listings - use in Server Components
  * @returns useSuspenseQuery result with data of type z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema>
  */
-export function useSuspenseSearchListingsApiV1SearchListingsGet(
-  query?: string,
-  city?: string,
-  country?: string,
-  listing_type?: z.infer<typeof ListingTypeSchema>,
-  min_price?: number,
-  max_price?: number,
-  min_guests?: number,
-  min_bedrooms?: number,
-  min_bathrooms?: number,
-  latitude?: number,
-  longitude?: number,
-  radius_km?: number,
-  skip?: number,
-  limit?: number,
-  options?: {
-    enabled?: boolean
-    suspense?: boolean
-    refetchInterval?: number
-    initialData?: z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema>
-  }
-) {
+export function useSuspenseSearchListingsApiV1SearchListingsGet(query?: string, city?: string, country?: string, listing_type?: ListingType, min_price?: number, max_price?: number, min_guests?: number, min_bedrooms?: number, min_bathrooms?: number, latitude?: number, longitude?: number, radius_km?: number, skip?: number, limit?: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema> }) {
   const { initialData, ...restOptions } = options ?? {}
 
   return useSuspenseQuery({

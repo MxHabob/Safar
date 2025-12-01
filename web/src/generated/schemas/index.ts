@@ -62,16 +62,6 @@ export const BodyUploadMultipleFilesApiV1FilesUploadMultiplePostSchema = z.objec
 })
 export type BodyUploadMultipleFilesApiV1FilesUploadMultiplePost = z.infer<typeof BodyUploadMultipleFilesApiV1FilesUploadMultiplePostSchema>
 /**
- * Timeline event response schema.
- */
-export const BookingTimelineEventResponseSchema = z.object({
-  id: z.string().max(40, "Maximum length is 40"),
-  status: z.string(),
-  payload: z.any().optional(),
-  created_at: z.string()
-})
-export type BookingTimelineEventResponse = z.infer<typeof BookingTimelineEventResponseSchema>
-/**
  * Cancel booking schema.
  */
 export const BookingCancelSchema = z.object({
@@ -94,6 +84,16 @@ export const BookingCreateSchema = z.object({
   coupon_code: z.any().optional()
 })
 export type BookingCreate = z.infer<typeof BookingCreateSchema>
+/**
+ * Timeline event response schema.
+ */
+export const BookingTimelineEventResponseSchema = z.object({
+  id: z.string().max(40, "Maximum length is 40"),
+  status: z.string(),
+  payload: z.any().optional(),
+  created_at: z.string()
+})
+export type BookingTimelineEventResponse = z.infer<typeof BookingTimelineEventResponseSchema>
 /**
  * Booking response schema.
  */
@@ -138,15 +138,6 @@ export type BookingListResponse = z.infer<typeof BookingListResponseSchema>
 
 
 /**
- * Schema for creating a conversation.
- */
-export const ConversationCreateSchema = z.object({
-  participant_id: z.string().max(40, "Maximum length is 40"),
-  listing_id: z.any().optional(),
-  booking_id: z.any().optional()
-})
-export type ConversationCreate = z.infer<typeof ConversationCreateSchema>
-/**
  * Schema returned in message responses.
  */
 export const MessageResponseSchema = z.object({
@@ -163,6 +154,27 @@ export const MessageResponseSchema = z.object({
   created_at: z.string()
 })
 export type MessageResponse = z.infer<typeof MessageResponseSchema>
+/**
+ * Listing photo response schema.
+ */
+export const ListingPhotoResponseSchema = z.object({
+  id: z.string().max(40, "Maximum length is 40"),
+  url: z.string(),
+  thumbnail_url: z.any().optional(),
+  caption: z.any().optional(),
+  position: z.number().int(),
+  is_primary: z.boolean()
+})
+export type ListingPhotoResponse = z.infer<typeof ListingPhotoResponseSchema>
+/**
+ * Schema for creating a conversation.
+ */
+export const ConversationCreateSchema = z.object({
+  participant_id: z.string().max(40, "Maximum length is 40"),
+  listing_id: z.any().optional(),
+  booking_id: z.any().optional()
+})
+export type ConversationCreate = z.infer<typeof ConversationCreateSchema>
 /**
  * Schema returned in conversation responses.
  */
@@ -186,6 +198,14 @@ export const ConversationListResponseSchema = z.object({
   limit: z.number().int()
 })
 export type ConversationListResponse = z.infer<typeof ConversationListResponseSchema>
+
+/**
+ * Schema for verifying email with code.
+ */
+export const EmailVerificationRequestSchema = z.object({
+  code: z.string()
+})
+export type EmailVerificationRequest = z.infer<typeof EmailVerificationRequestSchema>
 /**
  * File response schema.
  */
@@ -265,18 +285,6 @@ export const ListingImageResponseSchema = z.object({
   position: z.number().int()
 })
 export type ListingImageResponse = z.infer<typeof ListingImageResponseSchema>
-/**
- * Listing photo response schema.
- */
-export const ListingPhotoResponseSchema = z.object({
-  id: z.string().max(40, "Maximum length is 40"),
-  url: z.string(),
-  thumbnail_url: z.any().optional(),
-  caption: z.any().optional(),
-  position: z.number().int(),
-  is_primary: z.boolean()
-})
-export type ListingPhotoResponse = z.infer<typeof ListingPhotoResponseSchema>
 /**
  * Full listing response schema - complete data for authenticated users
  */
@@ -402,7 +410,6 @@ export const MessageCreateSchema = z.object({
   attachments: z.any().optional()
 })
 export type MessageCreate = z.infer<typeof MessageCreateSchema>
-
 /**
  * Schema for a paginated list of messages.
  */
@@ -438,6 +445,30 @@ export const OTPVerifySchema = z.object({
   code: z.string()
 })
 export type OTPVerify = z.infer<typeof OTPVerifySchema>
+/**
+ * Schema for changing password (authenticated user).
+ */
+export const PasswordChangeSchema = z.object({
+  current_password: z.string(),
+  new_password: z.string().min(8, "Minimum length is 8")
+})
+export type PasswordChange = z.infer<typeof PasswordChangeSchema>
+/**
+ * Schema for resetting password with verification code.
+ */
+export const PasswordResetSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  code: z.string(),
+  new_password: z.string().min(8, "Minimum length is 8")
+})
+export type PasswordReset = z.infer<typeof PasswordResetSchema>
+/**
+ * Schema for requesting a password reset.
+ */
+export const PasswordResetRequestSchema = z.object({
+  email: z.string().email("Invalid email format")
+})
+export type PasswordResetRequest = z.infer<typeof PasswordResetRequestSchema>
 /**
  * Create payment intent request
  */
@@ -964,6 +995,98 @@ export type OauthLoginApiV1UsersOauthLoginPostResponse = z.infer<typeof OauthLog
 export const OauthLoginApiV1UsersOauthLoginPostErrorSchema = HTTPValidationErrorSchema
 
 export type OauthLoginApiV1UsersOauthLoginPostError = z.infer<typeof OauthLoginApiV1UsersOauthLoginPostErrorSchema>
+/**
+ * Request schema for POST /api/v1/users/password/reset/request
+ */
+export const RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema = PasswordResetRequestSchema
+export type RequestPasswordResetApiV1UsersPasswordResetRequestPostRequest = z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema>
+/**
+ * Success response schema for POST /api/v1/users/password/reset/request
+ * Status: 200
+ * Successful Response
+ */
+export const RequestPasswordResetApiV1UsersPasswordResetRequestPostResponseSchema = z.any()
+
+export type RequestPasswordResetApiV1UsersPasswordResetRequestPostResponse = z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/users/password/reset/request
+ * Status: 422
+ * Validation Error
+ */
+export const RequestPasswordResetApiV1UsersPasswordResetRequestPostErrorSchema = HTTPValidationErrorSchema
+
+export type RequestPasswordResetApiV1UsersPasswordResetRequestPostError = z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostErrorSchema>
+/**
+ * Request schema for POST /api/v1/users/password/reset
+ */
+export const ResetPasswordApiV1UsersPasswordResetPostRequestSchema = PasswordResetSchema
+export type ResetPasswordApiV1UsersPasswordResetPostRequest = z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostRequestSchema>
+/**
+ * Success response schema for POST /api/v1/users/password/reset
+ * Status: 200
+ * Successful Response
+ */
+export const ResetPasswordApiV1UsersPasswordResetPostResponseSchema = z.any()
+
+export type ResetPasswordApiV1UsersPasswordResetPostResponse = z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/users/password/reset
+ * Status: 422
+ * Validation Error
+ */
+export const ResetPasswordApiV1UsersPasswordResetPostErrorSchema = HTTPValidationErrorSchema
+
+export type ResetPasswordApiV1UsersPasswordResetPostError = z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostErrorSchema>
+/**
+ * Request schema for POST /api/v1/users/password/change
+ */
+export const ChangePasswordApiV1UsersPasswordChangePostRequestSchema = PasswordChangeSchema
+export type ChangePasswordApiV1UsersPasswordChangePostRequest = z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostRequestSchema>
+/**
+ * Success response schema for POST /api/v1/users/password/change
+ * Status: 200
+ * Successful Response
+ */
+export const ChangePasswordApiV1UsersPasswordChangePostResponseSchema = z.any()
+
+export type ChangePasswordApiV1UsersPasswordChangePostResponse = z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/users/password/change
+ * Status: 422
+ * Validation Error
+ */
+export const ChangePasswordApiV1UsersPasswordChangePostErrorSchema = HTTPValidationErrorSchema
+
+export type ChangePasswordApiV1UsersPasswordChangePostError = z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostErrorSchema>
+/**
+ * Request schema for POST /api/v1/users/email/verify
+ */
+export const VerifyEmailApiV1UsersEmailVerifyPostRequestSchema = EmailVerificationRequestSchema
+export type VerifyEmailApiV1UsersEmailVerifyPostRequest = z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostRequestSchema>
+/**
+ * Success response schema for POST /api/v1/users/email/verify
+ * Status: 200
+ * Successful Response
+ */
+export const VerifyEmailApiV1UsersEmailVerifyPostResponseSchema = z.any()
+
+export type VerifyEmailApiV1UsersEmailVerifyPostResponse = z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/users/email/verify
+ * Status: 422
+ * Validation Error
+ */
+export const VerifyEmailApiV1UsersEmailVerifyPostErrorSchema = HTTPValidationErrorSchema
+
+export type VerifyEmailApiV1UsersEmailVerifyPostError = z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostErrorSchema>
+/**
+ * Success response schema for POST /api/v1/users/email/resend-verification
+ * Status: 200
+ * Successful Response
+ */
+export const ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema = z.any()
+
+export type ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponse = z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>
 /**
  * Success response schema for GET /api/v1/listings
  * Status: 200
@@ -1952,10 +2075,12 @@ export type StripeWebhookApiV1WebhooksStripePostError = z.infer<typeof StripeWeb
  * Parameters schema for POST /api/v1/webhooks/stripe
  * Path params: none
  * Query params: none
- * Header params: none (Stripe sends the signature header automatically)
+ * Header params: stripe_signature
  */
 export const StripeWebhookApiV1WebhooksStripePostParamsSchema = z.object({
-  headers: z.record(z.string(), z.string()).optional()
+  headers: z.object({
+    stripe_signature: z.string()
+  }).optional()
 })
 
 export type StripeWebhookApiV1WebhooksStripePostParams = z.infer<typeof StripeWebhookApiV1WebhooksStripePostParamsSchema>

@@ -182,11 +182,38 @@ export const authErrorMiddleware: RequestMiddleware = {
   }
 }
 
+// Auth request middleware - adds auth headers automatically
+export const authRequestMiddleware: RequestMiddleware = {
+  name: 'auth-request',
+  onRequest: async (config) => {
+    // Only add auth headers on client side
+    if (typeof window !== 'undefined') {
+      try {
+        const { tokenStorage } = await import('@/lib/auth/token-storage')
+        const token = tokenStorage.getAccessToken()
+        
+        if (token) {
+          config.headers = {
+            ...config.headers,
+            Authorization: `Bearer ${token}`
+          }
+        }
+      } catch (error) {
+        // Silently fail if token storage is not available
+        console.warn('Failed to get auth token:', error)
+      }
+    }
+    
+    return config
+  }
+}
+
 // Default middleware stack
 export const defaultMiddleware: RequestMiddleware[] = [
   timingMiddleware,
   contentTypeMiddleware,
   compressionMiddleware,
+  authRequestMiddleware,
   loggingMiddleware,
   authErrorMiddleware,
 ]

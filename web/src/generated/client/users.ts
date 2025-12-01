@@ -20,7 +20,16 @@ import {
   LogoutApiV1UsersLogoutPostResponseSchema,
   LogoutAllApiV1UsersLogoutAllPostResponseSchema,
   OauthLoginApiV1UsersOauthLoginPostRequestSchema,
-  OauthLoginApiV1UsersOauthLoginPostResponseSchema
+  OauthLoginApiV1UsersOauthLoginPostResponseSchema,
+  RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema,
+  RequestPasswordResetApiV1UsersPasswordResetRequestPostResponseSchema,
+  ResetPasswordApiV1UsersPasswordResetPostRequestSchema,
+  ResetPasswordApiV1UsersPasswordResetPostResponseSchema,
+  ChangePasswordApiV1UsersPasswordChangePostRequestSchema,
+  ChangePasswordApiV1UsersPasswordChangePostResponseSchema,
+  VerifyEmailApiV1UsersEmailVerifyPostRequestSchema,
+  VerifyEmailApiV1UsersEmailVerifyPostResponseSchema,
+  ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema
 } from '@/generated/schemas'
 
 export class UsersApiClient extends BaseApiClient {
@@ -297,6 +306,139 @@ responseSchema: LogoutAllApiV1UsersLogoutAllPostResponseSchema
 body: validatedBody,
 config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
 responseSchema: OauthLoginApiV1UsersOauthLoginPostResponseSchema
+      }
+    )
+  }
+
+  /**
+   * Request Password Reset
+   * Request a password reset code.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostResponseSchema>>>
+   * @example
+   * const result = await client.requestPasswordResetApiV1UsersPasswordResetRequestPost({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  requestPasswordResetApiV1UsersPasswordResetRequestPost = async (options: {
+    body: z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema>
+    config?: RequestConfiguration
+  }) => {
+    // Validate request body
+    const validatedBody = await RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema.parseAsync(options.body)
+
+    return this.request<z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostResponseSchema>>(
+      'POST',
+      '/api/v1/users/password/reset/request',
+      {
+body: validatedBody,
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: RequestPasswordResetApiV1UsersPasswordResetRequestPostResponseSchema
+      }
+    )
+  }
+
+  /**
+   * Reset Password
+   * Reset password using verification code.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostResponseSchema>>>
+   * @example
+   * const result = await client.resetPasswordApiV1UsersPasswordResetPost({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  resetPasswordApiV1UsersPasswordResetPost = async (options: {
+    body: z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostRequestSchema>
+    config?: RequestConfiguration
+  }) => {
+    // Validate request body
+    const validatedBody = await ResetPasswordApiV1UsersPasswordResetPostRequestSchema.parseAsync(options.body)
+
+    return this.request<z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostResponseSchema>>(
+      'POST',
+      '/api/v1/users/password/reset',
+      {
+body: validatedBody,
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: ResetPasswordApiV1UsersPasswordResetPostResponseSchema
+      }
+    )
+  }
+
+  /**
+   * Change Password
+   * Change password for authenticated user.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostResponseSchema>>>
+   * @example
+   * const result = await client.changePasswordApiV1UsersPasswordChangePost({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  changePasswordApiV1UsersPasswordChangePost = async (options: {
+    body: z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostRequestSchema>
+    config?: RequestConfiguration
+  }) => {
+    // Validate request body
+    const validatedBody = await ChangePasswordApiV1UsersPasswordChangePostRequestSchema.parseAsync(options.body)
+
+    return this.request<z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostResponseSchema>>(
+      'POST',
+      '/api/v1/users/password/change',
+      {
+body: validatedBody,
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: ChangePasswordApiV1UsersPasswordChangePostResponseSchema
+      }
+    )
+  }
+
+  /**
+   * Verify Email
+   * Verify email address with verification code.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostResponseSchema>>>
+   * @example
+   * const result = await client.verifyEmailApiV1UsersEmailVerifyPost({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  verifyEmailApiV1UsersEmailVerifyPost = async (options: {
+    body: z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostRequestSchema>
+    config?: RequestConfiguration
+  }) => {
+    // Validate request body
+    const validatedBody = await VerifyEmailApiV1UsersEmailVerifyPostRequestSchema.parseAsync(options.body)
+
+    return this.request<z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostResponseSchema>>(
+      'POST',
+      '/api/v1/users/email/verify',
+      {
+body: validatedBody,
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: VerifyEmailApiV1UsersEmailVerifyPostResponseSchema
+      }
+    )
+  }
+
+  /**
+   * Resend Email Verification
+   * Resend email verification code.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>>>
+   * @example
+   * const result = await client.resendEmailVerificationApiV1UsersEmailResendVerificationPost({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  resendEmailVerificationApiV1UsersEmailResendVerificationPost = async (options?: { config?: RequestConfiguration }) => {
+    return this.request<z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>>(
+      'POST',
+      '/api/v1/users/email/resend-verification',
+      {
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema
       }
     )
   }

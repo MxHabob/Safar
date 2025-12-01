@@ -23,7 +23,16 @@ import {
   LogoutApiV1UsersLogoutPostResponseSchema,
   LogoutAllApiV1UsersLogoutAllPostResponseSchema,
   OauthLoginApiV1UsersOauthLoginPostRequestSchema,
-  OauthLoginApiV1UsersOauthLoginPostResponseSchema
+  OauthLoginApiV1UsersOauthLoginPostResponseSchema,
+  RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema,
+  RequestPasswordResetApiV1UsersPasswordResetRequestPostResponseSchema,
+  ResetPasswordApiV1UsersPasswordResetPostRequestSchema,
+  ResetPasswordApiV1UsersPasswordResetPostResponseSchema,
+  ChangePasswordApiV1UsersPasswordChangePostRequestSchema,
+  ChangePasswordApiV1UsersPasswordChangePostResponseSchema,
+  VerifyEmailApiV1UsersEmailVerifyPostRequestSchema,
+  VerifyEmailApiV1UsersEmailVerifyPostResponseSchema,
+  ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema
 } from '@/generated/schemas'
 
 // Utility functions for enhanced server actions
@@ -805,6 +814,379 @@ export const oauthLoginApiV1UsersOauthLoginPost = actionClientWithMeta
         error instanceof Error ? error.message : 'Unknown error occurred',
         {
           endpoint: '/api/v1/users/oauth/login',
+          method: 'POST',
+          timestamp: Date.now()
+        },
+        error
+      )
+    }
+  })
+
+/**
+ * Request Password Reset
+ * @generated from POST /api/v1/users/password/reset/request
+ * Features: Input validation, revalidation, error handling
+ */
+export const requestPasswordResetApiV1UsersPasswordResetRequestPost = actionClientWithMeta
+  .metadata({
+    name: "request-password-reset-api-v1-users-password-reset-request-post",
+    requiresAuth: false
+  })
+  .schema(RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema)
+  .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema>; ctx?: any }) => {
+    const startTime = Date.now()
+    
+    try {
+      // Validate and sanitize request body
+      const validatedBody = await validateAndSanitizeInput(RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema, parsedInput)
+
+      // Execute API call with enhanced configuration
+      const response = await apiClient.users.requestPasswordResetApiV1UsersPasswordResetRequestPost({body: validatedBody,
+        config: {
+          timeout: 30000,
+          retries: 3,
+          validateResponse: false,
+          responseSchema: RequestPasswordResetApiV1UsersPasswordResetRequestPostResponseSchema
+        }
+      })
+        // Handle streaming responses
+        if (response.headers.get('content-type')?.includes('text/stream')) {
+          // Process streaming response
+          return response.data
+        }
+        // Handle potential redirects based on response
+        if (response.status === 201 && response.headers.get('location')) {
+          const location = response.headers.get('location')!
+          redirect(location)
+        }
+
+            // Revalidate cache after successful mutation
+      updateTag('Users')
+      console.log('Updated tag: Users')
+
+
+      // Log successful execution
+      const duration = Date.now() - startTime
+      await logActionExecution('requestPasswordResetApiV1UsersPasswordResetRequestPost', true, duration, {
+        method: 'POST',
+        path: '/api/v1/users/password/reset/request'
+      })
+      
+      return response.data
+    } catch (error) {
+
+      const duration = Date.now() - startTime
+
+      // Enhanced error logging
+      await logActionExecution('requestPasswordResetApiV1UsersPasswordResetRequestPost', false, duration, {
+        method: 'POST',
+        path: '/api/v1/users/password/reset/request',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
+      
+      // Throw enhanced error with context
+      throw new ActionExecutionError(
+        error instanceof Error ? error.message : 'Unknown error occurred',
+        {
+          endpoint: '/api/v1/users/password/reset/request',
+          method: 'POST',
+          timestamp: Date.now()
+        },
+        error
+      )
+    }
+  })
+
+/**
+ * Reset Password
+ * @generated from POST /api/v1/users/password/reset
+ * Features: Input validation, revalidation, error handling
+ */
+export const resetPasswordApiV1UsersPasswordResetPost = actionClientWithMeta
+  .metadata({
+    name: "reset-password-api-v1-users-password-reset-post",
+    requiresAuth: false
+  })
+  .schema(ResetPasswordApiV1UsersPasswordResetPostRequestSchema)
+  .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostRequestSchema>; ctx?: any }) => {
+    const startTime = Date.now()
+    
+    try {
+      // Validate and sanitize request body
+      const validatedBody = await validateAndSanitizeInput(ResetPasswordApiV1UsersPasswordResetPostRequestSchema, parsedInput)
+
+      // Execute API call with enhanced configuration
+      const response = await apiClient.users.resetPasswordApiV1UsersPasswordResetPost({body: validatedBody,
+        config: {
+          timeout: 30000,
+          retries: 3,
+          validateResponse: false,
+          responseSchema: ResetPasswordApiV1UsersPasswordResetPostResponseSchema
+        }
+      })
+        // Handle streaming responses
+        if (response.headers.get('content-type')?.includes('text/stream')) {
+          // Process streaming response
+          return response.data
+        }
+        // Handle potential redirects based on response
+        if (response.status === 201 && response.headers.get('location')) {
+          const location = response.headers.get('location')!
+          redirect(location)
+        }
+
+            // Revalidate cache after successful mutation
+      updateTag('Users')
+      console.log('Updated tag: Users')
+
+
+      // Log successful execution
+      const duration = Date.now() - startTime
+      await logActionExecution('resetPasswordApiV1UsersPasswordResetPost', true, duration, {
+        method: 'POST',
+        path: '/api/v1/users/password/reset'
+      })
+      
+      return response.data
+    } catch (error) {
+
+      const duration = Date.now() - startTime
+
+      // Enhanced error logging
+      await logActionExecution('resetPasswordApiV1UsersPasswordResetPost', false, duration, {
+        method: 'POST',
+        path: '/api/v1/users/password/reset',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
+      
+      // Throw enhanced error with context
+      throw new ActionExecutionError(
+        error instanceof Error ? error.message : 'Unknown error occurred',
+        {
+          endpoint: '/api/v1/users/password/reset',
+          method: 'POST',
+          timestamp: Date.now()
+        },
+        error
+      )
+    }
+  })
+
+/**
+ * Change Password
+ * @generated from POST /api/v1/users/password/change
+ * Features: Input validation, revalidation, error handling
+ */
+export const changePasswordApiV1UsersPasswordChangePost = authActionClient
+  .metadata({
+    name: "change-password-api-v1-users-password-change-post",
+    requiresAuth: true
+  })
+  .schema(ChangePasswordApiV1UsersPasswordChangePostRequestSchema)
+  .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostRequestSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
+    const startTime = Date.now()
+    
+    try {
+      // Validate and sanitize request body
+      const validatedBody = await validateAndSanitizeInput(ChangePasswordApiV1UsersPasswordChangePostRequestSchema, parsedInput)
+
+      // Execute API call with enhanced configuration
+      const response = await apiClient.users.changePasswordApiV1UsersPasswordChangePost({body: validatedBody,
+        config: {
+          timeout: 30000,
+          retries: 3,
+          validateResponse: false,
+          responseSchema: ChangePasswordApiV1UsersPasswordChangePostResponseSchema
+        }
+      })
+        // Handle streaming responses
+        if (response.headers.get('content-type')?.includes('text/stream')) {
+          // Process streaming response
+          return response.data
+        }
+        // Handle potential redirects based on response
+        if (response.status === 201 && response.headers.get('location')) {
+          const location = response.headers.get('location')!
+          redirect(location)
+        }
+
+            // Revalidate cache after successful mutation
+      updateTag('Users')
+      console.log('Updated tag: Users')
+
+
+      // Log successful execution
+      const duration = Date.now() - startTime
+      await logActionExecution('changePasswordApiV1UsersPasswordChangePost', true, duration, {
+        method: 'POST',
+        path: '/api/v1/users/password/change'
+      })
+      
+      return response.data
+    } catch (error) {
+
+      const duration = Date.now() - startTime
+
+      // Enhanced error logging
+      await logActionExecution('changePasswordApiV1UsersPasswordChangePost', false, duration, {
+        method: 'POST',
+        path: '/api/v1/users/password/change',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
+      
+      // Throw enhanced error with context
+      throw new ActionExecutionError(
+        error instanceof Error ? error.message : 'Unknown error occurred',
+        {
+          endpoint: '/api/v1/users/password/change',
+          method: 'POST',
+          timestamp: Date.now()
+        },
+        error
+      )
+    }
+  })
+
+/**
+ * Verify Email
+ * @generated from POST /api/v1/users/email/verify
+ * Features: Input validation, revalidation, error handling
+ */
+export const verifyEmailApiV1UsersEmailVerifyPost = authActionClient
+  .metadata({
+    name: "verify-email-api-v1-users-email-verify-post",
+    requiresAuth: true
+  })
+  .schema(VerifyEmailApiV1UsersEmailVerifyPostRequestSchema)
+  .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostRequestSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
+    const startTime = Date.now()
+    
+    try {
+      // Validate and sanitize request body
+      const validatedBody = await validateAndSanitizeInput(VerifyEmailApiV1UsersEmailVerifyPostRequestSchema, parsedInput)
+
+      // Execute API call with enhanced configuration
+      const response = await apiClient.users.verifyEmailApiV1UsersEmailVerifyPost({body: validatedBody,
+        config: {
+          timeout: 30000,
+          retries: 3,
+          validateResponse: false,
+          responseSchema: VerifyEmailApiV1UsersEmailVerifyPostResponseSchema
+        }
+      })
+        // Handle streaming responses
+        if (response.headers.get('content-type')?.includes('text/stream')) {
+          // Process streaming response
+          return response.data
+        }
+        // Handle potential redirects based on response
+        if (response.status === 201 && response.headers.get('location')) {
+          const location = response.headers.get('location')!
+          redirect(location)
+        }
+
+            // Revalidate cache after successful mutation
+      updateTag('Users')
+      console.log('Updated tag: Users')
+
+
+      // Log successful execution
+      const duration = Date.now() - startTime
+      await logActionExecution('verifyEmailApiV1UsersEmailVerifyPost', true, duration, {
+        method: 'POST',
+        path: '/api/v1/users/email/verify'
+      })
+      
+      return response.data
+    } catch (error) {
+
+      const duration = Date.now() - startTime
+
+      // Enhanced error logging
+      await logActionExecution('verifyEmailApiV1UsersEmailVerifyPost', false, duration, {
+        method: 'POST',
+        path: '/api/v1/users/email/verify',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
+      
+      // Throw enhanced error with context
+      throw new ActionExecutionError(
+        error instanceof Error ? error.message : 'Unknown error occurred',
+        {
+          endpoint: '/api/v1/users/email/verify',
+          method: 'POST',
+          timestamp: Date.now()
+        },
+        error
+      )
+    }
+  })
+
+/**
+ * Resend Email Verification
+ * @generated from POST /api/v1/users/email/resend-verification
+ * Features: Input validation, revalidation, error handling
+ */
+export const resendEmailVerificationApiV1UsersEmailResendVerificationPost = authActionClient
+  .metadata({
+    name: "resend-email-verification-api-v1-users-email-resend-verification-post",
+    requiresAuth: true
+  })
+  .schema(z.void())
+  .action(async ({ parsedInput, ctx }: { parsedInput: void; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
+    const startTime = Date.now()
+    
+    try {
+
+      // Execute API call with enhanced configuration
+      const response = await apiClient.users.resendEmailVerificationApiV1UsersEmailResendVerificationPost({
+        config: {
+          timeout: 30000,
+          retries: 3,
+          validateResponse: false,
+          responseSchema: ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema
+        }
+      })
+        // Handle streaming responses
+        if (response.headers.get('content-type')?.includes('text/stream')) {
+          // Process streaming response
+          return response.data
+        }
+        // Handle potential redirects based on response
+        if (response.status === 201 && response.headers.get('location')) {
+          const location = response.headers.get('location')!
+          redirect(location)
+        }
+
+            // Revalidate cache after successful mutation
+      updateTag('Users')
+      console.log('Updated tag: Users')
+
+
+      // Log successful execution
+      const duration = Date.now() - startTime
+      await logActionExecution('resendEmailVerificationApiV1UsersEmailResendVerificationPost', true, duration, {
+        method: 'POST',
+        path: '/api/v1/users/email/resend-verification'
+      })
+      
+      return response.data
+    } catch (error) {
+
+      const duration = Date.now() - startTime
+
+      // Enhanced error logging
+      await logActionExecution('resendEmailVerificationApiV1UsersEmailResendVerificationPost', false, duration, {
+        method: 'POST',
+        path: '/api/v1/users/email/resend-verification',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
+      
+      // Throw enhanced error with context
+      throw new ActionExecutionError(
+        error instanceof Error ? error.message : 'Unknown error occurred',
+        {
+          endpoint: '/api/v1/users/email/resend-verification',
           method: 'POST',
           timestamp: Date.now()
         },

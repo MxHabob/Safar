@@ -2,7 +2,7 @@
 import { useQuery, useQueryClient, useSuspenseQuery, useMutation } from '@tanstack/react-query'
 import { useOptimistic, useTransition } from 'react'
 import { toast } from 'sonner'
-import { getCurrentUserInfoApiV1UsersMeGet, registerApiV1UsersRegisterPost, loginApiV1UsersLoginPost, refreshTokenApiV1UsersRefreshPost, updateCurrentUserApiV1UsersMePut, requestOtpApiV1UsersOtpRequestPost, verifyOtpApiV1UsersOtpVerifyPost, logoutApiV1UsersLogoutPost, logoutAllApiV1UsersLogoutAllPost, oauthLoginApiV1UsersOauthLoginPost } from '@/generated/actions/users'
+import { getCurrentUserInfoApiV1UsersMeGet, registerApiV1UsersRegisterPost, loginApiV1UsersLoginPost, refreshTokenApiV1UsersRefreshPost, updateCurrentUserApiV1UsersMePut, requestOtpApiV1UsersOtpRequestPost, verifyOtpApiV1UsersOtpVerifyPost, logoutApiV1UsersLogoutPost, logoutAllApiV1UsersLogoutAllPost, oauthLoginApiV1UsersOauthLoginPost, requestPasswordResetApiV1UsersPasswordResetRequestPost, resetPasswordApiV1UsersPasswordResetPost, changePasswordApiV1UsersPasswordChangePost, verifyEmailApiV1UsersEmailVerifyPost, resendEmailVerificationApiV1UsersEmailResendVerificationPost } from '@/generated/actions/users'
 import {
   GetCurrentUserInfoApiV1UsersMeGetResponseSchema,
   RegisterApiV1UsersRegisterPostResponseSchema,
@@ -20,7 +20,16 @@ import {
   LogoutApiV1UsersLogoutPostResponseSchema,
   LogoutAllApiV1UsersLogoutAllPostResponseSchema,
   OauthLoginApiV1UsersOauthLoginPostResponseSchema,
-  OauthLoginApiV1UsersOauthLoginPostRequestSchema
+  OauthLoginApiV1UsersOauthLoginPostRequestSchema,
+  RequestPasswordResetApiV1UsersPasswordResetRequestPostResponseSchema,
+  RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema,
+  ResetPasswordApiV1UsersPasswordResetPostResponseSchema,
+  ResetPasswordApiV1UsersPasswordResetPostRequestSchema,
+  ChangePasswordApiV1UsersPasswordChangePostResponseSchema,
+  ChangePasswordApiV1UsersPasswordChangePostRequestSchema,
+  VerifyEmailApiV1UsersEmailVerifyPostResponseSchema,
+  VerifyEmailApiV1UsersEmailVerifyPostRequestSchema,
+  ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema
 } from '@/generated/schemas'
 import type { z } from 'zod'
 
@@ -816,6 +825,401 @@ export function useOauthLoginApiV1UsersOauthLoginPostMutation(options?: {
   return {
     ...mutation,
     mutateWithTransition: (variables: z.infer<typeof OauthLoginApiV1UsersOauthLoginPostRequestSchema>) => {
+      startTransition(() => {
+        mutation.mutate(variables)
+      })
+    },
+    isPending: isPending || mutation.isPending,
+    optimisticData
+  }
+}
+
+/**
+ * Optimized mutation hook for POST /api/v1/users/password/reset/request
+ * Features: Optimistic updates, smart invalidation, error handling
+ * @param options - Mutation options
+ * @returns Mutation result with enhanced features
+ */
+export function useRequestPasswordResetApiV1UsersPasswordResetRequestPostMutation(options?: {
+  onSuccess?: (data: z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostResponseSchema>, variables: z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema>) => void
+  onError?: (error: Error, variables: z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema>) => void
+  optimisticUpdate?: (variables: z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema>) => unknown
+  showToast?: boolean
+}) {
+  const queryClient = useQueryClient()
+  const [isPending, startTransition] = useTransition()
+  const [optimisticData, setOptimisticData] = useOptimistic<unknown, z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema>>(null, (_, newData) => newData)
+
+  const mutation = useMutation({
+    mutationFn: async (variables: z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema>): Promise<z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostResponseSchema>> => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostResponseSchema>>(requestPasswordResetApiV1UsersPasswordResetRequestPost(variables))
+        return (result ?? ({} as z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostResponseSchema>))
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    
+    onMutate: async (variables: z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema>) => {
+      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+
+      // Optimistic update (if provided)
+      if (options?.optimisticUpdate) {
+        const optimisticValue = options.optimisticUpdate(variables)
+        setOptimisticData(optimisticValue as z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema>)
+      }
+      
+      return {}
+    },
+    
+    onSuccess: (data, variables) => {
+      // Show success toast
+      if (options?.showToast !== false) {
+        toast.success('Created successfully')
+      }
+      
+      // Custom success handler
+      options?.onSuccess?.(data, variables)
+    },
+    
+    onError: (error: Error, variables: z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema>) => {
+      // Show error toast
+      if (options?.showToast !== false) {
+        toast.error(error.message || 'Failed to create')
+      }
+      
+      // Custom error handler
+      options?.onError?.(error as Error, variables)
+    },
+    
+    onSettled: async () => {
+      // Always refetch after error or success
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['Users'] })
+      ])
+    }
+  })
+
+  return {
+    ...mutation,
+    mutateWithTransition: (variables: z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema>) => {
+      startTransition(() => {
+        mutation.mutate(variables)
+      })
+    },
+    isPending: isPending || mutation.isPending,
+    optimisticData
+  }
+}
+
+/**
+ * Optimized mutation hook for POST /api/v1/users/password/reset
+ * Features: Optimistic updates, smart invalidation, error handling
+ * @param options - Mutation options
+ * @returns Mutation result with enhanced features
+ */
+export function useResetPasswordApiV1UsersPasswordResetPostMutation(options?: {
+  onSuccess?: (data: z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostResponseSchema>, variables: z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostRequestSchema>) => void
+  onError?: (error: Error, variables: z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostRequestSchema>) => void
+  optimisticUpdate?: (variables: z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostRequestSchema>) => unknown
+  showToast?: boolean
+}) {
+  const queryClient = useQueryClient()
+  const [isPending, startTransition] = useTransition()
+  const [optimisticData, setOptimisticData] = useOptimistic<unknown, z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostRequestSchema>>(null, (_, newData) => newData)
+
+  const mutation = useMutation({
+    mutationFn: async (variables: z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostRequestSchema>): Promise<z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostResponseSchema>> => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostResponseSchema>>(resetPasswordApiV1UsersPasswordResetPost(variables))
+        return (result ?? ({} as z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostResponseSchema>))
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    
+    onMutate: async (variables: z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostRequestSchema>) => {
+      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+
+      // Optimistic update (if provided)
+      if (options?.optimisticUpdate) {
+        const optimisticValue = options.optimisticUpdate(variables)
+        setOptimisticData(optimisticValue as z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostRequestSchema>)
+      }
+      
+      return {}
+    },
+    
+    onSuccess: (data, variables) => {
+      // Show success toast
+      if (options?.showToast !== false) {
+        toast.success('Created successfully')
+      }
+      
+      // Custom success handler
+      options?.onSuccess?.(data, variables)
+    },
+    
+    onError: (error: Error, variables: z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostRequestSchema>) => {
+      // Show error toast
+      if (options?.showToast !== false) {
+        toast.error(error.message || 'Failed to create')
+      }
+      
+      // Custom error handler
+      options?.onError?.(error as Error, variables)
+    },
+    
+    onSettled: async () => {
+      // Always refetch after error or success
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['Users'] })
+      ])
+    }
+  })
+
+  return {
+    ...mutation,
+    mutateWithTransition: (variables: z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostRequestSchema>) => {
+      startTransition(() => {
+        mutation.mutate(variables)
+      })
+    },
+    isPending: isPending || mutation.isPending,
+    optimisticData
+  }
+}
+
+/**
+ * Optimized mutation hook for POST /api/v1/users/password/change
+ * Features: Optimistic updates, smart invalidation, error handling
+ * @param options - Mutation options
+ * @returns Mutation result with enhanced features
+ */
+export function useChangePasswordApiV1UsersPasswordChangePostMutation(options?: {
+  onSuccess?: (data: z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostResponseSchema>, variables: z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostRequestSchema>) => void
+  onError?: (error: Error, variables: z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostRequestSchema>) => void
+  optimisticUpdate?: (variables: z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostRequestSchema>) => unknown
+  showToast?: boolean
+}) {
+  const queryClient = useQueryClient()
+  const [isPending, startTransition] = useTransition()
+  const [optimisticData, setOptimisticData] = useOptimistic<unknown, z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostRequestSchema>>(null, (_, newData) => newData)
+
+  const mutation = useMutation({
+    mutationFn: async (variables: z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostRequestSchema>): Promise<z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostResponseSchema>> => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostResponseSchema>>(changePasswordApiV1UsersPasswordChangePost(variables))
+        return (result ?? ({} as z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostResponseSchema>))
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    
+    onMutate: async (variables: z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostRequestSchema>) => {
+      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+
+      // Optimistic update (if provided)
+      if (options?.optimisticUpdate) {
+        const optimisticValue = options.optimisticUpdate(variables)
+        setOptimisticData(optimisticValue as z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostRequestSchema>)
+      }
+      
+      return {}
+    },
+    
+    onSuccess: (data, variables) => {
+      // Show success toast
+      if (options?.showToast !== false) {
+        toast.success('Created successfully')
+      }
+      
+      // Custom success handler
+      options?.onSuccess?.(data, variables)
+    },
+    
+    onError: (error: Error, variables: z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostRequestSchema>) => {
+      // Show error toast
+      if (options?.showToast !== false) {
+        toast.error(error.message || 'Failed to create')
+      }
+      
+      // Custom error handler
+      options?.onError?.(error as Error, variables)
+    },
+    
+    onSettled: async () => {
+      // Always refetch after error or success
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['Users'] })
+      ])
+    }
+  })
+
+  return {
+    ...mutation,
+    mutateWithTransition: (variables: z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostRequestSchema>) => {
+      startTransition(() => {
+        mutation.mutate(variables)
+      })
+    },
+    isPending: isPending || mutation.isPending,
+    optimisticData
+  }
+}
+
+/**
+ * Optimized mutation hook for POST /api/v1/users/email/verify
+ * Features: Optimistic updates, smart invalidation, error handling
+ * @param options - Mutation options
+ * @returns Mutation result with enhanced features
+ */
+export function useVerifyEmailApiV1UsersEmailVerifyPostMutation(options?: {
+  onSuccess?: (data: z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostResponseSchema>, variables: z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostRequestSchema>) => void
+  onError?: (error: Error, variables: z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostRequestSchema>) => void
+  optimisticUpdate?: (variables: z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostRequestSchema>) => unknown
+  showToast?: boolean
+}) {
+  const queryClient = useQueryClient()
+  const [isPending, startTransition] = useTransition()
+  const [optimisticData, setOptimisticData] = useOptimistic<unknown, z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostRequestSchema>>(null, (_, newData) => newData)
+
+  const mutation = useMutation({
+    mutationFn: async (variables: z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostRequestSchema>): Promise<z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostResponseSchema>> => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostResponseSchema>>(verifyEmailApiV1UsersEmailVerifyPost(variables))
+        return (result ?? ({} as z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostResponseSchema>))
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    
+    onMutate: async (variables: z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostRequestSchema>) => {
+      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+
+      // Optimistic update (if provided)
+      if (options?.optimisticUpdate) {
+        const optimisticValue = options.optimisticUpdate(variables)
+        setOptimisticData(optimisticValue as z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostRequestSchema>)
+      }
+      
+      return {}
+    },
+    
+    onSuccess: (data, variables) => {
+      // Show success toast
+      if (options?.showToast !== false) {
+        toast.success('Created successfully')
+      }
+      
+      // Custom success handler
+      options?.onSuccess?.(data, variables)
+    },
+    
+    onError: (error: Error, variables: z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostRequestSchema>) => {
+      // Show error toast
+      if (options?.showToast !== false) {
+        toast.error(error.message || 'Failed to create')
+      }
+      
+      // Custom error handler
+      options?.onError?.(error as Error, variables)
+    },
+    
+    onSettled: async () => {
+      // Always refetch after error or success
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['Users'] })
+      ])
+    }
+  })
+
+  return {
+    ...mutation,
+    mutateWithTransition: (variables: z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostRequestSchema>) => {
+      startTransition(() => {
+        mutation.mutate(variables)
+      })
+    },
+    isPending: isPending || mutation.isPending,
+    optimisticData
+  }
+}
+
+/**
+ * Optimized mutation hook for POST /api/v1/users/email/resend-verification
+ * Features: Optimistic updates, smart invalidation, error handling
+ * @param options - Mutation options
+ * @returns Mutation result with enhanced features
+ */
+export function useResendEmailVerificationApiV1UsersEmailResendVerificationPostMutation(options?: {
+  onSuccess?: (data: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>, variables: void) => void
+  onError?: (error: Error, variables: void) => void
+  optimisticUpdate?: (variables: void) => unknown
+  showToast?: boolean
+}) {
+  const queryClient = useQueryClient()
+  const [isPending, startTransition] = useTransition()
+  const [optimisticData, setOptimisticData] = useOptimistic<unknown, void>(null, (_, newData) => newData)
+
+  const mutation = useMutation({
+    mutationFn: async (variables: void): Promise<z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>> => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>>(resendEmailVerificationApiV1UsersEmailResendVerificationPost())
+        return (result ?? ({} as z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>))
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    
+    onMutate: async (variables: void) => {
+      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+
+      // Optimistic update (if provided)
+      if (options?.optimisticUpdate) {
+        const optimisticValue = options.optimisticUpdate(variables)
+        setOptimisticData(optimisticValue as void)
+      }
+      
+      return {}
+    },
+    
+    onSuccess: (data, variables) => {
+      // Show success toast
+      if (options?.showToast !== false) {
+        toast.success('Created successfully')
+      }
+      
+      // Custom success handler
+      options?.onSuccess?.(data, variables)
+    },
+    
+    onError: (error: Error, variables: void) => {
+      // Show error toast
+      if (options?.showToast !== false) {
+        toast.error(error.message || 'Failed to create')
+      }
+      
+      // Custom error handler
+      options?.onError?.(error as Error, variables)
+    },
+    
+    onSettled: async () => {
+      // Always refetch after error or success
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['Users'] })
+      ])
+    }
+  })
+
+  return {
+    ...mutation,
+    mutateWithTransition: (variables: void) => {
       startTransition(() => {
         mutation.mutate(variables)
       })
