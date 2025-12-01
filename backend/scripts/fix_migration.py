@@ -36,6 +36,7 @@ POSTGIS_TABLES = {
     'addrfeat',
     'countysub',
     'county',
+    'county_lookup',
     'direction_lookup',
     'edges',
     'faces',
