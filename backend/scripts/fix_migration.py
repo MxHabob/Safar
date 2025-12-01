@@ -170,7 +170,21 @@ def fix_migration_file(file_path: Path) -> bool:
     
     # Single pattern that handles all cases: single-line, multi-line, with/without schema
     drop_table_pattern = r'op\.drop_table\([\'"]([^\'"]+)[\'"][^)]*\)'
-    content = re.sub(drop_table_pattern, should_remove_drop, content, flags=re.MULTILINE | re.DOTALL)
+
+    # Track whether we actually removed any drop_table calls
+    drops_removed = False
+
+    def _wrapper(match):
+        nonlocal drops_removed
+        result = should_remove_drop(match)
+        if result == '':
+            drops_removed = True
+        return result
+
+    content = re.sub(drop_table_pattern, _wrapper, content, flags=re.MULTILINE | re.DOTALL)
+
+    if drops_removed:
+        modified = True
     
     # Add exclusion constraint if needed
     content, constraint_added = add_exclusion_constraint(content)
