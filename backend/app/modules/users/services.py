@@ -238,3 +238,218 @@ class UserService:
             "refresh_token": refresh_token,
             "token_type": "bearer"
         }
+    
+    @staticmethod
+    async def verify_code(
+        uow: IUnitOfWork,
+        user_id: ID,
+        code: str,
+        verification_type: str
+    ) -> bool:
+        """Verify a verification code for the given user and type."""
+        from sqlalchemy import and_
+        
+        result = await uow.db.execute(
+            select(UserVerification).where(
+                and_(
+                    UserVerification.user_id == user_id,
+                    UserVerification.verification_type == verification_type,
+                    UserVerification.is_used == False,
+                    UserVerification.expires_at > datetime.utcnow()
+                )
+            ).order_by(UserVerification.created_at.desc())
+        )
+        verification = result.scalar_one_or_none()
+        
+        if not verification:
+            return False
+        
+        # Increment attempts
+        verification.attempts += 1
+        
+        # Check if code matches
+        if verification.code != code:
+            # Mark as used if too many attempts
+            if verification.attempts >= 5:
+                verification.is_used = True
+            await uow.commit()
+            return False
+        
+        # Mark as used
+        verification.is_used = True
+        await uow.commit()
+        return True
+    
+    @staticmethod
+    async def track_failed_login(
+        uow: IUnitOfWork,
+        email: str,
+        client_ip: Optional[str] = None
+    ) -> tuple[bool, Optional[int]]:
+        """
+        Track failed login attempt and check if account should be locked.
+        
+        Returns:
+            tuple[bool, Optional[int]]: (is_locked, remaining_attempts)
+        """
+        from app.infrastructure.cache.redis import get_redis
+        
+        try:
+            redis = await get_redis()
+            key = f"failed_login:{email}"
+            
+            # Get current count
+            count = await redis.get(key)
+            count = int(count) if count else 0
+            
+            # Increment
+            count += 1
+            await redis.setex(key, 900, count)  # 15 minutes window
+            
+            # Lock after 5 failed attempts
+            max_attempts = 5
+            if count >= max_attempts:
+                # Lock account for 15 minutes
+                lock_key = f"account_locked:{email}"
+                await redis.setex(lock_key, 900, "1")  # 15 minutes
+                return True, 0
+            
+            return False, max_attempts - count
+        except Exception:
+            # If Redis fails, don't block login but log error
+            return False, None
+    
+    @staticmethod
+    async def is_account_locked(
+        email: str
+    ) -> bool:
+        """Check if account is locked due to failed login attempts."""
+        from app.infrastructure.cache.redis import get_redis
+        
+        try:
+            redis = await get_redis()
+            lock_key = f"account_locked:{email}"
+            locked = await redis.get(lock_key)
+            return locked is not None
+        except Exception:
+            return False
+    
+    @staticmethod
+    async def clear_failed_login_attempts(
+        email: str
+    ) -> bool:
+        """Clear failed login attempts after successful login."""
+        from app.infrastructure.cache.redis import get_redis
+        
+        try:
+            redis = await get_redis()
+            key = f"failed_login:{email}"
+            lock_key = f"account_locked:{email}"
+            await redis.delete(key)
+            await redis.delete(lock_key)
+            return True
+        except Exception:
+            return False
+    
+    @staticmethod
+    async def request_password_reset(
+        uow: IUnitOfWork,
+        email: str
+    ) -> Optional[UserVerification]:
+        """Request a password reset code for the given email."""
+        user = await uow.users.get_by_email(email)
+        if not user:
+            # Don't reveal if user exists (security)
+            return None
+        
+        # Create password reset verification code
+        verification = await UserService.create_verification_code(
+            uow, user.id, "password_reset"
+        )
+        
+        return verification
+    
+    @staticmethod
+    async def reset_password(
+        uow: IUnitOfWork,
+        email: str,
+        code: str,
+        new_password: str
+    ) -> bool:
+        """Reset password using verification code."""
+        # Validate password strength
+        is_valid, error_message = validate_password_strength(new_password)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_message
+            )
+        
+        user = await uow.users.get_by_email(email)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Verify code
+        is_valid_code = await UserService.verify_code(
+            uow, user.id, code, "password_reset"
+        )
+        if not is_valid_code:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired reset code"
+            )
+        
+        # Update password
+        result = await uow.db.execute(
+            select(User).where(User.id == user.id)
+        )
+        user_model = result.scalar_one_or_none()
+        if user_model:
+            user_model.hashed_password = get_password_hash(new_password)
+            await uow.commit()
+            return True
+        
+        return False
+    
+    @staticmethod
+    async def change_password(
+        uow: IUnitOfWork,
+        user_id: ID,
+        current_password: str,
+        new_password: str
+    ) -> bool:
+        """Change password for authenticated user."""
+        # Validate new password strength
+        is_valid, error_message = validate_password_strength(new_password)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_message
+            )
+        
+        # Get user model
+        result = await uow.db.execute(
+            select(User).where(User.id == user_id)
+        )
+        user_model = result.scalar_one_or_none()
+        
+        if not user_model or not user_model.hashed_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password authentication not available for this account"
+            )
+        
+        # Verify current password
+        if not verify_password(current_password, user_model.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Current password is incorrect"
+            )
+        
+        # Update password
+        user_model.hashed_password = get_password_hash(new_password)
+        await uow.commit()
+        return True

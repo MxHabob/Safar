@@ -70,17 +70,41 @@ class OAuthService:
             # Apple uses JWT tokens, need to decode and verify
             from jose import jwt
             from jose import jwk
+            from jose.exceptions import JWTError, ExpiredSignatureError, JWTClaimsError
             import json
             
             # Get Apple public keys
-            async with httpx.AsyncClient() as client:
-                response = await client.get("https://appleid.apple.com/auth/keys")
-                response.raise_for_status()
-                keys = response.json()
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                try:
+                    response = await client.get("https://appleid.apple.com/auth/keys")
+                    response.raise_for_status()
+                    keys = response.json()
+                except httpx.HTTPStatusError as e:
+                    raise HTTPException(
+                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                        detail=f"Failed to fetch Apple public keys: {str(e)}"
+                    )
+                except httpx.RequestError as e:
+                    raise HTTPException(
+                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                        detail=f"Network error fetching Apple keys: {str(e)}"
+                    )
             
             # Decode token header to get key ID
-            unverified_header = jwt.get_unverified_header(token)
-            kid = unverified_header.get("kid")
+            try:
+                unverified_header = jwt.get_unverified_header(token)
+                kid = unverified_header.get("kid")
+            except JWTError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=f"Invalid Apple token format: {str(e)}"
+                )
+            
+            if not kid:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Apple token missing key ID"
+                )
             
             # Find the matching key
             key = None
@@ -92,23 +116,41 @@ class OAuthService:
             if not key:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid Apple token key"
+                    detail="Invalid Apple token key ID"
                 )
             
             # Verify and decode token
-            public_key = jwk.construct(key)
-            payload = jwt.decode(
-                token,
-                public_key,
-                algorithms=["RS256"],
-                audience=settings.apple_client_id
-            )
+            try:
+                public_key = jwk.construct(key)
+                payload = jwt.decode(
+                    token,
+                    public_key,
+                    algorithms=["RS256"],
+                    audience=settings.apple_client_id
+                )
+            except ExpiredSignatureError:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Apple token has expired"
+                )
+            except JWTClaimsError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=f"Apple token validation failed: {str(e)}"
+                )
+            except JWTError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=f"Invalid Apple token: {str(e)}"
+                )
             
             return {
                 "email": payload.get("email"),
                 "sub": payload.get("sub"),  # Apple user ID
                 "email_verified": payload.get("email_verified", False)
             }
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

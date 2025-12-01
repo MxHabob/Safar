@@ -4,7 +4,7 @@ All authentication, profile, OTP, OAuth, and session-related endpoints.
 """
 from datetime import timedelta
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,10 +15,12 @@ from app.core.security import create_access_token, create_refresh_token, decode_
 from app.core.token_blacklist import add_token_to_blacklist, revoke_user_tokens
 from app.core.config import get_settings
 from app.modules.users.models import User, UserRole, UserStatus
+from app.domain.entities.user import UserEntity
 from app.modules.users.schemas import (
     UserCreate, UserResponse, UserUpdate, UserLogin,
     TokenResponse, RefreshTokenRequest, OAuthLogin, OTPRequest, OTPVerify,
-    HostProfileResponse, HostProfileCreate, HostProfileUpdate
+    HostProfileResponse, HostProfileCreate, HostProfileUpdate,
+    PasswordResetRequest, PasswordReset, PasswordChange, EmailVerificationRequest
 )
 from app.modules.users.services import UserService
 
@@ -39,7 +41,25 @@ async def register(
     user_entity = await UserService.create_user(uow, user_data)
     
     # Create email verification code
-    await UserService.create_verification_code(uow, user_entity.id, "email")
+    verification = await UserService.create_verification_code(uow, user_entity.id, "email")
+    
+    # Send verification email
+    from app.infrastructure.email.service import EmailService
+    from app.core.config import get_settings
+    settings = get_settings()
+    
+    verify_url = f"{settings.app_name}/verify-email?code={verification.code}"
+    
+    await EmailService.send_template_email(
+        to_email=user_entity.email,
+        subject="Verify Your Email",
+        template_name="verification",
+        template_data={
+            "name": user_entity.first_name or user_entity.email.split("@")[0],
+            "code": verification.code,
+            "verification_url": verify_url
+        }
+    )
     
     # Get full user model for response
     from app.modules.users.models import User as UserModel
@@ -56,18 +76,41 @@ async def register(
 @router.post("/login", response_model=TokenResponse)
 async def login(
     credentials: UserLogin,
+    request: Request,
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
     Login with email and password.
     """
+    # Check if account is locked
+    is_locked = await UserService.is_account_locked(credentials.email)
+    if is_locked:
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail="Account temporarily locked due to too many failed login attempts. Please try again in 15 minutes."
+        )
+    
+    # Authenticate user
     user_entity = await UserService.authenticate_user(
         uow, credentials.email, credentials.password
     )
+    
     if not user_entity:
+        # Track failed login attempt
+        client_ip = request.client.host if request.client else None
+        is_locked, remaining = await UserService.track_failed_login(
+            uow, credentials.email, client_ip
+        )
+        
+        if is_locked:
+            raise HTTPException(
+                status_code=status.HTTP_423_LOCKED,
+                detail="Account temporarily locked due to too many failed login attempts. Please try again in 15 minutes."
+            )
+        
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password"
+            detail=f"Incorrect email or password. {remaining} attempts remaining." if remaining else "Incorrect email or password"
         )
     
     # Use domain logic
@@ -76,6 +119,21 @@ async def login(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is inactive"
         )
+    
+    # Clear failed login attempts on successful login
+    await UserService.clear_failed_login_attempts(credentials.email)
+    
+    # Update last login info
+    from sqlalchemy import select
+    result = await uow.db.execute(
+        select(User).where(User.id == user_entity.id)
+    )
+    user_model = result.scalar_one_or_none()
+    if user_model:
+        from datetime import datetime
+        user_model.last_login_at = datetime.utcnow()
+        user_model.last_login_ip = request.client.host if request.client else None
+        await uow.commit()
     
     # Create tokens using service
     tokens = await UserService.create_access_token_for_user(user_entity)
@@ -89,7 +147,7 @@ async def login(
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(
     token_data: RefreshTokenRequest,
-    db: AsyncSession = Depends(get_db)
+    uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
     Refresh an access token using a valid refresh token.
@@ -104,8 +162,8 @@ async def refresh_token(
                 detail="Invalid token"
             )
         
-        user = await UserService.get_user_by_id(db, user_id)
-        if not user or not user.is_active:
+        user_entity = await UserService.get_user_by_id(uow, user_id)
+        if not user_entity or not user_entity.is_active:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="User not found or inactive"
@@ -113,11 +171,11 @@ async def refresh_token(
         
         # Create new tokens
         access_token = create_access_token(
-            data={"sub": user.id, "email": user.email, "role": user.role.value},
+            data={"sub": str(user_entity.id), "email": user_entity.email, "role": user_entity.role},
             expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
         )
         refresh_token = create_refresh_token(
-            data={"sub": user.id, "email": user.email}
+            data={"sub": str(user_entity.id), "email": user_entity.email}
         )
         
         return {
@@ -149,60 +207,127 @@ async def get_current_user_info(
 async def update_current_user(
     user_data: UserUpdate,
     current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
     Update the currently authenticated user profile.
     """
-    updated_user = await UserService.update_user(db, current_user, user_data)
-    return updated_user
+    from app.core.id import ID
+    updated_user = await UserService.update_user(uow, ID(current_user.id), user_data)
+    
+    # Get full user model for response
+    from app.modules.users.models import User as UserModel
+    from sqlalchemy import select
+    
+    result = await uow.db.execute(
+        select(UserModel).where(UserModel.id == current_user.id)
+    )
+    user = result.scalar_one_or_none()
+    
+    return user
 
 
 @router.post("/otp/request")
 async def request_otp(
     otp_data: OTPRequest,
-    db: AsyncSession = Depends(get_db)
+    uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
     Request an OTP code for phone verification.
     """
-    # In production, send SMS via Twilio or similar
-    user = await UserService.get_user_by_email(db, otp_data.phone_number)
-    if not user:
+    from app.modules.users.models import User as UserModel
+    from sqlalchemy import select
+    
+    # Find user by phone number
+    result = await uow.db.execute(
+        select(UserModel).where(UserModel.phone_number == otp_data.phone_number)
+    )
+    user_model = result.scalar_one_or_none()
+    
+    if not user_model:
         # For security, don't reveal if user exists
         return {"message": "If the phone number exists, an OTP has been sent"}
     
-    verification = await UserService.create_verification_code(db, user.id, "phone")
+    # Get user entity
+    user_entity = await uow.users.get_by_id(user_model.id)
+    if not user_entity:
+        return {"message": "If the phone number exists, an OTP has been sent"}
     
-    # TODO: Send SMS with verification.code
+    # Create verification code
+    verification = await UserService.create_verification_code(uow, user_entity.id, "phone")
     
-    return {"message": "OTP sent successfully"}
+    # Send SMS via Twilio
+    from app.core.config import get_settings
+    settings = get_settings()
+    
+    if settings.twilio_account_sid and settings.twilio_auth_token and settings.twilio_phone_number:
+        try:
+            from twilio.rest import Client
+            client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
+            message = client.messages.create(
+                body=f"Your Safar verification code is: {verification.code}. Valid for 10 minutes.",
+                from_=settings.twilio_phone_number,
+                to=otp_data.phone_number
+            )
+            if message.sid:
+                return {"message": "OTP sent successfully"}
+        except Exception as e:
+            # Log error but don't reveal to user
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error sending SMS: {str(e)}")
+            # Still return success for security
+            return {"message": "If the phone number exists, an OTP has been sent"}
+    else:
+        # In development, log the code
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"OTP code for {otp_data.phone_number}: {verification.code} (Twilio not configured)")
+    
+    return {"message": "If the phone number exists, an OTP has been sent"}
 
 
 @router.post("/otp/verify")
 async def verify_otp(
     otp_data: OTPVerify,
-    db: AsyncSession = Depends(get_db)
+    uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
     Verify an OTP code for phone verification.
     """
-    user = await UserService.get_user_by_email(db, otp_data.phone_number)
-    if not user:
+    from app.modules.users.models import User as UserModel
+    from sqlalchemy import select
+    
+    # Find user by phone number
+    result = await uow.db.execute(
+        select(UserModel).where(UserModel.phone_number == otp_data.phone_number)
+    )
+    user_model = result.scalar_one_or_none()
+    
+    if not user_model:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
     
-    is_valid = await UserService.verify_code(db, user.id, otp_data.code, "phone")
+    # Get user entity
+    user_entity = await uow.users.get_by_id(user_model.id)
+    if not user_entity:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Verify code
+    is_valid = await UserService.verify_code(uow, user_entity.id, otp_data.code, "phone")
     if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired OTP code"
         )
     
-    user.is_phone_verified = True
-    await db.commit()
+    # Mark phone as verified
+    await UserService.verify_user(uow, user_entity.id, "phone")
     
     return {"message": "Phone number verified successfully"}
 
@@ -236,7 +361,7 @@ async def logout_all(
 @router.post("/oauth/login", response_model=TokenResponse)
 async def oauth_login(
     oauth_data: OAuthLogin,
-    db: AsyncSession = Depends(get_db)
+    uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
     Login via OAuth (Google, Apple).
@@ -264,47 +389,231 @@ async def oauth_login(
         )
     
     # Check if user exists
-    user = await UserService.get_user_by_email(db, user_info["email"])
+    user_entity = await UserService.get_user_by_email(uow, user_info["email"])
     
-    if not user:
-        # Create new user
-        user = User(
+    if not user_entity:
+        # Create new user via service
+        from app.modules.users.schemas import UserCreate
+        from app.core.id import generate_typed_id
+        
+        # Create user entity
+        user_entity = UserEntity(
+            id=generate_typed_id(prefix="USR"),
             email=user_info["email"],
-            first_name=user_info.get("given_name") or user_info.get("name", "").split()[0] if user_info.get("name") else None,
-            last_name=user_info.get("family_name") or " ".join(user_info.get("name", "").split()[1:]) if user_info.get("name") and len(user_info.get("name", "").split()) > 1 else None,
-            avatar_url=user_info.get("picture"),
+            first_name=user_info.get("given_name") or (user_info.get("name", "").split()[0] if user_info.get("name") else None),
+            last_name=user_info.get("family_name") or (" ".join(user_info.get("name", "").split()[1:]) if user_info.get("name") and len(user_info.get("name", "").split()) > 1 else None),
+            role="guest",
+            roles=[],
+            status="active" if user_info.get("email_verified") else "pending_verification",
+            is_active=True,
             is_email_verified=user_info.get("email_verified", False),
+            is_phone_verified=False
+        )
+        
+        # Create user model
+        user_model = User(
+            id=user_entity.id,
+            email=user_entity.email,
+            first_name=user_entity.first_name,
+            last_name=user_entity.last_name,
+            avatar_url=user_info.get("picture"),
+            is_email_verified=user_entity.is_email_verified,
             role=UserRole.GUEST,
-            status=UserStatus.ACTIVE if user_info.get("email_verified") else UserStatus.PENDING_VERIFICATION,
+            status=UserStatus.ACTIVE if user_entity.is_email_verified else UserStatus.PENDING_VERIFICATION,
             is_active=True,
         )
-        setattr(user, oauth_id_field, user_info["sub"])
         
-        db.add(user)
-        await db.commit()
-        await db.refresh(user)
+        uow.db.add(user_model)
+        await uow.commit()
+        await uow.db.refresh(user_model)
+        
+        # Create OAuth account link
+        from app.modules.users.models import Account, AccountProvider
+        account = Account(
+            user_id=user_entity.id,
+            provider=AccountProvider(oauth_data.provider.value),
+            provider_id=user_info["sub"],
+        )
+        uow.db.add(account)
+        await uow.commit()
     else:
-        # Update OAuth ID if not set
-        if not getattr(user, oauth_id_field):
-            setattr(user, oauth_id_field, user_info["sub"])
-            if user_info.get("picture") and not user.avatar_url:
-                user.avatar_url = user_info.get("picture")
-            await db.commit()
-            await db.refresh(user)
+        # Update OAuth account if needed
+        from app.modules.users.models import Account, AccountProvider
+        from sqlalchemy import select
+        
+        result = await uow.db.execute(
+            select(Account).where(
+                Account.user_id == user_entity.id,
+                Account.provider == AccountProvider(oauth_data.provider.value)
+            )
+        )
+        account = result.scalar_one_or_none()
+        
+        if not account:
+            account = Account(
+                user_id=user_entity.id,
+                provider=AccountProvider(oauth_data.provider.value),
+                provider_id=user_info["sub"],
+            )
+            uow.db.add(account)
+        
+        # Update avatar if available
+        result = await uow.db.execute(
+            select(User).where(User.id == user_entity.id)
+        )
+        user_model = result.scalar_one_or_none()
+        if user_model and user_info.get("picture") and not user_model.avatar_url:
+            user_model.avatar_url = user_info.get("picture")
+        
+        await uow.commit()
     
     # Create tokens
-    access_token = create_access_token(
-        data={"sub": user.id, "email": user.email, "role": user.role.value},
-        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
-    refresh_token = create_refresh_token(
-        data={"sub": user.id, "email": user.email}
-    )
+    tokens = await UserService.create_access_token_for_user(user_entity)
     
     return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer",
+        **tokens,
         "expires_in": settings.access_token_expire_minutes * 60
     }
+
+
+@router.post("/password/reset/request")
+async def request_password_reset(
+    reset_request: PasswordResetRequest,
+    uow: IUnitOfWork = Depends(get_unit_of_work)
+) -> Any:
+    """
+    Request a password reset code.
+    """
+    verification = await UserService.request_password_reset(uow, reset_request.email)
+    
+    if verification:
+        # Send email with reset code
+        from app.infrastructure.email.service import EmailService
+        from app.core.config import get_settings
+        settings = get_settings()
+        
+        reset_url = f"{settings.app_name}/reset-password?code={verification.code}&email={reset_request.email}"
+        
+        await EmailService.send_template_email(
+            to_email=reset_request.email,
+            subject="Password Reset Request",
+            template_name="verification",
+            template_data={
+                "name": reset_request.email.split("@")[0],
+                "code": verification.code,
+                "verification_url": reset_url
+            }
+        )
+    
+    # Always return success message (security: don't reveal if email exists)
+    return {"message": "If the email exists, a password reset code has been sent"}
+
+
+@router.post("/password/reset")
+async def reset_password(
+    reset_data: PasswordReset,
+    uow: IUnitOfWork = Depends(get_unit_of_work)
+) -> Any:
+    """
+    Reset password using verification code.
+    """
+    success = await UserService.reset_password(
+        uow, reset_data.email, reset_data.code, reset_data.new_password
+    )
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to reset password"
+        )
+    
+    return {"message": "Password reset successfully"}
+
+
+@router.post("/password/change")
+async def change_password(
+    password_data: PasswordChange,
+    current_user: User = Depends(get_current_active_user),
+    uow: IUnitOfWork = Depends(get_unit_of_work)
+) -> Any:
+    """
+    Change password for authenticated user.
+    """
+    success = await UserService.change_password(
+        uow, current_user.id, password_data.current_password, password_data.new_password
+    )
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to change password"
+        )
+    
+    # Revoke all other sessions (optional - can be made configurable)
+    await revoke_user_tokens(current_user.id)
+    
+    return {"message": "Password changed successfully. All other sessions have been logged out."}
+
+
+@router.post("/email/verify")
+async def verify_email(
+    verification_data: EmailVerificationRequest,
+    current_user: User = Depends(get_current_active_user),
+    uow: IUnitOfWork = Depends(get_unit_of_work)
+) -> Any:
+    """
+    Verify email address with verification code.
+    """
+    is_valid = await UserService.verify_code(
+        uow, current_user.id, verification_data.code, "email"
+    )
+    
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification code"
+        )
+    
+    # Mark email as verified
+    await UserService.verify_user(uow, current_user.id, "email")
+    
+    return {"message": "Email verified successfully"}
+
+
+@router.post("/email/resend-verification")
+async def resend_email_verification(
+    current_user: User = Depends(get_current_active_user),
+    uow: IUnitOfWork = Depends(get_unit_of_work)
+) -> Any:
+    """
+    Resend email verification code.
+    """
+    if current_user.is_email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email is already verified"
+        )
+    
+    # Create new verification code
+    verification = await UserService.create_verification_code(uow, current_user.id, "email")
+    
+    # Send email
+    from app.infrastructure.email.service import EmailService
+    from app.core.config import get_settings
+    settings = get_settings()
+    
+    verify_url = f"{settings.app_name}/verify-email?code={verification.code}"
+    
+    await EmailService.send_template_email(
+        to_email=current_user.email,
+        subject="Verify Your Email",
+        template_name="verification",
+        template_data={
+            "name": current_user.first_name or current_user.email.split("@")[0],
+            "code": verification.code,
+            "verification_url": verify_url
+        }
+    )
+    
+    return {"message": "Verification code sent successfully"}
 

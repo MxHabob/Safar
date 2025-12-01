@@ -12,6 +12,8 @@ import { Readex_Pro } from "next/font/google";
 
 const readexPro = Readex_Pro({
   subsets: ["latin"],
+  display: "swap",
+  preload: true,
 });
 
 export const metadata: Metadata = {

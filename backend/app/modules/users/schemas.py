@@ -168,3 +168,26 @@ class TwoFactorVerifyRequest(BaseModel):
     """Schema for verifying two-factor authentication (2FA)."""
     code: str
     method: str
+
+
+class PasswordResetRequest(BaseModel):
+    """Schema for requesting a password reset."""
+    email: EmailStr
+
+
+class PasswordReset(BaseModel):
+    """Schema for resetting password with verification code."""
+    email: EmailStr
+    code: str
+    new_password: str = Field(..., min_length=8)
+
+
+class PasswordChange(BaseModel):
+    """Schema for changing password (authenticated user)."""
+    current_password: str
+    new_password: str = Field(..., min_length=8)
+
+
+class EmailVerificationRequest(BaseModel):
+    """Schema for verifying email with code."""
+    code: str
