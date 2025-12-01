@@ -51,8 +51,11 @@ def include_object(object, name, type_, reflected, compare_to):
     Filter out PostGIS extension tables and system tables from migrations.
     This prevents Alembic from trying to drop tables that belong to extensions.
     """
-    # List of PostGIS extension tables that should be ignored
+    # List of PostGIS / PostGIS Tiger Geocoder extension tables that should be ignored
+    # This prevents Alembic from trying to drop or otherwise manage objects that
+    # are owned by extensions rather than our application.
     postgis_tables = {
+        # Core PostGIS metadata
         'geocode_settings',
         'geocode_settings_default',
         'loader_platform',
@@ -64,6 +67,38 @@ def include_object(object, name, type_, reflected, compare_to):
         'spatial_ref_sys',
         'geometry_columns',
         'geography_columns',
+
+        # Tiger / geocoder data tables that caused issues in migrations
+        'featnames',
+        'zcta5',
+        'zip_lookup',
+        'faces',
+        'county_lookup',
+        'county',
+        'layer',
+        'direction_lookup',
+        'state_lookup',
+        'state',
+        'zip_lookup_all',
+        'addr',
+        'edges',
+        'street_type_lookup',
+        'tabblock20',
+        'secondary_unit_lookup',
+        'bg',
+        'tract',
+        'cousub',
+        'countysub_lookup',
+        'place_lookup',
+        'pagc_lex',
+        'pagc_gaz',
+        'zip_lookup_base',
+        'pagc_rules',
+        'zip_state',
+        'place',
+        'tabblock',
+        'zip_state_loc',
+        'addrfeat',
     }
     
     # Ignore PostGIS extension tables
