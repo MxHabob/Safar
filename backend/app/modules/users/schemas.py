@@ -170,6 +170,41 @@ class TwoFactorVerifyRequest(BaseModel):
     method: str
 
 
+class TwoFactorLoginVerify(BaseModel):
+    """Schema for verifying 2FA during login."""
+    email: EmailStr
+    code: str
+    is_backup_code: bool = False
+
+
+class TwoFactorSetupResponse(BaseModel):
+    """Schema for 2FA setup response."""
+    secret: str
+    qr_code: str
+    backup_codes: List[str]
+    message: str
+
+
+class TwoFactorStatusResponse(BaseModel):
+    """Schema for 2FA status response."""
+    enabled: bool
+    required: bool
+    backup_codes_count: int
+
+
+class AccountDeletionRequest(BaseModel):
+    """Schema for account deletion request."""
+    password: str = Field(..., description="Password verification required for account deletion")
+    confirm: bool = Field(..., description="Must be true to confirm deletion")
+
+
+class DataExportResponse(BaseModel):
+    """Schema for GDPR data export response."""
+    export_date: str
+    user_id: str
+    data: Dict[str, Any]
+
+
 class PasswordResetRequest(BaseModel):
     """Schema for requesting a password reset."""
     email: EmailStr

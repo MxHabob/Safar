@@ -37,6 +37,31 @@ shell-db: ## Open PostgreSQL shell
 test: ## Run tests
 	docker-compose exec backend pytest
 
+test-cov: ## Run tests with coverage report
+	docker-compose exec backend pytest --cov=app --cov-report=term-missing --cov-report=html --cov-fail-under=70
+
+test-cov-local: ## Run tests with coverage (local, no docker)
+	pytest --cov=app --cov-report=term-missing --cov-report=html --cov-fail-under=70
+
+test-unit: ## Run unit tests only
+	docker-compose exec backend pytest tests/unit -v
+
+test-integration: ## Run integration tests only
+	docker-compose exec backend pytest tests/integration -v
+
+test-e2e: ## Run E2E tests only
+	docker-compose exec backend pytest tests/e2e -v
+
+test-fast: ## Run tests without coverage (faster)
+	docker-compose exec backend pytest --no-cov -v
+
+coverage: ## Generate and open coverage report
+	docker-compose exec backend pytest --cov=app --cov-report=html
+	@echo "Coverage report generated at htmlcov/index.html"
+
+coverage-check: ## Check if coverage meets threshold (70%)
+	docker-compose exec backend pytest --cov=app --cov-report=term --cov-fail-under=70
+
 migrate: ## Run database migrations
 	docker-compose exec backend alembic upgrade head
 

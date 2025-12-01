@@ -124,6 +124,14 @@ class Settings(BaseSettings):
     redis_password: Optional[str] = Field(default=None, env="REDIS_PASSWORD")
     redis_url: Optional[str] = Field(default=None, env="REDIS_URL")
     
+    # Redis Cluster Configuration
+    redis_cluster_enabled: bool = Field(default=False, env="REDIS_CLUSTER_ENABLED")
+    redis_cluster_nodes: Optional[str] = Field(
+        default=None,
+        env="REDIS_CLUSTER_NODES",
+        description="Comma-separated list of cluster nodes (e.g., 'redis-1:6379,redis-2:6379,redis-3:6379')"
+    )
+    
     @validator("redis_url", pre=True)
     def assemble_redis_connection(cls, v: Optional[str], values: dict) -> str:
         """Build Redis connection URL from individual components"""
@@ -267,6 +275,32 @@ class Settings(BaseSettings):
     stripe_webhook_secret: Optional[str] = Field(default=None, env="STRIPE_WEBHOOK_SECRET")
     paypal_client_id: Optional[str] = Field(default=None, env="PAYPAL_CLIENT_ID")
     paypal_client_secret: Optional[str] = Field(default=None, env="PAYPAL_CLIENT_SECRET")
+    
+    # M-Pesa Configuration (Kenya, Tanzania, East Africa)
+    mpesa_consumer_key: Optional[str] = Field(default=None, env="MPESA_CONSUMER_KEY")
+    mpesa_consumer_secret: Optional[str] = Field(default=None, env="MPESA_CONSUMER_SECRET")
+    mpesa_shortcode: Optional[str] = Field(default=None, env="MPESA_SHORTCODE")
+    mpesa_passkey: Optional[str] = Field(default=None, env="MPESA_PASSKEY")
+    mpesa_callback_url: Optional[str] = Field(default=None, env="MPESA_CALLBACK_URL")
+    
+    # Fawry Configuration (Egypt)
+    fawry_merchant_code: Optional[str] = Field(default=None, env="FAWRY_MERCHANT_CODE")
+    fawry_secure_key: Optional[str] = Field(default=None, env="FAWRY_SECURE_KEY")
+    fawry_return_url: Optional[str] = Field(default=None, env="FAWRY_RETURN_URL")
+    
+    # Klarna Configuration (Buy Now Pay Later - Europe, US)
+    klarna_username: Optional[str] = Field(default=None, env="KLARNA_USERNAME")
+    klarna_password: Optional[str] = Field(default=None, env="KLARNA_PASSWORD")
+    klarna_success_url: Optional[str] = Field(default=None, env="KLARNA_SUCCESS_URL")
+    klarna_failure_url: Optional[str] = Field(default=None, env="KLARNA_FAILURE_URL")
+    klarna_cancel_url: Optional[str] = Field(default=None, env="KLARNA_CANCEL_URL")
+    
+    # Tamara Configuration (Buy Now Pay Later - Middle East)
+    tamara_token: Optional[str] = Field(default=None, env="TAMARA_TOKEN")
+    
+    # Tabby Configuration (Buy Now Pay Later - UAE, Saudi Arabia)
+    tabby_secret_key: Optional[str] = Field(default=None, env="TABBY_SECRET_KEY")
+    tabby_merchant_code: Optional[str] = Field(default=None, env="TABBY_MERCHANT_CODE")
     
     # ============================================================================
     # AI Services

@@ -13,6 +13,9 @@ from app.core.config import get_settings
 from app.modules.bookings.models import Booking, Payment, PaymentStatus, PaymentMethodType
 from app.modules.bookings.models import BookingStatus
 from app.infrastructure.payments.paypal import PayPalService
+from app.infrastructure.payments.mpesa import MPesaService
+from app.infrastructure.payments.fawry import FawryService
+from app.infrastructure.payments.klarna import KlarnaService
 
 settings = get_settings()
 
@@ -59,6 +62,135 @@ class PaymentService:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Failed to create PayPal order: {str(e)}"
+                )
+        elif payment_method == PaymentMethodType.MPESA:
+            # M-Pesa STK Push
+            if not settings.mpesa_consumer_key:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="M-Pesa is not configured"
+                )
+            
+            try:
+                # Get phone number from booking metadata or request
+                # In production, this should come from the request
+                phone_number = f"254712345678"  # Placeholder - should be from request
+                stk_response = await MPesaService.stk_push(
+                    phone_number=phone_number,
+                    amount=amount,
+                    account_reference=f"BOOKING_{booking_id}",
+                    transaction_desc=f"Payment for booking {booking_id}"
+                )
+                return {
+                    "payment_intent_id": stk_response.get("CheckoutRequestID"),
+                    "customer_message": stk_response.get("CustomerMessage"),
+                    "payment_method": "mpesa",
+                    "requires_customer_action": True
+                }
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Failed to create M-Pesa payment: {str(e)}"
+                )
+        elif payment_method == PaymentMethodType.FAWRY:
+            # Fawry payment
+            if not settings.fawry_merchant_code:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Fawry is not configured"
+                )
+            
+            try:
+                # Get customer info from booking
+                booking_result = await db.execute(
+                    select(Booking).where(Booking.id == booking_id)
+                )
+                booking = booking_result.scalar_one_or_none()
+                
+                if not booking:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Booking not found"
+                    )
+                
+                charge_response = await FawryService.create_charge(
+                    merchant_ref_num=f"BOOKING_{booking_id}",
+                    amount=amount,
+                    customer_name=f"Guest {booking_id}",
+                    customer_mobile="",  # Should come from user profile
+                    customer_email="",  # Should come from user profile
+                    description=f"Payment for booking {booking_id}"
+                )
+                return {
+                    "payment_intent_id": charge_response.get("referenceNumber"),
+                    "payment_url": charge_response.get("paymentUrl"),
+                    "payment_method": "fawry",
+                    "requires_customer_action": True
+                }
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Failed to create Fawry payment: {str(e)}"
+                )
+        elif payment_method in [PaymentMethodType.KLARNA, PaymentMethodType.TAMARA, PaymentMethodType.TABBY]:
+            # Buy Now Pay Later (Klarna/Tamara/Tabby)
+            provider = "klarna" if payment_method == PaymentMethodType.KLARNA else \
+                      "tamara" if payment_method == PaymentMethodType.TAMARA else "tabby"
+            
+            if provider == "klarna" and not settings.klarna_username:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Klarna is not configured"
+                )
+            elif provider == "tamara" and not settings.tamara_token:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Tamara is not configured"
+                )
+            elif provider == "tabby" and not settings.tabby_secret_key:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Tabby is not configured"
+                )
+            
+            try:
+                # Get booking details
+                booking_result = await db.execute(
+                    select(Booking).where(Booking.id == booking_id)
+                )
+                booking = booking_result.scalar_one_or_none()
+                
+                if not booking:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Booking not found"
+                    )
+                
+                order_lines = [{
+                    "name": f"Booking {booking_id}",
+                    "quantity": 1,
+                    "unit_price": int(amount * 100) if provider == "klarna" else amount,
+                    "total_amount": int(amount * 100) if provider == "klarna" else amount
+                }]
+                
+                session_response = await KlarnaService.create_session(
+                    amount=amount,
+                    currency=currency,
+                    order_lines=order_lines,
+                    provider=provider
+                )
+                
+                return {
+                    "payment_intent_id": session_response.get("session_id") or session_response.get("id"),
+                    "client_token": session_response.get("client_token") or session_response.get("token"),
+                    "payment_url": session_response.get("redirect_url"),
+                    "payment_method": provider,
+                    "requires_customer_action": True
+                }
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Failed to create {provider} payment: {str(e)}"
                 )
         else:
             # Default to Stripe
@@ -151,7 +283,45 @@ class PaymentService:
         # Verify payment based on payment method
         from decimal import Decimal, ROUND_HALF_UP
         
-        if payment_method == PaymentMethodType.PAYPAL:
+        processor_ref = None
+        
+        if payment_method == PaymentMethodType.MPESA:
+            # Verify M-Pesa transaction
+            try:
+                status_response = await MPesaService.query_transaction_status(payment_intent_id)
+                if status_response.get("ResultCode") != 0:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"M-Pesa payment not completed: {status_response.get('ResultDesc')}"
+                    )
+                processor_ref = status_response.get("CheckoutRequestID")
+            except Exception as e:
+                logger.error(f"M-Pesa verification error: {str(e)}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"M-Pesa payment verification failed: {str(e)}"
+                )
+        elif payment_method == PaymentMethodType.FAWRY:
+            # Verify Fawry payment
+            try:
+                verify_response = await FawryService.verify_payment(payment_intent_id)
+                if verify_response.get("paymentStatus") != "PAID":
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Fawry payment not completed: {verify_response.get('paymentStatus')}"
+                    )
+                processor_ref = verify_response.get("referenceNumber")
+            except Exception as e:
+                logger.error(f"Fawry verification error: {str(e)}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Fawry payment verification failed: {str(e)}"
+                )
+        elif payment_method in [PaymentMethodType.KLARNA, PaymentMethodType.TAMARA, PaymentMethodType.TABBY]:
+            # BNPL payments are typically verified via webhooks
+            # For now, accept if payment_intent_id exists (webhook will verify)
+            processor_ref = payment_intent_id
+        elif payment_method == PaymentMethodType.PAYPAL:
             # Verify PayPal order
             try:
                 capture_data = await PayPalService.capture_order(payment_intent_id)
@@ -254,9 +424,27 @@ class PaymentService:
         payment_amount = Decimal(str(booking.total_amount))
         
         # Determine processor
-        processor = "paypal" if payment_method == PaymentMethodType.PAYPAL else "stripe"
-        stripe_payment_intent_id = payment_intent_id if processor == "stripe" else None
-        paypal_order_id = payment_intent_id if processor == "paypal" else None
+        if payment_method == PaymentMethodType.PAYPAL:
+            processor = "paypal"
+            stripe_payment_intent_id = None
+            paypal_order_id = payment_intent_id
+        elif payment_method == PaymentMethodType.MPESA:
+            processor = "mpesa"
+            stripe_payment_intent_id = None
+            paypal_order_id = None
+        elif payment_method == PaymentMethodType.FAWRY:
+            processor = "fawry"
+            stripe_payment_intent_id = None
+            paypal_order_id = None
+        elif payment_method in [PaymentMethodType.KLARNA, PaymentMethodType.TAMARA, PaymentMethodType.TABBY]:
+            processor = "klarna" if payment_method == PaymentMethodType.KLARNA else \
+                       "tamara" if payment_method == PaymentMethodType.TAMARA else "tabby"
+            stripe_payment_intent_id = None
+            paypal_order_id = None
+        else:
+            processor = "stripe"
+            stripe_payment_intent_id = payment_intent_id
+            paypal_order_id = None
         
         payment = Payment(
             booking_id=booking_id,

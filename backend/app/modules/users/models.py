@@ -57,6 +57,11 @@ class User(BaseModel):
     is_email_verified = Column(Boolean, default=False, nullable=False)
     is_phone_verified = Column(Boolean, default=False, nullable=False)
     
+    # Two-Factor Authentication (2FA)
+    totp_secret = Column(String(255), nullable=True)  # TOTP secret key
+    totp_enabled = Column(Boolean, default=False, nullable=False, index=True)
+    backup_codes = Column(ARRAY(String), default=[], nullable=False)  # Backup codes for 2FA recovery
+    
     # Profile
     first_name = Column(String(100), nullable=True)
     last_name = Column(String(100), nullable=True)

@@ -1,110 +1,159 @@
 """
-Analytics API routes.
+Analytics and Audit Logging Routes
 """
-from typing import Any, Dict, List, Optional
-from datetime import datetime
-from fastapi import APIRouter, Depends, Query, Body
+from typing import Any, Optional, List
+from datetime import datetime, timedelta
+from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel
+from sqlalchemy import select, and_, or_, func, desc
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_active_user, get_optional_user
-from app.modules.users.models import User
+from app.core.dependencies import get_current_active_user
+from app.core.dependencies import require_admin
+from app.modules.users.models import User, UserRole
+from app.modules.analytics.models import AuditLog
 from app.modules.analytics.service import AnalyticsService
-from app.modules.analytics.models import AnalyticsEvent
-from app.core.id import ID
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
 
-class AnalyticsEventRequest(BaseModel):
-    """Request schema for tracking analytics events."""
-    event_name: str
-    source: str = "web"
-    payload: Optional[Dict[str, Any]] = None
-
-
-@router.post("/events", response_model=AnalyticsEvent)
-async def track_event(
-    event_data: AnalyticsEventRequest,
-    current_user: Optional[User] = Depends(get_optional_user),
+@router.get("/audit-logs")
+async def get_audit_logs(
+    actor_id: Optional[str] = Query(None, description="Filter by actor (user) ID"),
+    action: Optional[str] = Query(None, description="Filter by action"),
+    resource_type: Optional[str] = Query(None, description="Filter by resource type"),
+    resource_id: Optional[str] = Query(None, description="Filter by resource ID"),
+    start_date: Optional[datetime] = Query(None, description="Start date for filtering"),
+    end_date: Optional[datetime] = Query(None, description="End date for filtering"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    current_user: User = Depends(require_admin),  # Only admins can view audit logs
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
-    Track an analytics event.
+    Get audit logs with filtering options.
+    Only accessible to admins.
     """
-    event = await AnalyticsService.track_event(
-        db,
-        user_id=current_user.id if current_user else None,
-        event_name=event_data.event_name,
-        source=event_data.source,
-        payload=event_data.payload
+    query = select(AuditLog)
+    
+    # Apply filters
+    filters = []
+    if actor_id:
+        filters.append(AuditLog.actor_id == actor_id)
+    if action:
+        filters.append(AuditLog.action == action)
+    if resource_type:
+        filters.append(AuditLog.resource == resource_type)
+    if resource_id:
+        filters.append(AuditLog.resource_id == resource_id)
+    if start_date:
+        filters.append(AuditLog.created_at >= start_date)
+    if end_date:
+        filters.append(AuditLog.created_at <= end_date)
+    
+    if filters:
+        query = query.where(and_(*filters))
+    
+    # Get total count
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar()
+    
+    # Apply pagination and ordering
+    query = query.order_by(desc(AuditLog.created_at)).offset(skip).limit(limit)
+    
+    # Load actor relationship
+    query = query.options(
+        # selectinload for actor if needed
     )
-    return event
+    
+    result = await db.execute(query)
+    logs = result.scalars().all()
+    
+    return {
+        "items": logs,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 
-@router.get("/dashboard", response_model=Dict[str, Any])
-async def get_dashboard_metrics(
-    start_date: Optional[datetime] = Query(None),
-    end_date: Optional[datetime] = Query(None),
-    current_user: User = Depends(get_current_active_user),
+@router.get("/audit-logs/{log_id}")
+async def get_audit_log(
+    log_id: str,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """Get a specific audit log entry. Only accessible to admins."""
+    result = await db.execute(
+        select(AuditLog).where(AuditLog.id == log_id)
+    )
+    log = result.scalar_one_or_none()
+    
+    if not log:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Audit log not found"
+        )
+    
+    return log
+
+
+@router.get("/audit-logs/stats/summary")
+async def get_audit_logs_summary(
+    days: int = Query(7, ge=1, le=90, description="Number of days to summarize"),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
-    Get dashboard metrics for the current user.
+    Get audit logs summary statistics.
+    Only accessible to admins.
     """
-    metrics = await AnalyticsService.get_dashboard_metrics(
-        db,
-        user_id=current_user.id,
-        start_date=start_date,
-        end_date=end_date
+    start_date = datetime.utcnow() - timedelta(days=days)
+    
+    # Total actions
+    total_query = select(func.count(AuditLog.id)).where(
+        AuditLog.created_at >= start_date
     )
-    return metrics
-
-
-@router.get("/trends", response_model=List[Dict[str, Any]])
-async def get_booking_trends(
-    days: int = Query(30, ge=1, le=365),
-    current_user: Optional[User] = Depends(get_optional_user),
-    db: AsyncSession = Depends(get_db)
-) -> Any:
-    """
-    Get booking trends over time.
-    """
-    trends = await AnalyticsService.get_booking_trends(
-        db,
-        days=days,
-        user_id=current_user.id if current_user else None
-    )
-    return trends
-
-
-@router.get("/destinations", response_model=List[Dict[str, Any]])
-async def get_popular_destinations(
-    limit: int = Query(10, ge=1, le=50),
-    days: int = Query(30, ge=1, le=365),
-    db: AsyncSession = Depends(get_db)
-) -> Any:
-    """
-    Get most popular destinations.
-    Public endpoint.
-    """
-    destinations = await AnalyticsService.get_popular_destinations(
-        db, limit=limit, days=days
-    )
-    return destinations
-
-
-@router.get("/insights", response_model=Dict[str, Any])
-async def get_user_insights(
-    current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
-) -> Any:
-    """
-    Get user behavior insights.
-    """
-    insights = await AnalyticsService.get_user_behavior_insights(
-        db, user_id=current_user.id
-    )
-    return insights
-
+    total_result = await db.execute(total_query)
+    total_actions = total_result.scalar() or 0
+    
+    # Actions by type
+    actions_query = select(
+        AuditLog.action,
+        func.count(AuditLog.id).label('count')
+    ).where(
+        AuditLog.created_at >= start_date
+    ).group_by(AuditLog.action)
+    actions_result = await db.execute(actions_query)
+    actions_by_type = {row.action: row.count for row in actions_result.all()}
+    
+    # Resources by type
+    resources_query = select(
+        AuditLog.resource,
+        func.count(AuditLog.id).label('count')
+    ).where(
+        AuditLog.created_at >= start_date
+    ).group_by(AuditLog.resource)
+    resources_result = await db.execute(resources_query)
+    resources_by_type = {row.resource: row.count for row in resources_result.all()}
+    
+    # Top actors
+    actors_query = select(
+        AuditLog.actor_id,
+        func.count(AuditLog.id).label('count')
+    ).where(
+        AuditLog.created_at >= start_date,
+        AuditLog.actor_id.isnot(None)
+    ).group_by(AuditLog.actor_id).order_by(desc('count')).limit(10)
+    actors_result = await db.execute(actors_query)
+    top_actors = [{"actor_id": row.actor_id, "count": row.count} for row in actors_result.all()]
+    
+    return {
+        "period_days": days,
+        "start_date": start_date.isoformat(),
+        "total_actions": total_actions,
+        "actions_by_type": actions_by_type,
+        "resources_by_type": resources_by_type,
+        "top_actors": top_actors
+    }

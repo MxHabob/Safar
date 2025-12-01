@@ -1,11 +1,13 @@
 """
 Search API routes.
 """
-from typing import Any
+from typing import Any, Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.dependencies import get_current_user
+from app.modules.users.models import User
 from app.modules.search.schemas import (
     SearchRequest, SearchResponse, SearchSuggestionsResponse
 )
@@ -31,10 +33,31 @@ async def search_listings(
     radius_km: float = Query(None, ge=0, le=1000),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-    sort_by: str = Query("relevance", description="Sort by: relevance, price_asc, price_desc, rating, newest"),
+    sort_by: str = Query("relevance", description="Sort by: relevance, price_asc, price_desc, rating, newest, popularity"),
+    enable_personalization: bool = Query(True, description="Enable personalization boost"),
+    enable_popularity_boost: bool = Query(True, description="Enable popularity boost"),
+    enable_location_boost: bool = Query(True, description="Enable location boost"),
+    ab_test_variant: str = Query(None, description="A/B test variant (variant_a, variant_b, variant_c)"),
+    current_user: Optional[User] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """Search listings with text, filter, and location parameters."""
+    """
+    Search listings with enhanced relevance ranking.
+    
+    Features:
+    - Full-text search with PostgreSQL
+    - Personalization boost (based on user's booking history)
+    - Popularity boost (based on bookings and reviews)
+    - Location boost (boost listings closer to search location)
+    - A/B testing support for ranking algorithms
+    """
+    # Determine A/B test variant (simple hash-based assignment)
+    if not ab_test_variant and current_user:
+        import hashlib
+        user_hash = int(hashlib.md5(str(current_user.id).encode()).hexdigest(), 16)
+        variant_num = user_hash % 3
+        ab_test_variant = ["variant_a", "variant_b", "variant_c"][variant_num]
+    
     listings, total = await SearchService.search_listings(
         db=db,
         query=query,
@@ -51,7 +74,12 @@ async def search_listings(
         radius_km=radius_km,
         skip=skip,
         limit=limit,
-        sort_by=sort_by
+        sort_by=sort_by,
+        user_id=str(current_user.id) if current_user else None,
+        enable_personalization=enable_personalization,
+        enable_popularity_boost=enable_popularity_boost,
+        enable_location_boost=enable_location_boost,
+        ab_test_variant=ab_test_variant
     )
     
     return {
@@ -59,7 +87,8 @@ async def search_listings(
         "total": total,
         "skip": skip,
         "limit": limit,
-        "query": query
+        "query": query,
+        "ab_test_variant": ab_test_variant
     }
 
 

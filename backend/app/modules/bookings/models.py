@@ -57,6 +57,12 @@ class PaymentMethodType(str, enum.Enum):
     STRIPE = "stripe"
     BANK_TRANSFER = "bank_transfer"
     CRYPTO = "crypto"
+    # Local payment methods
+    MPESA = "mpesa"  # M-Pesa (Kenya, Tanzania, East Africa)
+    FAWRY = "fawry"  # Fawry (Egypt)
+    KLARNA = "klarna"  # Klarna (Buy Now Pay Later - Europe, US)
+    TAMARA = "tamara"  # Tamara (Buy Now Pay Later - Middle East)
+    TABBY = "tabby"  # Tabby (Buy Now Pay Later - UAE, Saudi Arabia)
 
 
 class Booking(BaseModel):

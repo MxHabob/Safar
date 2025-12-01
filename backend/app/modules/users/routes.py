@@ -2,8 +2,8 @@
 User routes.
 All authentication, profile, OTP, OAuth, and session-related endpoints.
 """
-from datetime import timedelta
-from typing import Any
+from datetime import timedelta, datetime
+from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,9 +20,13 @@ from app.modules.users.schemas import (
     UserCreate, UserResponse, UserUpdate, UserLogin,
     TokenResponse, RefreshTokenRequest, OAuthLogin, OTPRequest, OTPVerify,
     HostProfileResponse, HostProfileCreate, HostProfileUpdate,
-    PasswordResetRequest, PasswordReset, PasswordChange, EmailVerificationRequest
+    PasswordResetRequest, PasswordReset, PasswordChange, EmailVerificationRequest,
+    TwoFactorLoginVerify, TwoFactorSetupResponse, TwoFactorStatusResponse,
+    TwoFactorVerifyRequest, AccountDeletionRequest, DataExportResponse
 )
 from app.modules.users.services import UserService
+from app.modules.users.two_factor_service import TwoFactorService
+from app.modules.users.gdpr_service import GDPRService
 
 router = APIRouter(prefix="/users", tags=["Users"])
 security = HTTPBearer()
@@ -138,6 +142,36 @@ async def login(
         user_model.last_login_at = datetime.utcnow()
         user_model.last_login_ip = request.client.host if request.client else None
         await uow.commit()
+    
+    # Check if 2FA is required and enabled
+    requires_2fa, is_2fa_enabled = await TwoFactorService.check_2fa_requirement(
+        uow.db, user_entity.id
+    )
+    
+    # If 2FA is required but not enabled, block login
+    if requires_2fa and not is_2fa_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Two-factor authentication is required for your role. Please set up 2FA first."
+        )
+    
+    # If 2FA is enabled, require verification before issuing tokens
+    # Store user_id temporarily for 2FA verification (in production, use secure session)
+    if is_2fa_enabled:
+        # In production, store this in Redis with short TTL instead of raising exception
+        from app.infrastructure.cache.redis import get_redis
+        try:
+            redis = await get_redis()
+            # Store user_id for 2FA verification (5 minute TTL)
+            await redis.setex(f"2fa_pending:{user_entity.id}", 300, user_entity.id)
+        except Exception:
+            pass  # If Redis fails, continue (shouldn't happen in production)
+        
+        raise HTTPException(
+            status_code=status.HTTP_202_ACCEPTED,
+            detail="2FA verification required. Please verify with your authenticator app.",
+            headers={"X-Requires-2FA": "true", "X-User-ID": str(user_entity.id)}
+        )
     
     # Create tokens using service
     tokens = await UserService.create_access_token_for_user(user_entity)
@@ -613,6 +647,175 @@ async def resend_email_verification(
     settings = get_settings()
     
     verify_url = f"{settings.app_name}/verify-email?code={verification.code}"
+
+
+# ============================================================================
+# Two-Factor Authentication (2FA) Routes
+# ============================================================================
+
+@router.post("/login/2fa/verify", response_model=TokenResponse)
+async def verify_2fa_login(
+    verify_data: TwoFactorLoginVerify,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """
+    Verify 2FA code during login and complete authentication.
+    """
+    # Get user
+    from sqlalchemy import select
+    result = await db.execute(
+        select(User).where(User.email == verify_data.email)
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Check if 2FA verification is pending (from login)
+    from app.infrastructure.cache.redis import get_redis
+    try:
+        redis = await get_redis()
+        pending = await redis.get(f"2fa_pending:{user.id}")
+        if not pending:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No pending 2FA verification. Please login first."
+            )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to verify 2FA status"
+        )
+    
+    # Verify 2FA code
+    is_valid = await TwoFactorService.verify_2fa(
+        db, user.id, verify_data.code, verify_data.is_backup_code
+    )
+    
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid 2FA code"
+        )
+    
+    # Clear pending 2FA
+    try:
+        await redis.delete(f"2fa_pending:{user.id}")
+    except Exception:
+        pass
+    
+    # Update last login
+    from datetime import datetime
+    user.last_login_at = datetime.utcnow()
+    user.last_login_ip = request.client.host if request.client else None
+    await db.commit()
+    
+    # Create tokens
+    from app.domain.entities.user import UserEntity
+    user_entity = UserEntity(
+        id=user.id,
+        email=user.email,
+        role=user.role.value,
+        is_active=user.is_active,
+        is_email_verified=user.is_email_verified,
+        is_phone_verified=user.is_phone_verified
+    )
+    tokens = await UserService.create_access_token_for_user(user_entity)
+    
+    return {
+        **tokens,
+        "expires_in": settings.access_token_expire_minutes * 60
+    }
+
+
+@router.post("/2fa/setup", response_model=TwoFactorSetupResponse)
+async def setup_2fa(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """
+    Set up two-factor authentication (TOTP).
+    Returns QR code and backup codes.
+    """
+    setup_data = await TwoFactorService.setup_totp(db, current_user.id)
+    return setup_data
+
+
+@router.post("/2fa/verify", status_code=status.HTTP_200_OK)
+async def verify_2fa_setup(
+    verify_data: TwoFactorVerifyRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """
+    Verify TOTP code to enable 2FA.
+    """
+    if verify_data.method != "totp":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only TOTP method is currently supported"
+        )
+    
+    await TwoFactorService.verify_and_enable_totp(db, current_user.id, verify_data.code)
+    
+    return {"message": "2FA enabled successfully"}
+
+
+@router.get("/2fa/status", response_model=TwoFactorStatusResponse)
+async def get_2fa_status(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """
+    Get 2FA status for current user.
+    """
+    requires, enabled = await TwoFactorService.check_2fa_requirement(db, current_user.id)
+    backup_codes_count = len(current_user.backup_codes) if current_user.backup_codes else 0
+    
+    return {
+        "enabled": enabled,
+        "required": requires,
+        "backup_codes_count": backup_codes_count
+    }
+
+
+@router.post("/2fa/disable", status_code=status.HTTP_200_OK)
+async def disable_2fa(
+    password_data: PasswordChange,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """
+    Disable 2FA for current user (requires password verification).
+    """
+    from app.core.security import verify_password
+    if not current_user.hashed_password or not verify_password(password_data.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid password"
+        )
+    
+    await TwoFactorService.disable_2fa(db, current_user.id, password_data.current_password)
+    return {"message": "2FA disabled successfully"}
+
+
+@router.post("/2fa/backup-codes/regenerate", status_code=status.HTTP_200_OK)
+async def regenerate_backup_codes(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """
+    Regenerate backup codes for 2FA recovery.
+    """
+    codes = await TwoFactorService.regenerate_backup_codes(db, current_user.id)
+    return {
+        "backup_codes": codes,
+        "message": "Backup codes regenerated. Please save these codes securely."
+    }
     
     await EmailService.send_template_email(
         to_email=current_user.email,
@@ -626,4 +829,66 @@ async def resend_email_verification(
     )
     
     return {"message": "Verification code sent successfully"}
+
+
+# ============================================================================
+# GDPR Compliance Routes
+# ============================================================================
+
+@router.get("/data-export", response_model=DataExportResponse)
+async def export_user_data(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """
+    Export all user data in JSON format (GDPR Article 15 - Right of Access).
+    
+    Returns comprehensive JSON export of all user data including:
+    - Profile information
+    - Bookings, reviews, messages
+    - Preferences and settings
+    - Activity logs
+    """
+    export_data = await GDPRService.export_user_data(db, current_user.id)
+    return export_data
+
+
+@router.post("/account/delete", status_code=status.HTTP_200_OK)
+async def delete_account(
+    deletion_request: AccountDeletionRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """
+    Permanently delete user account and all associated data (GDPR Article 17 - Right to Erasure).
+    
+    WARNING: This action is irreversible. All user data will be permanently deleted.
+    
+    Some data may be anonymized rather than deleted to preserve business records:
+    - Reviews: Anonymized (user identity removed, ratings preserved)
+    - Completed bookings: Guest ID anonymized for historical records
+    - Listings: Deactivated if user is host
+    
+    Requires password verification and explicit confirmation.
+    """
+    if not deletion_request.confirm:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Account deletion requires explicit confirmation"
+        )
+    
+    success = await GDPRService.delete_user_account(
+        db, current_user.id, deletion_request.password
+    )
+    
+    if success:
+        return {
+            "message": "Account and all associated data have been permanently deleted",
+            "deleted_at": datetime.utcnow().isoformat()
+        }
+    
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Failed to delete account"
+    )
 

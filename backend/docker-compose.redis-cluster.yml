@@ -1,0 +1,246 @@
+version: '3.8'
+
+# Redis Cluster Configuration
+# This file sets up a Redis Cluster with 3 master nodes and 3 replica nodes
+# for high availability and fault tolerance.
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.redis-cluster.yml up -d
+#
+# The cluster will automatically form and configure itself on startup.
+
+services:
+  # Redis Cluster Master Nodes (3 masters)
+  redis-cluster-1:
+    image: redis:7-alpine
+    container_name: safar_redis_cluster_1
+    command: >
+      sh -c "
+        redis-server
+        --port 6379
+        --cluster-enabled yes
+        --cluster-config-file nodes-6379.conf
+        --cluster-node-timeout 5000
+        --appendonly yes
+        --requirepass ${REDIS_PASSWORD:-}
+        --masterauth ${REDIS_PASSWORD:-}
+        --protected-mode no
+      "
+    ports:
+      - "7001:6379"  # External port mapping
+    volumes:
+      - redis_cluster_1_data:/data
+    networks:
+      - safar_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  redis-cluster-2:
+    image: redis:7-alpine
+    container_name: safar_redis_cluster_2
+    command: >
+      sh -c "
+        redis-server
+        --port 6379
+        --cluster-enabled yes
+        --cluster-config-file nodes-6379.conf
+        --cluster-node-timeout 5000
+        --appendonly yes
+        --requirepass ${REDIS_PASSWORD:-}
+        --masterauth ${REDIS_PASSWORD:-}
+        --protected-mode no
+      "
+    ports:
+      - "7002:6379"
+    volumes:
+      - redis_cluster_2_data:/data
+    networks:
+      - safar_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  redis-cluster-3:
+    image: redis:7-alpine
+    container_name: safar_redis_cluster_3
+    command: >
+      sh -c "
+        redis-server
+        --port 6379
+        --cluster-enabled yes
+        --cluster-config-file nodes-6379.conf
+        --cluster-node-timeout 5000
+        --appendonly yes
+        --requirepass ${REDIS_PASSWORD:-}
+        --masterauth ${REDIS_PASSWORD:-}
+        --protected-mode no
+      "
+    ports:
+      - "7003:6379"
+    volumes:
+      - redis_cluster_3_data:/data
+    networks:
+      - safar_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  # Redis Cluster Replica Nodes (3 replicas, one per master)
+  redis-cluster-4:
+    image: redis:7-alpine
+    container_name: safar_redis_cluster_4
+    command: >
+      sh -c "
+        redis-server
+        --port 6379
+        --cluster-enabled yes
+        --cluster-config-file nodes-6379.conf
+        --cluster-node-timeout 5000
+        --appendonly yes
+        --requirepass ${REDIS_PASSWORD:-}
+        --masterauth ${REDIS_PASSWORD:-}
+        --protected-mode no
+      "
+    ports:
+      - "7004:6379"
+    volumes:
+      - redis_cluster_4_data:/data
+    networks:
+      - safar_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  redis-cluster-5:
+    image: redis:7-alpine
+    container_name: safar_redis_cluster_5
+    command: >
+      sh -c "
+        redis-server
+        --port 6379
+        --cluster-enabled yes
+        --cluster-config-file nodes-6379.conf
+        --cluster-node-timeout 5000
+        --appendonly yes
+        --requirepass ${REDIS_PASSWORD:-}
+        --masterauth ${REDIS_PASSWORD:-}
+        --protected-mode no
+      "
+    ports:
+      - "7005:6379"
+    volumes:
+      - redis_cluster_4_data:/data
+    networks:
+      - safar_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  redis-cluster-6:
+    image: redis:7-alpine
+    container_name: safar_redis_cluster_6
+    command: >
+      sh -c "
+        redis-server
+        --port 6379
+        --cluster-enabled yes
+        --cluster-config-file nodes-6379.conf
+        --cluster-node-timeout 5000
+        --appendonly yes
+        --requirepass ${REDIS_PASSWORD:-}
+        --masterauth ${REDIS_PASSWORD:-}
+        --protected-mode no
+      "
+    ports:
+      - "7006:6379"
+    volumes:
+      - redis_cluster_6_data:/data
+    networks:
+      - safar_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  # Redis Cluster Initialization Script
+  redis-cluster-init:
+    image: redis:7-alpine
+    container_name: safar_redis_cluster_init
+    depends_on:
+      redis-cluster-1:
+        condition: service_healthy
+      redis-cluster-2:
+        condition: service_healthy
+      redis-cluster-3:
+        condition: service_healthy
+      redis-cluster-4:
+        condition: service_healthy
+      redis-cluster-5:
+        condition: service_healthy
+      redis-cluster-6:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Waiting for all Redis nodes to be ready...' &&
+        sleep 5 &&
+        echo 'Initializing Redis Cluster...' &&
+        redis-cli
+        --cluster create
+        redis-cluster-1:6379
+        redis-cluster-2:6379
+        redis-cluster-3:6379
+        redis-cluster-4:6379
+        redis-cluster-5:6379
+        redis-cluster-6:6379
+        --cluster-replicas 1
+        --cluster-yes
+        -a ${REDIS_PASSWORD:-}
+        || echo 'Cluster may already be initialized'
+      "
+    networks:
+      - safar_network
+    restart: "no"  # Only run once
+
+volumes:
+  redis_cluster_1_data:
+    driver: local
+  redis_cluster_2_data:
+    driver: local
+  redis_cluster_3_data:
+    driver: local
+  redis_cluster_4_data:
+    driver: local
+  redis_cluster_5_data:
+    driver: local
+  redis_cluster_6_data:
+    driver: local
+
+networks:
+  safar_network:
+    external: true
+    name: safar_network
+

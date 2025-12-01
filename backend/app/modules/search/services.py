@@ -9,6 +9,8 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.dialects.postgresql import TSVECTOR
 
 from app.modules.listings.models import Listing, ListingStatus, ListingType
+from app.modules.bookings.models import Booking, BookingStatus
+from app.modules.wishlist.models import Wishlist
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -34,7 +36,12 @@ class SearchService:
         radius_km: Optional[float] = None,
         skip: int = 0,
         limit: int = 50,
-        sort_by: Optional[str] = "relevance"  # relevance, price_asc, price_desc, rating, newest
+        sort_by: Optional[str] = "relevance",  # relevance, price_asc, price_desc, rating, newest
+        user_id: Optional[str] = None,  # For personalization
+        enable_personalization: bool = True,  # Enable personalization boost
+        enable_popularity_boost: bool = True,  # Enable popularity boost
+        enable_location_boost: bool = True,  # Enable location boost
+        ab_test_variant: Optional[str] = None  # A/B testing variant
     ) -> Tuple[List[Listing], int]:
         """
         Search listings with enhanced full-text search and PostGIS geographic search.
@@ -68,6 +75,97 @@ class SearchService:
         else:
             # No text query, add constant relevance
             search_query = search_query.add_columns(func.literal(0.0).label('relevance'))
+        
+        # Calculate popularity score (bookings + reviews)
+        if enable_popularity_boost:
+            # Get booking counts for popularity
+            booking_counts = select(
+                Booking.listing_id,
+                func.count(Booking.id).label('booking_count')
+            ).where(
+                Booking.status.in_([BookingStatus.CONFIRMED.value, BookingStatus.COMPLETED.value])
+            ).group_by(Booking.listing_id).subquery()
+            
+            # Popularity score: rating * log(review_count + 1) * log(booking_count + 1)
+            popularity_score = (
+                func.coalesce(Listing.rating, 0) * 
+                func.coalesce(func.log(Listing.review_count + 1), 0) * 
+                func.coalesce(func.log(booking_counts.c.booking_count + 1), 0)
+            )
+            search_query = search_query.outerjoin(
+                booking_counts, Listing.id == booking_counts.c.listing_id
+            ).add_columns(popularity_score.label('popularity'))
+        else:
+            search_query = search_query.add_columns(func.literal(0.0).label('popularity'))
+        
+        # Calculate personalization score (if user_id provided)
+        if enable_personalization and user_id:
+            # Get user's previous bookings to boost similar listings
+            user_bookings = select(Booking.listing_id).where(
+                Booking.guest_id == user_id,
+                Booking.status.in_([BookingStatus.CONFIRMED.value, BookingStatus.COMPLETED.value])
+            ).subquery()
+            
+            # Get user's wishlist
+            user_wishlist = select(Wishlist.listing_id).where(
+                Wishlist.user_id == user_id
+            ).subquery()
+            
+            # Personalization boost: listings in user's preferred types/cities
+            personalization_score = case(
+                (Listing.id.in_(select(user_wishlist.c.listing_id)), 2.0),  # High boost for wishlist
+                (Listing.id.in_(select(user_bookings.c.listing_id)), 1.5),  # Medium boost for previously booked
+                (Listing.listing_type.in_(
+                    select(Listing.listing_type).where(Listing.id.in_(select(user_bookings.c.listing_id)))
+                ), 1.2),  # Boost for preferred listing types
+                (Listing.city.in_(
+                    select(Listing.city).where(Listing.id.in_(select(user_bookings.c.listing_id)))
+                ), 1.1),  # Boost for preferred cities
+                else_=1.0
+            )
+            search_query = search_query.add_columns(personalization_score.label('personalization'))
+        else:
+            search_query = search_query.add_columns(func.literal(1.0).label('personalization'))
+        
+        # Calculate location boost (if location provided)
+        if enable_location_boost and latitude and longitude:
+            # Boost listings closer to search location
+            # Normalize distance to 0-1 scale (closer = higher boost)
+            max_distance = radius_km if radius_km else 50.0  # Default 50km
+            location_boost = case(
+                (text('distance') <= max_distance * 0.1, 1.5),  # Very close: 50% boost
+                (text('distance') <= max_distance * 0.3, 1.3),  # Close: 30% boost
+                (text('distance') <= max_distance * 0.5, 1.1),  # Medium: 10% boost
+                else_=1.0
+            )
+            search_query = search_query.add_columns(location_boost.label('location_boost'))
+        else:
+            search_query = search_query.add_columns(func.literal(1.0).label('location_boost'))
+        
+        # A/B Testing: Apply different ranking algorithms based on variant
+        if ab_test_variant == "variant_b":
+            # Variant B: More weight on popularity
+            final_score = (
+                func.coalesce(text('relevance'), 0) * 0.3 +
+                func.coalesce(text('popularity'), 0) * 0.5 +
+                func.coalesce(text('personalization'), 1.0) * 0.2
+            ) * func.coalesce(text('location_boost'), 1.0)
+        elif ab_test_variant == "variant_c":
+            # Variant C: More weight on personalization
+            final_score = (
+                func.coalesce(text('relevance'), 0) * 0.3 +
+                func.coalesce(text('popularity'), 0) * 0.2 +
+                func.coalesce(text('personalization'), 1.0) * 0.5
+            ) * func.coalesce(text('location_boost'), 1.0)
+        else:
+            # Default (variant A): Balanced approach
+            final_score = (
+                func.coalesce(text('relevance'), 0) * 0.4 +
+                func.coalesce(text('popularity'), 0) * 0.3 +
+                func.coalesce(text('personalization'), 1.0) * 0.3
+            ) * func.coalesce(text('location_boost'), 1.0)
+        
+        search_query = search_query.add_columns(final_score.label('final_score'))
         
         # Location filters
         if city:
@@ -129,8 +227,9 @@ class SearchService:
         total = total_result.scalar()
         
         # Apply sorting
-        if sort_by == "relevance" and query:
-            search_query = search_query.order_by(func.desc(text('relevance')))
+        if sort_by == "relevance":
+            # Use final_score for relevance sorting (includes all boosts)
+            search_query = search_query.order_by(func.desc(text('final_score')))
         elif sort_by == "price_asc":
             search_query = search_query.order_by(Listing.base_price.asc())
         elif sort_by == "price_desc":
@@ -139,12 +238,14 @@ class SearchService:
             search_query = search_query.order_by(Listing.rating.desc(), Listing.review_count.desc())
         elif sort_by == "newest":
             search_query = search_query.order_by(Listing.created_at.desc())
+        elif sort_by == "popularity":
+            search_query = search_query.order_by(func.desc(text('popularity')))
         elif latitude and longitude:
             # Sort by distance if location provided
             search_query = search_query.order_by(text('distance'))
         else:
-            # Default: newest first
-            search_query = search_query.order_by(Listing.created_at.desc())
+            # Default: use final_score (includes all boosts)
+            search_query = search_query.order_by(func.desc(text('final_score')))
         
         # Get paginated results with relationships
         search_query = search_query.options(

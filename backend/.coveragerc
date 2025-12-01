@@ -1,0 +1,42 @@
+[run]
+source = app
+omit = 
+    */tests/*
+    */test_*.py
+    */__pycache__/*
+    */migrations/*
+    */alembic/*
+    */venv/*
+    */env/*
+    */scripts/*
+    */k8s/*
+    */docs/*
+    app/main.py
+    app/core/celery_app.py
+branch = True
+parallel = True
+
+[report]
+precision = 2
+show_missing = True
+skip_covered = False
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+    @property
+    @abc.abstractmethod
+    class .*\bProtocol\):
+    if False:
+    if typing.TYPE_CHECKING:
+
+[html]
+directory = htmlcov
+
+[xml]
+output = coverage.xml
+

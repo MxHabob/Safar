@@ -1,26 +1,88 @@
 """
 Redis cache setup and connection management.
+Supports both single Redis instance and Redis Cluster mode for high availability.
 """
 import json
-from typing import Optional, Any
+from typing import Optional, Any, Union
 from redis import asyncio as aioredis
+try:
+    from redis.asyncio.cluster import RedisCluster as AsyncRedisCluster
+except ImportError:
+    # Fallback for older redis-py versions
+    AsyncRedisCluster = None
 from app.core.config import get_settings
 
 settings = get_settings()
 
-# Global Redis connection instance
-redis_client: Optional[aioredis.Redis] = None
+# Global Redis connection instance (can be single instance or cluster)
+redis_client: Optional[Union[aioredis.Redis, AsyncRedisCluster]] = None
 
 
-async def get_redis() -> aioredis.Redis:
-    """Get a shared Redis connection instance."""
+async def get_redis() -> Union[aioredis.Redis, AsyncRedisCluster]:
+    """
+    Get a shared Redis connection instance.
+    
+    Supports both single Redis instance and Redis Cluster mode.
+    Cluster mode is detected via REDIS_CLUSTER_ENABLED environment variable
+    or by checking if redis_url contains multiple nodes.
+    """
     global redis_client
     if redis_client is None:
-        redis_client = await aioredis.from_url(
-            settings.redis_url,
-            encoding="utf-8",
-            decode_responses=True
-        )
+        # Check if cluster mode is enabled
+        cluster_enabled = getattr(settings, 'redis_cluster_enabled', False)
+        
+        if cluster_enabled:
+            if AsyncRedisCluster is None:
+                raise ImportError(
+                    "Redis Cluster requires redis-py >= 4.2.0. "
+                    "Install with: pip install 'redis[hiredis]>=4.2.0'"
+                )
+            # Redis Cluster mode
+            cluster_nodes = getattr(settings, 'redis_cluster_nodes', None)
+            if cluster_nodes:
+                # Parse cluster nodes (format: host1:port1,host2:port2,host3:port3)
+                nodes = []
+                for node in cluster_nodes.split(','):
+                    host, port = node.strip().split(':')
+                    nodes.append((host, int(port)))
+            else:
+                # Fallback: try to parse from redis_url if it contains multiple nodes
+                # Format: redis://host1:port1,host2:port2,host3:port3
+                if ',' in settings.redis_url:
+                    # Extract nodes from URL
+                    url_parts = settings.redis_url.replace('redis://', '').split('/')
+                    nodes_str = url_parts[0]
+                    nodes = []
+                    for node in nodes_str.split(','):
+                        if ':' in node:
+                            host, port = node.split(':')
+                            nodes.append((host, int(port)))
+                        else:
+                            nodes.append((node, 6379))
+                else:
+                    # Single node cluster (not recommended but supported)
+                    nodes = [(settings.redis_host, settings.redis_port)]
+            
+            # Create cluster connection
+            redis_client = AsyncRedisCluster(
+                startup_nodes=nodes,
+                password=settings.redis_password,
+                decode_responses=True,
+                skip_full_coverage_check=True,  # Allow partial cluster coverage
+                health_check_interval=30,  # Check cluster health every 30 seconds
+                retry_on_timeout=True,
+                retry_on_error=[ConnectionError, TimeoutError],
+                max_connections=50
+            )
+        else:
+            # Single Redis instance mode
+            redis_client = await aioredis.from_url(
+                settings.redis_url,
+                encoding="utf-8",
+                decode_responses=True,
+                retry_on_timeout=True,
+                health_check_interval=30
+            )
     return redis_client
 
 
@@ -29,6 +91,7 @@ async def close_redis():
     global redis_client
     if redis_client:
         await redis_client.close()
+        await redis_client.aclose()  # For cluster connections
         redis_client = None
 
 
