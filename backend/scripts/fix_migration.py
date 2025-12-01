@@ -29,6 +29,7 @@ POSTGIS_TABLES = {
     
     # PostGIS topology tables
     'topology',
+    'layer',
     
     # PostGIS tiger geocoder tables
     'addr',
