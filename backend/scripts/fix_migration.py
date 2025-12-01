@@ -60,6 +60,7 @@ POSTGIS_TABLES = {
     'tiger',
     'tiger_data',
     'bg',
+    'zip_state',
 }
 
 
