@@ -17,7 +17,7 @@ from app.modules.users.models import (
 from app.modules.listings.models import Listing
 from app.modules.bookings.models import Booking, Payment
 from app.modules.reviews.models import Review
-from app.modules.messages.models import Message, Conversation, ConversationParticipant
+from app.modules.messages.models import Message, Conversation, conversation_participants
 from app.modules.wishlist.models import Wishlist
 from app.modules.notifications.models import Notification
 from app.modules.loyalty.models import LoyaltyLedger
@@ -424,25 +424,35 @@ class GDPRService:
             .values(status="inactive")
         )
         
-        # Delete conversations where user is participant
-        conversations_result = await db.execute(
-            select(ConversationParticipant).where(ConversationParticipant.user_id == user_id)
+        # Delete messages sent/received by user
+        await db.execute(
+            delete(Message).where(
+                (Message.sender_id == user_id) | (Message.receiver_id == user_id)
+            )
         )
-        conversation_ids = [cp.conversation_id for cp in conversations_result.scalars().all()]
         
-        if conversation_ids:
-            # Delete messages in those conversations
-            await db.execute(
-                delete(Message).where(Message.conversation_id.in_(conversation_ids))
+        # Get conversation IDs where user is a participant before removing them
+        conversations_result = await db.execute(
+            select(conversation_participants.c.conversation_id)
+            .where(conversation_participants.c.user_id == user_id)
+        )
+        conversation_ids = [row[0] for row in conversations_result.all()]
+        
+        # Remove user from conversation participants
+        await db.execute(
+            delete(conversation_participants).where(conversation_participants.c.user_id == user_id)
+        )
+        
+        # Delete conversations that have no participants left (only check affected conversations)
+        for conv_id in conversation_ids:
+            participants_count = await db.execute(
+                select(func.count(conversation_participants.c.user_id))
+                .where(conversation_participants.c.conversation_id == conv_id)
             )
-            # Delete conversation participants
-            await db.execute(
-                delete(ConversationParticipant).where(ConversationParticipant.user_id == user_id)
-            )
-            # Delete conversations
-            await db.execute(
-                delete(Conversation).where(Conversation.id.in_(conversation_ids))
-            )
+            if participants_count.scalar() == 0:
+                await db.execute(
+                    delete(Conversation).where(Conversation.id == conv_id)
+                )
         
         # Delete user-specific data (cascade will handle most)
         # These have CASCADE delete, but we'll be explicit:
