@@ -18,6 +18,8 @@ import {
   CancelBookingApiV1BookingsBookingIdCancelPostResponseSchema,
   ConfirmBookingApiV1BookingsBookingIdConfirmPostParamsSchema,
   ConfirmBookingApiV1BookingsBookingIdConfirmPostResponseSchema,
+  CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema,
+  CompleteBookingApiV1BookingsBookingIdCompletePostResponseSchema,
   ListHostBookingsApiV1BookingsHostListingsGetParamsSchema,
   ListHostBookingsApiV1BookingsHostListingsGetResponseSchema
 } from '@/generated/schemas'
@@ -442,6 +444,85 @@ path: {
         error instanceof Error ? error.message : 'Unknown error occurred',
         {
           endpoint: '/api/v1/bookings/{booking_id}/confirm',
+          method: 'POST',
+          timestamp: Date.now()
+        },
+        error
+      )
+    }
+  })
+
+/**
+ * Complete Booking
+ * @generated from POST /api/v1/bookings/{booking_id}/complete
+ * Features: Input validation, revalidation, error handling
+ */
+export const completeBookingApiV1BookingsBookingIdCompletePost = authActionClient
+  .metadata({
+    name: "complete-booking-api-v1-bookings-booking-id-complete-post",
+    requiresAuth: true
+  })
+  .schema(CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema)
+  .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
+    const startTime = Date.now()
+    
+    try {
+      // Validate and sanitize parameters
+      const validatedParams = await validateAndSanitizeInput(CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema, parsedInput) as z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema>
+
+      // Execute API call with enhanced configuration
+      const response = await apiClient.bookings.completeBookingApiV1BookingsBookingIdCompletePost({params: {
+path: {
+        booking_id: validatedParams.path.booking_id
+      }
+    },
+        config: {
+          timeout: 30000,
+          retries: 3,
+          validateResponse: false,
+          responseSchema: CompleteBookingApiV1BookingsBookingIdCompletePostResponseSchema
+        }
+      })
+        // Handle streaming responses
+        if (response.headers.get('content-type')?.includes('text/stream')) {
+          // Process streaming response
+          return response.data
+        }
+        // Handle potential redirects based on response
+        if (response.status === 201 && response.headers.get('location')) {
+          const location = response.headers.get('location')!
+          redirect(location)
+        }
+
+            // Revalidate cache after successful mutation
+      updateTag('Bookings')
+      console.log('Updated tag: Bookings')
+
+
+      // Log successful execution
+      const duration = Date.now() - startTime
+      await logActionExecution('completeBookingApiV1BookingsBookingIdCompletePost', true, duration, {
+        method: 'POST',
+        path: '/api/v1/bookings/{booking_id}/complete'
+      })
+      
+      return response.data
+    } catch (error) {
+
+      const duration = Date.now() - startTime
+
+      // Enhanced error logging
+      await logActionExecution('completeBookingApiV1BookingsBookingIdCompletePost', false, duration, {
+        method: 'POST',
+        path: '/api/v1/bookings/{booking_id}/complete',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
+      
+      // Throw enhanced error with context
+      throw new ActionExecutionError(
+        error instanceof Error ? error.message : 'Unknown error occurred',
+        {
+          endpoint: '/api/v1/bookings/{booking_id}/complete',
           method: 'POST',
           timestamp: Date.now()
         },

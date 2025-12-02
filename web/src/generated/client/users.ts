@@ -4,6 +4,14 @@ import { BaseApiClient } from './base'
 import type { ClientResponse, RequestConfiguration } from './base'
 import { defaultMiddleware } from './middleware'
 import {
+  RegisterDeviceApiV1UsersUsersDevicesRegisterPostRequestSchema,
+  RegisterDeviceApiV1UsersUsersDevicesRegisterPostResponseSchema,
+  ListDevicesApiV1UsersUsersDevicesGetResponseSchema,
+  RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteResponseSchema,
+  RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteParamsSchema,
+  MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchRequestSchema,
+  MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchResponseSchema,
+  MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchParamsSchema,
   RegisterApiV1UsersRegisterPostRequestSchema,
   RegisterApiV1UsersRegisterPostResponseSchema,
   LoginApiV1UsersLoginPostRequestSchema,
@@ -29,7 +37,19 @@ import {
   ChangePasswordApiV1UsersPasswordChangePostResponseSchema,
   VerifyEmailApiV1UsersEmailVerifyPostRequestSchema,
   VerifyEmailApiV1UsersEmailVerifyPostResponseSchema,
-  ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema
+  ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema,
+  Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema,
+  Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema,
+  Setup2faApiV1Users2faSetupPostResponseSchema,
+  Verify2faSetupApiV1Users2faVerifyPostRequestSchema,
+  Verify2faSetupApiV1Users2faVerifyPostResponseSchema,
+  Get2faStatusApiV1Users2faStatusGetResponseSchema,
+  Disable2faApiV1Users2faDisablePostRequestSchema,
+  Disable2faApiV1Users2faDisablePostResponseSchema,
+  RegenerateBackupCodesApiV1Users2faBackupCodesRegeneratePostResponseSchema,
+  ExportUserDataApiV1UsersDataExportGetResponseSchema,
+  DeleteAccountApiV1UsersAccountDeletePostRequestSchema,
+  DeleteAccountApiV1UsersAccountDeletePostResponseSchema
 } from '@/generated/schemas'
 
 export class UsersApiClient extends BaseApiClient {
@@ -49,6 +69,115 @@ export class UsersApiClient extends BaseApiClient {
         }
       }
     })
+  }
+
+  /**
+   * Register Device
+   * Register or update a device for the current user.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostResponseSchema>>>
+   * @example
+   * const result = await client.registerDeviceApiV1UsersUsersDevicesRegisterPost({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  registerDeviceApiV1UsersUsersDevicesRegisterPost = async (options: {
+    body: z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostRequestSchema>
+    config?: RequestConfiguration
+  }) => {
+    // Validate request body
+    const validatedBody = await RegisterDeviceApiV1UsersUsersDevicesRegisterPostRequestSchema.parseAsync(options.body)
+
+    return this.request<z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostResponseSchema>>(
+      'POST',
+      '/api/v1/users/users/devices/register',
+      {
+body: validatedBody,
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: RegisterDeviceApiV1UsersUsersDevicesRegisterPostResponseSchema
+      }
+    )
+  }
+
+  /**
+   * List Devices
+   * Get all devices for the current user.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof ListDevicesApiV1UsersUsersDevicesGetResponseSchema>>>
+   * @example
+   * const result = await client.listDevicesApiV1UsersUsersDevicesGet({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  listDevicesApiV1UsersUsersDevicesGet = cache(async (options?: { config?: RequestConfiguration }) => {
+    return this.request<z.infer<typeof ListDevicesApiV1UsersUsersDevicesGetResponseSchema>>(
+      'GET',
+      '/api/v1/users/users/devices',
+      {
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: ListDevicesApiV1UsersUsersDevicesGetResponseSchema
+      }
+    )
+  })
+
+  /**
+   * Remove Device
+   * Remove a device from the user's account.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteResponseSchema>>>
+   * @example
+   * const result = await client.removeDeviceApiV1UsersUsersDevicesDeviceIdDelete({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  removeDeviceApiV1UsersUsersDevicesDeviceIdDelete = async (options: {
+    params: z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteParamsSchema>
+    config?: RequestConfiguration
+  }) => {
+// Validate and extract parameters
+const validatedParams = await RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteParamsSchema.parseAsync(options.params)
+
+    return this.request<z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteResponseSchema>>(
+      'DELETE',
+      '/api/v1/users/users/devices/{device_id}',
+      {
+        pathParams: validatedParams.path,
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteResponseSchema
+      }
+    )
+  }
+
+  /**
+   * Mark Device Trusted
+   * Mark a device as trusted or untrusted.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchResponseSchema>>>
+   * @example
+   * const result = await client.markDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatch({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  markDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatch = async (options: {
+    params: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchParamsSchema>
+    body: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchRequestSchema>
+    config?: RequestConfiguration
+  }) => {
+    // Validate request body
+    const validatedBody = await MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchRequestSchema.parseAsync(options.body)
+// Validate and extract parameters
+const validatedParams = await MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchParamsSchema.parseAsync(options.params)
+
+    return this.request<z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchResponseSchema>>(
+      'PATCH',
+      '/api/v1/users/users/devices/{device_id}/trust',
+      {
+        pathParams: validatedParams.path,
+body: validatedBody,
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchResponseSchema
+      }
+    )
   }
 
   /**
@@ -439,6 +568,218 @@ responseSchema: VerifyEmailApiV1UsersEmailVerifyPostResponseSchema
       {
 config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
 responseSchema: ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema
+      }
+    )
+  }
+
+  /**
+   * Verify 2Fa Login
+   * Verify 2FA code during login and complete authentication.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema>>>
+   * @example
+   * const result = await client.verify2faLoginApiV1UsersLogin2faVerifyPost({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  verify2faLoginApiV1UsersLogin2faVerifyPost = async (options: {
+    body: z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema>
+    config?: RequestConfiguration
+  }) => {
+    // Validate request body
+    const validatedBody = await Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema.parseAsync(options.body)
+
+    return this.request<z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema>>(
+      'POST',
+      '/api/v1/users/login/2fa/verify',
+      {
+body: validatedBody,
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema
+      }
+    )
+  }
+
+  /**
+   * Setup 2Fa
+   * Set up two-factor authentication (TOTP).
+Returns QR code and backup codes.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof Setup2faApiV1Users2faSetupPostResponseSchema>>>
+   * @example
+   * const result = await client.setup2faApiV1Users2faSetupPost({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  setup2faApiV1Users2faSetupPost = async (options?: { config?: RequestConfiguration }) => {
+    return this.request<z.infer<typeof Setup2faApiV1Users2faSetupPostResponseSchema>>(
+      'POST',
+      '/api/v1/users/2fa/setup',
+      {
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: Setup2faApiV1Users2faSetupPostResponseSchema
+      }
+    )
+  }
+
+  /**
+   * Verify 2Fa Setup
+   * Verify TOTP code to enable 2FA.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostResponseSchema>>>
+   * @example
+   * const result = await client.verify2faSetupApiV1Users2faVerifyPost({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  verify2faSetupApiV1Users2faVerifyPost = async (options: {
+    body: z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostRequestSchema>
+    config?: RequestConfiguration
+  }) => {
+    // Validate request body
+    const validatedBody = await Verify2faSetupApiV1Users2faVerifyPostRequestSchema.parseAsync(options.body)
+
+    return this.request<z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostResponseSchema>>(
+      'POST',
+      '/api/v1/users/2fa/verify',
+      {
+body: validatedBody,
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: Verify2faSetupApiV1Users2faVerifyPostResponseSchema
+      }
+    )
+  }
+
+  /**
+   * Get 2Fa Status
+   * Get 2FA status for current user.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof Get2faStatusApiV1Users2faStatusGetResponseSchema>>>
+   * @example
+   * const result = await client.get2faStatusApiV1Users2faStatusGet({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  get2faStatusApiV1Users2faStatusGet = cache(async (options?: { config?: RequestConfiguration }) => {
+    return this.request<z.infer<typeof Get2faStatusApiV1Users2faStatusGetResponseSchema>>(
+      'GET',
+      '/api/v1/users/2fa/status',
+      {
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: Get2faStatusApiV1Users2faStatusGetResponseSchema
+      }
+    )
+  })
+
+  /**
+   * Disable 2Fa
+   * Disable 2FA for current user (requires password verification).
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof Disable2faApiV1Users2faDisablePostResponseSchema>>>
+   * @example
+   * const result = await client.disable2faApiV1Users2faDisablePost({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  disable2faApiV1Users2faDisablePost = async (options: {
+    body: z.infer<typeof Disable2faApiV1Users2faDisablePostRequestSchema>
+    config?: RequestConfiguration
+  }) => {
+    // Validate request body
+    const validatedBody = await Disable2faApiV1Users2faDisablePostRequestSchema.parseAsync(options.body)
+
+    return this.request<z.infer<typeof Disable2faApiV1Users2faDisablePostResponseSchema>>(
+      'POST',
+      '/api/v1/users/2fa/disable',
+      {
+body: validatedBody,
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: Disable2faApiV1Users2faDisablePostResponseSchema
+      }
+    )
+  }
+
+  /**
+   * Regenerate Backup Codes
+   * Regenerate backup codes for 2FA recovery.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof RegenerateBackupCodesApiV1Users2faBackupCodesRegeneratePostResponseSchema>>>
+   * @example
+   * const result = await client.regenerateBackupCodesApiV1Users2faBackupCodesRegeneratePost({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  regenerateBackupCodesApiV1Users2faBackupCodesRegeneratePost = async (options?: { config?: RequestConfiguration }) => {
+    return this.request<z.infer<typeof RegenerateBackupCodesApiV1Users2faBackupCodesRegeneratePostResponseSchema>>(
+      'POST',
+      '/api/v1/users/2fa/backup-codes/regenerate',
+      {
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: RegenerateBackupCodesApiV1Users2faBackupCodesRegeneratePostResponseSchema
+      }
+    )
+  }
+
+  /**
+   * Export User Data
+   * Export all user data in JSON format (GDPR Article 15 - Right of Access).
+
+Returns comprehensive JSON export of all user data including:
+- Profile information
+- Bookings, reviews, messages
+- Preferences and settings
+- Activity logs
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof ExportUserDataApiV1UsersDataExportGetResponseSchema>>>
+   * @example
+   * const result = await client.exportUserDataApiV1UsersDataExportGet({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  exportUserDataApiV1UsersDataExportGet = cache(async (options?: { config?: RequestConfiguration }) => {
+    return this.request<z.infer<typeof ExportUserDataApiV1UsersDataExportGetResponseSchema>>(
+      'GET',
+      '/api/v1/users/data-export',
+      {
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: ExportUserDataApiV1UsersDataExportGetResponseSchema
+      }
+    )
+  })
+
+  /**
+   * Delete Account
+   * Permanently delete user account and all associated data (GDPR Article 17 - Right to Erasure).
+
+WARNING: This action is irreversible. All user data will be permanently deleted.
+
+Some data may be anonymized rather than deleted to preserve business records:
+- Reviews: Anonymized (user identity removed, ratings preserved)
+- Completed bookings: Guest ID anonymized for historical records
+- Listings: Deactivated if user is host
+
+Requires password verification and explicit confirmation.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostResponseSchema>>>
+   * @example
+   * const result = await client.deleteAccountApiV1UsersAccountDeletePost({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  deleteAccountApiV1UsersAccountDeletePost = async (options: {
+    body: z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostRequestSchema>
+    config?: RequestConfiguration
+  }) => {
+    // Validate request body
+    const validatedBody = await DeleteAccountApiV1UsersAccountDeletePostRequestSchema.parseAsync(options.body)
+
+    return this.request<z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostResponseSchema>>(
+      'POST',
+      '/api/v1/users/account/delete',
+      {
+body: validatedBody,
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: DeleteAccountApiV1UsersAccountDeletePostResponseSchema
       }
     )
   }

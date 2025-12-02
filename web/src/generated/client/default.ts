@@ -7,6 +7,7 @@ import {
   HealthCheckHealthGetResponseSchema,
   ReadinessCheckHealthReadyGetResponseSchema,
   LivenessCheckHealthLiveGetResponseSchema,
+  ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponseSchema,
   RootGetResponseSchema
 } from '@/generated/schemas'
 
@@ -85,6 +86,30 @@ responseSchema: ReadinessCheckHealthReadyGetResponseSchema
       {
 config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
 responseSchema: LivenessCheckHealthLiveGetResponseSchema
+      }
+    )
+  })
+
+  /**
+   * Apple Pay Domain Association
+   * Apple Pay domain association file.
+
+CRITICAL: This endpoint serves the domain association file required by Apple Pay.
+The file content should be configured via APPLE_PAY_DOMAIN_ASSOCIATION environment variable.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponseSchema>>>
+   * @example
+   * const result = await client.applePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGet({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  applePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGet = cache(async (options?: { config?: RequestConfiguration }) => {
+    return this.request<z.infer<typeof ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponseSchema>>(
+      'GET',
+      '/.well-known/apple-developer-merchantid-domain-association',
+      {
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponseSchema
       }
     )
   })

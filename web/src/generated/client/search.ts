@@ -31,7 +31,14 @@ export class SearchApiClient extends BaseApiClient {
 
   /**
    * Search Listings
-   * Search listings with text, filter, and location parameters.
+   * Search listings with enhanced relevance ranking.
+
+Features:
+- Full-text search with PostgreSQL
+- Personalization boost (based on user's booking history)
+- Popularity boost (based on bookings and reviews)
+- Location boost (boost listings closer to search location)
+- A/B testing support for ranking algorithms
    * @param options - Request options
    * @returns Promise<ClientResponse<z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema>>>
    * @example

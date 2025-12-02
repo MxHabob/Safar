@@ -3,7 +3,7 @@ import { useQuery, useQueryClient, useSuspenseQuery, useMutation, useInfiniteQue
 import { useOptimistic, useTransition } from 'react'
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs'
 import { toast } from 'sonner'
-import { listBookingsApiV1BookingsGet, getBookingApiV1BookingsBookingIdGet, listHostBookingsApiV1BookingsHostListingsGet, createBookingApiV1BookingsPost, cancelBookingApiV1BookingsBookingIdCancelPost, confirmBookingApiV1BookingsBookingIdConfirmPost } from '@/generated/actions/bookings'
+import { listBookingsApiV1BookingsGet, getBookingApiV1BookingsBookingIdGet, listHostBookingsApiV1BookingsHostListingsGet, createBookingApiV1BookingsPost, cancelBookingApiV1BookingsBookingIdCancelPost, confirmBookingApiV1BookingsBookingIdConfirmPost, completeBookingApiV1BookingsBookingIdCompletePost } from '@/generated/actions/bookings'
 import {
   ListBookingsApiV1BookingsGetResponseSchema,
   ListBookingsApiV1BookingsGetParamsSchema,
@@ -17,7 +17,9 @@ import {
   CancelBookingApiV1BookingsBookingIdCancelPostRequestSchema,
   CancelBookingApiV1BookingsBookingIdCancelPostParamsSchema,
   ConfirmBookingApiV1BookingsBookingIdConfirmPostResponseSchema,
-  ConfirmBookingApiV1BookingsBookingIdConfirmPostParamsSchema
+  ConfirmBookingApiV1BookingsBookingIdConfirmPostParamsSchema,
+  CompleteBookingApiV1BookingsBookingIdCompletePostResponseSchema,
+  CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema
 } from '@/generated/schemas'
 import type { z } from 'zod'
 
@@ -544,6 +546,91 @@ export function useConfirmBookingApiV1BookingsBookingIdConfirmPostMutation(optio
   return {
     ...mutation,
     mutateWithTransition: (variables: z.infer<typeof ConfirmBookingApiV1BookingsBookingIdConfirmPostParamsSchema>) => {
+      startTransition(() => {
+        mutation.mutate(variables)
+      })
+    },
+    isPending: isPending || mutation.isPending,
+    optimisticData
+  }
+}
+
+/**
+ * Optimized mutation hook for POST /api/v1/bookings/{booking_id}/complete
+ * Features: Optimistic updates, smart invalidation, error handling
+ * @param options - Mutation options
+ * @returns Mutation result with enhanced features
+ */
+export function useCompleteBookingApiV1BookingsBookingIdCompletePostMutation(options?: {
+  onSuccess?: (data: z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostResponseSchema>, variables: z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema>) => void
+  onError?: (error: Error, variables: z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema>) => void
+  optimisticUpdate?: (variables: z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema>) => unknown
+  showToast?: boolean
+}) {
+  const queryClient = useQueryClient()
+  const [isPending, startTransition] = useTransition()
+  const [optimisticData, setOptimisticData] = useOptimistic<unknown, z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema>>(null, (_, newData) => newData)
+
+  const mutation = useMutation({
+    mutationFn: async (variables: z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema>): Promise<z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostResponseSchema>> => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostResponseSchema>>(completeBookingApiV1BookingsBookingIdCompletePost(variables))
+        return (result ?? ({} as z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostResponseSchema>))
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    
+    onMutate: async (variables: z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema>) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listBookingsApiV1BookingsGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getBookingApiV1BookingsBookingIdGet'] }),
+        queryClient.cancelQueries({ queryKey: ['listHostBookingsApiV1BookingsHostListingsGet'] })
+      ])
+
+      // Optimistic update (if provided)
+      if (options?.optimisticUpdate) {
+        const optimisticValue = options.optimisticUpdate(variables)
+        setOptimisticData(optimisticValue as z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema>)
+      }
+      
+      return {}
+    },
+    
+    onSuccess: (data, variables) => {
+      // Show success toast
+      if (options?.showToast !== false) {
+        toast.success('Created successfully')
+      }
+      
+      // Custom success handler
+      options?.onSuccess?.(data, variables)
+    },
+    
+    onError: (error: Error, variables: z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema>) => {
+      // Show error toast
+      if (options?.showToast !== false) {
+        toast.error(error.message || 'Failed to create')
+      }
+      
+      // Custom error handler
+      options?.onError?.(error as Error, variables)
+    },
+    
+    onSettled: async () => {
+      // Always refetch after error or success
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listBookingsApiV1BookingsGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getBookingApiV1BookingsBookingIdGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['listHostBookingsApiV1BookingsHostListingsGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['Bookings'] })
+      ])
+    }
+  })
+
+  return {
+    ...mutation,
+    mutateWithTransition: (variables: z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema>) => {
       startTransition(() => {
         mutation.mutate(variables)
       })

@@ -7,12 +7,12 @@ import { headers } from 'next/headers'
 import { apiClient } from '@/generated/client'
 import { actionClientWithMeta, authActionClient, ActionError } from '@/generated/lib/safe-action'
 import {
-  ListTravelPlansApiV1AiTravelPlannerGetParamsSchema,
-  ListTravelPlansApiV1AiTravelPlannerGetResponseSchema,
-  CreateTravelPlanApiV1AiTravelPlannerPostRequestSchema,
-  CreateTravelPlanApiV1AiTravelPlannerPostResponseSchema,
-  GetTravelPlanApiV1AiTravelPlannerPlanIdGetParamsSchema,
-  GetTravelPlanApiV1AiTravelPlannerPlanIdGetResponseSchema
+  GetLoyaltyStatusApiV1LoyaltyStatusGetResponseSchema,
+  RedeemPointsApiV1LoyaltyRedeemPostRequestSchema,
+  RedeemPointsApiV1LoyaltyRedeemPostResponseSchema,
+  GetRedemptionOptionsApiV1LoyaltyRedemptionOptionsGetResponseSchema,
+  GetLoyaltyHistoryApiV1LoyaltyHistoryGetParamsSchema,
+  GetLoyaltyHistoryApiV1LoyaltyHistoryGetResponseSchema
 } from '@/generated/schemas'
 
 // Utility functions for enhanced server actions
@@ -71,42 +71,38 @@ async function logActionExecution(
 }
 
 /**
- * List Travel Plans
- * @generated from GET /api/v1/ai/travel-planner
+ * Get Loyalty Status
+ * @generated from GET /api/v1/loyalty/status
  * Features: React cache, input validation, error handling
  */
-export const listTravelPlansApiV1AiTravelPlannerGet = cache(
+export const getLoyaltyStatusApiV1LoyaltyStatusGet = cache(
   authActionClient
     .metadata({
-      name: "list-travel-plans-api-v1-ai-travel-planner-get",
+      name: "get-loyalty-status-api-v1-loyalty-status-get",
       requiresAuth: true
     })
-    .schema(ListTravelPlansApiV1AiTravelPlannerGetParamsSchema)
-    .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof ListTravelPlansApiV1AiTravelPlannerGetParamsSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
+    .schema(z.void())
+    .action(async ({ parsedInput, ctx }: { parsedInput: void; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
       const startTime = Date.now()
       
       try {
-      // Validate and sanitize parameters
-      const validatedParams = await validateAndSanitizeInput(ListTravelPlansApiV1AiTravelPlannerGetParamsSchema, parsedInput) as z.infer<typeof ListTravelPlansApiV1AiTravelPlannerGetParamsSchema>
 
         // Execute API call with enhanced error handling
-        const response = await apiClient.aiTravelPlanner.listTravelPlansApiV1AiTravelPlannerGet({params: {
-query: validatedParams.query,
-    },
+        const response = await apiClient.loyalty.getLoyaltyStatusApiV1LoyaltyStatusGet({
           config: {
             timeout: 30000,
             retries: 3,
             validateResponse: false,
-            responseSchema: ListTravelPlansApiV1AiTravelPlannerGetResponseSchema
+            responseSchema: GetLoyaltyStatusApiV1LoyaltyStatusGetResponseSchema
           }
         })
         
 
         // Log successful execution
         const duration = Date.now() - startTime
-        await logActionExecution('listTravelPlansApiV1AiTravelPlannerGet', true, duration, {
+        await logActionExecution('getLoyaltyStatusApiV1LoyaltyStatusGet', true, duration, {
           method: 'GET',
-          path: '/api/v1/ai/travel-planner'
+          path: '/api/v1/loyalty/status'
         })
         
         return response.data
@@ -115,9 +111,9 @@ query: validatedParams.query,
         const duration = Date.now() - startTime
 
         // Enhanced error logging
-        await logActionExecution('listTravelPlansApiV1AiTravelPlannerGet', false, duration, {
+        await logActionExecution('getLoyaltyStatusApiV1LoyaltyStatusGet', false, duration, {
           method: 'GET',
-          path: '/api/v1/ai/travel-planner',
+          path: '/api/v1/loyalty/status',
           error: error instanceof Error ? error.message : 'Unknown error'
         })
         
@@ -125,7 +121,7 @@ query: validatedParams.query,
         throw new ActionExecutionError(
           error instanceof Error ? error.message : 'Unknown error occurred',
           {
-            endpoint: '/api/v1/ai/travel-planner',
+            endpoint: '/api/v1/loyalty/status',
             method: 'GET',
             timestamp: Date.now()
           },
@@ -136,30 +132,30 @@ query: validatedParams.query,
 )
 
 /**
- * Create Travel Plan
- * @generated from POST /api/v1/ai/travel-planner
+ * Redeem Points
+ * @generated from POST /api/v1/loyalty/redeem
  * Features: Input validation, revalidation, error handling
  */
-export const createTravelPlanApiV1AiTravelPlannerPost = authActionClient
+export const redeemPointsApiV1LoyaltyRedeemPost = authActionClient
   .metadata({
-    name: "create-travel-plan-api-v1-ai-travel-planner-post",
+    name: "redeem-points-api-v1-loyalty-redeem-post",
     requiresAuth: true
   })
-  .schema(CreateTravelPlanApiV1AiTravelPlannerPostRequestSchema)
-  .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof CreateTravelPlanApiV1AiTravelPlannerPostRequestSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
+  .schema(RedeemPointsApiV1LoyaltyRedeemPostRequestSchema)
+  .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof RedeemPointsApiV1LoyaltyRedeemPostRequestSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
     const startTime = Date.now()
     
     try {
       // Validate and sanitize request body
-      const validatedBody = await validateAndSanitizeInput(CreateTravelPlanApiV1AiTravelPlannerPostRequestSchema, parsedInput)
+      const validatedBody = await validateAndSanitizeInput(RedeemPointsApiV1LoyaltyRedeemPostRequestSchema, parsedInput)
 
       // Execute API call with enhanced configuration
-      const response = await apiClient.aiTravelPlanner.createTravelPlanApiV1AiTravelPlannerPost({body: validatedBody,
+      const response = await apiClient.loyalty.redeemPointsApiV1LoyaltyRedeemPost({body: validatedBody,
         config: {
           timeout: 30000,
           retries: 3,
           validateResponse: false,
-          responseSchema: CreateTravelPlanApiV1AiTravelPlannerPostResponseSchema
+          responseSchema: RedeemPointsApiV1LoyaltyRedeemPostResponseSchema
         }
       })
         // Handle streaming responses
@@ -174,15 +170,15 @@ export const createTravelPlanApiV1AiTravelPlannerPost = authActionClient
         }
 
             // Revalidate cache after successful mutation
-      updateTag('AI Travel Planner')
-      console.log('Updated tag: AI Travel Planner')
+      updateTag('Loyalty')
+      console.log('Updated tag: Loyalty')
 
 
       // Log successful execution
       const duration = Date.now() - startTime
-      await logActionExecution('createTravelPlanApiV1AiTravelPlannerPost', true, duration, {
+      await logActionExecution('redeemPointsApiV1LoyaltyRedeemPost', true, duration, {
         method: 'POST',
-        path: '/api/v1/ai/travel-planner'
+        path: '/api/v1/loyalty/redeem'
       })
       
       return response.data
@@ -191,9 +187,9 @@ export const createTravelPlanApiV1AiTravelPlannerPost = authActionClient
       const duration = Date.now() - startTime
 
       // Enhanced error logging
-      await logActionExecution('createTravelPlanApiV1AiTravelPlannerPost', false, duration, {
+      await logActionExecution('redeemPointsApiV1LoyaltyRedeemPost', false, duration, {
         method: 'POST',
-        path: '/api/v1/ai/travel-planner',
+        path: '/api/v1/loyalty/redeem',
         error: error instanceof Error ? error.message : 'Unknown error'
       })
       
@@ -201,7 +197,7 @@ export const createTravelPlanApiV1AiTravelPlannerPost = authActionClient
       throw new ActionExecutionError(
         error instanceof Error ? error.message : 'Unknown error occurred',
         {
-          endpoint: '/api/v1/ai/travel-planner',
+          endpoint: '/api/v1/loyalty/redeem',
           method: 'POST',
           timestamp: Date.now()
         },
@@ -211,44 +207,38 @@ export const createTravelPlanApiV1AiTravelPlannerPost = authActionClient
   })
 
 /**
- * Get Travel Plan
- * @generated from GET /api/v1/ai/travel-planner/{plan_id}
+ * Get Redemption Options
+ * @generated from GET /api/v1/loyalty/redemption-options
  * Features: React cache, input validation, error handling
  */
-export const getTravelPlanApiV1AiTravelPlannerPlanIdGet = cache(
+export const getRedemptionOptionsApiV1LoyaltyRedemptionOptionsGet = cache(
   authActionClient
     .metadata({
-      name: "get-travel-plan-api-v1-ai-travel-planner-plan-id-get",
+      name: "get-redemption-options-api-v1-loyalty-redemption-options-get",
       requiresAuth: true
     })
-    .schema(GetTravelPlanApiV1AiTravelPlannerPlanIdGetParamsSchema)
-    .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof GetTravelPlanApiV1AiTravelPlannerPlanIdGetParamsSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
+    .schema(z.void())
+    .action(async ({ parsedInput, ctx }: { parsedInput: void; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
       const startTime = Date.now()
       
       try {
-      // Validate and sanitize parameters
-      const validatedParams = await validateAndSanitizeInput(GetTravelPlanApiV1AiTravelPlannerPlanIdGetParamsSchema, parsedInput) as z.infer<typeof GetTravelPlanApiV1AiTravelPlannerPlanIdGetParamsSchema>
 
         // Execute API call with enhanced error handling
-        const response = await apiClient.aiTravelPlanner.getTravelPlanApiV1AiTravelPlannerPlanIdGet({params: {
-path: {
-        plan_id: Number(validatedParams.path.plan_id)
-      }
-    },
+        const response = await apiClient.loyalty.getRedemptionOptionsApiV1LoyaltyRedemptionOptionsGet({
           config: {
             timeout: 30000,
             retries: 3,
             validateResponse: false,
-            responseSchema: GetTravelPlanApiV1AiTravelPlannerPlanIdGetResponseSchema
+            responseSchema: GetRedemptionOptionsApiV1LoyaltyRedemptionOptionsGetResponseSchema
           }
         })
         
 
         // Log successful execution
         const duration = Date.now() - startTime
-        await logActionExecution('getTravelPlanApiV1AiTravelPlannerPlanIdGet', true, duration, {
+        await logActionExecution('getRedemptionOptionsApiV1LoyaltyRedemptionOptionsGet', true, duration, {
           method: 'GET',
-          path: '/api/v1/ai/travel-planner/{plan_id}'
+          path: '/api/v1/loyalty/redemption-options'
         })
         
         return response.data
@@ -257,9 +247,9 @@ path: {
         const duration = Date.now() - startTime
 
         // Enhanced error logging
-        await logActionExecution('getTravelPlanApiV1AiTravelPlannerPlanIdGet', false, duration, {
+        await logActionExecution('getRedemptionOptionsApiV1LoyaltyRedemptionOptionsGet', false, duration, {
           method: 'GET',
-          path: '/api/v1/ai/travel-planner/{plan_id}',
+          path: '/api/v1/loyalty/redemption-options',
           error: error instanceof Error ? error.message : 'Unknown error'
         })
         
@@ -267,7 +257,72 @@ path: {
         throw new ActionExecutionError(
           error instanceof Error ? error.message : 'Unknown error occurred',
           {
-            endpoint: '/api/v1/ai/travel-planner/{plan_id}',
+            endpoint: '/api/v1/loyalty/redemption-options',
+            method: 'GET',
+            timestamp: Date.now()
+          },
+          error
+        )
+      }
+    })
+)
+
+/**
+ * Get Loyalty History
+ * @generated from GET /api/v1/loyalty/history
+ * Features: React cache, input validation, error handling
+ */
+export const getLoyaltyHistoryApiV1LoyaltyHistoryGet = cache(
+  authActionClient
+    .metadata({
+      name: "get-loyalty-history-api-v1-loyalty-history-get",
+      requiresAuth: true
+    })
+    .schema(GetLoyaltyHistoryApiV1LoyaltyHistoryGetParamsSchema)
+    .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof GetLoyaltyHistoryApiV1LoyaltyHistoryGetParamsSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
+      const startTime = Date.now()
+      
+      try {
+      // Validate and sanitize parameters
+      const validatedParams = await validateAndSanitizeInput(GetLoyaltyHistoryApiV1LoyaltyHistoryGetParamsSchema, parsedInput) as z.infer<typeof GetLoyaltyHistoryApiV1LoyaltyHistoryGetParamsSchema>
+
+        // Execute API call with enhanced error handling
+        const response = await apiClient.loyalty.getLoyaltyHistoryApiV1LoyaltyHistoryGet({params: {
+query: validatedParams.query,
+    },
+          config: {
+            timeout: 30000,
+            retries: 3,
+            validateResponse: false,
+            responseSchema: GetLoyaltyHistoryApiV1LoyaltyHistoryGetResponseSchema
+          }
+        })
+        
+
+        // Log successful execution
+        const duration = Date.now() - startTime
+        await logActionExecution('getLoyaltyHistoryApiV1LoyaltyHistoryGet', true, duration, {
+          method: 'GET',
+          path: '/api/v1/loyalty/history'
+        })
+        
+        return response.data
+      } catch (error) {
+
+        const duration = Date.now() - startTime
+
+        // Enhanced error logging
+        await logActionExecution('getLoyaltyHistoryApiV1LoyaltyHistoryGet', false, duration, {
+          method: 'GET',
+          path: '/api/v1/loyalty/history',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        })
+        
+        // Throw enhanced error with context
+        throw new ActionExecutionError(
+          error instanceof Error ? error.message : 'Unknown error occurred',
+          {
+            endpoint: '/api/v1/loyalty/history',
             method: 'GET',
             timestamp: Date.now()
           },

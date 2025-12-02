@@ -8,6 +8,7 @@ import {
   HealthCheckHealthGetResponseSchema,
   ReadinessCheckHealthReadyGetResponseSchema,
   LivenessCheckHealthLiveGetResponseSchema,
+  ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponseSchema,
   RootGetResponseSchema
 } from '@/generated/schemas'
 
@@ -240,6 +241,67 @@ export const livenessCheckHealthLiveGet = cache(
           error instanceof Error ? error.message : 'Unknown error occurred',
           {
             endpoint: '/health/live',
+            method: 'GET',
+            timestamp: Date.now()
+          },
+          error
+        )
+      }
+    })
+)
+
+/**
+ * Apple Pay Domain Association
+ * @generated from GET /.well-known/apple-developer-merchantid-domain-association
+ * Features: React cache, input validation, error handling
+ */
+export const applePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGet = cache(
+  actionClientWithMeta
+    .metadata({
+      name: "apple-pay-domain-association-well-known-apple-developer-merchantid-domain-association-get",
+      requiresAuth: false
+    })
+    .schema(z.void())
+    .action(async ({ parsedInput, ctx }: { parsedInput: void; ctx?: any }) => {
+      const startTime = Date.now()
+      
+      try {
+
+        // Execute API call with enhanced error handling
+        const response = await apiClient.default.applePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGet({
+          config: {
+            timeout: 30000,
+            retries: 3,
+            validateResponse: false,
+            responseSchema: ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponseSchema
+          }
+        })
+        
+
+        // Log successful execution
+        const duration = Date.now() - startTime
+        await logActionExecution('applePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGet', true, duration, {
+          method: 'GET',
+          path: '/.well-known/apple-developer-merchantid-domain-association'
+        })
+        
+        return response.data
+      } catch (error) {
+
+        const duration = Date.now() - startTime
+
+        // Enhanced error logging
+        await logActionExecution('applePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGet', false, duration, {
+          method: 'GET',
+          path: '/.well-known/apple-developer-merchantid-domain-association',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        })
+        
+        // Throw enhanced error with context
+        throw new ActionExecutionError(
+          error instanceof Error ? error.message : 'Unknown error occurred',
+          {
+            endpoint: '/.well-known/apple-developer-merchantid-domain-association',
             method: 'GET',
             timestamp: Date.now()
           },

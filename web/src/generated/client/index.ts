@@ -11,6 +11,15 @@ import { SearchApiClient } from './search'
 import { MessagesApiClient } from './messages'
 import { PaymentsApiClient } from './payments'
 import { WebhooksApiClient } from './webhooks'
+import { RecommendationsApiClient } from './recommendations'
+import { AnalyticsApiClient } from './analytics'
+import { PromotionsApiClient } from './promotions'
+import { NotificationsApiClient } from './notifications'
+import { LoyaltyApiClient } from './loyalty'
+import { PremiumListingsApiClient } from './premiumListings'
+import { TravelGuidesApiClient } from './travelGuides'
+import { SubscriptionsApiClient } from './subscriptions'
+import { MultiTenancyApiClient } from './multiTenancy'
 
 /**
  * Enhanced API client with all endpoint groups
@@ -29,6 +38,15 @@ export class ApiClient extends BaseApiClient {
   public readonly messages: MessagesApiClient
   public readonly payments: PaymentsApiClient
   public readonly webhooks: WebhooksApiClient
+  public readonly recommendations: RecommendationsApiClient
+  public readonly analytics: AnalyticsApiClient
+  public readonly promotions: PromotionsApiClient
+  public readonly notifications: NotificationsApiClient
+  public readonly loyalty: LoyaltyApiClient
+  public readonly premiumListings: PremiumListingsApiClient
+  public readonly travelGuides: TravelGuidesApiClient
+  public readonly subscriptions: SubscriptionsApiClient
+  public readonly multiTenancy: MultiTenancyApiClient
 
   constructor() {
     super()
@@ -45,6 +63,15 @@ export class ApiClient extends BaseApiClient {
     this.messages = new MessagesApiClient()
     this.payments = new PaymentsApiClient()
     this.webhooks = new WebhooksApiClient()
+    this.recommendations = new RecommendationsApiClient()
+    this.analytics = new AnalyticsApiClient()
+    this.promotions = new PromotionsApiClient()
+    this.notifications = new NotificationsApiClient()
+    this.loyalty = new LoyaltyApiClient()
+    this.premiumListings = new PremiumListingsApiClient()
+    this.travelGuides = new TravelGuidesApiClient()
+    this.subscriptions = new SubscriptionsApiClient()
+    this.multiTenancy = new MultiTenancyApiClient()
     
     // Add global middleware
     createMiddlewareStack().forEach(middleware => {
@@ -101,6 +128,15 @@ export { SearchApiClient } from './search'
 export { MessagesApiClient } from './messages'
 export { PaymentsApiClient } from './payments'
 export { WebhooksApiClient } from './webhooks'
+export { RecommendationsApiClient } from './recommendations'
+export { AnalyticsApiClient } from './analytics'
+export { PromotionsApiClient } from './promotions'
+export { NotificationsApiClient } from './notifications'
+export { LoyaltyApiClient } from './loyalty'
+export { PremiumListingsApiClient } from './premiumListings'
+export { TravelGuidesApiClient } from './travelGuides'
+export { SubscriptionsApiClient } from './subscriptions'
+export { MultiTenancyApiClient } from './multiTenancy'
 
 // Export types and utilities
 export type { ClientResponse, RequestConfiguration, ApiError, ValidationError, TimeoutError, NetworkError } from './base'

@@ -1,11 +1,12 @@
 'use client'
 import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { healthCheckHealthGet, readinessCheckHealthReadyGet, livenessCheckHealthLiveGet, rootGet } from '@/generated/actions/default'
+import { healthCheckHealthGet, readinessCheckHealthReadyGet, livenessCheckHealthLiveGet, applePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGet, rootGet } from '@/generated/actions/default'
 import {
   HealthCheckHealthGetResponseSchema,
   ReadinessCheckHealthReadyGetResponseSchema,
   LivenessCheckHealthLiveGetResponseSchema,
+  ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponseSchema,
   RootGetResponseSchema
 } from '@/generated/schemas'
 import type { z } from 'zod'
@@ -210,6 +211,63 @@ export function useSuspenseLivenessCheckHealthLiveGet(options?: { enabled?: bool
     },
     staleTime: 180000,
     initialData: initialData as z.infer<typeof LivenessCheckHealthLiveGetResponseSchema> | undefined,
+    ...restOptions
+  })
+}
+
+/**
+ * Optimized query hook for GET /.well-known/apple-developer-merchantid-domain-association
+ * Features: Smart caching, error handling, type safety
+ * @returns useQuery result with data of type z.infer<typeof ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponseSchema>
+ */
+export function useApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGet(options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponseSchema> }) {
+  const { initialData, ...restOptions } = options ?? {}
+
+  return useQuery({
+    queryKey: ['applePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGet'],
+    queryFn: async ({ signal }: { signal?: AbortSignal }) => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponseSchema>>(applePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGet())
+        return result
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    staleTime: 180000,
+    gcTime: 360000, // React Query v5: gcTime replaces cacheTime
+    enabled: true && (options?.enabled ?? true),
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnReconnect: true, // Refetch when network reconnects
+    refetchOnMount: 'always', // Always refetch on mount for fresh data
+    refetchInterval: options?.refetchInterval, // Optional polling interval
+    // React Query v5: placeholderData replaces keepPreviousData
+    placeholderData: (previousData: z.infer<typeof ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponseSchema> | undefined) => previousData,
+    retry: (failureCount: number, error: Error) => {
+      // Don't retry on 4xx errors (client errors)
+      if (error instanceof Error && error.message.includes('4')) return false
+      // Retry up to 3 times for network/server errors
+      return failureCount < 3
+    },
+    initialData: initialData as z.infer<typeof ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponseSchema> | undefined,
+    ...restOptions
+  })
+}
+
+/**
+ * Suspense version for /.well-known/apple-developer-merchantid-domain-association
+ * @returns useSuspenseQuery result with data of type z.infer<typeof ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponseSchema>
+ */
+export function useSuspenseApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGet(options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponseSchema> }) {
+  const { initialData, ...restOptions } = options ?? {}
+
+  return useSuspenseQuery({
+    queryKey: ['applePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGet'],
+    queryFn: async () => {
+      const result = await resolveActionResult<z.infer<typeof ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponseSchema>>(applePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGet())
+      return result
+    },
+    staleTime: 180000,
+    initialData: initialData as z.infer<typeof ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponseSchema> | undefined,
     ...restOptions
   })
 }

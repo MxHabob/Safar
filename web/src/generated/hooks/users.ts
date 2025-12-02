@@ -2,9 +2,19 @@
 import { useQuery, useQueryClient, useSuspenseQuery, useMutation } from '@tanstack/react-query'
 import { useOptimistic, useTransition } from 'react'
 import { toast } from 'sonner'
-import { getCurrentUserInfoApiV1UsersMeGet, registerApiV1UsersRegisterPost, loginApiV1UsersLoginPost, refreshTokenApiV1UsersRefreshPost, updateCurrentUserApiV1UsersMePut, requestOtpApiV1UsersOtpRequestPost, verifyOtpApiV1UsersOtpVerifyPost, logoutApiV1UsersLogoutPost, logoutAllApiV1UsersLogoutAllPost, oauthLoginApiV1UsersOauthLoginPost, requestPasswordResetApiV1UsersPasswordResetRequestPost, resetPasswordApiV1UsersPasswordResetPost, changePasswordApiV1UsersPasswordChangePost, verifyEmailApiV1UsersEmailVerifyPost, resendEmailVerificationApiV1UsersEmailResendVerificationPost } from '@/generated/actions/users'
+import { listDevicesApiV1UsersUsersDevicesGet, getCurrentUserInfoApiV1UsersMeGet, get2faStatusApiV1Users2faStatusGet, exportUserDataApiV1UsersDataExportGet, registerDeviceApiV1UsersUsersDevicesRegisterPost, removeDeviceApiV1UsersUsersDevicesDeviceIdDelete, markDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatch, registerApiV1UsersRegisterPost, loginApiV1UsersLoginPost, refreshTokenApiV1UsersRefreshPost, updateCurrentUserApiV1UsersMePut, requestOtpApiV1UsersOtpRequestPost, verifyOtpApiV1UsersOtpVerifyPost, logoutApiV1UsersLogoutPost, logoutAllApiV1UsersLogoutAllPost, oauthLoginApiV1UsersOauthLoginPost, requestPasswordResetApiV1UsersPasswordResetRequestPost, resetPasswordApiV1UsersPasswordResetPost, changePasswordApiV1UsersPasswordChangePost, verifyEmailApiV1UsersEmailVerifyPost, resendEmailVerificationApiV1UsersEmailResendVerificationPost, verify2faLoginApiV1UsersLogin2faVerifyPost, setup2faApiV1Users2faSetupPost, verify2faSetupApiV1Users2faVerifyPost, disable2faApiV1Users2faDisablePost, regenerateBackupCodesApiV1Users2faBackupCodesRegeneratePost, deleteAccountApiV1UsersAccountDeletePost } from '@/generated/actions/users'
 import {
+  ListDevicesApiV1UsersUsersDevicesGetResponseSchema,
   GetCurrentUserInfoApiV1UsersMeGetResponseSchema,
+  Get2faStatusApiV1Users2faStatusGetResponseSchema,
+  ExportUserDataApiV1UsersDataExportGetResponseSchema,
+  RegisterDeviceApiV1UsersUsersDevicesRegisterPostResponseSchema,
+  RegisterDeviceApiV1UsersUsersDevicesRegisterPostRequestSchema,
+  RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteResponseSchema,
+  RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteParamsSchema,
+  MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchResponseSchema,
+  MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchRequestSchema,
+  MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchParamsSchema,
   RegisterApiV1UsersRegisterPostResponseSchema,
   RegisterApiV1UsersRegisterPostRequestSchema,
   LoginApiV1UsersLoginPostResponseSchema,
@@ -29,7 +39,17 @@ import {
   ChangePasswordApiV1UsersPasswordChangePostRequestSchema,
   VerifyEmailApiV1UsersEmailVerifyPostResponseSchema,
   VerifyEmailApiV1UsersEmailVerifyPostRequestSchema,
-  ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema
+  ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema,
+  Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema,
+  Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema,
+  Setup2faApiV1Users2faSetupPostResponseSchema,
+  Verify2faSetupApiV1Users2faVerifyPostResponseSchema,
+  Verify2faSetupApiV1Users2faVerifyPostRequestSchema,
+  Disable2faApiV1Users2faDisablePostResponseSchema,
+  Disable2faApiV1Users2faDisablePostRequestSchema,
+  RegenerateBackupCodesApiV1Users2faBackupCodesRegeneratePostResponseSchema,
+  DeleteAccountApiV1UsersAccountDeletePostResponseSchema,
+  DeleteAccountApiV1UsersAccountDeletePostRequestSchema
 } from '@/generated/schemas'
 import type { z } from 'zod'
 
@@ -64,6 +84,63 @@ async function resolveActionResult<T>(actionPromise: Promise<any>): Promise<T> {
     }
   }
   return result as T
+}
+
+/**
+ * Optimized query hook for GET /api/v1/users/users/devices
+ * Features: Smart caching, error handling, type safety
+ * @returns useQuery result with data of type z.infer<typeof ListDevicesApiV1UsersUsersDevicesGetResponseSchema>
+ */
+export function useListDevicesApiV1UsersUsersDevicesGet(options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof ListDevicesApiV1UsersUsersDevicesGetResponseSchema> }) {
+  const { initialData, ...restOptions } = options ?? {}
+
+  return useQuery({
+    queryKey: ['listDevicesApiV1UsersUsersDevicesGet'],
+    queryFn: async ({ signal }: { signal?: AbortSignal }) => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof ListDevicesApiV1UsersUsersDevicesGetResponseSchema>>(listDevicesApiV1UsersUsersDevicesGet())
+        return result
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    staleTime: 300000,
+    gcTime: 600000, // React Query v5: gcTime replaces cacheTime
+    enabled: true && (options?.enabled ?? true),
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnReconnect: true, // Refetch when network reconnects
+    refetchOnMount: 'always', // Always refetch on mount for fresh data
+    refetchInterval: options?.refetchInterval, // Optional polling interval
+    // React Query v5: placeholderData replaces keepPreviousData
+    placeholderData: (previousData: z.infer<typeof ListDevicesApiV1UsersUsersDevicesGetResponseSchema> | undefined) => previousData,
+    retry: (failureCount: number, error: Error) => {
+      // Don't retry on 4xx errors (client errors)
+      if (error instanceof Error && error.message.includes('4')) return false
+      // Retry up to 3 times for network/server errors
+      return failureCount < 3
+    },
+    initialData: initialData as z.infer<typeof ListDevicesApiV1UsersUsersDevicesGetResponseSchema> | undefined,
+    ...restOptions
+  })
+}
+
+/**
+ * Suspense version for /api/v1/users/users/devices
+ * @returns useSuspenseQuery result with data of type z.infer<typeof ListDevicesApiV1UsersUsersDevicesGetResponseSchema>
+ */
+export function useSuspenseListDevicesApiV1UsersUsersDevicesGet(options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof ListDevicesApiV1UsersUsersDevicesGetResponseSchema> }) {
+  const { initialData, ...restOptions } = options ?? {}
+
+  return useSuspenseQuery({
+    queryKey: ['listDevicesApiV1UsersUsersDevicesGet'],
+    queryFn: async () => {
+      const result = await resolveActionResult<z.infer<typeof ListDevicesApiV1UsersUsersDevicesGetResponseSchema>>(listDevicesApiV1UsersUsersDevicesGet())
+      return result
+    },
+    staleTime: 300000,
+    initialData: initialData as z.infer<typeof ListDevicesApiV1UsersUsersDevicesGetResponseSchema> | undefined,
+    ...restOptions
+  })
 }
 
 /**
@@ -124,6 +201,384 @@ export function useSuspenseGetCurrentUserInfoApiV1UsersMeGet(options?: { enabled
 }
 
 /**
+ * Optimized query hook for GET /api/v1/users/2fa/status
+ * Features: Smart caching, error handling, type safety
+ * @returns useQuery result with data of type z.infer<typeof Get2faStatusApiV1Users2faStatusGetResponseSchema>
+ */
+export function useGet2faStatusApiV1Users2faStatusGet(options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof Get2faStatusApiV1Users2faStatusGetResponseSchema> }) {
+  const { initialData, ...restOptions } = options ?? {}
+
+  return useQuery({
+    queryKey: ['get2faStatusApiV1Users2faStatusGet'],
+    queryFn: async ({ signal }: { signal?: AbortSignal }) => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof Get2faStatusApiV1Users2faStatusGetResponseSchema>>(get2faStatusApiV1Users2faStatusGet())
+        return result
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    staleTime: 300000,
+    gcTime: 600000, // React Query v5: gcTime replaces cacheTime
+    enabled: true && (options?.enabled ?? true),
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnReconnect: true, // Refetch when network reconnects
+    refetchOnMount: 'always', // Always refetch on mount for fresh data
+    refetchInterval: options?.refetchInterval, // Optional polling interval
+    // React Query v5: placeholderData replaces keepPreviousData
+    placeholderData: (previousData: z.infer<typeof Get2faStatusApiV1Users2faStatusGetResponseSchema> | undefined) => previousData,
+    retry: (failureCount: number, error: Error) => {
+      // Don't retry on 4xx errors (client errors)
+      if (error instanceof Error && error.message.includes('4')) return false
+      // Retry up to 3 times for network/server errors
+      return failureCount < 3
+    },
+    initialData: initialData as z.infer<typeof Get2faStatusApiV1Users2faStatusGetResponseSchema> | undefined,
+    ...restOptions
+  })
+}
+
+/**
+ * Suspense version for /api/v1/users/2fa/status
+ * @returns useSuspenseQuery result with data of type z.infer<typeof Get2faStatusApiV1Users2faStatusGetResponseSchema>
+ */
+export function useSuspenseGet2faStatusApiV1Users2faStatusGet(options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof Get2faStatusApiV1Users2faStatusGetResponseSchema> }) {
+  const { initialData, ...restOptions } = options ?? {}
+
+  return useSuspenseQuery({
+    queryKey: ['get2faStatusApiV1Users2faStatusGet'],
+    queryFn: async () => {
+      const result = await resolveActionResult<z.infer<typeof Get2faStatusApiV1Users2faStatusGetResponseSchema>>(get2faStatusApiV1Users2faStatusGet())
+      return result
+    },
+    staleTime: 300000,
+    initialData: initialData as z.infer<typeof Get2faStatusApiV1Users2faStatusGetResponseSchema> | undefined,
+    ...restOptions
+  })
+}
+
+/**
+ * Optimized query hook for GET /api/v1/users/data-export
+ * Features: Smart caching, error handling, type safety
+ * @returns useQuery result with data of type z.infer<typeof ExportUserDataApiV1UsersDataExportGetResponseSchema>
+ */
+export function useExportUserDataApiV1UsersDataExportGet(options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof ExportUserDataApiV1UsersDataExportGetResponseSchema> }) {
+  const { initialData, ...restOptions } = options ?? {}
+
+  return useQuery({
+    queryKey: ['exportUserDataApiV1UsersDataExportGet'],
+    queryFn: async ({ signal }: { signal?: AbortSignal }) => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof ExportUserDataApiV1UsersDataExportGetResponseSchema>>(exportUserDataApiV1UsersDataExportGet())
+        return result
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    staleTime: 300000,
+    gcTime: 600000, // React Query v5: gcTime replaces cacheTime
+    enabled: true && (options?.enabled ?? true),
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnReconnect: true, // Refetch when network reconnects
+    refetchOnMount: 'always', // Always refetch on mount for fresh data
+    refetchInterval: options?.refetchInterval, // Optional polling interval
+    // React Query v5: placeholderData replaces keepPreviousData
+    placeholderData: (previousData: z.infer<typeof ExportUserDataApiV1UsersDataExportGetResponseSchema> | undefined) => previousData,
+    retry: (failureCount: number, error: Error) => {
+      // Don't retry on 4xx errors (client errors)
+      if (error instanceof Error && error.message.includes('4')) return false
+      // Retry up to 3 times for network/server errors
+      return failureCount < 3
+    },
+    initialData: initialData as z.infer<typeof ExportUserDataApiV1UsersDataExportGetResponseSchema> | undefined,
+    ...restOptions
+  })
+}
+
+/**
+ * Suspense version for /api/v1/users/data-export
+ * @returns useSuspenseQuery result with data of type z.infer<typeof ExportUserDataApiV1UsersDataExportGetResponseSchema>
+ */
+export function useSuspenseExportUserDataApiV1UsersDataExportGet(options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof ExportUserDataApiV1UsersDataExportGetResponseSchema> }) {
+  const { initialData, ...restOptions } = options ?? {}
+
+  return useSuspenseQuery({
+    queryKey: ['exportUserDataApiV1UsersDataExportGet'],
+    queryFn: async () => {
+      const result = await resolveActionResult<z.infer<typeof ExportUserDataApiV1UsersDataExportGetResponseSchema>>(exportUserDataApiV1UsersDataExportGet())
+      return result
+    },
+    staleTime: 300000,
+    initialData: initialData as z.infer<typeof ExportUserDataApiV1UsersDataExportGetResponseSchema> | undefined,
+    ...restOptions
+  })
+}
+
+/**
+ * Optimized mutation hook for POST /api/v1/users/users/devices/register
+ * Features: Optimistic updates, smart invalidation, error handling
+ * @param options - Mutation options
+ * @returns Mutation result with enhanced features
+ */
+export function useRegisterDeviceApiV1UsersUsersDevicesRegisterPostMutation(options?: {
+  onSuccess?: (data: z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostResponseSchema>, variables: z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostRequestSchema>) => void
+  onError?: (error: Error, variables: z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostRequestSchema>) => void
+  optimisticUpdate?: (variables: z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostRequestSchema>) => unknown
+  showToast?: boolean
+}) {
+  const queryClient = useQueryClient()
+  const [isPending, startTransition] = useTransition()
+  const [optimisticData, setOptimisticData] = useOptimistic<unknown, z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostRequestSchema>>(null, (_, newData) => newData)
+
+  const mutation = useMutation({
+    mutationFn: async (variables: z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostRequestSchema>): Promise<z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostResponseSchema>> => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostResponseSchema>>(registerDeviceApiV1UsersUsersDevicesRegisterPost(variables))
+        return (result ?? ({} as z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostResponseSchema>))
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    
+    onMutate: async (variables: z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostRequestSchema>) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
+
+      // Optimistic update (if provided)
+      if (options?.optimisticUpdate) {
+        const optimisticValue = options.optimisticUpdate(variables)
+        setOptimisticData(optimisticValue as z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostRequestSchema>)
+      }
+      
+      return {}
+    },
+    
+    onSuccess: (data, variables) => {
+      // Show success toast
+      if (options?.showToast !== false) {
+        toast.success('Created successfully')
+      }
+      
+      // Custom success handler
+      options?.onSuccess?.(data, variables)
+    },
+    
+    onError: (error: Error, variables: z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostRequestSchema>) => {
+      // Show error toast
+      if (options?.showToast !== false) {
+        toast.error(error.message || 'Failed to create')
+      }
+      
+      // Custom error handler
+      options?.onError?.(error as Error, variables)
+    },
+    
+    onSettled: async () => {
+      // Always refetch after error or success
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['Users'] }),
+        queryClient.invalidateQueries({ queryKey: ['Devices'] })
+      ])
+    }
+  })
+
+  return {
+    ...mutation,
+    mutateWithTransition: (variables: z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostRequestSchema>) => {
+      startTransition(() => {
+        mutation.mutate(variables)
+      })
+    },
+    isPending: isPending || mutation.isPending,
+    optimisticData
+  }
+}
+
+/**
+ * Optimized mutation hook for DELETE /api/v1/users/users/devices/{device_id}
+ * Features: Optimistic updates, smart invalidation, error handling
+ * @param options - Mutation options
+ * @returns Mutation result with enhanced features
+ */
+export function useRemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteMutation(options?: {
+  onSuccess?: (data: z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteResponseSchema>, variables: z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteParamsSchema>) => void
+  onError?: (error: Error, variables: z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteParamsSchema>) => void
+  optimisticUpdate?: (variables: z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteParamsSchema>) => unknown
+  showToast?: boolean
+}) {
+  const queryClient = useQueryClient()
+  const [isPending, startTransition] = useTransition()
+  const [optimisticData, setOptimisticData] = useOptimistic<unknown, z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteParamsSchema>>(null, (_, newData) => newData)
+
+  const mutation = useMutation({
+    mutationFn: async (variables: z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteParamsSchema>): Promise<z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteResponseSchema>> => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteResponseSchema>>(removeDeviceApiV1UsersUsersDevicesDeviceIdDelete(variables))
+        return (result ?? ({} as z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteResponseSchema>))
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    
+    onMutate: async (variables: z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteParamsSchema>) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
+
+      // Optimistic update (if provided)
+      if (options?.optimisticUpdate) {
+        const optimisticValue = options.optimisticUpdate(variables)
+        setOptimisticData(optimisticValue as z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteParamsSchema>)
+      }
+      
+      return {}
+    },
+    
+    onSuccess: (data, variables) => {
+      // Show success toast
+      if (options?.showToast !== false) {
+        toast.success('Deleted successfully')
+      }
+      
+      // Custom success handler
+      options?.onSuccess?.(data, variables)
+    },
+    
+    onError: (error: Error, variables: z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteParamsSchema>) => {
+      // Show error toast
+      if (options?.showToast !== false) {
+        toast.error(error.message || 'Failed to delete')
+      }
+      
+      // Custom error handler
+      options?.onError?.(error as Error, variables)
+    },
+    
+    onSettled: async () => {
+      // Always refetch after error or success
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['Users'] }),
+        queryClient.invalidateQueries({ queryKey: ['Devices'] })
+      ])
+    }
+  })
+
+  return {
+    ...mutation,
+    mutateWithTransition: (variables: z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteParamsSchema>) => {
+      startTransition(() => {
+        mutation.mutate(variables)
+      })
+    },
+    isPending: isPending || mutation.isPending,
+    optimisticData
+  }
+}
+
+/**
+ * Optimized mutation hook for PATCH /api/v1/users/users/devices/{device_id}/trust
+ * Features: Optimistic updates, smart invalidation, error handling
+ * @param options - Mutation options
+ * @returns Mutation result with enhanced features
+ */
+export function useMarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchMutation(options?: {
+  onSuccess?: (data: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchResponseSchema>, variables: { body: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchRequestSchema>, params: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchParamsSchema> }) => void
+  onError?: (error: Error, variables: { body: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchRequestSchema>, params: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchParamsSchema> }) => void
+  optimisticUpdate?: (variables: { body: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchRequestSchema>, params: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchParamsSchema> }) => unknown
+  showToast?: boolean
+}) {
+  const queryClient = useQueryClient()
+  const [isPending, startTransition] = useTransition()
+  const [optimisticData, setOptimisticData] = useOptimistic<unknown, { body: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchRequestSchema>, params: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchParamsSchema> }>(null, (_, newData) => newData)
+
+  const mutation = useMutation({
+    mutationFn: async (variables: { body: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchRequestSchema>, params: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchParamsSchema> }): Promise<z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchResponseSchema>> => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchResponseSchema>>(markDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatch(variables))
+        return (result ?? ({} as z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchResponseSchema>))
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    
+    onMutate: async (variables: { body: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchRequestSchema>, params: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchParamsSchema> }) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
+
+      // Optimistic update (if provided)
+      if (options?.optimisticUpdate) {
+        const optimisticValue = options.optimisticUpdate(variables)
+        setOptimisticData(optimisticValue as { body: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchRequestSchema>, params: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchParamsSchema> })
+      }
+      
+      return {}
+    },
+    
+    onSuccess: (data, variables) => {
+      // Show success toast
+      if (options?.showToast !== false) {
+        toast.success('Updated successfully')
+      }
+      
+      // Custom success handler
+      options?.onSuccess?.(data, variables)
+    },
+    
+    onError: (error: Error, variables: { body: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchRequestSchema>, params: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchParamsSchema> }) => {
+      // Show error toast
+      if (options?.showToast !== false) {
+        toast.error(error.message || 'Failed to update')
+      }
+      
+      // Custom error handler
+      options?.onError?.(error as Error, variables)
+    },
+    
+    onSettled: async () => {
+      // Always refetch after error or success
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['Users'] }),
+        queryClient.invalidateQueries({ queryKey: ['Devices'] })
+      ])
+    }
+  })
+
+  return {
+    ...mutation,
+    mutateWithTransition: (variables: { body: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchRequestSchema>, params: z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchParamsSchema> }) => {
+      startTransition(() => {
+        mutation.mutate(variables)
+      })
+    },
+    isPending: isPending || mutation.isPending,
+    optimisticData
+  }
+}
+
+/**
  * Optimized mutation hook for POST /api/v1/users/register
  * Features: Optimistic updates, smart invalidation, error handling
  * @param options - Mutation options
@@ -150,7 +605,12 @@ export function useRegisterApiV1UsersRegisterPostMutation(options?: {
     },
     
     onMutate: async (variables: z.infer<typeof RegisterApiV1UsersRegisterPostRequestSchema>) => {
-      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
 
       // Optimistic update (if provided)
       if (options?.optimisticUpdate) {
@@ -184,7 +644,10 @@ export function useRegisterApiV1UsersRegisterPostMutation(options?: {
     onSettled: async () => {
       // Always refetch after error or success
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
       ])
     }
@@ -229,7 +692,12 @@ export function useLoginApiV1UsersLoginPostMutation(options?: {
     },
     
     onMutate: async (variables: z.infer<typeof LoginApiV1UsersLoginPostRequestSchema>) => {
-      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
 
       // Optimistic update (if provided)
       if (options?.optimisticUpdate) {
@@ -263,7 +731,10 @@ export function useLoginApiV1UsersLoginPostMutation(options?: {
     onSettled: async () => {
       // Always refetch after error or success
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
       ])
     }
@@ -308,7 +779,12 @@ export function useRefreshTokenApiV1UsersRefreshPostMutation(options?: {
     },
     
     onMutate: async (variables: z.infer<typeof RefreshTokenApiV1UsersRefreshPostRequestSchema>) => {
-      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
 
       // Optimistic update (if provided)
       if (options?.optimisticUpdate) {
@@ -342,7 +818,10 @@ export function useRefreshTokenApiV1UsersRefreshPostMutation(options?: {
     onSettled: async () => {
       // Always refetch after error or success
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
       ])
     }
@@ -387,7 +866,12 @@ export function useUpdateCurrentUserApiV1UsersMePutMutation(options?: {
     },
     
     onMutate: async (variables: z.infer<typeof UpdateCurrentUserApiV1UsersMePutRequestSchema>) => {
-      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
 
       // Optimistic update (if provided)
       if (options?.optimisticUpdate) {
@@ -421,7 +905,10 @@ export function useUpdateCurrentUserApiV1UsersMePutMutation(options?: {
     onSettled: async () => {
       // Always refetch after error or success
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
       ])
     }
@@ -466,7 +953,12 @@ export function useRequestOtpApiV1UsersOtpRequestPostMutation(options?: {
     },
     
     onMutate: async (variables: z.infer<typeof RequestOtpApiV1UsersOtpRequestPostRequestSchema>) => {
-      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
 
       // Optimistic update (if provided)
       if (options?.optimisticUpdate) {
@@ -500,7 +992,10 @@ export function useRequestOtpApiV1UsersOtpRequestPostMutation(options?: {
     onSettled: async () => {
       // Always refetch after error or success
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
       ])
     }
@@ -545,7 +1040,12 @@ export function useVerifyOtpApiV1UsersOtpVerifyPostMutation(options?: {
     },
     
     onMutate: async (variables: z.infer<typeof VerifyOtpApiV1UsersOtpVerifyPostRequestSchema>) => {
-      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
 
       // Optimistic update (if provided)
       if (options?.optimisticUpdate) {
@@ -579,7 +1079,10 @@ export function useVerifyOtpApiV1UsersOtpVerifyPostMutation(options?: {
     onSettled: async () => {
       // Always refetch after error or success
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
       ])
     }
@@ -624,7 +1127,12 @@ export function useLogoutApiV1UsersLogoutPostMutation(options?: {
     },
     
     onMutate: async (variables: void) => {
-      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
 
       // Optimistic update (if provided)
       if (options?.optimisticUpdate) {
@@ -658,7 +1166,10 @@ export function useLogoutApiV1UsersLogoutPostMutation(options?: {
     onSettled: async () => {
       // Always refetch after error or success
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
       ])
     }
@@ -703,7 +1214,12 @@ export function useLogoutAllApiV1UsersLogoutAllPostMutation(options?: {
     },
     
     onMutate: async (variables: void) => {
-      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
 
       // Optimistic update (if provided)
       if (options?.optimisticUpdate) {
@@ -737,7 +1253,10 @@ export function useLogoutAllApiV1UsersLogoutAllPostMutation(options?: {
     onSettled: async () => {
       // Always refetch after error or success
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
       ])
     }
@@ -782,7 +1301,12 @@ export function useOauthLoginApiV1UsersOauthLoginPostMutation(options?: {
     },
     
     onMutate: async (variables: z.infer<typeof OauthLoginApiV1UsersOauthLoginPostRequestSchema>) => {
-      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
 
       // Optimistic update (if provided)
       if (options?.optimisticUpdate) {
@@ -816,7 +1340,10 @@ export function useOauthLoginApiV1UsersOauthLoginPostMutation(options?: {
     onSettled: async () => {
       // Always refetch after error or success
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
       ])
     }
@@ -861,7 +1388,12 @@ export function useRequestPasswordResetApiV1UsersPasswordResetRequestPostMutatio
     },
     
     onMutate: async (variables: z.infer<typeof RequestPasswordResetApiV1UsersPasswordResetRequestPostRequestSchema>) => {
-      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
 
       // Optimistic update (if provided)
       if (options?.optimisticUpdate) {
@@ -895,7 +1427,10 @@ export function useRequestPasswordResetApiV1UsersPasswordResetRequestPostMutatio
     onSettled: async () => {
       // Always refetch after error or success
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
       ])
     }
@@ -940,7 +1475,12 @@ export function useResetPasswordApiV1UsersPasswordResetPostMutation(options?: {
     },
     
     onMutate: async (variables: z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostRequestSchema>) => {
-      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
 
       // Optimistic update (if provided)
       if (options?.optimisticUpdate) {
@@ -974,7 +1514,10 @@ export function useResetPasswordApiV1UsersPasswordResetPostMutation(options?: {
     onSettled: async () => {
       // Always refetch after error or success
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
       ])
     }
@@ -1019,7 +1562,12 @@ export function useChangePasswordApiV1UsersPasswordChangePostMutation(options?: 
     },
     
     onMutate: async (variables: z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostRequestSchema>) => {
-      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
 
       // Optimistic update (if provided)
       if (options?.optimisticUpdate) {
@@ -1053,7 +1601,10 @@ export function useChangePasswordApiV1UsersPasswordChangePostMutation(options?: 
     onSettled: async () => {
       // Always refetch after error or success
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
       ])
     }
@@ -1098,7 +1649,12 @@ export function useVerifyEmailApiV1UsersEmailVerifyPostMutation(options?: {
     },
     
     onMutate: async (variables: z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostRequestSchema>) => {
-      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
 
       // Optimistic update (if provided)
       if (options?.optimisticUpdate) {
@@ -1132,7 +1688,10 @@ export function useVerifyEmailApiV1UsersEmailVerifyPostMutation(options?: {
     onSettled: async () => {
       // Always refetch after error or success
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
       ])
     }
@@ -1177,7 +1736,12 @@ export function useResendEmailVerificationApiV1UsersEmailResendVerificationPostM
     },
     
     onMutate: async (variables: void) => {
-      await queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] })
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
 
       // Optimistic update (if provided)
       if (options?.optimisticUpdate) {
@@ -1211,7 +1775,10 @@ export function useResendEmailVerificationApiV1UsersEmailResendVerificationPostM
     onSettled: async () => {
       // Always refetch after error or success
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
       ])
     }
@@ -1220,6 +1787,528 @@ export function useResendEmailVerificationApiV1UsersEmailResendVerificationPostM
   return {
     ...mutation,
     mutateWithTransition: (variables: void) => {
+      startTransition(() => {
+        mutation.mutate(variables)
+      })
+    },
+    isPending: isPending || mutation.isPending,
+    optimisticData
+  }
+}
+
+/**
+ * Optimized mutation hook for POST /api/v1/users/login/2fa/verify
+ * Features: Optimistic updates, smart invalidation, error handling
+ * @param options - Mutation options
+ * @returns Mutation result with enhanced features
+ */
+export function useVerify2faLoginApiV1UsersLogin2faVerifyPostMutation(options?: {
+  onSuccess?: (data: z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema>, variables: z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema>) => void
+  onError?: (error: Error, variables: z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema>) => void
+  optimisticUpdate?: (variables: z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema>) => unknown
+  showToast?: boolean
+}) {
+  const queryClient = useQueryClient()
+  const [isPending, startTransition] = useTransition()
+  const [optimisticData, setOptimisticData] = useOptimistic<unknown, z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema>>(null, (_, newData) => newData)
+
+  const mutation = useMutation({
+    mutationFn: async (variables: z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema>): Promise<z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema>> => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema>>(verify2faLoginApiV1UsersLogin2faVerifyPost(variables))
+        return (result ?? ({} as z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema>))
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    
+    onMutate: async (variables: z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema>) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
+
+      // Optimistic update (if provided)
+      if (options?.optimisticUpdate) {
+        const optimisticValue = options.optimisticUpdate(variables)
+        setOptimisticData(optimisticValue as z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema>)
+      }
+      
+      return {}
+    },
+    
+    onSuccess: (data, variables) => {
+      // Show success toast
+      if (options?.showToast !== false) {
+        toast.success('Created successfully')
+      }
+      
+      // Custom success handler
+      options?.onSuccess?.(data, variables)
+    },
+    
+    onError: (error: Error, variables: z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema>) => {
+      // Show error toast
+      if (options?.showToast !== false) {
+        toast.error(error.message || 'Failed to create')
+      }
+      
+      // Custom error handler
+      options?.onError?.(error as Error, variables)
+    },
+    
+    onSettled: async () => {
+      // Always refetch after error or success
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['Users'] })
+      ])
+    }
+  })
+
+  return {
+    ...mutation,
+    mutateWithTransition: (variables: z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema>) => {
+      startTransition(() => {
+        mutation.mutate(variables)
+      })
+    },
+    isPending: isPending || mutation.isPending,
+    optimisticData
+  }
+}
+
+/**
+ * Optimized mutation hook for POST /api/v1/users/2fa/setup
+ * Features: Optimistic updates, smart invalidation, error handling
+ * @param options - Mutation options
+ * @returns Mutation result with enhanced features
+ */
+export function useSetup2faApiV1Users2faSetupPostMutation(options?: {
+  onSuccess?: (data: z.infer<typeof Setup2faApiV1Users2faSetupPostResponseSchema>, variables: void) => void
+  onError?: (error: Error, variables: void) => void
+  optimisticUpdate?: (variables: void) => unknown
+  showToast?: boolean
+}) {
+  const queryClient = useQueryClient()
+  const [isPending, startTransition] = useTransition()
+  const [optimisticData, setOptimisticData] = useOptimistic<unknown, void>(null, (_, newData) => newData)
+
+  const mutation = useMutation({
+    mutationFn: async (variables: void): Promise<z.infer<typeof Setup2faApiV1Users2faSetupPostResponseSchema>> => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof Setup2faApiV1Users2faSetupPostResponseSchema>>(setup2faApiV1Users2faSetupPost())
+        return (result ?? ({} as z.infer<typeof Setup2faApiV1Users2faSetupPostResponseSchema>))
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    
+    onMutate: async (variables: void) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
+
+      // Optimistic update (if provided)
+      if (options?.optimisticUpdate) {
+        const optimisticValue = options.optimisticUpdate(variables)
+        setOptimisticData(optimisticValue as void)
+      }
+      
+      return {}
+    },
+    
+    onSuccess: (data, variables) => {
+      // Show success toast
+      if (options?.showToast !== false) {
+        toast.success('Created successfully')
+      }
+      
+      // Custom success handler
+      options?.onSuccess?.(data, variables)
+    },
+    
+    onError: (error: Error, variables: void) => {
+      // Show error toast
+      if (options?.showToast !== false) {
+        toast.error(error.message || 'Failed to create')
+      }
+      
+      // Custom error handler
+      options?.onError?.(error as Error, variables)
+    },
+    
+    onSettled: async () => {
+      // Always refetch after error or success
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['Users'] })
+      ])
+    }
+  })
+
+  return {
+    ...mutation,
+    mutateWithTransition: (variables: void) => {
+      startTransition(() => {
+        mutation.mutate(variables)
+      })
+    },
+    isPending: isPending || mutation.isPending,
+    optimisticData
+  }
+}
+
+/**
+ * Optimized mutation hook for POST /api/v1/users/2fa/verify
+ * Features: Optimistic updates, smart invalidation, error handling
+ * @param options - Mutation options
+ * @returns Mutation result with enhanced features
+ */
+export function useVerify2faSetupApiV1Users2faVerifyPostMutation(options?: {
+  onSuccess?: (data: z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostResponseSchema>, variables: z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostRequestSchema>) => void
+  onError?: (error: Error, variables: z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostRequestSchema>) => void
+  optimisticUpdate?: (variables: z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostRequestSchema>) => unknown
+  showToast?: boolean
+}) {
+  const queryClient = useQueryClient()
+  const [isPending, startTransition] = useTransition()
+  const [optimisticData, setOptimisticData] = useOptimistic<unknown, z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostRequestSchema>>(null, (_, newData) => newData)
+
+  const mutation = useMutation({
+    mutationFn: async (variables: z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostRequestSchema>): Promise<z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostResponseSchema>> => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostResponseSchema>>(verify2faSetupApiV1Users2faVerifyPost(variables))
+        return (result ?? ({} as z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostResponseSchema>))
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    
+    onMutate: async (variables: z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostRequestSchema>) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
+
+      // Optimistic update (if provided)
+      if (options?.optimisticUpdate) {
+        const optimisticValue = options.optimisticUpdate(variables)
+        setOptimisticData(optimisticValue as z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostRequestSchema>)
+      }
+      
+      return {}
+    },
+    
+    onSuccess: (data, variables) => {
+      // Show success toast
+      if (options?.showToast !== false) {
+        toast.success('Created successfully')
+      }
+      
+      // Custom success handler
+      options?.onSuccess?.(data, variables)
+    },
+    
+    onError: (error: Error, variables: z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostRequestSchema>) => {
+      // Show error toast
+      if (options?.showToast !== false) {
+        toast.error(error.message || 'Failed to create')
+      }
+      
+      // Custom error handler
+      options?.onError?.(error as Error, variables)
+    },
+    
+    onSettled: async () => {
+      // Always refetch after error or success
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['Users'] })
+      ])
+    }
+  })
+
+  return {
+    ...mutation,
+    mutateWithTransition: (variables: z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostRequestSchema>) => {
+      startTransition(() => {
+        mutation.mutate(variables)
+      })
+    },
+    isPending: isPending || mutation.isPending,
+    optimisticData
+  }
+}
+
+/**
+ * Optimized mutation hook for POST /api/v1/users/2fa/disable
+ * Features: Optimistic updates, smart invalidation, error handling
+ * @param options - Mutation options
+ * @returns Mutation result with enhanced features
+ */
+export function useDisable2faApiV1Users2faDisablePostMutation(options?: {
+  onSuccess?: (data: z.infer<typeof Disable2faApiV1Users2faDisablePostResponseSchema>, variables: z.infer<typeof Disable2faApiV1Users2faDisablePostRequestSchema>) => void
+  onError?: (error: Error, variables: z.infer<typeof Disable2faApiV1Users2faDisablePostRequestSchema>) => void
+  optimisticUpdate?: (variables: z.infer<typeof Disable2faApiV1Users2faDisablePostRequestSchema>) => unknown
+  showToast?: boolean
+}) {
+  const queryClient = useQueryClient()
+  const [isPending, startTransition] = useTransition()
+  const [optimisticData, setOptimisticData] = useOptimistic<unknown, z.infer<typeof Disable2faApiV1Users2faDisablePostRequestSchema>>(null, (_, newData) => newData)
+
+  const mutation = useMutation({
+    mutationFn: async (variables: z.infer<typeof Disable2faApiV1Users2faDisablePostRequestSchema>): Promise<z.infer<typeof Disable2faApiV1Users2faDisablePostResponseSchema>> => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof Disable2faApiV1Users2faDisablePostResponseSchema>>(disable2faApiV1Users2faDisablePost(variables))
+        return (result ?? ({} as z.infer<typeof Disable2faApiV1Users2faDisablePostResponseSchema>))
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    
+    onMutate: async (variables: z.infer<typeof Disable2faApiV1Users2faDisablePostRequestSchema>) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
+
+      // Optimistic update (if provided)
+      if (options?.optimisticUpdate) {
+        const optimisticValue = options.optimisticUpdate(variables)
+        setOptimisticData(optimisticValue as z.infer<typeof Disable2faApiV1Users2faDisablePostRequestSchema>)
+      }
+      
+      return {}
+    },
+    
+    onSuccess: (data, variables) => {
+      // Show success toast
+      if (options?.showToast !== false) {
+        toast.success('Created successfully')
+      }
+      
+      // Custom success handler
+      options?.onSuccess?.(data, variables)
+    },
+    
+    onError: (error: Error, variables: z.infer<typeof Disable2faApiV1Users2faDisablePostRequestSchema>) => {
+      // Show error toast
+      if (options?.showToast !== false) {
+        toast.error(error.message || 'Failed to create')
+      }
+      
+      // Custom error handler
+      options?.onError?.(error as Error, variables)
+    },
+    
+    onSettled: async () => {
+      // Always refetch after error or success
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['Users'] })
+      ])
+    }
+  })
+
+  return {
+    ...mutation,
+    mutateWithTransition: (variables: z.infer<typeof Disable2faApiV1Users2faDisablePostRequestSchema>) => {
+      startTransition(() => {
+        mutation.mutate(variables)
+      })
+    },
+    isPending: isPending || mutation.isPending,
+    optimisticData
+  }
+}
+
+/**
+ * Optimized mutation hook for POST /api/v1/users/2fa/backup-codes/regenerate
+ * Features: Optimistic updates, smart invalidation, error handling
+ * @param options - Mutation options
+ * @returns Mutation result with enhanced features
+ */
+export function useRegenerateBackupCodesApiV1Users2faBackupCodesRegeneratePostMutation(options?: {
+  onSuccess?: (data: z.infer<typeof RegenerateBackupCodesApiV1Users2faBackupCodesRegeneratePostResponseSchema>, variables: void) => void
+  onError?: (error: Error, variables: void) => void
+  optimisticUpdate?: (variables: void) => unknown
+  showToast?: boolean
+}) {
+  const queryClient = useQueryClient()
+  const [isPending, startTransition] = useTransition()
+  const [optimisticData, setOptimisticData] = useOptimistic<unknown, void>(null, (_, newData) => newData)
+
+  const mutation = useMutation({
+    mutationFn: async (variables: void): Promise<z.infer<typeof RegenerateBackupCodesApiV1Users2faBackupCodesRegeneratePostResponseSchema>> => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof RegenerateBackupCodesApiV1Users2faBackupCodesRegeneratePostResponseSchema>>(regenerateBackupCodesApiV1Users2faBackupCodesRegeneratePost())
+        return (result ?? ({} as z.infer<typeof RegenerateBackupCodesApiV1Users2faBackupCodesRegeneratePostResponseSchema>))
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    
+    onMutate: async (variables: void) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
+
+      // Optimistic update (if provided)
+      if (options?.optimisticUpdate) {
+        const optimisticValue = options.optimisticUpdate(variables)
+        setOptimisticData(optimisticValue as void)
+      }
+      
+      return {}
+    },
+    
+    onSuccess: (data, variables) => {
+      // Show success toast
+      if (options?.showToast !== false) {
+        toast.success('Created successfully')
+      }
+      
+      // Custom success handler
+      options?.onSuccess?.(data, variables)
+    },
+    
+    onError: (error: Error, variables: void) => {
+      // Show error toast
+      if (options?.showToast !== false) {
+        toast.error(error.message || 'Failed to create')
+      }
+      
+      // Custom error handler
+      options?.onError?.(error as Error, variables)
+    },
+    
+    onSettled: async () => {
+      // Always refetch after error or success
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['Users'] })
+      ])
+    }
+  })
+
+  return {
+    ...mutation,
+    mutateWithTransition: (variables: void) => {
+      startTransition(() => {
+        mutation.mutate(variables)
+      })
+    },
+    isPending: isPending || mutation.isPending,
+    optimisticData
+  }
+}
+
+/**
+ * Optimized mutation hook for POST /api/v1/users/account/delete
+ * Features: Optimistic updates, smart invalidation, error handling
+ * @param options - Mutation options
+ * @returns Mutation result with enhanced features
+ */
+export function useDeleteAccountApiV1UsersAccountDeletePostMutation(options?: {
+  onSuccess?: (data: z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostResponseSchema>, variables: z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostRequestSchema>) => void
+  onError?: (error: Error, variables: z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostRequestSchema>) => void
+  optimisticUpdate?: (variables: z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostRequestSchema>) => unknown
+  showToast?: boolean
+}) {
+  const queryClient = useQueryClient()
+  const [isPending, startTransition] = useTransition()
+  const [optimisticData, setOptimisticData] = useOptimistic<unknown, z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostRequestSchema>>(null, (_, newData) => newData)
+
+  const mutation = useMutation({
+    mutationFn: async (variables: z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostRequestSchema>): Promise<z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostResponseSchema>> => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostResponseSchema>>(deleteAccountApiV1UsersAccountDeletePost(variables))
+        return (result ?? ({} as z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostResponseSchema>))
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    
+    onMutate: async (variables: z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostRequestSchema>) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
+
+      // Optimistic update (if provided)
+      if (options?.optimisticUpdate) {
+        const optimisticValue = options.optimisticUpdate(variables)
+        setOptimisticData(optimisticValue as z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostRequestSchema>)
+      }
+      
+      return {}
+    },
+    
+    onSuccess: (data, variables) => {
+      // Show success toast
+      if (options?.showToast !== false) {
+        toast.success('Created successfully')
+      }
+      
+      // Custom success handler
+      options?.onSuccess?.(data, variables)
+    },
+    
+    onError: (error: Error, variables: z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostRequestSchema>) => {
+      // Show error toast
+      if (options?.showToast !== false) {
+        toast.error(error.message || 'Failed to create')
+      }
+      
+      // Custom error handler
+      options?.onError?.(error as Error, variables)
+    },
+    
+    onSettled: async () => {
+      // Always refetch after error or success
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['Users'] })
+      ])
+    }
+  })
+
+  return {
+    ...mutation,
+    mutateWithTransition: (variables: z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostRequestSchema>) => {
       startTransition(() => {
         mutation.mutate(variables)
       })

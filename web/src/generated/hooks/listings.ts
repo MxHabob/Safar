@@ -342,7 +342,10 @@ export function useCreateListingApiV1ListingsPostMutation(options?: {
     onMutate: async (variables: z.infer<typeof CreateListingApiV1ListingsPostRequestSchema>) => {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listListingsApiV1ListingsGet'] }),
-        queryClient.cancelQueries({ queryKey: ['getListingApiV1ListingsListingIdGet'] })
+        queryClient.cancelQueries({ queryKey: ['getListingApiV1ListingsListingIdGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getFeaturedListingsApiV1ListingsPremiumFeaturedGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getPremiumListingsApiV1ListingsPremiumPremiumGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getPricingOptionsApiV1ListingsPremiumPricingGet'] })
       ])
 
       // Optimistic update (if provided)
@@ -379,6 +382,9 @@ export function useCreateListingApiV1ListingsPostMutation(options?: {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listListingsApiV1ListingsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getListingApiV1ListingsListingIdGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getFeaturedListingsApiV1ListingsPremiumFeaturedGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getPremiumListingsApiV1ListingsPremiumPremiumGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getPricingOptionsApiV1ListingsPremiumPricingGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Listings'] })
       ])
     }
@@ -425,7 +431,10 @@ export function useUpdateListingApiV1ListingsListingIdPutMutation(options?: {
     onMutate: async (variables: { body: z.infer<typeof UpdateListingApiV1ListingsListingIdPutRequestSchema>, params: z.infer<typeof UpdateListingApiV1ListingsListingIdPutParamsSchema> }) => {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listListingsApiV1ListingsGet'] }),
-        queryClient.cancelQueries({ queryKey: ['getListingApiV1ListingsListingIdGet'] })
+        queryClient.cancelQueries({ queryKey: ['getListingApiV1ListingsListingIdGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getFeaturedListingsApiV1ListingsPremiumFeaturedGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getPremiumListingsApiV1ListingsPremiumPremiumGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getPricingOptionsApiV1ListingsPremiumPricingGet'] })
       ])
 
       // Optimistic update (if provided)
@@ -462,6 +471,9 @@ export function useUpdateListingApiV1ListingsListingIdPutMutation(options?: {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listListingsApiV1ListingsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getListingApiV1ListingsListingIdGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getFeaturedListingsApiV1ListingsPremiumFeaturedGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getPremiumListingsApiV1ListingsPremiumPremiumGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getPricingOptionsApiV1ListingsPremiumPricingGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Listings'] })
       ])
     }
@@ -499,7 +511,7 @@ export function useDeleteListingApiV1ListingsListingIdDeleteMutation(options?: {
     mutationFn: async (variables: z.infer<typeof DeleteListingApiV1ListingsListingIdDeleteParamsSchema>): Promise<z.infer<typeof DeleteListingApiV1ListingsListingIdDeleteResponseSchema>> => {
       try {
         const result = await resolveActionResult<z.infer<typeof DeleteListingApiV1ListingsListingIdDeleteResponseSchema>>(deleteListingApiV1ListingsListingIdDelete(variables))
-        return (result ?? ({} as z.infer<typeof DeleteListingApiV1ListingsListingIdDeleteResponseSchema>))
+        return (result ?? ({} as unknown as z.infer<typeof DeleteListingApiV1ListingsListingIdDeleteResponseSchema>))
       } catch (error) {
         handleActionError(error)
       }
@@ -508,7 +520,10 @@ export function useDeleteListingApiV1ListingsListingIdDeleteMutation(options?: {
     onMutate: async (variables: z.infer<typeof DeleteListingApiV1ListingsListingIdDeleteParamsSchema>) => {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listListingsApiV1ListingsGet'] }),
-        queryClient.cancelQueries({ queryKey: ['getListingApiV1ListingsListingIdGet'] })
+        queryClient.cancelQueries({ queryKey: ['getListingApiV1ListingsListingIdGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getFeaturedListingsApiV1ListingsPremiumFeaturedGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getPremiumListingsApiV1ListingsPremiumPremiumGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getPricingOptionsApiV1ListingsPremiumPricingGet'] })
       ])
 
       // Optimistic update (if provided)
@@ -545,6 +560,9 @@ export function useDeleteListingApiV1ListingsListingIdDeleteMutation(options?: {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listListingsApiV1ListingsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getListingApiV1ListingsListingIdGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getFeaturedListingsApiV1ListingsPremiumFeaturedGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getPremiumListingsApiV1ListingsPremiumPremiumGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getPricingOptionsApiV1ListingsPremiumPricingGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Listings'] })
       ])
     }
@@ -591,7 +609,10 @@ export function useCreateListingLocationApiV1ListingsListingIdLocationPostMutati
     onMutate: async (variables: { body: z.infer<typeof CreateListingLocationApiV1ListingsListingIdLocationPostRequestSchema>, params: z.infer<typeof CreateListingLocationApiV1ListingsListingIdLocationPostParamsSchema> }) => {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listListingsApiV1ListingsGet'] }),
-        queryClient.cancelQueries({ queryKey: ['getListingApiV1ListingsListingIdGet'] })
+        queryClient.cancelQueries({ queryKey: ['getListingApiV1ListingsListingIdGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getFeaturedListingsApiV1ListingsPremiumFeaturedGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getPremiumListingsApiV1ListingsPremiumPremiumGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getPricingOptionsApiV1ListingsPremiumPricingGet'] })
       ])
 
       // Optimistic update (if provided)
@@ -628,6 +649,9 @@ export function useCreateListingLocationApiV1ListingsListingIdLocationPostMutati
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listListingsApiV1ListingsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getListingApiV1ListingsListingIdGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getFeaturedListingsApiV1ListingsPremiumFeaturedGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getPremiumListingsApiV1ListingsPremiumPremiumGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getPricingOptionsApiV1ListingsPremiumPricingGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Listings'] })
       ])
     }

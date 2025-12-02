@@ -14,6 +14,11 @@ export type AccountProvider = z.infer<typeof AccountProviderSchema>
 export const BookingTypeSchema = z.enum(["instant", "request"])
 export type BookingType = z.infer<typeof BookingTypeSchema>
 /**
+ * Discount types.
+ */
+export const DiscountTypeSchema = z.enum(["percentage", "fixed_amount", "free_nights"])
+export type DiscountType = z.infer<typeof DiscountTypeSchema>
+/**
  * File categories.
  */
 export const FileCategorySchema = z.enum(["avatar", "listing_photo", "property_photo", "document", "identification", "other"])
@@ -36,13 +41,18 @@ export type ListingType = z.infer<typeof ListingTypeSchema>
 /**
  * Payment method types.
  */
-export const PaymentMethodTypeSchema = z.enum(["credit_card", "debit_card", "paypal", "stripe", "bank_transfer", "crypto"])
+export const PaymentMethodTypeSchema = z.enum(["credit_card", "debit_card", "paypal", "stripe", "bank_transfer", "crypto", "apple_pay", "google_pay", "mpesa", "fawry", "klarna", "tamara", "tabby"])
 export type PaymentMethodType = z.infer<typeof PaymentMethodTypeSchema>
 /**
  * Payment statuses.
  */
 export const PaymentStatusSchema = z.enum(["initiated", "authorized", "captured", "pending", "processing", "completed", "failed", "refunded", "partially_refunded"])
 export type PaymentStatus = z.infer<typeof PaymentStatusSchema>
+/**
+ * Subscription plan types.
+ */
+export const SubscriptionPlanTypeSchema = z.enum(["host", "guest"])
+export type SubscriptionPlanType = z.infer<typeof SubscriptionPlanTypeSchema>
 /**
  * User roles.
  */
@@ -53,6 +63,52 @@ export type UserRole = z.infer<typeof UserRoleSchema>
  */
 export const UserStatusSchema = z.enum(["active", "inactive", "suspended", "pending_verification"])
 export type UserStatus = z.infer<typeof UserStatusSchema>
+/**
+ * Schema for account deletion request.
+ */
+export const AccountDeletionRequestSchema = z.object({
+  password: z.string(),
+  confirm: z.boolean()
+})
+export type AccountDeletionRequest = z.infer<typeof AccountDeletionRequestSchema>
+export const BodyCreateCouponApiV1PromotionsCouponsPostSchema = z.object({
+  code: z.string(),
+  name: z.string(),
+  description: z.any().optional(),
+  discount_type: DiscountTypeSchema,
+  discount_value: z.number(),
+  max_discount_amount: z.any().optional(),
+  min_purchase_amount: z.number().optional(),
+  start_date: z.string(),
+  end_date: z.string(),
+  max_uses: z.any().optional(),
+  max_uses_per_user: z.number().int().optional(),
+  applicable_to_properties: z.any().optional(),
+  applicable_to_users: z.any().optional()
+})
+export type BodyCreateCouponApiV1PromotionsCouponsPost = z.infer<typeof BodyCreateCouponApiV1PromotionsCouponsPostSchema>
+export const BodyRegisterDeviceApiV1UsersUsersDevicesRegisterPostSchema = z.object({
+  platform: z.string(),
+  fingerprint: z.string(),
+  push_token: z.string().optional(),
+  device_metadata: z.record(z.string(), z.any()).optional()
+})
+export type BodyRegisterDeviceApiV1UsersUsersDevicesRegisterPost = z.infer<typeof BodyRegisterDeviceApiV1UsersUsersDevicesRegisterPostSchema>
+export const BodySendBulkPushNotificationsApiV1NotificationsPushBulkPostSchema = z.object({
+  device_tokens: z.array(z.string()),
+  title: z.string(),
+  body: z.string(),
+  data: z.any().optional()
+})
+export type BodySendBulkPushNotificationsApiV1NotificationsPushBulkPost = z.infer<typeof BodySendBulkPushNotificationsApiV1NotificationsPushBulkPostSchema>
+export const BodySendPushNotificationApiV1NotificationsPushSendPostSchema = z.object({
+  device_token: z.any().optional(),
+  title: z.string(),
+  body: z.string(),
+  data: z.any().optional(),
+  send_to_all_devices: z.boolean().optional()
+})
+export type BodySendPushNotificationApiV1NotificationsPushSendPost = z.infer<typeof BodySendPushNotificationApiV1NotificationsPushSendPostSchema>
 export const BodyUploadFileApiV1FilesUploadPostSchema = z.object({
   file: z.string()
 })
@@ -115,6 +171,7 @@ export const BookingResponseSchema = z.object({
   fees: z.any().optional(),
   status: z.string(),
   payment_status: z.string(),
+  payment_method: z.any().optional(),
   payment_id: z.any().optional(),
   special_requests: z.any().optional(),
   guest_message: z.any().optional(),
@@ -136,7 +193,15 @@ export const BookingListResponseSchema = z.object({
 })
 export type BookingListResponse = z.infer<typeof BookingListResponseSchema>
 
-
+/**
+ * Schema for creating a conversation.
+ */
+export const ConversationCreateSchema = z.object({
+  participant_id: z.string().max(40, "Maximum length is 40"),
+  listing_id: z.any().optional(),
+  booking_id: z.any().optional()
+})
+export type ConversationCreate = z.infer<typeof ConversationCreateSchema>
 /**
  * Schema returned in message responses.
  */
@@ -154,27 +219,6 @@ export const MessageResponseSchema = z.object({
   created_at: z.string()
 })
 export type MessageResponse = z.infer<typeof MessageResponseSchema>
-/**
- * Listing photo response schema.
- */
-export const ListingPhotoResponseSchema = z.object({
-  id: z.string().max(40, "Maximum length is 40"),
-  url: z.string(),
-  thumbnail_url: z.any().optional(),
-  caption: z.any().optional(),
-  position: z.number().int(),
-  is_primary: z.boolean()
-})
-export type ListingPhotoResponse = z.infer<typeof ListingPhotoResponseSchema>
-/**
- * Schema for creating a conversation.
- */
-export const ConversationCreateSchema = z.object({
-  participant_id: z.string().max(40, "Maximum length is 40"),
-  listing_id: z.any().optional(),
-  booking_id: z.any().optional()
-})
-export type ConversationCreate = z.infer<typeof ConversationCreateSchema>
 /**
  * Schema returned in conversation responses.
  */
@@ -199,6 +243,15 @@ export const ConversationListResponseSchema = z.object({
 })
 export type ConversationListResponse = z.infer<typeof ConversationListResponseSchema>
 
+/**
+ * Schema for GDPR data export response.
+ */
+export const DataExportResponseSchema = z.object({
+  export_date: z.string(),
+  user_id: z.string(),
+  data: z.record(z.string(), z.any())
+})
+export type DataExportResponse = z.infer<typeof DataExportResponseSchema>
 /**
  * Schema for verifying email with code.
  */
@@ -285,6 +338,18 @@ export const ListingImageResponseSchema = z.object({
   position: z.number().int()
 })
 export type ListingImageResponse = z.infer<typeof ListingImageResponseSchema>
+/**
+ * Listing photo response schema.
+ */
+export const ListingPhotoResponseSchema = z.object({
+  id: z.string().max(40, "Maximum length is 40"),
+  url: z.string(),
+  thumbnail_url: z.any().optional(),
+  caption: z.any().optional(),
+  position: z.number().int(),
+  is_primary: z.boolean()
+})
+export type ListingPhotoResponse = z.infer<typeof ListingPhotoResponseSchema>
 /**
  * Full listing response schema - complete data for authenticated users
  */
@@ -396,6 +461,23 @@ export const ListingUpdateSchema = z.object({
   status: z.any().optional()
 })
 export type ListingUpdate = z.infer<typeof ListingUpdateSchema>
+/**
+ * Loyalty status response.
+ */
+export const LoyaltyStatusResponseSchema = z.object({
+  balance: z.number().int(),
+  tier: z.string(),
+  tier_name: z.string(),
+  points_per_dollar: z.number(),
+  discount_percentage: z.number().int(),
+  priority_support: z.boolean(),
+  points_to_next_tier: z.any().optional(),
+  next_tier: z.any().optional(),
+  expires_at: z.any().optional(),
+  recent_transactions: z.array(z.record(z.string(), z.any())).optional(),
+  program_name: z.string()
+})
+export type LoyaltyStatusResponse = z.infer<typeof LoyaltyStatusResponseSchema>
 /**
  * Schema for creating a message.
  */
@@ -510,6 +592,24 @@ export const PaymentResponseSchema = z.object({
 })
 export type PaymentResponse = z.infer<typeof PaymentResponseSchema>
 /**
+ * Request to redeem points.
+ */
+export const PointsRedemptionRequestSchema = z.object({
+  points: z.number().int().min(100, "Minimum value is 100"),
+  booking_id: z.any().optional()
+})
+export type PointsRedemptionRequest = z.infer<typeof PointsRedemptionRequestSchema>
+/**
+ * Response for points redemption.
+ */
+export const PointsRedemptionResponseSchema = z.object({
+  points_redeemed: z.number().int(),
+  discount_amount: z.number(),
+  new_balance: z.number().int(),
+  transaction_id: z.string()
+})
+export type PointsRedemptionResponse = z.infer<typeof PointsRedemptionResponseSchema>
+/**
  * Public location response - limited data for unauthenticated users
  */
 export const PublicListingLocationResponseSchema = z.object({
@@ -561,6 +661,24 @@ export const PublicListingResponseSchema = z.object({
   can_book: z.boolean().optional()
 })
 export type PublicListingResponse = z.infer<typeof PublicListingResponseSchema>
+/**
+ * Redemption option.
+ */
+export const RedemptionOptionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  points_required: z.number().int(),
+  value: z.number(),
+  type: z.string()
+})
+export type RedemptionOption = z.infer<typeof RedemptionOptionSchema>
+/**
+ * Response with available redemption options.
+ */
+export const RedemptionOptionsResponseSchema = z.object({
+  options: z.array(RedemptionOptionSchema)
+})
+export type RedemptionOptionsResponse = z.infer<typeof RedemptionOptionsResponseSchema>
 /**
  * Schema for refresh-token requests.
  */
@@ -686,6 +804,51 @@ export const TokenResponseSchema = z.object({
 })
 export type TokenResponse = z.infer<typeof TokenResponseSchema>
 /**
+ * Schema for creating a travel guide.
+ */
+export const TravelGuideCreateSchema = z.object({
+  title: z.string().min(1, "Minimum length is 1").max(500, "Maximum length is 500"),
+  content: z.string().min(1, "Minimum length is 1"),
+  destination: z.string().min(1, "Minimum length is 1").max(200, "Maximum length is 200"),
+  country: z.string().min(1, "Minimum length is 1").max(100, "Maximum length is 100"),
+  summary: z.any().optional(),
+  city: z.any().optional(),
+  tags: z.any().optional(),
+  categories: z.any().optional(),
+  cover_image_url: z.any().optional(),
+  image_urls: z.any().optional(),
+  is_official: z.boolean().optional()
+})
+export type TravelGuideCreate = z.infer<typeof TravelGuideCreateSchema>
+/**
+ * Schema for travel guide response.
+ */
+export const TravelGuideResponseSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  slug: z.string(),
+  summary: z.any(),
+  content: z.string(),
+  author_id: z.any(),
+  is_official: z.boolean(),
+  destination: z.string(),
+  city: z.any(),
+  country: z.string(),
+  cover_image_url: z.any(),
+  image_urls: z.array(z.string()),
+  tags: z.array(z.string()),
+  categories: z.array(z.string()),
+  reading_time_minutes: z.any(),
+  view_count: z.number().int(),
+  like_count: z.number().int(),
+  bookmark_count: z.number().int(),
+  status: z.string(),
+  published_at: z.any(),
+  created_at: z.string(),
+  updated_at: z.string()
+})
+export type TravelGuideResponse = z.infer<typeof TravelGuideResponseSchema>
+/**
  * Travel plan request schema.
  */
 export const TravelPlanRequestSchema = z.object({
@@ -730,6 +893,42 @@ export const TravelPlanResponseSchema = z.object({
   created_at: z.string()
 })
 export type TravelPlanResponse = z.infer<typeof TravelPlanResponseSchema>
+/**
+ * Schema for verifying 2FA during login.
+ */
+export const TwoFactorLoginVerifySchema = z.object({
+  email: z.string().email("Invalid email format"),
+  code: z.string(),
+  is_backup_code: z.boolean().optional()
+})
+export type TwoFactorLoginVerify = z.infer<typeof TwoFactorLoginVerifySchema>
+/**
+ * Schema for 2FA setup response.
+ */
+export const TwoFactorSetupResponseSchema = z.object({
+  secret: z.string(),
+  qr_code: z.string(),
+  backup_codes: z.array(z.string()),
+  message: z.string()
+})
+export type TwoFactorSetupResponse = z.infer<typeof TwoFactorSetupResponseSchema>
+/**
+ * Schema for 2FA status response.
+ */
+export const TwoFactorStatusResponseSchema = z.object({
+  enabled: z.boolean(),
+  required: z.boolean(),
+  backup_codes_count: z.number().int()
+})
+export type TwoFactorStatusResponse = z.infer<typeof TwoFactorStatusResponseSchema>
+/**
+ * Schema for verifying two-factor authentication (2FA).
+ */
+export const TwoFactorVerifyRequestSchema = z.object({
+  code: z.string(),
+  method: z.string()
+})
+export type TwoFactorVerifyRequest = z.infer<typeof TwoFactorVerifyRequestSchema>
 /**
  * Schema for creating a new user.
  */
@@ -782,6 +981,56 @@ export const UserResponseSchema = z.object({
 })
 export type UserResponse = z.infer<typeof UserResponseSchema>
 /**
+ * Schema for creating a user story.
+ */
+export const UserStoryCreateSchema = z.object({
+  title: z.string().min(1, "Minimum length is 1").max(500, "Maximum length is 500"),
+  content: z.string().min(1, "Minimum length is 1"),
+  destination: z.string().min(1, "Minimum length is 1").max(200, "Maximum length is 200"),
+  country: z.string().min(1, "Minimum length is 1").max(100, "Maximum length is 100"),
+  city: z.any().optional(),
+  travel_date: z.any().optional(),
+  duration_days: z.any().optional(),
+  travel_style: z.any().optional(),
+  tags: z.any().optional(),
+  cover_image_url: z.any().optional(),
+  image_urls: z.any().optional(),
+  video_urls: z.any().optional(),
+  guide_id: z.any().optional()
+})
+export type UserStoryCreate = z.infer<typeof UserStoryCreateSchema>
+/**
+ * Schema for user story response.
+ */
+export const UserStoryResponseSchema = z.object({
+  id: z.string(),
+  author_id: z.string(),
+  title: z.string(),
+  content: z.string(),
+  summary: z.any(),
+  destination: z.string(),
+  city: z.any(),
+  country: z.string(),
+  cover_image_url: z.any(),
+  image_urls: z.array(z.string()),
+  video_urls: z.array(z.string()),
+  travel_date: z.any(),
+  duration_days: z.any(),
+  travel_style: z.any(),
+  tags: z.array(z.string()),
+  view_count: z.number().int(),
+  like_count: z.number().int(),
+  comment_count: z.number().int(),
+  share_count: z.number().int(),
+  guide_id: z.any(),
+  status: z.string(),
+  published_at: z.any(),
+  is_featured: z.boolean(),
+  created_at: z.string(),
+  updated_at: z.string()
+})
+export type UserStoryResponse = z.infer<typeof UserStoryResponseSchema>
+/**
  * Schema for updating an existing user.
  */
 export const UserUpdateSchema = z.object({
@@ -824,6 +1073,106 @@ export type ReadinessCheckHealthReadyGetResponse = z.infer<typeof ReadinessCheck
 export const LivenessCheckHealthLiveGetResponseSchema = z.any()
 
 export type LivenessCheckHealthLiveGetResponse = z.infer<typeof LivenessCheckHealthLiveGetResponseSchema>
+/**
+ * Success response schema for GET /.well-known/apple-developer-merchantid-domain-association
+ * Status: 200
+ * Successful Response
+ */
+export const ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponseSchema = z.any()
+
+export type ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponse = z.infer<typeof ApplePayDomainAssociationWellKnownAppleDeveloperMerchantidDomainAssociationGetResponseSchema>
+/**
+ * Request schema for POST /api/v1/users/users/devices/register
+ */
+export const RegisterDeviceApiV1UsersUsersDevicesRegisterPostRequestSchema = BodyRegisterDeviceApiV1UsersUsersDevicesRegisterPostSchema
+export type RegisterDeviceApiV1UsersUsersDevicesRegisterPostRequest = z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostRequestSchema>
+/**
+ * Success response schema for POST /api/v1/users/users/devices/register
+ * Status: 200
+ * Successful Response
+ */
+export const RegisterDeviceApiV1UsersUsersDevicesRegisterPostResponseSchema = z.record(z.string(), z.any())
+
+export type RegisterDeviceApiV1UsersUsersDevicesRegisterPostResponse = z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/users/users/devices/register
+ * Status: 422
+ * Validation Error
+ */
+export const RegisterDeviceApiV1UsersUsersDevicesRegisterPostErrorSchema = HTTPValidationErrorSchema
+
+export type RegisterDeviceApiV1UsersUsersDevicesRegisterPostError = z.infer<typeof RegisterDeviceApiV1UsersUsersDevicesRegisterPostErrorSchema>
+/**
+ * Success response schema for GET /api/v1/users/users/devices
+ * Status: 200
+ * Successful Response
+ */
+export const ListDevicesApiV1UsersUsersDevicesGetResponseSchema = z.array(z.record(z.string(), z.any()))
+
+export type ListDevicesApiV1UsersUsersDevicesGetResponse = z.infer<typeof ListDevicesApiV1UsersUsersDevicesGetResponseSchema>
+/**
+ * Success response schema for DELETE /api/v1/users/users/devices/{device_id}
+ * Status: 200
+ * Successful Response
+ */
+export const RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteResponseSchema = z.any()
+
+export type RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteResponse = z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteResponseSchema>
+/**
+ * Error response schema for DELETE /api/v1/users/users/devices/{device_id}
+ * Status: 422
+ * Validation Error
+ */
+export const RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteErrorSchema = HTTPValidationErrorSchema
+
+export type RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteError = z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteErrorSchema>
+/**
+ * Parameters schema for DELETE /api/v1/users/users/devices/{device_id}
+ * Path params: device_id
+ * Query params: none
+ * Header params: none
+ */
+export const RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteParamsSchema = z.object({
+  path: z.object({
+    device_id: z.string().max(40, "Maximum length is 40")
+  })
+})
+
+export type RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteParams = z.infer<typeof RemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteParamsSchema>
+/**
+ * Request schema for PATCH /api/v1/users/users/devices/{device_id}/trust
+ */
+export const MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchRequestSchema = z.boolean()
+export type MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchRequest = z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchRequestSchema>
+/**
+ * Success response schema for PATCH /api/v1/users/users/devices/{device_id}/trust
+ * Status: 200
+ * Successful Response
+ */
+export const MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchResponseSchema = z.record(z.string(), z.any())
+
+export type MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchResponse = z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchResponseSchema>
+/**
+ * Error response schema for PATCH /api/v1/users/users/devices/{device_id}/trust
+ * Status: 422
+ * Validation Error
+ */
+export const MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchErrorSchema = HTTPValidationErrorSchema
+
+export type MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchError = z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchErrorSchema>
+/**
+ * Parameters schema for PATCH /api/v1/users/users/devices/{device_id}/trust
+ * Path params: device_id
+ * Query params: none
+ * Header params: none
+ */
+export const MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchParamsSchema = z.object({
+  path: z.object({
+    device_id: z.string().max(40, "Maximum length is 40")
+  })
+})
+
+export type MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchParams = z.infer<typeof MarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchParamsSchema>
 /**
  * Request schema for POST /api/v1/users/register
  */
@@ -1087,6 +1436,122 @@ export type VerifyEmailApiV1UsersEmailVerifyPostError = z.infer<typeof VerifyEma
 export const ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema = z.any()
 
 export type ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponse = z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>
+/**
+ * Request schema for POST /api/v1/users/login/2fa/verify
+ */
+export const Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema = TwoFactorLoginVerifySchema
+export type Verify2faLoginApiV1UsersLogin2faVerifyPostRequest = z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema>
+/**
+ * Success response schema for POST /api/v1/users/login/2fa/verify
+ * Status: 200
+ * Successful Response
+ */
+export const Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema = TokenResponseSchema
+
+export type Verify2faLoginApiV1UsersLogin2faVerifyPostResponse = z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/users/login/2fa/verify
+ * Status: 422
+ * Validation Error
+ */
+export const Verify2faLoginApiV1UsersLogin2faVerifyPostErrorSchema = HTTPValidationErrorSchema
+
+export type Verify2faLoginApiV1UsersLogin2faVerifyPostError = z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostErrorSchema>
+/**
+ * Success response schema for POST /api/v1/users/2fa/setup
+ * Status: 200
+ * Successful Response
+ */
+export const Setup2faApiV1Users2faSetupPostResponseSchema = TwoFactorSetupResponseSchema
+
+export type Setup2faApiV1Users2faSetupPostResponse = z.infer<typeof Setup2faApiV1Users2faSetupPostResponseSchema>
+/**
+ * Request schema for POST /api/v1/users/2fa/verify
+ */
+export const Verify2faSetupApiV1Users2faVerifyPostRequestSchema = TwoFactorVerifyRequestSchema
+export type Verify2faSetupApiV1Users2faVerifyPostRequest = z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostRequestSchema>
+/**
+ * Success response schema for POST /api/v1/users/2fa/verify
+ * Status: 200
+ * Successful Response
+ */
+export const Verify2faSetupApiV1Users2faVerifyPostResponseSchema = z.any()
+
+export type Verify2faSetupApiV1Users2faVerifyPostResponse = z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/users/2fa/verify
+ * Status: 422
+ * Validation Error
+ */
+export const Verify2faSetupApiV1Users2faVerifyPostErrorSchema = HTTPValidationErrorSchema
+
+export type Verify2faSetupApiV1Users2faVerifyPostError = z.infer<typeof Verify2faSetupApiV1Users2faVerifyPostErrorSchema>
+/**
+ * Success response schema for GET /api/v1/users/2fa/status
+ * Status: 200
+ * Successful Response
+ */
+export const Get2faStatusApiV1Users2faStatusGetResponseSchema = TwoFactorStatusResponseSchema
+
+export type Get2faStatusApiV1Users2faStatusGetResponse = z.infer<typeof Get2faStatusApiV1Users2faStatusGetResponseSchema>
+/**
+ * Request schema for POST /api/v1/users/2fa/disable
+ */
+export const Disable2faApiV1Users2faDisablePostRequestSchema = PasswordChangeSchema
+export type Disable2faApiV1Users2faDisablePostRequest = z.infer<typeof Disable2faApiV1Users2faDisablePostRequestSchema>
+/**
+ * Success response schema for POST /api/v1/users/2fa/disable
+ * Status: 200
+ * Successful Response
+ */
+export const Disable2faApiV1Users2faDisablePostResponseSchema = z.any()
+
+export type Disable2faApiV1Users2faDisablePostResponse = z.infer<typeof Disable2faApiV1Users2faDisablePostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/users/2fa/disable
+ * Status: 422
+ * Validation Error
+ */
+export const Disable2faApiV1Users2faDisablePostErrorSchema = HTTPValidationErrorSchema
+
+export type Disable2faApiV1Users2faDisablePostError = z.infer<typeof Disable2faApiV1Users2faDisablePostErrorSchema>
+/**
+ * Success response schema for POST /api/v1/users/2fa/backup-codes/regenerate
+ * Status: 200
+ * Successful Response
+ */
+export const RegenerateBackupCodesApiV1Users2faBackupCodesRegeneratePostResponseSchema = z.any()
+
+export type RegenerateBackupCodesApiV1Users2faBackupCodesRegeneratePostResponse = z.infer<typeof RegenerateBackupCodesApiV1Users2faBackupCodesRegeneratePostResponseSchema>
+/**
+ * Success response schema for GET /api/v1/users/data-export
+ * Status: 200
+ * Successful Response
+ */
+export const ExportUserDataApiV1UsersDataExportGetResponseSchema = DataExportResponseSchema
+
+export type ExportUserDataApiV1UsersDataExportGetResponse = z.infer<typeof ExportUserDataApiV1UsersDataExportGetResponseSchema>
+/**
+ * Request schema for POST /api/v1/users/account/delete
+ */
+export const DeleteAccountApiV1UsersAccountDeletePostRequestSchema = AccountDeletionRequestSchema
+export type DeleteAccountApiV1UsersAccountDeletePostRequest = z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostRequestSchema>
+/**
+ * Success response schema for POST /api/v1/users/account/delete
+ * Status: 200
+ * Successful Response
+ */
+export const DeleteAccountApiV1UsersAccountDeletePostResponseSchema = z.any()
+
+export type DeleteAccountApiV1UsersAccountDeletePostResponse = z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/users/account/delete
+ * Status: 422
+ * Validation Error
+ */
+export const DeleteAccountApiV1UsersAccountDeletePostErrorSchema = HTTPValidationErrorSchema
+
+export type DeleteAccountApiV1UsersAccountDeletePostError = z.infer<typeof DeleteAccountApiV1UsersAccountDeletePostErrorSchema>
 /**
  * Success response schema for GET /api/v1/listings
  * Status: 200
@@ -1564,6 +2029,35 @@ export const ConfirmBookingApiV1BookingsBookingIdConfirmPostParamsSchema = z.obj
 
 export type ConfirmBookingApiV1BookingsBookingIdConfirmPostParams = z.infer<typeof ConfirmBookingApiV1BookingsBookingIdConfirmPostParamsSchema>
 /**
+ * Success response schema for POST /api/v1/bookings/{booking_id}/complete
+ * Status: 200
+ * Successful Response
+ */
+export const CompleteBookingApiV1BookingsBookingIdCompletePostResponseSchema = BookingResponseSchema
+
+export type CompleteBookingApiV1BookingsBookingIdCompletePostResponse = z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/bookings/{booking_id}/complete
+ * Status: 422
+ * Validation Error
+ */
+export const CompleteBookingApiV1BookingsBookingIdCompletePostErrorSchema = HTTPValidationErrorSchema
+
+export type CompleteBookingApiV1BookingsBookingIdCompletePostError = z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostErrorSchema>
+/**
+ * Parameters schema for POST /api/v1/bookings/{booking_id}/complete
+ * Path params: booking_id
+ * Query params: none
+ * Header params: none
+ */
+export const CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema = z.object({
+  path: z.object({
+    booking_id: z.string().max(40, "Maximum length is 40")
+  })
+})
+
+export type CompleteBookingApiV1BookingsBookingIdCompletePostParams = z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema>
+/**
  * Success response schema for GET /api/v1/bookings/host/listings
  * Status: 200
  * Successful Response
@@ -1764,7 +2258,7 @@ export type SearchListingsApiV1SearchListingsGetError = z.infer<typeof SearchLis
 /**
  * Parameters schema for GET /api/v1/search/listings
  * Path params: none
- * Query params: query, city, country, listing_type, min_price, max_price, min_guests, min_bedrooms, min_bathrooms, latitude, longitude, radius_km, skip, limit
+ * Query params: query, city, country, listing_type, min_price, max_price, min_guests, min_bedrooms, min_bathrooms, latitude, longitude, radius_km, skip, limit, sort_by, enable_personalization, enable_popularity_boost, enable_location_boost, ab_test_variant
  * Header params: none
  */
 export const SearchListingsApiV1SearchListingsGetParamsSchema = z.object({
@@ -1782,7 +2276,12 @@ export const SearchListingsApiV1SearchListingsGetParamsSchema = z.object({
     longitude: z.number().min(-180, "Minimum value is -180").max(180, "Maximum value is 180").optional(),
     radius_km: z.number().min(0, "Minimum value is 0").max(1000, "Maximum value is 1000").optional(),
     skip: z.number().int().min(0, "Minimum value is 0").optional(),
-    limit: z.number().int().min(1, "Minimum value is 1").max(100, "Maximum value is 100").optional()
+    limit: z.number().int().min(1, "Minimum value is 1").max(100, "Maximum value is 100").optional(),
+    sort_by: z.string().optional(),
+    enable_personalization: z.boolean().optional(),
+    enable_popularity_boost: z.boolean().optional(),
+    enable_location_boost: z.boolean().optional(),
+    ab_test_variant: z.string().optional()
   }).optional()
 })
 
@@ -2084,6 +2583,1286 @@ export const StripeWebhookApiV1WebhooksStripePostParamsSchema = z.object({
 })
 
 export type StripeWebhookApiV1WebhooksStripePostParams = z.infer<typeof StripeWebhookApiV1WebhooksStripePostParamsSchema>
+/**
+ * Success response schema for GET /api/v1/recommendations/for-me
+ * Status: 200
+ * Successful Response
+ */
+export const GetMyRecommendationsApiV1RecommendationsForMeGetResponseSchema = z.array(ListingResponseSchema)
+
+export type GetMyRecommendationsApiV1RecommendationsForMeGetResponse = z.infer<typeof GetMyRecommendationsApiV1RecommendationsForMeGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/recommendations/for-me
+ * Status: 422
+ * Validation Error
+ */
+export const GetMyRecommendationsApiV1RecommendationsForMeGetErrorSchema = HTTPValidationErrorSchema
+
+export type GetMyRecommendationsApiV1RecommendationsForMeGetError = z.infer<typeof GetMyRecommendationsApiV1RecommendationsForMeGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/recommendations/for-me
+ * Path params: none
+ * Query params: limit
+ * Header params: none
+ */
+export const GetMyRecommendationsApiV1RecommendationsForMeGetParamsSchema = z.object({
+  query: z.object({
+    limit: z.number().int().min(1, "Minimum value is 1").max(50, "Maximum value is 50").optional()
+  }).optional()
+})
+
+export type GetMyRecommendationsApiV1RecommendationsForMeGetParams = z.infer<typeof GetMyRecommendationsApiV1RecommendationsForMeGetParamsSchema>
+/**
+ * Success response schema for GET /api/v1/recommendations/similar/{listing_id}
+ * Status: 200
+ * Successful Response
+ */
+export const GetSimilarListingsApiV1RecommendationsSimilarListingIdGetResponseSchema = z.array(ListingResponseSchema)
+
+export type GetSimilarListingsApiV1RecommendationsSimilarListingIdGetResponse = z.infer<typeof GetSimilarListingsApiV1RecommendationsSimilarListingIdGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/recommendations/similar/{listing_id}
+ * Status: 422
+ * Validation Error
+ */
+export const GetSimilarListingsApiV1RecommendationsSimilarListingIdGetErrorSchema = HTTPValidationErrorSchema
+
+export type GetSimilarListingsApiV1RecommendationsSimilarListingIdGetError = z.infer<typeof GetSimilarListingsApiV1RecommendationsSimilarListingIdGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/recommendations/similar/{listing_id}
+ * Path params: listing_id
+ * Query params: limit
+ * Header params: none
+ */
+export const GetSimilarListingsApiV1RecommendationsSimilarListingIdGetParamsSchema = z.object({
+  path: z.object({
+    listing_id: z.string().max(40, "Maximum length is 40")
+  }),
+  query: z.object({
+    limit: z.number().int().min(1, "Minimum value is 1").max(20, "Maximum value is 20").optional()
+  }).optional()
+})
+
+export type GetSimilarListingsApiV1RecommendationsSimilarListingIdGetParams = z.infer<typeof GetSimilarListingsApiV1RecommendationsSimilarListingIdGetParamsSchema>
+/**
+ * Success response schema for GET /api/v1/recommendations/trending
+ * Status: 200
+ * Successful Response
+ */
+export const GetTrendingListingsApiV1RecommendationsTrendingGetResponseSchema = z.array(ListingResponseSchema)
+
+export type GetTrendingListingsApiV1RecommendationsTrendingGetResponse = z.infer<typeof GetTrendingListingsApiV1RecommendationsTrendingGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/recommendations/trending
+ * Status: 422
+ * Validation Error
+ */
+export const GetTrendingListingsApiV1RecommendationsTrendingGetErrorSchema = HTTPValidationErrorSchema
+
+export type GetTrendingListingsApiV1RecommendationsTrendingGetError = z.infer<typeof GetTrendingListingsApiV1RecommendationsTrendingGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/recommendations/trending
+ * Path params: none
+ * Query params: limit, days
+ * Header params: none
+ */
+export const GetTrendingListingsApiV1RecommendationsTrendingGetParamsSchema = z.object({
+  query: z.object({
+    limit: z.number().int().min(1, "Minimum value is 1").max(50, "Maximum value is 50").optional(),
+    days: z.number().int().min(1, "Minimum value is 1").max(365, "Maximum value is 365").optional()
+  }).optional()
+})
+
+export type GetTrendingListingsApiV1RecommendationsTrendingGetParams = z.infer<typeof GetTrendingListingsApiV1RecommendationsTrendingGetParamsSchema>
+/**
+ * Success response schema for GET /api/v1/recommendations/ml/for-me
+ * Status: 200
+ * Successful Response
+ */
+export const GetMlRecommendationsApiV1RecommendationsMlForMeGetResponseSchema = z.any()
+
+export type GetMlRecommendationsApiV1RecommendationsMlForMeGetResponse = z.infer<typeof GetMlRecommendationsApiV1RecommendationsMlForMeGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/recommendations/ml/for-me
+ * Status: 422
+ * Validation Error
+ */
+export const GetMlRecommendationsApiV1RecommendationsMlForMeGetErrorSchema = HTTPValidationErrorSchema
+
+export type GetMlRecommendationsApiV1RecommendationsMlForMeGetError = z.infer<typeof GetMlRecommendationsApiV1RecommendationsMlForMeGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/recommendations/ml/for-me
+ * Path params: none
+ * Query params: limit, algorithm
+ * Header params: none
+ */
+export const GetMlRecommendationsApiV1RecommendationsMlForMeGetParamsSchema = z.object({
+  query: z.object({
+    limit: z.number().int().min(1, "Minimum value is 1").max(50, "Maximum value is 50").optional(),
+    algorithm: z.string().regex(/^(hybrid|collaborative|content|neural)$/, "Invalid format").optional()
+  }).optional()
+})
+
+export type GetMlRecommendationsApiV1RecommendationsMlForMeGetParams = z.infer<typeof GetMlRecommendationsApiV1RecommendationsMlForMeGetParamsSchema>
+/**
+ * Success response schema for GET /api/v1/recommendations/ml/explain/{listing_id}
+ * Status: 200
+ * Successful Response
+ */
+export const ExplainRecommendationApiV1RecommendationsMlExplainListingIdGetResponseSchema = z.any()
+
+export type ExplainRecommendationApiV1RecommendationsMlExplainListingIdGetResponse = z.infer<typeof ExplainRecommendationApiV1RecommendationsMlExplainListingIdGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/recommendations/ml/explain/{listing_id}
+ * Status: 422
+ * Validation Error
+ */
+export const ExplainRecommendationApiV1RecommendationsMlExplainListingIdGetErrorSchema = HTTPValidationErrorSchema
+
+export type ExplainRecommendationApiV1RecommendationsMlExplainListingIdGetError = z.infer<typeof ExplainRecommendationApiV1RecommendationsMlExplainListingIdGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/recommendations/ml/explain/{listing_id}
+ * Path params: listing_id
+ * Query params: none
+ * Header params: none
+ */
+export const ExplainRecommendationApiV1RecommendationsMlExplainListingIdGetParamsSchema = z.object({
+  path: z.object({
+    listing_id: z.string().max(40, "Maximum length is 40")
+  })
+})
+
+export type ExplainRecommendationApiV1RecommendationsMlExplainListingIdGetParams = z.infer<typeof ExplainRecommendationApiV1RecommendationsMlExplainListingIdGetParamsSchema>
+/**
+ * Success response schema for POST /api/v1/recommendations/ml/train
+ * Status: 200
+ * Successful Response
+ */
+export const TrainRecommendationModelApiV1RecommendationsMlTrainPostResponseSchema = z.any()
+
+export type TrainRecommendationModelApiV1RecommendationsMlTrainPostResponse = z.infer<typeof TrainRecommendationModelApiV1RecommendationsMlTrainPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/recommendations/ml/train
+ * Status: 422
+ * Validation Error
+ */
+export const TrainRecommendationModelApiV1RecommendationsMlTrainPostErrorSchema = HTTPValidationErrorSchema
+
+export type TrainRecommendationModelApiV1RecommendationsMlTrainPostError = z.infer<typeof TrainRecommendationModelApiV1RecommendationsMlTrainPostErrorSchema>
+/**
+ * Parameters schema for POST /api/v1/recommendations/ml/train
+ * Path params: none
+ * Query params: algorithm
+ * Header params: none
+ */
+export const TrainRecommendationModelApiV1RecommendationsMlTrainPostParamsSchema = z.object({
+  query: z.object({
+    algorithm: z.string().regex(/^(hybrid|collaborative|content|neural)$/, "Invalid format").optional()
+  }).optional()
+})
+
+export type TrainRecommendationModelApiV1RecommendationsMlTrainPostParams = z.infer<typeof TrainRecommendationModelApiV1RecommendationsMlTrainPostParamsSchema>
+/**
+ * Success response schema for GET /api/v1/analytics/audit-logs
+ * Status: 200
+ * Successful Response
+ */
+export const GetAuditLogsApiV1AnalyticsAuditLogsGetResponseSchema = z.any()
+
+export type GetAuditLogsApiV1AnalyticsAuditLogsGetResponse = z.infer<typeof GetAuditLogsApiV1AnalyticsAuditLogsGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/analytics/audit-logs
+ * Status: 422
+ * Validation Error
+ */
+export const GetAuditLogsApiV1AnalyticsAuditLogsGetErrorSchema = HTTPValidationErrorSchema
+
+export type GetAuditLogsApiV1AnalyticsAuditLogsGetError = z.infer<typeof GetAuditLogsApiV1AnalyticsAuditLogsGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/analytics/audit-logs
+ * Path params: none
+ * Query params: actor_id, action, resource_type, resource_id, start_date, end_date, skip, limit
+ * Header params: none
+ */
+export const GetAuditLogsApiV1AnalyticsAuditLogsGetParamsSchema = z.object({
+  query: z.object({
+    actor_id: z.any().optional(),
+    action: z.any().optional(),
+    resource_type: z.any().optional(),
+    resource_id: z.any().optional(),
+    start_date: z.any().optional(),
+    end_date: z.any().optional(),
+    skip: z.number().int().min(0, "Minimum value is 0").optional(),
+    limit: z.number().int().min(1, "Minimum value is 1").max(100, "Maximum value is 100").optional()
+  }).optional()
+})
+
+export type GetAuditLogsApiV1AnalyticsAuditLogsGetParams = z.infer<typeof GetAuditLogsApiV1AnalyticsAuditLogsGetParamsSchema>
+/**
+ * Success response schema for GET /api/v1/analytics/audit-logs/{log_id}
+ * Status: 200
+ * Successful Response
+ */
+export const GetAuditLogApiV1AnalyticsAuditLogsLogIdGetResponseSchema = z.any()
+
+export type GetAuditLogApiV1AnalyticsAuditLogsLogIdGetResponse = z.infer<typeof GetAuditLogApiV1AnalyticsAuditLogsLogIdGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/analytics/audit-logs/{log_id}
+ * Status: 422
+ * Validation Error
+ */
+export const GetAuditLogApiV1AnalyticsAuditLogsLogIdGetErrorSchema = HTTPValidationErrorSchema
+
+export type GetAuditLogApiV1AnalyticsAuditLogsLogIdGetError = z.infer<typeof GetAuditLogApiV1AnalyticsAuditLogsLogIdGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/analytics/audit-logs/{log_id}
+ * Path params: log_id
+ * Query params: none
+ * Header params: none
+ */
+export const GetAuditLogApiV1AnalyticsAuditLogsLogIdGetParamsSchema = z.object({
+  path: z.object({
+    log_id: z.string()
+  })
+})
+
+export type GetAuditLogApiV1AnalyticsAuditLogsLogIdGetParams = z.infer<typeof GetAuditLogApiV1AnalyticsAuditLogsLogIdGetParamsSchema>
+/**
+ * Success response schema for GET /api/v1/analytics/audit-logs/stats/summary
+ * Status: 200
+ * Successful Response
+ */
+export const GetAuditLogsSummaryApiV1AnalyticsAuditLogsStatsSummaryGetResponseSchema = z.any()
+
+export type GetAuditLogsSummaryApiV1AnalyticsAuditLogsStatsSummaryGetResponse = z.infer<typeof GetAuditLogsSummaryApiV1AnalyticsAuditLogsStatsSummaryGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/analytics/audit-logs/stats/summary
+ * Status: 422
+ * Validation Error
+ */
+export const GetAuditLogsSummaryApiV1AnalyticsAuditLogsStatsSummaryGetErrorSchema = HTTPValidationErrorSchema
+
+export type GetAuditLogsSummaryApiV1AnalyticsAuditLogsStatsSummaryGetError = z.infer<typeof GetAuditLogsSummaryApiV1AnalyticsAuditLogsStatsSummaryGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/analytics/audit-logs/stats/summary
+ * Path params: none
+ * Query params: days
+ * Header params: none
+ */
+export const GetAuditLogsSummaryApiV1AnalyticsAuditLogsStatsSummaryGetParamsSchema = z.object({
+  query: z.object({
+    days: z.number().int().min(1, "Minimum value is 1").max(90, "Maximum value is 90").optional()
+  }).optional()
+})
+
+export type GetAuditLogsSummaryApiV1AnalyticsAuditLogsStatsSummaryGetParams = z.infer<typeof GetAuditLogsSummaryApiV1AnalyticsAuditLogsStatsSummaryGetParamsSchema>
+/**
+ * Success response schema for GET /api/v1/promotions/coupons
+ * Status: 200
+ * Successful Response
+ */
+export const ListCouponsApiV1PromotionsCouponsGetResponseSchema = z.array(z.record(z.string(), z.any()))
+
+export type ListCouponsApiV1PromotionsCouponsGetResponse = z.infer<typeof ListCouponsApiV1PromotionsCouponsGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/promotions/coupons
+ * Status: 422
+ * Validation Error
+ */
+export const ListCouponsApiV1PromotionsCouponsGetErrorSchema = HTTPValidationErrorSchema
+
+export type ListCouponsApiV1PromotionsCouponsGetError = z.infer<typeof ListCouponsApiV1PromotionsCouponsGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/promotions/coupons
+ * Path params: none
+ * Query params: skip, limit, active_only
+ * Header params: none
+ */
+export const ListCouponsApiV1PromotionsCouponsGetParamsSchema = z.object({
+  query: z.object({
+    skip: z.number().int().min(0, "Minimum value is 0").optional(),
+    limit: z.number().int().min(1, "Minimum value is 1").max(100, "Maximum value is 100").optional(),
+    active_only: z.boolean().optional()
+  }).optional()
+})
+
+export type ListCouponsApiV1PromotionsCouponsGetParams = z.infer<typeof ListCouponsApiV1PromotionsCouponsGetParamsSchema>
+/**
+ * Request schema for POST /api/v1/promotions/coupons
+ */
+export const CreateCouponApiV1PromotionsCouponsPostRequestSchema = BodyCreateCouponApiV1PromotionsCouponsPostSchema
+export type CreateCouponApiV1PromotionsCouponsPostRequest = z.infer<typeof CreateCouponApiV1PromotionsCouponsPostRequestSchema>
+/**
+ * Success response schema for POST /api/v1/promotions/coupons
+ * Status: 200
+ * Successful Response
+ */
+export const CreateCouponApiV1PromotionsCouponsPostResponseSchema = z.record(z.string(), z.any())
+
+export type CreateCouponApiV1PromotionsCouponsPostResponse = z.infer<typeof CreateCouponApiV1PromotionsCouponsPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/promotions/coupons
+ * Status: 422
+ * Validation Error
+ */
+export const CreateCouponApiV1PromotionsCouponsPostErrorSchema = HTTPValidationErrorSchema
+
+export type CreateCouponApiV1PromotionsCouponsPostError = z.infer<typeof CreateCouponApiV1PromotionsCouponsPostErrorSchema>
+/**
+ * Success response schema for GET /api/v1/promotions/coupons/{coupon_code}/validate
+ * Status: 200
+ * Successful Response
+ */
+export const ValidateCouponApiV1PromotionsCouponsCouponCodeValidateGetResponseSchema = z.record(z.string(), z.any())
+
+export type ValidateCouponApiV1PromotionsCouponsCouponCodeValidateGetResponse = z.infer<typeof ValidateCouponApiV1PromotionsCouponsCouponCodeValidateGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/promotions/coupons/{coupon_code}/validate
+ * Status: 422
+ * Validation Error
+ */
+export const ValidateCouponApiV1PromotionsCouponsCouponCodeValidateGetErrorSchema = HTTPValidationErrorSchema
+
+export type ValidateCouponApiV1PromotionsCouponsCouponCodeValidateGetError = z.infer<typeof ValidateCouponApiV1PromotionsCouponsCouponCodeValidateGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/promotions/coupons/{coupon_code}/validate
+ * Path params: coupon_code
+ * Query params: listing_id, booking_amount, check_in_date, check_out_date, nights, guests
+ * Header params: none
+ */
+export const ValidateCouponApiV1PromotionsCouponsCouponCodeValidateGetParamsSchema = z.object({
+  path: z.object({
+    coupon_code: z.string()
+  }),
+  query: z.object({
+    listing_id: z.string(),
+    booking_amount: z.number(),
+    check_in_date: z.string(),
+    check_out_date: z.string(),
+    nights: z.number().int(),
+    guests: z.number().int()
+  }).optional()
+})
+
+export type ValidateCouponApiV1PromotionsCouponsCouponCodeValidateGetParams = z.infer<typeof ValidateCouponApiV1PromotionsCouponsCouponCodeValidateGetParamsSchema>
+/**
+ * Success response schema for GET /api/v1/promotions/applicable
+ * Status: 200
+ * Successful Response
+ */
+export const GetApplicablePromotionsApiV1PromotionsApplicableGetResponseSchema = z.array(z.record(z.string(), z.any()))
+
+export type GetApplicablePromotionsApiV1PromotionsApplicableGetResponse = z.infer<typeof GetApplicablePromotionsApiV1PromotionsApplicableGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/promotions/applicable
+ * Status: 422
+ * Validation Error
+ */
+export const GetApplicablePromotionsApiV1PromotionsApplicableGetErrorSchema = HTTPValidationErrorSchema
+
+export type GetApplicablePromotionsApiV1PromotionsApplicableGetError = z.infer<typeof GetApplicablePromotionsApiV1PromotionsApplicableGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/promotions/applicable
+ * Path params: none
+ * Query params: listing_id, check_in_date, nights, guests
+ * Header params: none
+ */
+export const GetApplicablePromotionsApiV1PromotionsApplicableGetParamsSchema = z.object({
+  query: z.object({
+    listing_id: z.any().optional(),
+    check_in_date: z.any().optional(),
+    nights: z.any().optional(),
+    guests: z.any().optional()
+  }).optional()
+})
+
+export type GetApplicablePromotionsApiV1PromotionsApplicableGetParams = z.infer<typeof GetApplicablePromotionsApiV1PromotionsApplicableGetParamsSchema>
+/**
+ * Request schema for POST /api/v1/notifications/push/send
+ */
+export const SendPushNotificationApiV1NotificationsPushSendPostRequestSchema = BodySendPushNotificationApiV1NotificationsPushSendPostSchema
+export type SendPushNotificationApiV1NotificationsPushSendPostRequest = z.infer<typeof SendPushNotificationApiV1NotificationsPushSendPostRequestSchema>
+/**
+ * Success response schema for POST /api/v1/notifications/push/send
+ * Status: 200
+ * Successful Response
+ */
+export const SendPushNotificationApiV1NotificationsPushSendPostResponseSchema = z.record(z.string(), z.any())
+
+export type SendPushNotificationApiV1NotificationsPushSendPostResponse = z.infer<typeof SendPushNotificationApiV1NotificationsPushSendPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/notifications/push/send
+ * Status: 422
+ * Validation Error
+ */
+export const SendPushNotificationApiV1NotificationsPushSendPostErrorSchema = HTTPValidationErrorSchema
+
+export type SendPushNotificationApiV1NotificationsPushSendPostError = z.infer<typeof SendPushNotificationApiV1NotificationsPushSendPostErrorSchema>
+/**
+ * Request schema for POST /api/v1/notifications/push/bulk
+ */
+export const SendBulkPushNotificationsApiV1NotificationsPushBulkPostRequestSchema = BodySendBulkPushNotificationsApiV1NotificationsPushBulkPostSchema
+export type SendBulkPushNotificationsApiV1NotificationsPushBulkPostRequest = z.infer<typeof SendBulkPushNotificationsApiV1NotificationsPushBulkPostRequestSchema>
+/**
+ * Success response schema for POST /api/v1/notifications/push/bulk
+ * Status: 200
+ * Successful Response
+ */
+export const SendBulkPushNotificationsApiV1NotificationsPushBulkPostResponseSchema = z.record(z.string(), z.any())
+
+export type SendBulkPushNotificationsApiV1NotificationsPushBulkPostResponse = z.infer<typeof SendBulkPushNotificationsApiV1NotificationsPushBulkPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/notifications/push/bulk
+ * Status: 422
+ * Validation Error
+ */
+export const SendBulkPushNotificationsApiV1NotificationsPushBulkPostErrorSchema = HTTPValidationErrorSchema
+
+export type SendBulkPushNotificationsApiV1NotificationsPushBulkPostError = z.infer<typeof SendBulkPushNotificationsApiV1NotificationsPushBulkPostErrorSchema>
+/**
+ * Success response schema for GET /api/v1/loyalty/status
+ * Status: 200
+ * Successful Response
+ */
+export const GetLoyaltyStatusApiV1LoyaltyStatusGetResponseSchema = LoyaltyStatusResponseSchema
+
+export type GetLoyaltyStatusApiV1LoyaltyStatusGetResponse = z.infer<typeof GetLoyaltyStatusApiV1LoyaltyStatusGetResponseSchema>
+/**
+ * Request schema for POST /api/v1/loyalty/redeem
+ */
+export const RedeemPointsApiV1LoyaltyRedeemPostRequestSchema = PointsRedemptionRequestSchema
+export type RedeemPointsApiV1LoyaltyRedeemPostRequest = z.infer<typeof RedeemPointsApiV1LoyaltyRedeemPostRequestSchema>
+/**
+ * Success response schema for POST /api/v1/loyalty/redeem
+ * Status: 200
+ * Successful Response
+ */
+export const RedeemPointsApiV1LoyaltyRedeemPostResponseSchema = PointsRedemptionResponseSchema
+
+export type RedeemPointsApiV1LoyaltyRedeemPostResponse = z.infer<typeof RedeemPointsApiV1LoyaltyRedeemPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/loyalty/redeem
+ * Status: 422
+ * Validation Error
+ */
+export const RedeemPointsApiV1LoyaltyRedeemPostErrorSchema = HTTPValidationErrorSchema
+
+export type RedeemPointsApiV1LoyaltyRedeemPostError = z.infer<typeof RedeemPointsApiV1LoyaltyRedeemPostErrorSchema>
+/**
+ * Success response schema for GET /api/v1/loyalty/redemption-options
+ * Status: 200
+ * Successful Response
+ */
+export const GetRedemptionOptionsApiV1LoyaltyRedemptionOptionsGetResponseSchema = RedemptionOptionsResponseSchema
+
+export type GetRedemptionOptionsApiV1LoyaltyRedemptionOptionsGetResponse = z.infer<typeof GetRedemptionOptionsApiV1LoyaltyRedemptionOptionsGetResponseSchema>
+/**
+ * Success response schema for GET /api/v1/loyalty/history
+ * Status: 200
+ * Successful Response
+ */
+export const GetLoyaltyHistoryApiV1LoyaltyHistoryGetResponseSchema = z.any()
+
+export type GetLoyaltyHistoryApiV1LoyaltyHistoryGetResponse = z.infer<typeof GetLoyaltyHistoryApiV1LoyaltyHistoryGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/loyalty/history
+ * Status: 422
+ * Validation Error
+ */
+export const GetLoyaltyHistoryApiV1LoyaltyHistoryGetErrorSchema = HTTPValidationErrorSchema
+
+export type GetLoyaltyHistoryApiV1LoyaltyHistoryGetError = z.infer<typeof GetLoyaltyHistoryApiV1LoyaltyHistoryGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/loyalty/history
+ * Path params: none
+ * Query params: limit
+ * Header params: none
+ */
+export const GetLoyaltyHistoryApiV1LoyaltyHistoryGetParamsSchema = z.object({
+  query: z.object({
+    limit: z.number().int().min(1, "Minimum value is 1").max(100, "Maximum value is 100").optional()
+  }).optional()
+})
+
+export type GetLoyaltyHistoryApiV1LoyaltyHistoryGetParams = z.infer<typeof GetLoyaltyHistoryApiV1LoyaltyHistoryGetParamsSchema>
+/**
+ * Success response schema for POST /api/v1/listings/premium/{listing_id}/upgrade
+ * Status: 200
+ * Successful Response
+ */
+export const UpgradeListingToPremiumApiV1ListingsPremiumListingIdUpgradePostResponseSchema = z.any()
+
+export type UpgradeListingToPremiumApiV1ListingsPremiumListingIdUpgradePostResponse = z.infer<typeof UpgradeListingToPremiumApiV1ListingsPremiumListingIdUpgradePostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/listings/premium/{listing_id}/upgrade
+ * Status: 422
+ * Validation Error
+ */
+export const UpgradeListingToPremiumApiV1ListingsPremiumListingIdUpgradePostErrorSchema = HTTPValidationErrorSchema
+
+export type UpgradeListingToPremiumApiV1ListingsPremiumListingIdUpgradePostError = z.infer<typeof UpgradeListingToPremiumApiV1ListingsPremiumListingIdUpgradePostErrorSchema>
+/**
+ * Parameters schema for POST /api/v1/listings/premium/{listing_id}/upgrade
+ * Path params: listing_id
+ * Query params: tier, duration_days
+ * Header params: none
+ */
+export const UpgradeListingToPremiumApiV1ListingsPremiumListingIdUpgradePostParamsSchema = z.object({
+  path: z.object({
+    listing_id: z.string()
+  }),
+  query: z.object({
+    tier: z.string(),
+    duration_days: z.any().optional()
+  }).optional()
+})
+
+export type UpgradeListingToPremiumApiV1ListingsPremiumListingIdUpgradePostParams = z.infer<typeof UpgradeListingToPremiumApiV1ListingsPremiumListingIdUpgradePostParamsSchema>
+/**
+ * Success response schema for POST /api/v1/listings/premium/{listing_id}/feature
+ * Status: 200
+ * Successful Response
+ */
+export const FeatureListingApiV1ListingsPremiumListingIdFeaturePostResponseSchema = z.any()
+
+export type FeatureListingApiV1ListingsPremiumListingIdFeaturePostResponse = z.infer<typeof FeatureListingApiV1ListingsPremiumListingIdFeaturePostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/listings/premium/{listing_id}/feature
+ * Status: 422
+ * Validation Error
+ */
+export const FeatureListingApiV1ListingsPremiumListingIdFeaturePostErrorSchema = HTTPValidationErrorSchema
+
+export type FeatureListingApiV1ListingsPremiumListingIdFeaturePostError = z.infer<typeof FeatureListingApiV1ListingsPremiumListingIdFeaturePostErrorSchema>
+/**
+ * Parameters schema for POST /api/v1/listings/premium/{listing_id}/feature
+ * Path params: listing_id
+ * Query params: duration_days
+ * Header params: none
+ */
+export const FeatureListingApiV1ListingsPremiumListingIdFeaturePostParamsSchema = z.object({
+  path: z.object({
+    listing_id: z.string()
+  }),
+  query: z.object({
+    duration_days: z.number().int().min(1, "Minimum value is 1").max(365, "Maximum value is 365").optional()
+  }).optional()
+})
+
+export type FeatureListingApiV1ListingsPremiumListingIdFeaturePostParams = z.infer<typeof FeatureListingApiV1ListingsPremiumListingIdFeaturePostParamsSchema>
+/**
+ * Success response schema for GET /api/v1/listings/premium/featured
+ * Status: 200
+ * Successful Response
+ */
+export const GetFeaturedListingsApiV1ListingsPremiumFeaturedGetResponseSchema = z.array(z.any())
+
+export type GetFeaturedListingsApiV1ListingsPremiumFeaturedGetResponse = z.infer<typeof GetFeaturedListingsApiV1ListingsPremiumFeaturedGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/listings/premium/featured
+ * Status: 422
+ * Validation Error
+ */
+export const GetFeaturedListingsApiV1ListingsPremiumFeaturedGetErrorSchema = HTTPValidationErrorSchema
+
+export type GetFeaturedListingsApiV1ListingsPremiumFeaturedGetError = z.infer<typeof GetFeaturedListingsApiV1ListingsPremiumFeaturedGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/listings/premium/featured
+ * Path params: none
+ * Query params: limit, city, country
+ * Header params: none
+ */
+export const GetFeaturedListingsApiV1ListingsPremiumFeaturedGetParamsSchema = z.object({
+  query: z.object({
+    limit: z.number().int().min(1, "Minimum value is 1").max(50, "Maximum value is 50").optional(),
+    city: z.any().optional(),
+    country: z.any().optional()
+  }).optional()
+})
+
+export type GetFeaturedListingsApiV1ListingsPremiumFeaturedGetParams = z.infer<typeof GetFeaturedListingsApiV1ListingsPremiumFeaturedGetParamsSchema>
+/**
+ * Success response schema for GET /api/v1/listings/premium/premium
+ * Status: 200
+ * Successful Response
+ */
+export const GetPremiumListingsApiV1ListingsPremiumPremiumGetResponseSchema = z.array(z.any())
+
+export type GetPremiumListingsApiV1ListingsPremiumPremiumGetResponse = z.infer<typeof GetPremiumListingsApiV1ListingsPremiumPremiumGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/listings/premium/premium
+ * Status: 422
+ * Validation Error
+ */
+export const GetPremiumListingsApiV1ListingsPremiumPremiumGetErrorSchema = HTTPValidationErrorSchema
+
+export type GetPremiumListingsApiV1ListingsPremiumPremiumGetError = z.infer<typeof GetPremiumListingsApiV1ListingsPremiumPremiumGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/listings/premium/premium
+ * Path params: none
+ * Query params: limit, city, country
+ * Header params: none
+ */
+export const GetPremiumListingsApiV1ListingsPremiumPremiumGetParamsSchema = z.object({
+  query: z.object({
+    limit: z.number().int().min(1, "Minimum value is 1").max(100, "Maximum value is 100").optional(),
+    city: z.any().optional(),
+    country: z.any().optional()
+  }).optional()
+})
+
+export type GetPremiumListingsApiV1ListingsPremiumPremiumGetParams = z.infer<typeof GetPremiumListingsApiV1ListingsPremiumPremiumGetParamsSchema>
+/**
+ * Success response schema for GET /api/v1/listings/premium/pricing
+ * Status: 200
+ * Successful Response
+ */
+export const GetPricingOptionsApiV1ListingsPremiumPricingGetResponseSchema = z.any()
+
+export type GetPricingOptionsApiV1ListingsPremiumPricingGetResponse = z.infer<typeof GetPricingOptionsApiV1ListingsPremiumPricingGetResponseSchema>
+/**
+ * Success response schema for GET /api/v1/travel-guides
+ * Status: 200
+ * Successful Response
+ */
+export const GetGuidesApiV1TravelGuidesGetResponseSchema = z.array(TravelGuideResponseSchema)
+
+export type GetGuidesApiV1TravelGuidesGetResponse = z.infer<typeof GetGuidesApiV1TravelGuidesGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/travel-guides
+ * Status: 422
+ * Validation Error
+ */
+export const GetGuidesApiV1TravelGuidesGetErrorSchema = HTTPValidationErrorSchema
+
+export type GetGuidesApiV1TravelGuidesGetError = z.infer<typeof GetGuidesApiV1TravelGuidesGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/travel-guides
+ * Path params: none
+ * Query params: destination, country, city, tags, category, is_official, status, skip, limit, sort_by
+ * Header params: none
+ */
+export const GetGuidesApiV1TravelGuidesGetParamsSchema = z.object({
+  query: z.object({
+    destination: z.any().optional(),
+    country: z.any().optional(),
+    city: z.any().optional(),
+    tags: z.any().optional(),
+    category: z.any().optional(),
+    is_official: z.any().optional(),
+    status: z.string().optional(),
+    skip: z.number().int().min(0, "Minimum value is 0").optional(),
+    limit: z.number().int().min(1, "Minimum value is 1").max(100, "Maximum value is 100").optional(),
+    sort_by: z.string().optional()
+  }).optional()
+})
+
+export type GetGuidesApiV1TravelGuidesGetParams = z.infer<typeof GetGuidesApiV1TravelGuidesGetParamsSchema>
+/**
+ * Request schema for POST /api/v1/travel-guides
+ */
+export const CreateGuideApiV1TravelGuidesPostRequestSchema = TravelGuideCreateSchema
+export type CreateGuideApiV1TravelGuidesPostRequest = z.infer<typeof CreateGuideApiV1TravelGuidesPostRequestSchema>
+/**
+ * Success response schema for POST /api/v1/travel-guides
+ * Status: 201
+ * Successful Response
+ */
+export const CreateGuideApiV1TravelGuidesPostResponseSchema = TravelGuideResponseSchema
+
+export type CreateGuideApiV1TravelGuidesPostResponse = z.infer<typeof CreateGuideApiV1TravelGuidesPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/travel-guides
+ * Status: 422
+ * Validation Error
+ */
+export const CreateGuideApiV1TravelGuidesPostErrorSchema = HTTPValidationErrorSchema
+
+export type CreateGuideApiV1TravelGuidesPostError = z.infer<typeof CreateGuideApiV1TravelGuidesPostErrorSchema>
+/**
+ * Success response schema for POST /api/v1/travel-guides/{guide_id}/publish
+ * Status: 200
+ * Successful Response
+ */
+export const PublishGuideApiV1TravelGuidesGuideIdPublishPostResponseSchema = TravelGuideResponseSchema
+
+export type PublishGuideApiV1TravelGuidesGuideIdPublishPostResponse = z.infer<typeof PublishGuideApiV1TravelGuidesGuideIdPublishPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/travel-guides/{guide_id}/publish
+ * Status: 422
+ * Validation Error
+ */
+export const PublishGuideApiV1TravelGuidesGuideIdPublishPostErrorSchema = HTTPValidationErrorSchema
+
+export type PublishGuideApiV1TravelGuidesGuideIdPublishPostError = z.infer<typeof PublishGuideApiV1TravelGuidesGuideIdPublishPostErrorSchema>
+/**
+ * Parameters schema for POST /api/v1/travel-guides/{guide_id}/publish
+ * Path params: guide_id
+ * Query params: none
+ * Header params: none
+ */
+export const PublishGuideApiV1TravelGuidesGuideIdPublishPostParamsSchema = z.object({
+  path: z.object({
+    guide_id: z.string().max(40, "Maximum length is 40")
+  })
+})
+
+export type PublishGuideApiV1TravelGuidesGuideIdPublishPostParams = z.infer<typeof PublishGuideApiV1TravelGuidesGuideIdPublishPostParamsSchema>
+/**
+ * Success response schema for GET /api/v1/travel-guides/{guide_id}
+ * Status: 200
+ * Successful Response
+ */
+export const GetGuideApiV1TravelGuidesGuideIdGetResponseSchema = TravelGuideResponseSchema
+
+export type GetGuideApiV1TravelGuidesGuideIdGetResponse = z.infer<typeof GetGuideApiV1TravelGuidesGuideIdGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/travel-guides/{guide_id}
+ * Status: 422
+ * Validation Error
+ */
+export const GetGuideApiV1TravelGuidesGuideIdGetErrorSchema = HTTPValidationErrorSchema
+
+export type GetGuideApiV1TravelGuidesGuideIdGetError = z.infer<typeof GetGuideApiV1TravelGuidesGuideIdGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/travel-guides/{guide_id}
+ * Path params: guide_id
+ * Query params: none
+ * Header params: none
+ */
+export const GetGuideApiV1TravelGuidesGuideIdGetParamsSchema = z.object({
+  path: z.object({
+    guide_id: z.string().max(40, "Maximum length is 40")
+  })
+})
+
+export type GetGuideApiV1TravelGuidesGuideIdGetParams = z.infer<typeof GetGuideApiV1TravelGuidesGuideIdGetParamsSchema>
+/**
+ * Success response schema for POST /api/v1/travel-guides/{guide_id}/bookmark
+ * Status: 200
+ * Successful Response
+ */
+export const BookmarkGuideApiV1TravelGuidesGuideIdBookmarkPostResponseSchema = z.any()
+
+export type BookmarkGuideApiV1TravelGuidesGuideIdBookmarkPostResponse = z.infer<typeof BookmarkGuideApiV1TravelGuidesGuideIdBookmarkPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/travel-guides/{guide_id}/bookmark
+ * Status: 422
+ * Validation Error
+ */
+export const BookmarkGuideApiV1TravelGuidesGuideIdBookmarkPostErrorSchema = HTTPValidationErrorSchema
+
+export type BookmarkGuideApiV1TravelGuidesGuideIdBookmarkPostError = z.infer<typeof BookmarkGuideApiV1TravelGuidesGuideIdBookmarkPostErrorSchema>
+/**
+ * Parameters schema for POST /api/v1/travel-guides/{guide_id}/bookmark
+ * Path params: guide_id
+ * Query params: none
+ * Header params: none
+ */
+export const BookmarkGuideApiV1TravelGuidesGuideIdBookmarkPostParamsSchema = z.object({
+  path: z.object({
+    guide_id: z.string().max(40, "Maximum length is 40")
+  })
+})
+
+export type BookmarkGuideApiV1TravelGuidesGuideIdBookmarkPostParams = z.infer<typeof BookmarkGuideApiV1TravelGuidesGuideIdBookmarkPostParamsSchema>
+/**
+ * Success response schema for POST /api/v1/travel-guides/{guide_id}/like
+ * Status: 200
+ * Successful Response
+ */
+export const LikeGuideApiV1TravelGuidesGuideIdLikePostResponseSchema = z.any()
+
+export type LikeGuideApiV1TravelGuidesGuideIdLikePostResponse = z.infer<typeof LikeGuideApiV1TravelGuidesGuideIdLikePostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/travel-guides/{guide_id}/like
+ * Status: 422
+ * Validation Error
+ */
+export const LikeGuideApiV1TravelGuidesGuideIdLikePostErrorSchema = HTTPValidationErrorSchema
+
+export type LikeGuideApiV1TravelGuidesGuideIdLikePostError = z.infer<typeof LikeGuideApiV1TravelGuidesGuideIdLikePostErrorSchema>
+/**
+ * Parameters schema for POST /api/v1/travel-guides/{guide_id}/like
+ * Path params: guide_id
+ * Query params: none
+ * Header params: none
+ */
+export const LikeGuideApiV1TravelGuidesGuideIdLikePostParamsSchema = z.object({
+  path: z.object({
+    guide_id: z.string().max(40, "Maximum length is 40")
+  })
+})
+
+export type LikeGuideApiV1TravelGuidesGuideIdLikePostParams = z.infer<typeof LikeGuideApiV1TravelGuidesGuideIdLikePostParamsSchema>
+/**
+ * Success response schema for GET /api/v1/travel-guides/stories
+ * Status: 200
+ * Successful Response
+ */
+export const GetStoriesApiV1TravelGuidesStoriesGetResponseSchema = z.array(UserStoryResponseSchema)
+
+export type GetStoriesApiV1TravelGuidesStoriesGetResponse = z.infer<typeof GetStoriesApiV1TravelGuidesStoriesGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/travel-guides/stories
+ * Status: 422
+ * Validation Error
+ */
+export const GetStoriesApiV1TravelGuidesStoriesGetErrorSchema = HTTPValidationErrorSchema
+
+export type GetStoriesApiV1TravelGuidesStoriesGetError = z.infer<typeof GetStoriesApiV1TravelGuidesStoriesGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/travel-guides/stories
+ * Path params: none
+ * Query params: destination, country, author_id, guide_id, is_featured, status, skip, limit, sort_by
+ * Header params: none
+ */
+export const GetStoriesApiV1TravelGuidesStoriesGetParamsSchema = z.object({
+  query: z.object({
+    destination: z.any().optional(),
+    country: z.any().optional(),
+    author_id: z.any().optional(),
+    guide_id: z.any().optional(),
+    is_featured: z.any().optional(),
+    status: z.string().optional(),
+    skip: z.number().int().min(0, "Minimum value is 0").optional(),
+    limit: z.number().int().min(1, "Minimum value is 1").max(100, "Maximum value is 100").optional(),
+    sort_by: z.string().optional()
+  }).optional()
+})
+
+export type GetStoriesApiV1TravelGuidesStoriesGetParams = z.infer<typeof GetStoriesApiV1TravelGuidesStoriesGetParamsSchema>
+/**
+ * Request schema for POST /api/v1/travel-guides/stories
+ */
+export const CreateStoryApiV1TravelGuidesStoriesPostRequestSchema = UserStoryCreateSchema
+export type CreateStoryApiV1TravelGuidesStoriesPostRequest = z.infer<typeof CreateStoryApiV1TravelGuidesStoriesPostRequestSchema>
+/**
+ * Success response schema for POST /api/v1/travel-guides/stories
+ * Status: 201
+ * Successful Response
+ */
+export const CreateStoryApiV1TravelGuidesStoriesPostResponseSchema = UserStoryResponseSchema
+
+export type CreateStoryApiV1TravelGuidesStoriesPostResponse = z.infer<typeof CreateStoryApiV1TravelGuidesStoriesPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/travel-guides/stories
+ * Status: 422
+ * Validation Error
+ */
+export const CreateStoryApiV1TravelGuidesStoriesPostErrorSchema = HTTPValidationErrorSchema
+
+export type CreateStoryApiV1TravelGuidesStoriesPostError = z.infer<typeof CreateStoryApiV1TravelGuidesStoriesPostErrorSchema>
+/**
+ * Success response schema for POST /api/v1/travel-guides/stories/{story_id}/publish
+ * Status: 200
+ * Successful Response
+ */
+export const PublishStoryApiV1TravelGuidesStoriesStoryIdPublishPostResponseSchema = UserStoryResponseSchema
+
+export type PublishStoryApiV1TravelGuidesStoriesStoryIdPublishPostResponse = z.infer<typeof PublishStoryApiV1TravelGuidesStoriesStoryIdPublishPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/travel-guides/stories/{story_id}/publish
+ * Status: 422
+ * Validation Error
+ */
+export const PublishStoryApiV1TravelGuidesStoriesStoryIdPublishPostErrorSchema = HTTPValidationErrorSchema
+
+export type PublishStoryApiV1TravelGuidesStoriesStoryIdPublishPostError = z.infer<typeof PublishStoryApiV1TravelGuidesStoriesStoryIdPublishPostErrorSchema>
+/**
+ * Parameters schema for POST /api/v1/travel-guides/stories/{story_id}/publish
+ * Path params: story_id
+ * Query params: none
+ * Header params: none
+ */
+export const PublishStoryApiV1TravelGuidesStoriesStoryIdPublishPostParamsSchema = z.object({
+  path: z.object({
+    story_id: z.string().max(40, "Maximum length is 40")
+  })
+})
+
+export type PublishStoryApiV1TravelGuidesStoriesStoryIdPublishPostParams = z.infer<typeof PublishStoryApiV1TravelGuidesStoriesStoryIdPublishPostParamsSchema>
+/**
+ * Success response schema for GET /api/v1/travel-guides/stories/{story_id}
+ * Status: 200
+ * Successful Response
+ */
+export const GetStoryApiV1TravelGuidesStoriesStoryIdGetResponseSchema = UserStoryResponseSchema
+
+export type GetStoryApiV1TravelGuidesStoriesStoryIdGetResponse = z.infer<typeof GetStoryApiV1TravelGuidesStoriesStoryIdGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/travel-guides/stories/{story_id}
+ * Status: 422
+ * Validation Error
+ */
+export const GetStoryApiV1TravelGuidesStoriesStoryIdGetErrorSchema = HTTPValidationErrorSchema
+
+export type GetStoryApiV1TravelGuidesStoriesStoryIdGetError = z.infer<typeof GetStoryApiV1TravelGuidesStoriesStoryIdGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/travel-guides/stories/{story_id}
+ * Path params: story_id
+ * Query params: none
+ * Header params: none
+ */
+export const GetStoryApiV1TravelGuidesStoriesStoryIdGetParamsSchema = z.object({
+  path: z.object({
+    story_id: z.string().max(40, "Maximum length is 40")
+  })
+})
+
+export type GetStoryApiV1TravelGuidesStoriesStoryIdGetParams = z.infer<typeof GetStoryApiV1TravelGuidesStoriesStoryIdGetParamsSchema>
+/**
+ * Success response schema for GET /api/v1/subscriptions/plans
+ * Status: 200
+ * Successful Response
+ */
+export const GetSubscriptionPlansApiV1SubscriptionsPlansGetResponseSchema = z.any()
+
+export type GetSubscriptionPlansApiV1SubscriptionsPlansGetResponse = z.infer<typeof GetSubscriptionPlansApiV1SubscriptionsPlansGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/subscriptions/plans
+ * Status: 422
+ * Validation Error
+ */
+export const GetSubscriptionPlansApiV1SubscriptionsPlansGetErrorSchema = HTTPValidationErrorSchema
+
+export type GetSubscriptionPlansApiV1SubscriptionsPlansGetError = z.infer<typeof GetSubscriptionPlansApiV1SubscriptionsPlansGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/subscriptions/plans
+ * Path params: none
+ * Query params: plan_type
+ * Header params: none
+ */
+export const GetSubscriptionPlansApiV1SubscriptionsPlansGetParamsSchema = z.object({
+  query: z.object({
+    plan_type: SubscriptionPlanTypeSchema
+  }).optional()
+})
+
+export type GetSubscriptionPlansApiV1SubscriptionsPlansGetParams = z.infer<typeof GetSubscriptionPlansApiV1SubscriptionsPlansGetParamsSchema>
+/**
+ * Success response schema for GET /api/v1/subscriptions/my-subscription
+ * Status: 200
+ * Successful Response
+ */
+export const GetMySubscriptionApiV1SubscriptionsMySubscriptionGetResponseSchema = z.any()
+
+export type GetMySubscriptionApiV1SubscriptionsMySubscriptionGetResponse = z.infer<typeof GetMySubscriptionApiV1SubscriptionsMySubscriptionGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/subscriptions/my-subscription
+ * Status: 422
+ * Validation Error
+ */
+export const GetMySubscriptionApiV1SubscriptionsMySubscriptionGetErrorSchema = HTTPValidationErrorSchema
+
+export type GetMySubscriptionApiV1SubscriptionsMySubscriptionGetError = z.infer<typeof GetMySubscriptionApiV1SubscriptionsMySubscriptionGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/subscriptions/my-subscription
+ * Path params: none
+ * Query params: plan_type
+ * Header params: none
+ */
+export const GetMySubscriptionApiV1SubscriptionsMySubscriptionGetParamsSchema = z.object({
+  query: z.object({
+    plan_type: z.any().optional()
+  }).optional()
+})
+
+export type GetMySubscriptionApiV1SubscriptionsMySubscriptionGetParams = z.infer<typeof GetMySubscriptionApiV1SubscriptionsMySubscriptionGetParamsSchema>
+/**
+ * Success response schema for POST /api/v1/subscriptions/subscribe
+ * Status: 200
+ * Successful Response
+ */
+export const SubscribeApiV1SubscriptionsSubscribePostResponseSchema = z.any()
+
+export type SubscribeApiV1SubscriptionsSubscribePostResponse = z.infer<typeof SubscribeApiV1SubscriptionsSubscribePostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/subscriptions/subscribe
+ * Status: 422
+ * Validation Error
+ */
+export const SubscribeApiV1SubscriptionsSubscribePostErrorSchema = HTTPValidationErrorSchema
+
+export type SubscribeApiV1SubscriptionsSubscribePostError = z.infer<typeof SubscribeApiV1SubscriptionsSubscribePostErrorSchema>
+/**
+ * Parameters schema for POST /api/v1/subscriptions/subscribe
+ * Path params: none
+ * Query params: plan_id, billing_cycle
+ * Header params: none
+ */
+export const SubscribeApiV1SubscriptionsSubscribePostParamsSchema = z.object({
+  query: z.object({
+    plan_id: z.string().max(40, "Maximum length is 40"),
+    billing_cycle: z.string().regex(/^(monthly|yearly)$/, "Invalid format").optional()
+  }).optional()
+})
+
+export type SubscribeApiV1SubscriptionsSubscribePostParams = z.infer<typeof SubscribeApiV1SubscriptionsSubscribePostParamsSchema>
+/**
+ * Success response schema for POST /api/v1/subscriptions/{subscription_id}/cancel
+ * Status: 200
+ * Successful Response
+ */
+export const CancelSubscriptionApiV1SubscriptionsSubscriptionIdCancelPostResponseSchema = z.any()
+
+export type CancelSubscriptionApiV1SubscriptionsSubscriptionIdCancelPostResponse = z.infer<typeof CancelSubscriptionApiV1SubscriptionsSubscriptionIdCancelPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/subscriptions/{subscription_id}/cancel
+ * Status: 422
+ * Validation Error
+ */
+export const CancelSubscriptionApiV1SubscriptionsSubscriptionIdCancelPostErrorSchema = HTTPValidationErrorSchema
+
+export type CancelSubscriptionApiV1SubscriptionsSubscriptionIdCancelPostError = z.infer<typeof CancelSubscriptionApiV1SubscriptionsSubscriptionIdCancelPostErrorSchema>
+/**
+ * Parameters schema for POST /api/v1/subscriptions/{subscription_id}/cancel
+ * Path params: subscription_id
+ * Query params: cancel_immediately
+ * Header params: none
+ */
+export const CancelSubscriptionApiV1SubscriptionsSubscriptionIdCancelPostParamsSchema = z.object({
+  path: z.object({
+    subscription_id: z.string().max(40, "Maximum length is 40")
+  }),
+  query: z.object({
+    cancel_immediately: z.boolean().optional()
+  }).optional()
+})
+
+export type CancelSubscriptionApiV1SubscriptionsSubscriptionIdCancelPostParams = z.infer<typeof CancelSubscriptionApiV1SubscriptionsSubscriptionIdCancelPostParamsSchema>
+/**
+ * Success response schema for GET /api/v1/subscriptions/usage/{limit_type}
+ * Status: 200
+ * Successful Response
+ */
+export const CheckUsageApiV1SubscriptionsUsageLimitTypeGetResponseSchema = z.any()
+
+export type CheckUsageApiV1SubscriptionsUsageLimitTypeGetResponse = z.infer<typeof CheckUsageApiV1SubscriptionsUsageLimitTypeGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/subscriptions/usage/{limit_type}
+ * Status: 422
+ * Validation Error
+ */
+export const CheckUsageApiV1SubscriptionsUsageLimitTypeGetErrorSchema = HTTPValidationErrorSchema
+
+export type CheckUsageApiV1SubscriptionsUsageLimitTypeGetError = z.infer<typeof CheckUsageApiV1SubscriptionsUsageLimitTypeGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/subscriptions/usage/{limit_type}
+ * Path params: limit_type
+ * Query params: plan_type
+ * Header params: none
+ */
+export const CheckUsageApiV1SubscriptionsUsageLimitTypeGetParamsSchema = z.object({
+  path: z.object({
+    limit_type: z.string().regex(/^(listings|bookings_per_month|guests)$/, "Invalid format")
+  }),
+  query: z.object({
+    plan_type: z.any().optional()
+  }).optional()
+})
+
+export type CheckUsageApiV1SubscriptionsUsageLimitTypeGetParams = z.infer<typeof CheckUsageApiV1SubscriptionsUsageLimitTypeGetParamsSchema>
+/**
+ * Success response schema for GET /api/v1/tenancy/tenant
+ * Status: 200
+ * Successful Response
+ */
+export const GetCurrentTenantApiV1TenancyTenantGetResponseSchema = z.any()
+
+export type GetCurrentTenantApiV1TenancyTenantGetResponse = z.infer<typeof GetCurrentTenantApiV1TenancyTenantGetResponseSchema>
+/**
+ * Success response schema for POST /api/v1/tenancy/tenant
+ * Status: 200
+ * Successful Response
+ */
+export const CreateTenantApiV1TenancyTenantPostResponseSchema = z.any()
+
+export type CreateTenantApiV1TenancyTenantPostResponse = z.infer<typeof CreateTenantApiV1TenancyTenantPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/tenancy/tenant
+ * Status: 422
+ * Validation Error
+ */
+export const CreateTenantApiV1TenancyTenantPostErrorSchema = HTTPValidationErrorSchema
+
+export type CreateTenantApiV1TenancyTenantPostError = z.infer<typeof CreateTenantApiV1TenancyTenantPostErrorSchema>
+/**
+ * Parameters schema for POST /api/v1/tenancy/tenant
+ * Path params: none
+ * Query params: name, slug, domain, contact_email
+ * Header params: none
+ */
+export const CreateTenantApiV1TenancyTenantPostParamsSchema = z.object({
+  query: z.object({
+    name: z.string(),
+    slug: z.string(),
+    domain: z.any().optional(),
+    contact_email: z.any().optional()
+  }).optional()
+})
+
+export type CreateTenantApiV1TenancyTenantPostParams = z.infer<typeof CreateTenantApiV1TenancyTenantPostParamsSchema>
+/**
+ * Success response schema for PUT /api/v1/tenancy/tenant/{tenant_id}/branding
+ * Status: 200
+ * Successful Response
+ */
+export const UpdateBrandingApiV1TenancyTenantTenantIdBrandingPutResponseSchema = z.any()
+
+export type UpdateBrandingApiV1TenancyTenantTenantIdBrandingPutResponse = z.infer<typeof UpdateBrandingApiV1TenancyTenantTenantIdBrandingPutResponseSchema>
+/**
+ * Error response schema for PUT /api/v1/tenancy/tenant/{tenant_id}/branding
+ * Status: 422
+ * Validation Error
+ */
+export const UpdateBrandingApiV1TenancyTenantTenantIdBrandingPutErrorSchema = HTTPValidationErrorSchema
+
+export type UpdateBrandingApiV1TenancyTenantTenantIdBrandingPutError = z.infer<typeof UpdateBrandingApiV1TenancyTenantTenantIdBrandingPutErrorSchema>
+/**
+ * Parameters schema for PUT /api/v1/tenancy/tenant/{tenant_id}/branding
+ * Path params: tenant_id
+ * Query params: logo_url, primary_color, secondary_color, custom_css
+ * Header params: none
+ */
+export const UpdateBrandingApiV1TenancyTenantTenantIdBrandingPutParamsSchema = z.object({
+  path: z.object({
+    tenant_id: z.string().max(40, "Maximum length is 40")
+  }),
+  query: z.object({
+    logo_url: z.any().optional(),
+    primary_color: z.any().optional(),
+    secondary_color: z.any().optional(),
+    custom_css: z.any().optional()
+  }).optional()
+})
+
+export type UpdateBrandingApiV1TenancyTenantTenantIdBrandingPutParams = z.infer<typeof UpdateBrandingApiV1TenancyTenantTenantIdBrandingPutParamsSchema>
+/**
+ * Success response schema for POST /api/v1/tenancy/tenant/{tenant_id}/domain
+ * Status: 200
+ * Successful Response
+ */
+export const AddCustomDomainApiV1TenancyTenantTenantIdDomainPostResponseSchema = z.any()
+
+export type AddCustomDomainApiV1TenancyTenantTenantIdDomainPostResponse = z.infer<typeof AddCustomDomainApiV1TenancyTenantTenantIdDomainPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/tenancy/tenant/{tenant_id}/domain
+ * Status: 422
+ * Validation Error
+ */
+export const AddCustomDomainApiV1TenancyTenantTenantIdDomainPostErrorSchema = HTTPValidationErrorSchema
+
+export type AddCustomDomainApiV1TenancyTenantTenantIdDomainPostError = z.infer<typeof AddCustomDomainApiV1TenancyTenantTenantIdDomainPostErrorSchema>
+/**
+ * Parameters schema for POST /api/v1/tenancy/tenant/{tenant_id}/domain
+ * Path params: tenant_id
+ * Query params: domain
+ * Header params: none
+ */
+export const AddCustomDomainApiV1TenancyTenantTenantIdDomainPostParamsSchema = z.object({
+  path: z.object({
+    tenant_id: z.string().max(40, "Maximum length is 40")
+  }),
+  query: z.object({
+    domain: z.string()
+  }).optional()
+})
+
+export type AddCustomDomainApiV1TenancyTenantTenantIdDomainPostParams = z.infer<typeof AddCustomDomainApiV1TenancyTenantTenantIdDomainPostParamsSchema>
+/**
+ * Success response schema for POST /api/v1/tenancy/tenant/domain/verify
+ * Status: 200
+ * Successful Response
+ */
+export const VerifyDomainApiV1TenancyTenantDomainVerifyPostResponseSchema = z.any()
+
+export type VerifyDomainApiV1TenancyTenantDomainVerifyPostResponse = z.infer<typeof VerifyDomainApiV1TenancyTenantDomainVerifyPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/tenancy/tenant/domain/verify
+ * Status: 422
+ * Validation Error
+ */
+export const VerifyDomainApiV1TenancyTenantDomainVerifyPostErrorSchema = HTTPValidationErrorSchema
+
+export type VerifyDomainApiV1TenancyTenantDomainVerifyPostError = z.infer<typeof VerifyDomainApiV1TenancyTenantDomainVerifyPostErrorSchema>
+/**
+ * Parameters schema for POST /api/v1/tenancy/tenant/domain/verify
+ * Path params: none
+ * Query params: domain, verification_token
+ * Header params: none
+ */
+export const VerifyDomainApiV1TenancyTenantDomainVerifyPostParamsSchema = z.object({
+  query: z.object({
+    domain: z.string(),
+    verification_token: z.string()
+  }).optional()
+})
+
+export type VerifyDomainApiV1TenancyTenantDomainVerifyPostParams = z.infer<typeof VerifyDomainApiV1TenancyTenantDomainVerifyPostParamsSchema>
+/**
+ * Success response schema for GET /api/v1/tenancy/tenant/{tenant_id}/config
+ * Status: 200
+ * Successful Response
+ */
+export const GetConfigApiV1TenancyTenantTenantIdConfigGetResponseSchema = z.any()
+
+export type GetConfigApiV1TenancyTenantTenantIdConfigGetResponse = z.infer<typeof GetConfigApiV1TenancyTenantTenantIdConfigGetResponseSchema>
+/**
+ * Error response schema for GET /api/v1/tenancy/tenant/{tenant_id}/config
+ * Status: 422
+ * Validation Error
+ */
+export const GetConfigApiV1TenancyTenantTenantIdConfigGetErrorSchema = HTTPValidationErrorSchema
+
+export type GetConfigApiV1TenancyTenantTenantIdConfigGetError = z.infer<typeof GetConfigApiV1TenancyTenantTenantIdConfigGetErrorSchema>
+/**
+ * Parameters schema for GET /api/v1/tenancy/tenant/{tenant_id}/config
+ * Path params: tenant_id
+ * Query params: none
+ * Header params: none
+ */
+export const GetConfigApiV1TenancyTenantTenantIdConfigGetParamsSchema = z.object({
+  path: z.object({
+    tenant_id: z.string().max(40, "Maximum length is 40")
+  })
+})
+
+export type GetConfigApiV1TenancyTenantTenantIdConfigGetParams = z.infer<typeof GetConfigApiV1TenancyTenantTenantIdConfigGetParamsSchema>
+/**
+ * Request schema for PUT /api/v1/tenancy/tenant/{tenant_id}/config
+ */
+export const UpdateConfigApiV1TenancyTenantTenantIdConfigPutRequestSchema = z.record(z.string(), z.any())
+export type UpdateConfigApiV1TenancyTenantTenantIdConfigPutRequest = z.infer<typeof UpdateConfigApiV1TenancyTenantTenantIdConfigPutRequestSchema>
+/**
+ * Success response schema for PUT /api/v1/tenancy/tenant/{tenant_id}/config
+ * Status: 200
+ * Successful Response
+ */
+export const UpdateConfigApiV1TenancyTenantTenantIdConfigPutResponseSchema = z.any()
+
+export type UpdateConfigApiV1TenancyTenantTenantIdConfigPutResponse = z.infer<typeof UpdateConfigApiV1TenancyTenantTenantIdConfigPutResponseSchema>
+/**
+ * Error response schema for PUT /api/v1/tenancy/tenant/{tenant_id}/config
+ * Status: 422
+ * Validation Error
+ */
+export const UpdateConfigApiV1TenancyTenantTenantIdConfigPutErrorSchema = HTTPValidationErrorSchema
+
+export type UpdateConfigApiV1TenancyTenantTenantIdConfigPutError = z.infer<typeof UpdateConfigApiV1TenancyTenantTenantIdConfigPutErrorSchema>
+/**
+ * Parameters schema for PUT /api/v1/tenancy/tenant/{tenant_id}/config
+ * Path params: tenant_id
+ * Query params: none
+ * Header params: none
+ */
+export const UpdateConfigApiV1TenancyTenantTenantIdConfigPutParamsSchema = z.object({
+  path: z.object({
+    tenant_id: z.string().max(40, "Maximum length is 40")
+  })
+})
+
+export type UpdateConfigApiV1TenancyTenantTenantIdConfigPutParams = z.infer<typeof UpdateConfigApiV1TenancyTenantTenantIdConfigPutParamsSchema>
 /**
  * Success response schema for GET /
  * Status: 200

@@ -4,7 +4,7 @@ import { cache } from 'react'
 import { updateTag } from 'next/cache'
 import { headers } from 'next/headers'
 import { apiClient } from '@/generated/client'
-import { actionClientWithMeta, ActionError } from '@/generated/lib/safe-action'
+import { actionClientWithMeta, authActionClient, ActionError } from '@/generated/lib/safe-action'
 import {
   SearchListingsApiV1SearchListingsGetParamsSchema,
   SearchListingsApiV1SearchListingsGetResponseSchema,
@@ -73,13 +73,13 @@ async function logActionExecution(
  * Features: React cache, input validation, error handling
  */
 export const searchListingsApiV1SearchListingsGet = cache(
-  actionClientWithMeta
+  authActionClient
     .metadata({
       name: "search-listings-api-v1-search-listings-get",
-      requiresAuth: false
+      requiresAuth: true
     })
     .schema(SearchListingsApiV1SearchListingsGetParamsSchema)
-    .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof SearchListingsApiV1SearchListingsGetParamsSchema>; ctx?: any }) => {
+    .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof SearchListingsApiV1SearchListingsGetParamsSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
       const startTime = Date.now()
       
       try {

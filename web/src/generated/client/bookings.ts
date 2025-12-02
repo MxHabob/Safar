@@ -15,6 +15,8 @@ import {
   CancelBookingApiV1BookingsBookingIdCancelPostParamsSchema,
   ConfirmBookingApiV1BookingsBookingIdConfirmPostResponseSchema,
   ConfirmBookingApiV1BookingsBookingIdConfirmPostParamsSchema,
+  CompleteBookingApiV1BookingsBookingIdCompletePostResponseSchema,
+  CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema,
   ListHostBookingsApiV1BookingsHostListingsGetResponseSchema,
   ListHostBookingsApiV1BookingsHostListingsGetParamsSchema
 } from '@/generated/schemas'
@@ -178,6 +180,36 @@ const validatedParams = await ConfirmBookingApiV1BookingsBookingIdConfirmPostPar
         pathParams: validatedParams.path,
 config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
 responseSchema: ConfirmBookingApiV1BookingsBookingIdConfirmPostResponseSchema
+      }
+    )
+  }
+
+  /**
+   * Complete Booking
+   * Mark a booking as completed and award loyalty points.
+
+This should be called after guest checkout. Awards loyalty points to the guest.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostResponseSchema>>>
+   * @example
+   * const result = await client.completeBookingApiV1BookingsBookingIdCompletePost({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  completeBookingApiV1BookingsBookingIdCompletePost = async (options: {
+    params: z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema>
+    config?: RequestConfiguration
+  }) => {
+// Validate and extract parameters
+const validatedParams = await CompleteBookingApiV1BookingsBookingIdCompletePostParamsSchema.parseAsync(options.params)
+
+    return this.request<z.infer<typeof CompleteBookingApiV1BookingsBookingIdCompletePostResponseSchema>>(
+      'POST',
+      '/api/v1/bookings/{booking_id}/complete',
+      {
+        pathParams: validatedParams.path,
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: CompleteBookingApiV1BookingsBookingIdCompletePostResponseSchema
       }
     )
   }
