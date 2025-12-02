@@ -44,7 +44,7 @@ async def get_redis() -> Union[aioredis.Redis, AsyncRedisCluster]:
                 nodes = []
                 for node in cluster_nodes.split(','):
                     host, port = node.strip().split(':')
-                    nodes.append((host, int(port)))
+                    nodes.append({"host": host, "port": int(port)})
             else:
                 # Fallback: try to parse from redis_url if it contains multiple nodes
                 # Format: redis://host1:port1,host2:port2,host3:port3
@@ -56,12 +56,12 @@ async def get_redis() -> Union[aioredis.Redis, AsyncRedisCluster]:
                     for node in nodes_str.split(','):
                         if ':' in node:
                             host, port = node.split(':')
-                            nodes.append((host, int(port)))
+                            nodes.append({"host": host, "port": int(port)})
                         else:
-                            nodes.append((node, 6379))
+                            nodes.append({"host": node, "port": 6379})
                 else:
                     # Single node cluster (not recommended but supported)
-                    nodes = [(settings.redis_host, settings.redis_port)]
+                    nodes = [{"host": settings.redis_host, "port": settings.redis_port}]
             
             # Create cluster connection
             # Note: Using only parameters supported in redis-py 5.0+
