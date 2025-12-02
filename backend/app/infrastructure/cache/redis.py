@@ -3,6 +3,7 @@ Redis cache setup and connection management.
 Supports both single Redis instance and Redis Cluster mode for high availability.
 """
 import json
+import logging
 from typing import Optional, Any, Union
 from redis import asyncio as aioredis
 try:
@@ -13,6 +14,7 @@ except ImportError:
 from app.core.config import get_settings
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 # Global Redis connection instance (can be single instance or cluster)
 redis_client: Optional[Union[aioredis.Redis, AsyncRedisCluster]] = None
@@ -39,48 +41,115 @@ async def get_redis() -> Union[aioredis.Redis, AsyncRedisCluster]:
                 )
             # Redis Cluster mode
             cluster_nodes = getattr(settings, 'redis_cluster_nodes', None)
+            nodes = []
+            
             if cluster_nodes:
                 # Parse cluster nodes (format: host1:port1,host2:port2,host3:port3)
-                nodes = []
-                for node in cluster_nodes.split(','):
-                    host, port = node.strip().split(':')
-                    nodes.append({"host": host, "port": int(port)})
+                try:
+                    for node in cluster_nodes.split(','):
+                        node = node.strip()
+                        if ':' in node:
+                            host, port = node.split(':', 1)
+                            nodes.append({"host": host.strip(), "port": int(port.strip())})
+                        else:
+                            logger.warning(f"Invalid cluster node format: {node}. Expected 'host:port'")
+                except ValueError as e:
+                    raise ValueError(f"Invalid cluster nodes format: {cluster_nodes}. Error: {e}")
             else:
                 # Fallback: try to parse from redis_url if it contains multiple nodes
                 # Format: redis://host1:port1,host2:port2,host3:port3
-                if ',' in settings.redis_url:
+                redis_url = getattr(settings, 'redis_url', '')
+                if redis_url and ',' in redis_url:
                     # Extract nodes from URL
-                    url_parts = settings.redis_url.replace('redis://', '').split('/')
-                    nodes_str = url_parts[0]
-                    nodes = []
-                    for node in nodes_str.split(','):
-                        if ':' in node:
-                            host, port = node.split(':')
-                            nodes.append({"host": host, "port": int(port)})
+                    try:
+                        # Remove protocol and path
+                        url_without_protocol = redis_url.replace('redis://', '').replace('rediss://', '')
+                        # Handle authentication if present
+                        if '@' in url_without_protocol:
+                            auth_part, nodes_part = url_without_protocol.split('@', 1)
+                            nodes_str = nodes_part.split('/')[0]  # Remove database number if present
                         else:
-                            nodes.append({"host": node, "port": 6379})
+                            nodes_str = url_without_protocol.split('/')[0]
+                        
+                        for node in nodes_str.split(','):
+                            node = node.strip()
+                            if ':' in node:
+                                host, port = node.split(':', 1)
+                                nodes.append({"host": host.strip(), "port": int(port.strip())})
+                            else:
+                                nodes.append({"host": node.strip(), "port": 6379})
+                    except (ValueError, AttributeError) as e:
+                        logger.error(f"Failed to parse cluster nodes from redis_url: {redis_url}. Error: {e}")
+                        raise ValueError(f"Invalid redis_url format for cluster mode: {redis_url}")
                 else:
-                    # Single node cluster (not recommended but supported)
-                    nodes = [{"host": settings.redis_host, "port": settings.redis_port}]
+                    # Cluster mode enabled but no cluster nodes configured
+                    # Fall back to single Redis instance mode instead of failing
+                    logger.warning(
+                        "Redis cluster mode is enabled but no cluster nodes are configured. "
+                        "Falling back to single Redis instance mode."
+                    )
+                    cluster_enabled = False
             
-            # Create cluster connection
-            # Note: Using only parameters supported in redis-py 5.0+
-            redis_client = AsyncRedisCluster(
-                startup_nodes=nodes,
-                password=settings.redis_password,
-                decode_responses=True,
-                health_check_interval=30,  # Check cluster health every 30 seconds
-                max_connections=50
-            )
-        else:
-            # Single Redis instance mode
+            if cluster_enabled and nodes:
+                # Validate nodes format
+                if not all(isinstance(node, dict) and 'host' in node and 'port' in node for node in nodes):
+                    raise ValueError(f"Invalid nodes format. Expected list of dicts with 'host' and 'port' keys. Got: {nodes}")
+                
+                # Ensure all values are strings/integers, not dicts
+                validated_nodes = []
+                for node in nodes:
+                    host = node.get('host') if isinstance(node, dict) else None
+                    port = node.get('port') if isinstance(node, dict) else None
+                    
+                    if host is None or port is None:
+                        raise ValueError(f"Invalid node format: {node}. Must have 'host' and 'port' keys.")
+                    
+                    # Ensure host is a string and port is an integer
+                    if not isinstance(host, str):
+                        host = str(host)
+                    if not isinstance(port, int):
+                        try:
+                            port = int(port)
+                        except (ValueError, TypeError):
+                            raise ValueError(f"Invalid port value: {port}. Must be an integer.")
+                    
+                    validated_nodes.append({"host": host, "port": port})
+                
+                # Create cluster connection
+                # Note: Using only parameters supported in redis-py 5.0+
+                try:
+                    redis_client = AsyncRedisCluster(
+                        startup_nodes=validated_nodes,
+                        password=getattr(settings, 'redis_password', None),
+                        decode_responses=True,
+                        health_check_interval=30,  # Check cluster health every 30 seconds
+                        max_connections=50
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to create Redis cluster connection: {e}")
+                    raise
+        
+        # Single Redis instance mode (or fallback from cluster mode)
+        if not cluster_enabled or redis_client is None:
+            redis_url = getattr(settings, 'redis_url', None)
+            if not redis_url:
+                # Build redis_url from individual components
+                redis_host = getattr(settings, 'redis_host', 'localhost')
+                redis_port = getattr(settings, 'redis_port', 6379)
+                redis_db = getattr(settings, 'redis_db', 0)
+                redis_password = getattr(settings, 'redis_password', None)
+                
+                auth = f":{redis_password}@" if redis_password else ""
+                redis_url = f"redis://{auth}{redis_host}:{redis_port}/{redis_db}"
+            
             redis_client = await aioredis.from_url(
-                settings.redis_url,
+                redis_url,
                 encoding="utf-8",
                 decode_responses=True,
                 retry_on_timeout=True,
                 health_check_interval=30
             )
+    
     return redis_client
 
 
