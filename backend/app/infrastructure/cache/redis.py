@@ -176,7 +176,8 @@ async def get_redis() -> Union[aioredis.Redis, AsyncRedisCluster]:
                             password=getattr(settings, 'redis_password', None),
                             decode_responses=True,
                             health_check_interval=30,
-                            max_connections=50
+                            max_connections=50,
+                            skip_full_coverage_check=True
                         )
                         logger.info("Redis cluster connection created successfully with ClusterNode objects")
                     except Exception as e:
@@ -191,7 +192,8 @@ async def get_redis() -> Union[aioredis.Redis, AsyncRedisCluster]:
                             password=getattr(settings, 'redis_password', None),
                             decode_responses=True,
                             health_check_interval=30,
-                            max_connections=50
+                            max_connections=50,
+                            skip_full_coverage_check=True
                         )
                         logger.info("Redis cluster connection created successfully with dict format")
                     except Exception as e:
@@ -207,7 +209,8 @@ async def get_redis() -> Union[aioredis.Redis, AsyncRedisCluster]:
                                 password=getattr(settings, 'redis_password', None),
                                 decode_responses=True,
                                 health_check_interval=30,
-                                max_connections=50
+                                max_connections=50,
+                                skip_full_coverage_check=True
                             )
                             logger.info("Redis cluster connection created successfully with tuple format")
                         except Exception as e2:
