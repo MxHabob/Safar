@@ -2,7 +2,7 @@
 User schemas, enhanced with additional security-related structures.
 """
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from app.modules.users.models import UserRole, UserStatus, AccountProvider
 from app.core.id import ID
