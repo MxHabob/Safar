@@ -60,9 +60,21 @@ def setup_tracing() -> None:
         # Add OTLP exporter (for Tempo, Grafana Cloud, etc.)
         otlp_endpoint = getattr(settings, 'otel_exporter_otlp_endpoint', None)
         if otlp_endpoint:
+            # Parse headers string into dictionary
+            headers_str = getattr(settings, 'otel_exporter_otlp_headers', None)
+            headers_dict = None
+            if headers_str:
+                # Parse format: "key1=value1,key2=value2" or "key=value"
+                headers_dict = {}
+                for header_pair in headers_str.split(','):
+                    header_pair = header_pair.strip()
+                    if '=' in header_pair:
+                        key, value = header_pair.split('=', 1)  # Split on first '=' only
+                        headers_dict[key.strip()] = value.strip()
+            
             otlp_exporter = OTLPSpanExporter(
                 endpoint=otlp_endpoint,
-                headers=getattr(settings, 'otel_exporter_otlp_headers', None)
+                headers=headers_dict
             )
             tracer_provider.add_span_processor(
                 BatchSpanProcessor(otlp_exporter)
