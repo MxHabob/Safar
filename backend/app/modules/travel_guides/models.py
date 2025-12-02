@@ -71,7 +71,7 @@ class TravelGuide(BaseModel):
         Index("idx_travel_guide_destination", "destination", "country", "status"),
         Index("idx_travel_guide_author_status", "author_id", "status"),
         Index("idx_travel_guide_published", "published_at", "status"),
-        Index("idx_travel_guide_tags", "tags", using="gin"),
+        Index("idx_travel_guide_tags", "tags", postgresql_using="gin"),
     )
 
 
@@ -130,7 +130,7 @@ class UserStory(BaseModel):
         Index("idx_user_story_author_status", "author_id", "status"),
         Index("idx_user_story_destination", "destination", "country", "status"),
         Index("idx_user_story_published", "published_at", "status"),
-        Index("idx_user_story_tags", "tags", using="gin"),
+        Index("idx_user_story_tags", "tags", postgresql_using="gin"),
     )
 
 
