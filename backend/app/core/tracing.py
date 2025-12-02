@@ -62,20 +62,35 @@ def setup_tracing() -> None:
         if otlp_endpoint:
             # Parse headers string into dictionary
             headers_str = getattr(settings, 'otel_exporter_otlp_headers', None)
-            headers_dict = None
+            headers_dict = {}
             if headers_str:
                 # Parse format: "key1=value1,key2=value2" or "key=value"
-                headers_dict = {}
-                for header_pair in headers_str.split(','):
+                # Handle both comma-separated and single header formats
+                header_pairs = headers_str.split(',') if ',' in headers_str else [headers_str]
+                for header_pair in header_pairs:
                     header_pair = header_pair.strip()
+                    if not header_pair:
+                        continue
                     if '=' in header_pair:
-                        key, value = header_pair.split('=', 1)  # Split on first '=' only
-                        headers_dict[key.strip()] = value.strip()
+                        parts = header_pair.split('=', 1)  # Split on first '=' only
+                        if len(parts) == 2:
+                            key, value = parts
+                            key = key.strip()
+                            value = value.strip()
+                            if key and value:  # Only add non-empty keys and values
+                                headers_dict[key] = value
+                    else:
+                        # If no '=' found, log warning but don't fail
+                        logger.warning(f"Invalid header format (missing '='): {header_pair}")
             
-            otlp_exporter = OTLPSpanExporter(
-                endpoint=otlp_endpoint,
-                headers=headers_dict
-            )
+            # Create exporter with headers only if we have valid headers
+            # OTLP exporter expects headers as a dict or None/omitted
+            exporter_kwargs = {"endpoint": otlp_endpoint}
+            if headers_dict:
+                exporter_kwargs["headers"] = headers_dict
+                logger.debug(f"OTLP headers parsed: {list(headers_dict.keys())}")
+            
+            otlp_exporter = OTLPSpanExporter(**exporter_kwargs)
             tracer_provider.add_span_processor(
                 BatchSpanProcessor(otlp_exporter)
             )
