@@ -17,6 +17,11 @@ from app.modules.recommendations.routes import router as recommendations_router
 from app.modules.analytics.routes import router as analytics_router
 from app.modules.promotions.routes import router as promotions_router
 from app.modules.notifications.routes import router as notifications_router
+from app.modules.loyalty.routes import router as loyalty_router
+from app.modules.listings.premium_routes import router as premium_listings_router
+from app.modules.travel_guides.routes import router as travel_guides_router
+from app.modules.subscriptions.routes import router as subscriptions_router
+from app.modules.tenancy.routes import router as tenancy_router
 
 api_router = APIRouter()
 
@@ -35,4 +40,10 @@ api_router.include_router(recommendations_router)
 api_router.include_router(analytics_router)
 api_router.include_router(promotions_router)
 api_router.include_router(notifications_router)
+api_router.include_router(loyalty_router)
+api_router.include_router(premium_listings_router)
+api_router.include_router(travel_guides_router)
+api_router.include_router(subscriptions_router)
+api_router.include_router(tenancy_router)
+api_router.include_router(premium_listings_router)
 

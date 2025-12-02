@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func, desc
 
-from app.core.database import get_db
+from app.core.database import get_db, get_read_db
 from app.core.dependencies import get_current_active_user
 from app.core.dependencies import require_admin
 from app.modules.users.models import User, UserRole
@@ -28,7 +28,7 @@ async def get_audit_logs(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     current_user: User = Depends(require_admin),  # Only admins can view audit logs
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_read_db)  # Use read replica for analytics queries
 ) -> Any:
     """
     Get audit logs with filtering options.
@@ -82,7 +82,7 @@ async def get_audit_logs(
 async def get_audit_log(
     log_id: str,
     current_user: User = Depends(require_admin),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_read_db)  # Use read replica for read queries
 ) -> Any:
     """Get a specific audit log entry. Only accessible to admins."""
     result = await db.execute(
@@ -103,7 +103,7 @@ async def get_audit_log(
 async def get_audit_logs_summary(
     days: int = Query(7, ge=1, le=90, description="Number of days to summarize"),
     current_user: User = Depends(require_admin),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_read_db)  # Use read replica for analytics queries
 ) -> Any:
     """
     Get audit logs summary statistics.

@@ -365,9 +365,9 @@ async def test_e2e_booking_availability_conflict(client: AsyncClient, db_session
     availability_data = availability.json()
     if availability_data.get("available") is False:
         # Good - system detected conflict
-        pass
+        assert True  # Conflict detected correctly
     else:
-        # Try to book - should fail
+        # Try to book - should fail due to conflict
         booking2 = await client.post(
             "/api/v1/bookings",
             json={
@@ -380,6 +380,10 @@ async def test_e2e_booking_availability_conflict(client: AsyncClient, db_session
         )
         # Should fail with conflict error
         assert booking2.status_code in [400, 409, 422]
+        # Verify error message indicates conflict
+        if booking2.status_code != 422:  # 422 might not have detail
+            error_detail = booking2.json().get("detail", "").lower()
+            assert any(keyword in error_detail for keyword in ["unavailable", "conflict", "already booked", "overlap"])
 
 
 @pytest.mark.asyncio

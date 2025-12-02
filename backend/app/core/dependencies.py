@@ -86,20 +86,28 @@ async def get_current_active_user(
 async def require_host(
     current_user: User = Depends(get_current_active_user)
 ) -> User:
-
+    """Require host role and enforce 2FA."""
     is_host = current_user.role == UserRole.HOST or UserRole.HOST.value in (current_user.roles or [])
     if not is_host:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Host privileges required"
         )
+    
+    # Enforce 2FA for hosts
+    if not current_user.totp_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="2FA required"
+        )
+    
     return current_user
 
 
 async def require_admin(
     current_user: User = Depends(get_current_active_user)
 ) -> User:
-    """Require admin or super admin role."""
+    """Require admin or super admin role and enforce 2FA."""
     is_admin = (
         current_user.role in {UserRole.ADMIN, UserRole.SUPER_ADMIN} or
         any(role in (current_user.roles or []) for role in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value])
@@ -109,6 +117,14 @@ async def require_admin(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin privileges required"
         )
+    
+    # Enforce 2FA for admins
+    if not current_user.totp_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="2FA required"
+        )
+    
     return current_user
 
 

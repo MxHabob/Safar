@@ -142,6 +142,34 @@ class SearchService:
         else:
             search_query = search_query.add_columns(func.literal(1.0).label('location_boost'))
         
+        # Premium/Featured boost
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        premium_boost = case(
+            (
+                and_(
+                    Listing.is_featured == True,
+                    or_(
+                        Listing.featured_expires_at.is_(None),
+                        Listing.featured_expires_at > now
+                    )
+                ),
+                2.0  # Featured listings get 2x boost
+            ),
+            (
+                and_(
+                    Listing.is_premium == True,
+                    or_(
+                        Listing.premium_expires_at.is_(None),
+                        Listing.premium_expires_at > now
+                    )
+                ),
+                1.0 + (Listing.premium_priority * 0.2)  # Premium boost based on priority
+            ),
+            else_=1.0
+        )
+        search_query = search_query.add_columns(premium_boost.label('premium_boost'))
+        
         # A/B Testing: Apply different ranking algorithms based on variant
         if ab_test_variant == "variant_b":
             # Variant B: More weight on popularity
@@ -149,21 +177,21 @@ class SearchService:
                 func.coalesce(text('relevance'), 0) * 0.3 +
                 func.coalesce(text('popularity'), 0) * 0.5 +
                 func.coalesce(text('personalization'), 1.0) * 0.2
-            ) * func.coalesce(text('location_boost'), 1.0)
+            ) * func.coalesce(text('location_boost'), 1.0) * func.coalesce(text('premium_boost'), 1.0)
         elif ab_test_variant == "variant_c":
             # Variant C: More weight on personalization
             final_score = (
                 func.coalesce(text('relevance'), 0) * 0.3 +
                 func.coalesce(text('popularity'), 0) * 0.2 +
                 func.coalesce(text('personalization'), 1.0) * 0.5
-            ) * func.coalesce(text('location_boost'), 1.0)
+            ) * func.coalesce(text('location_boost'), 1.0) * func.coalesce(text('premium_boost'), 1.0)
         else:
             # Default (variant A): Balanced approach
             final_score = (
                 func.coalesce(text('relevance'), 0) * 0.4 +
                 func.coalesce(text('popularity'), 0) * 0.3 +
                 func.coalesce(text('personalization'), 1.0) * 0.3
-            ) * func.coalesce(text('location_boost'), 1.0)
+            ) * func.coalesce(text('location_boost'), 1.0) * func.coalesce(text('premium_boost'), 1.0)
         
         search_query = search_query.add_columns(final_score.label('final_score'))
         

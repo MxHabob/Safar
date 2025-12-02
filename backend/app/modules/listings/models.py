@@ -107,6 +107,13 @@ class Listing(BaseModel):
     rating = Column(Numeric(3, 2), default=0, nullable=False, index=True)
     review_count = Column(Integer, default=0, nullable=False)
     
+    # Premium/Featured Listing
+    is_premium = Column(Boolean, default=False, nullable=False, index=True)
+    is_featured = Column(Boolean, default=False, nullable=False, index=True)
+    premium_expires_at = Column(DateTime(timezone=True), nullable=True)
+    featured_expires_at = Column(DateTime(timezone=True), nullable=True)
+    premium_priority = Column(Integer, default=0, nullable=False)  # Higher = more prominent
+    
     # Metadata
     listing_metadata = Column("metadata", JSONB, default=dict, nullable=True)
     
@@ -142,6 +149,8 @@ class Listing(BaseModel):
         Index("idx_listing_type_status", "listing_type", "status"),
         Index("idx_listing_city_country", "city", "country", "status"),
         Index("idx_listing_rating", "rating", "review_count"),
+        Index("idx_listing_premium_featured", "is_premium", "is_featured", "status"),
+        Index("idx_listing_premium_priority", "is_premium", "premium_priority", "status"),
     )
 
 

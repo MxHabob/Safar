@@ -57,6 +57,9 @@ class PaymentMethodType(str, enum.Enum):
     STRIPE = "stripe"
     BANK_TRANSFER = "bank_transfer"
     CRYPTO = "crypto"
+    # Digital wallets (via Stripe)
+    APPLE_PAY = "apple_pay"  # Apple Pay (via Stripe Payment Intents)
+    GOOGLE_PAY = "google_pay"  # Google Pay (via Stripe Payment Intents)
     # Local payment methods
     MPESA = "mpesa"  # M-Pesa (Kenya, Tanzania, East Africa)
     FAWRY = "fawry"  # Fawry (Egypt)

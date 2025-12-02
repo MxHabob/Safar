@@ -201,6 +201,58 @@ async def confirm_booking(
     return booking
 
 
+@router.post("/{booking_id}/complete", response_model=BookingResponse)
+async def complete_booking(
+    booking_id: ID,
+    current_user: User = Depends(require_host),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """
+    Mark a booking as completed and award loyalty points.
+    
+    This should be called after guest checkout. Awards loyalty points to the guest.
+    """
+    # Get booking
+    result = await db.execute(
+        select(Booking)
+        .where(Booking.id == booking_id)
+        .options(selectinload(Booking.listing))
+    )
+    booking = result.scalar_one_or_none()
+    
+    if not booking:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Booking not found"
+        )
+    
+    # Verify host owns the listing
+    if booking.listing.host_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to complete this booking"
+        )
+    
+    # Update booking status
+    booking.status = BookingStatus.COMPLETED
+    booking.completed_at = func.now()
+    
+    await db.commit()
+    await db.refresh(booking, ["timeline_events"])
+    
+    # Award loyalty points (async via Celery task)
+    try:
+        from app.modules.loyalty.tasks import award_points_for_booking_task
+        award_points_for_booking_task.delay(str(booking_id))
+    except Exception as e:
+        # Log error but don't fail the completion
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to queue loyalty points award: {str(e)}")
+    
+    return booking
+
+
 @router.get("/host/listings", response_model=BookingListResponse)
 async def list_host_bookings(
     skip: int = Query(0, ge=0),

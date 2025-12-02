@@ -23,6 +23,7 @@ from app.core.middleware import (
 from app.api.v1.router import api_router
 
 from app.core.logging_config import setup_logging
+from app.core.tracing import setup_tracing, instrument_app
 setup_logging()
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,9 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting Safar API...")
+    
+    # Initialize OpenTelemetry distributed tracing
+    setup_tracing()
     
     # Initialize Sentry for error tracking (if configured)
     if settings.sentry_dsn:
@@ -94,6 +98,9 @@ app = FastAPI(
     openapi_url="/openapi.json",
     lifespan=lifespan
 )
+
+# Instrument app with OpenTelemetry (after app creation)
+instrument_app(app)
 
 # CORS Middleware - CRITICAL: Use list property, never wildcard in production
 app.add_middleware(
@@ -209,6 +216,35 @@ async def liveness_check():
         "status": "alive",
         "timestamp": datetime.utcnow().isoformat()
     }
+
+
+# Apple Pay Domain Association (required for Apple Pay)
+@app.get("/.well-known/apple-developer-merchantid-domain-association")
+async def apple_pay_domain_association():
+    """
+    Apple Pay domain association file.
+    
+    CRITICAL: This endpoint serves the domain association file required by Apple Pay.
+    The file content should be configured via APPLE_PAY_DOMAIN_ASSOCIATION environment variable.
+    """
+    from app.core.config import get_settings
+    from fastapi.responses import PlainTextResponse
+    
+    settings = get_settings()
+    
+    if not settings.apple_pay_domain_association:
+        from fastapi import HTTPException, status
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Apple Pay domain association not configured"
+        )
+    
+    # Return the domain association file content
+    # Content-Type should be text/plain
+    return PlainTextResponse(
+        content=settings.apple_pay_domain_association,
+        media_type="text/plain"
+    )
 
 
 # Include API router

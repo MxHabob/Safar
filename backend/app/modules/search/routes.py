@@ -5,7 +5,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
+from app.core.database import get_db, get_read_db
 from app.core.dependencies import get_current_user
 from app.modules.users.models import User
 from app.modules.search.schemas import (
@@ -39,7 +39,7 @@ async def search_listings(
     enable_location_boost: bool = Query(True, description="Enable location boost"),
     ab_test_variant: str = Query(None, description="A/B test variant (variant_a, variant_b, variant_c)"),
     current_user: Optional[User] = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_read_db)  # Use read replica for search queries
 ) -> Any:
     """
     Search listings with enhanced relevance ranking.
@@ -96,7 +96,7 @@ async def search_listings(
 async def get_search_suggestions(
     query: str = Query(..., min_length=2),
     limit: int = Query(10, ge=1, le=20),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_read_db)  # Use read replica for search suggestions
 ) -> Any:
     """Get search suggestions for the given query string."""
     suggestions = await SearchService.get_search_suggestions(db, query, limit)

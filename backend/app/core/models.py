@@ -71,6 +71,22 @@ from app.modules.analytics.models import (
 # Webhooks
 from app.modules.webhooks.models import WebhookEvent
 
+# Travel Guides
+from app.modules.travel_guides.models import (
+    TravelGuide, UserStory, TravelGuideBookmark, TravelGuideLike,
+    UserStoryLike, UserStoryComment
+)
+
+# Subscriptions
+from app.modules.subscriptions.models import (
+    SubscriptionPlan, Subscription, SubscriptionInvoice
+)
+
+# Tenancy
+from app.modules.tenancy.models import (
+    Tenant, TenantDomain, TenantConfig
+)
+
 # Base
 from app.shared.base import BaseModel, StringIDBaseModel
 
@@ -162,4 +178,22 @@ __all__ = [
     
     # Webhooks
     "WebhookEvent",
+    
+    # Travel Guides
+    "TravelGuide",
+    "UserStory",
+    "TravelGuideBookmark",
+    "TravelGuideLike",
+    "UserStoryLike",
+    "UserStoryComment",
+    
+    # Subscriptions
+    "SubscriptionPlan",
+    "Subscription",
+    "SubscriptionInvoice",
+    
+    # Tenancy
+    "Tenant",
+    "TenantDomain",
+    "TenantConfig",
 ]

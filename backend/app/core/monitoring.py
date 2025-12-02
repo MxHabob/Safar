@@ -7,9 +7,10 @@ from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text
 
-from app.core.database import AsyncSessionLocal, engine
+from app.core.database import AsyncSessionLocal, engine, get_read_replica_session
 from app.infrastructure.cache.redis import get_redis
 from app.core.config import get_settings
+import httpx
 
 settings = get_settings()
 
@@ -48,6 +49,72 @@ class HealthChecker:
             return {
                 "status": "unhealthy",
                 "message": f"Redis connection failed: {str(e)}"
+            }
+    
+    @staticmethod
+    async def check_replica_database() -> Dict[str, Any]:
+        """Check read replica database connectivity."""
+        try:
+            replica_session_factory = get_read_replica_session()
+            if not replica_session_factory:
+                return {
+                    "status": "not_configured",
+                    "message": "Read replica not configured"
+                }
+            
+            async with replica_session_factory() as session:
+                result = await session.execute(text("SELECT 1"))
+                result.scalar()
+            return {
+                "status": "healthy",
+                "message": "Read replica connection successful"
+            }
+        except Exception as e:
+            return {
+                "status": "unhealthy",
+                "message": f"Read replica connection failed: {str(e)}"
+            }
+    
+    @staticmethod
+    async def check_cdn() -> Dict[str, Any]:
+        """Check CDN reachability."""
+        try:
+            cdn_base_url = getattr(settings, 'cdn_base_url', None)
+            if not cdn_base_url:
+                return {
+                    "status": "not_configured",
+                    "message": "CDN not configured"
+                }
+            
+            # Try HEAD request to CDN base URL or health endpoint
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                # Try health endpoint first, fallback to base URL
+                health_urls = [
+                    f"{cdn_base_url.rstrip('/')}/health",
+                    f"{cdn_base_url.rstrip('/')}/.well-known/health",
+                    cdn_base_url
+                ]
+                
+                for url in health_urls:
+                    try:
+                        response = await client.head(url, follow_redirects=True)
+                        if response.status_code < 500:
+                            return {
+                                "status": "healthy",
+                                "message": f"CDN reachable at {url}"
+                            }
+                    except Exception:
+                        continue
+                
+                # If all URLs fail, return unhealthy
+                return {
+                    "status": "unhealthy",
+                    "message": "CDN not reachable"
+                }
+        except Exception as e:
+            return {
+                "status": "unhealthy",
+                "message": f"CDN check failed: {str(e)}"
             }
     
     @staticmethod
@@ -124,7 +191,9 @@ class HealthChecker:
     async def get_health_status() -> Dict[str, Any]:
         """Get overall health status for core services."""
         db_status = await HealthChecker.check_database()
+        replica_db_status = await HealthChecker.check_replica_database()
         redis_status = await HealthChecker.check_redis()
+        cdn_status = await HealthChecker.check_cdn()
         stripe_status = await HealthChecker.check_stripe()
         
         # Only check exclusion constraint in production (it's critical there)
@@ -144,8 +213,10 @@ class HealthChecker:
             "status": overall_status,
             "timestamp": datetime.utcnow().isoformat(),
             "services": {
-                "database": db_status,
-                "redis": redis_status,
+                "primary_db": db_status,
+                "replica_db": replica_db_status,
+                "redis_cluster": redis_status,
+                "cdn": cdn_status,
                 "stripe": stripe_status
             },
             "version": settings.app_version,

@@ -192,8 +192,68 @@ class PaymentService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Failed to create {provider} payment: {str(e)}"
                 )
+        elif payment_method in [PaymentMethodType.APPLE_PAY, PaymentMethodType.GOOGLE_PAY]:
+            # Apple Pay / Google Pay via Stripe Payment Intents
+            if not settings.stripe_secret_key:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Stripe is not configured for Apple Pay/Google Pay"
+                )
+            
+            try:
+                # Get booking details for payment intent metadata
+                booking_result = await db.execute(
+                    select(Booking).where(Booking.id == booking_id)
+                )
+                booking = booking_result.scalar_one_or_none()
+                
+                if not booking:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Booking not found"
+                    )
+                
+                # Create Payment Intent with Apple Pay / Google Pay enabled
+                payment_method_types = []
+                if payment_method == PaymentMethodType.APPLE_PAY:
+                    payment_method_types = ["card", "apple_pay"]
+                elif payment_method == PaymentMethodType.GOOGLE_PAY:
+                    payment_method_types = ["card", "google_pay"]
+                
+                intent = stripe.PaymentIntent.create(
+                    amount=int(amount * 100),  # Convert to cents
+                    currency=currency.lower(),
+                    payment_method_types=payment_method_types,
+                    metadata={
+                        "booking_id": str(booking_id),
+                        "payment_method": payment_method.value
+                    },
+                    # Enable automatic payment methods for better UX
+                    automatic_payment_methods={
+                        "enabled": True,
+                        "allow_redirects": "never"  # Prefer inline payment methods
+                    }
+                )
+                
+                return {
+                    "client_secret": intent.client_secret,
+                    "payment_intent_id": intent.id,
+                    "payment_method": payment_method.value,
+                    "apple_pay_merchant_id": settings.apple_pay_merchant_id if payment_method == PaymentMethodType.APPLE_PAY else None,
+                    "google_pay_merchant_id": settings.google_pay_merchant_id if payment_method == PaymentMethodType.GOOGLE_PAY else None
+                }
+            except stripe.error.StripeError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Failed to create {payment_method.value} payment intent: {str(e)}"
+                )
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Failed to create payment intent: {str(e)}"
+                )
         else:
-            # Default to Stripe
+            # Default to Stripe (credit card)
             if not settings.stripe_secret_key:
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -471,6 +531,10 @@ class PaymentService:
         # CRITICAL: Flush to check for unique constraint violations before commit
         try:
             await db.flush()  # Flush to get payment ID and check constraints
+            
+            # Award loyalty points after successful payment (async, non-blocking)
+            # Points will be awarded when booking is completed (after checkout)
+            # This is handled by a Celery task or when booking status changes to COMPLETED
         except IntegrityError as e:
             # Handle race condition where another transaction created payment
             # between our check and insert (shouldn't happen with lock, but safety net)

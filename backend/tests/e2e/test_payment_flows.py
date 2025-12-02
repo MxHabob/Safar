@@ -273,16 +273,57 @@ async def test_e2e_payment_failure_handling(client: AsyncClient, db_session, boo
 @pytest.mark.payment
 async def test_e2e_payment_webhook_verification(client: AsyncClient, db_session):
     """E2E Test 11: Payment webhook verification (structure test)."""
+    import hmac
+    import hashlib
+    import time
+    from app.core.config import get_settings
+    
+    settings = get_settings()
+    
     # Webhook endpoint should exist and verify signatures
     # This is a structural test - actual webhook testing requires Stripe CLI
     
-    # Check if webhook endpoint exists
-    # POST /api/v1/webhooks/stripe
-    # This would typically verify webhook signature and process events
+    # Create a mock webhook payload
+    webhook_payload = {
+        "id": "evt_test_webhook",
+        "type": "payment_intent.succeeded",
+        "data": {
+            "object": {
+                "id": "pi_test_123",
+                "status": "succeeded",
+                "amount": 30000
+            }
+        }
+    }
     
-    # For now, verify endpoint structure exists
-    # Actual webhook testing requires Stripe test webhooks
-    pass  # Webhook testing requires external tooling
+    # Generate webhook signature (simplified - real Stripe uses more complex signing)
+    timestamp = int(time.time())
+    payload_str = f"{timestamp}.{str(webhook_payload)}"
+    
+    # If webhook secret is configured, create signature
+    if settings.stripe_webhook_secret:
+        signature = hmac.new(
+            settings.stripe_webhook_secret.encode(),
+            payload_str.encode(),
+            hashlib.sha256
+        ).hexdigest()
+        stripe_signature = f"t={timestamp},v1={signature}"
+    else:
+        stripe_signature = f"t={timestamp},v1=test_signature"
+    
+    # Test webhook endpoint exists and handles requests
+    webhook_response = await client.post(
+        "/api/v1/webhooks/stripe",
+        json=webhook_payload,
+        headers={"stripe-signature": stripe_signature}
+    )
+    
+    # Endpoint should exist and verify signature
+    # May return 400/401 if signature invalid (expected) or 200 if valid
+    assert webhook_response.status_code in [200, 400, 401, 403, 422]
+    
+    # Verify endpoint structure exists
+    assert webhook_response.status_code != 404  # Endpoint should exist
 
 
 @pytest.mark.asyncio

@@ -100,6 +100,18 @@ class Settings(BaseSettings):
     postgres_db: str = Field(default="safar_db", env="POSTGRES_DB")
     database_url: Optional[PostgresDsn] = Field(default=None, env="DATABASE_URL")
     
+    # PostgreSQL Read Replica Configuration
+    postgres_read_replica_url: Optional[PostgresDsn] = Field(
+        default=None,
+        env="POSTGRES_READ_REPLICA_URL",
+        description="PostgreSQL read replica connection URL (comma-separated for multiple replicas)"
+    )
+    postgres_read_replica_enabled: bool = Field(
+        default=False,
+        env="POSTGRES_READ_REPLICA_ENABLED",
+        description="Enable read replica routing for read-only queries"
+    )
+    
     @validator("database_url", pre=True)
     def assemble_db_connection(cls, v: Optional[str], values: dict) -> str:
         """Build database connection URL from individual components"""
@@ -212,6 +224,59 @@ class Settings(BaseSettings):
     fcm_service_account_key: Optional[str] = Field(default=None, env="FCM_SERVICE_ACCOUNT_KEY")
     
     # ============================================================================
+    # CDN Configuration
+    # ============================================================================
+    cdn_type: Optional[str] = Field(
+        default=None,
+        env="CDN_TYPE",
+        description="CDN type: 'cloudflare', 'cloudfront', or 's3'"
+    )
+    cdn_base_url: Optional[str] = Field(
+        default=None,
+        env="CDN_BASE_URL",
+        description="Base URL for CDN (e.g., https://cdn.safar.com)"
+    )
+    cdn_base_path: str = Field(
+        default="images",
+        env="CDN_BASE_PATH",
+        description="Base path for CDN assets"
+    )
+    
+    # Cloudflare Configuration
+    cloudflare_account_id: Optional[str] = Field(
+        default=None,
+        env="CLOUDFLARE_ACCOUNT_ID",
+        description="Cloudflare account ID for Images API"
+    )
+    cloudflare_api_token: Optional[str] = Field(
+        default=None,
+        env="CLOUDFLARE_API_TOKEN",
+        description="Cloudflare API token"
+    )
+    cloudflare_zone_id: Optional[str] = Field(
+        default=None,
+        env="CLOUDFLARE_ZONE_ID",
+        description="Cloudflare zone ID for cache purging"
+    )
+    
+    # AWS CloudFront Configuration
+    cloudfront_domain: Optional[str] = Field(
+        default=None,
+        env="CLOUDFRONT_DOMAIN",
+        description="CloudFront distribution domain (e.g., d1234abcd.cloudfront.net)"
+    )
+    cloudfront_distribution_id: Optional[str] = Field(
+        default=None,
+        env="CLOUDFRONT_DISTRIBUTION_ID",
+        description="CloudFront distribution ID"
+    )
+    s3_bucket_name: Optional[str] = Field(
+        default=None,
+        env="S3_BUCKET_NAME",
+        description="S3 bucket name for image storage (used with CloudFront)"
+    )
+    
+    # ============================================================================
     # File Storage Configuration
     # ============================================================================
     storage_type: str = Field(
@@ -273,6 +338,26 @@ class Settings(BaseSettings):
     stripe_secret_key: Optional[str] = Field(default=None, env="STRIPE_SECRET_KEY")
     stripe_publishable_key: Optional[str] = Field(default=None, env="STRIPE_PUBLISHABLE_KEY")
     stripe_webhook_secret: Optional[str] = Field(default=None, env="STRIPE_WEBHOOK_SECRET")
+    
+    # Apple Pay Configuration (via Stripe)
+    apple_pay_domain_association: Optional[str] = Field(
+        default=None,
+        env="APPLE_PAY_DOMAIN_ASSOCIATION",
+        description="Apple Pay domain association file content (for .well-known/apple-developer-merchantid-domain-association)"
+    )
+    apple_pay_merchant_id: Optional[str] = Field(
+        default=None,
+        env="APPLE_PAY_MERCHANT_ID",
+        description="Apple Pay Merchant ID (from Apple Developer account)"
+    )
+    
+    # Google Pay Configuration (via Stripe)
+    google_pay_merchant_id: Optional[str] = Field(
+        default=None,
+        env="GOOGLE_PAY_MERCHANT_ID",
+        description="Google Pay Merchant ID (from Google Pay Console)"
+    )
+    
     paypal_client_id: Optional[str] = Field(default=None, env="PAYPAL_CLIENT_ID")
     paypal_client_secret: Optional[str] = Field(default=None, env="PAYPAL_CLIENT_SECRET")
     
@@ -313,6 +398,33 @@ class Settings(BaseSettings):
     # ============================================================================
     sentry_dsn: Optional[str] = Field(default=None, env="SENTRY_DSN")
     sentry_environment: str = Field(default="development", env="SENTRY_ENVIRONMENT")
+    
+    # OpenTelemetry Configuration
+    otel_enabled: bool = Field(
+        default=False,
+        env="OTEL_ENABLED",
+        description="Enable OpenTelemetry distributed tracing"
+    )
+    otel_exporter_otlp_endpoint: Optional[str] = Field(
+        default=None,
+        env="OTEL_EXPORTER_OTLP_ENDPOINT",
+        description="OTLP exporter endpoint (e.g., http://tempo:4318/v1/traces)"
+    )
+    otel_exporter_otlp_headers: Optional[str] = Field(
+        default=None,
+        env="OTEL_EXPORTER_OTLP_HEADERS",
+        description="OTLP exporter headers (comma-separated key=value pairs)"
+    )
+    otel_exporter_jaeger_endpoint: Optional[str] = Field(
+        default=None,
+        env="OTEL_EXPORTER_JAEGER_ENDPOINT",
+        description="Jaeger exporter endpoint (e.g., jaeger:6831)"
+    )
+    otel_service_name: Optional[str] = Field(
+        default=None,
+        env="OTEL_SERVICE_NAME",
+        description="OpenTelemetry service name (defaults to app_name)"
+    )
     
     # ============================================================================
     # CORS Configuration

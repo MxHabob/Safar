@@ -1,0 +1,220 @@
+# Artillery Load Testing Configuration for Safar Backend
+# Target: 50,000 concurrent users on booking APIs
+#
+# Usage:
+#   artillery run artillery-load-test.yml
+#
+# With custom target:
+#   artillery run --target production artillery-load-test.yml
+
+config:
+  target: "{{ $processEnvironment.BASE_URL || 'http://localhost:8000' }}"
+  phases:
+    # Gradual ramp-up to 50k concurrent users
+    - duration: 30
+      arrivalRate: 33  # Start with 33 users/second (1000 users in 30s)
+      name: "Warm-up phase"
+    - duration: 60
+      arrivalRate: 167  # Ramp to 167 users/second (10k users in 60s)
+      name: "Ramp-up phase 1"
+    - duration: 120
+      arrivalRate: 333  # Ramp to 333 users/second (50k users in 120s)
+      name: "Ramp-up phase 2"
+    - duration: 300
+      arrivalRate: 333  # Maintain 50k concurrent users for 5 minutes
+      name: "Sustained load phase"
+    - duration: 60
+      arrivalRate: 0  # Ramp down
+      name: "Cool-down phase"
+  
+  processor: "./artillery-processor.js"
+  
+  # Payload for test users (should be pre-created)
+  payload:
+    users:
+      path: "./test-users.csv"
+      fields:
+        - email
+        - password
+      order: random
+  
+  # Plugins
+  plugins:
+    expect: {}
+    metrics-by-endpoint:
+      stripQueryString: true
+  
+  # Defaults
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  # Scenario 1: Search and Browse (Read-heavy)
+  - name: "Search and Browse Listings"
+    weight: 40
+    flow:
+      - post:
+          url: "/api/v1/users/login"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.access_token"
+              as: "token"
+      
+      - think: 1
+      
+      - get:
+          url: "/api/v1/search/listings?query=beach&city=Miami&limit=20"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: items
+          capture:
+            - json: "$.items[0].id"
+              as: "listingId"
+      
+      - think: 0.5
+      
+      - get:
+          url: "/api/v1/listings/{{ listingId }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: 200
+      
+      - think: 0.3
+  
+  # Scenario 2: Check Availability (Read-heavy)
+  - name: "Check Availability"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/v1/users/login"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.access_token"
+              as: "token"
+      
+      - get:
+          url: "/api/v1/search/listings?limit=1"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          capture:
+            - json: "$.items[0].id"
+              as: "listingId"
+      
+      - think: 0.5
+      
+      - get:
+          url: "/api/v1/bookings/availability?listing_id={{ listingId }}&check_in={{ $timestamp('+7d') }}&check_out={{ $timestamp('+10d') }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: 200
+            - hasProperty: available
+  
+  # Scenario 3: Calculate Price (Read-heavy)
+  - name: "Calculate Booking Price"
+    weight: 20
+    flow:
+      - post:
+          url: "/api/v1/users/login"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.access_token"
+              as: "token"
+      
+      - get:
+          url: "/api/v1/search/listings?limit=1"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          capture:
+            - json: "$.items[0].id"
+              as: "listingId"
+      
+      - think: 0.5
+      
+      - post:
+          url: "/api/v1/bookings/calculate-price"
+          json:
+            listing_id: "{{ listingId }}"
+            check_in: "{{ $timestamp('+7d') }}"
+            check_out: "{{ $timestamp('+10d') }}"
+            guests: 2
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: 200
+            - hasProperty: total
+  
+  # Scenario 4: Create Booking (Write-heavy, Critical Path)
+  - name: "Create Booking"
+    weight: 10
+    flow:
+      - post:
+          url: "/api/v1/users/login"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.access_token"
+              as: "token"
+      
+      - get:
+          url: "/api/v1/search/listings?limit=1"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          capture:
+            - json: "$.items[0].id"
+              as: "listingId"
+      
+      - think: 1
+      
+      - post:
+          url: "/api/v1/bookings/calculate-price"
+          json:
+            listing_id: "{{ listingId }}"
+            check_in: "{{ $timestamp('+7d') }}"
+            check_out: "{{ $timestamp('+10d') }}"
+            guests: 2
+          headers:
+            Authorization: "Bearer {{ token }}"
+          capture:
+            - json: "$.total"
+              as: "totalAmount"
+      
+      - think: 2
+      
+      - post:
+          url: "/api/v1/bookings"
+          json:
+            listing_id: "{{ listingId }}"
+            check_in: "{{ $timestamp('+7d') }}"
+            check_out: "{{ $timestamp('+10d') }}"
+            guests: 2
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: [200, 201]
+            - hasProperty: booking_number
+          capture:
+            - json: "$.id"
+              as: "bookingId"
+      
+      - think: 1
+      
+      - get:
+          url: "/api/v1/bookings/{{ bookingId }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: 200
+
