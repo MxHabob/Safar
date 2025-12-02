@@ -68,7 +68,6 @@ async def get_redis() -> Union[aioredis.Redis, AsyncRedisCluster]:
                 startup_nodes=nodes,
                 password=settings.redis_password,
                 decode_responses=True,
-                skip_full_coverage_check=True,  # Allow partial cluster coverage
                 health_check_interval=30,  # Check cluster health every 30 seconds
                 retry_on_timeout=True,
                 retry_on_error=[ConnectionError, TimeoutError],
