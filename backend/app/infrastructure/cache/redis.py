@@ -64,13 +64,12 @@ async def get_redis() -> Union[aioredis.Redis, AsyncRedisCluster]:
                     nodes = [(settings.redis_host, settings.redis_port)]
             
             # Create cluster connection
+            # Note: Using only parameters supported in redis-py 5.0+
             redis_client = AsyncRedisCluster(
                 startup_nodes=nodes,
                 password=settings.redis_password,
                 decode_responses=True,
                 health_check_interval=30,  # Check cluster health every 30 seconds
-                retry_on_timeout=True,
-                retry_on_error=[ConnectionError, TimeoutError],
                 max_connections=50
             )
         else:
