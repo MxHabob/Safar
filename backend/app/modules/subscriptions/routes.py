@@ -2,7 +2,7 @@
 Subscription routes for hosts and guests.
 """
 from typing import Any, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -94,7 +94,7 @@ async def cancel_subscription(
 
 @router.get("/usage/{limit_type}")
 async def check_usage(
-    limit_type: str = Query(..., regex="^(listings|bookings_per_month|guests)$"),
+    limit_type: str = Path(..., regex="^(listings|bookings_per_month|guests)$"),
     plan_type: Optional[SubscriptionPlanType] = Query(None),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
