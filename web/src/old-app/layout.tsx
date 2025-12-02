@@ -30,17 +30,10 @@ const queryClient = new QueryClient({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s - Safar",
-    default: "Safar - Your Travel Companion",
+    template: "%s - ECarry Photography",
+    default: "ECarry Photography",
   },
-  description: "Discover amazing places to stay, travel guides, and plan your perfect trip with Safar.",
-  keywords: ["travel", "accommodation", "bookings", "travel guides"],
-  authors: [{ name: "Safar" }],
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    siteName: "Safar",
-  },
+  description: "ECarry Photography",
 };
 
 export default function RootLayout({
