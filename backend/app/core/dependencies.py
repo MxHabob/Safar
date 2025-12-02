@@ -37,6 +37,7 @@ async def get_current_user(
     token = credentials.credentials
     payload = decode_token(token, token_type="access")
     user_id = payload.get("sub")
+    mfa_verified = payload.get("mfa_verified", False)
 
     if not user_id:
         raise HTTPException(
@@ -57,6 +58,14 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found"
+        )
+    
+    # Enforce 2FA verification for users with 2FA enabled
+    # This check happens at the authentication layer for all requests
+    if user.totp_enabled and not mfa_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="2FA verification required"
         )
 
     return user
@@ -101,6 +110,9 @@ async def require_host(
             detail="2FA required"
         )
     
+    # Note: mfa_verified check is done in get_current_user via token payload
+    # This is enforced at the authentication layer
+    
     return current_user
 
 
@@ -124,6 +136,9 @@ async def require_admin(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="2FA required"
         )
+    
+    # Note: mfa_verified check is done in get_current_user via token payload
+    # This is enforced at the authentication layer
     
     return current_user
 

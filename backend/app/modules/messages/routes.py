@@ -167,10 +167,55 @@ async def mark_message_read(
 
 
 @router.websocket("/ws/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: int):
-    """WebSocket endpoint for real-time chat messaging."""
+async def websocket_endpoint(websocket: WebSocket, user_id: int, token: str = None):
+    """WebSocket endpoint for real-time chat messaging.
+    
+    Requires authentication token in query parameter.
+    Enforces 2FA verification for users with 2FA enabled.
+    """
     try:
         from app.infrastructure.websocket.manager import manager
+        from app.core.security import decode_token
+        from app.modules.users.models import User
+        from app.core.database import AsyncSessionLocal
+        
+        # Get token from query params
+        if not token:
+            token = websocket.query_params.get("token")
+        
+        if not token:
+            await websocket.close(code=1008, reason="Authentication token required")
+            return
+        
+        # Decode token and verify user
+        try:
+            payload = decode_token(token, token_type="access")
+            token_user_id = payload.get("sub")
+            mfa_verified = payload.get("mfa_verified", False)
+            
+            if str(token_user_id) != str(user_id):
+                await websocket.close(code=1008, reason="User ID mismatch")
+                return
+            
+            # Check 2FA if user has it enabled
+            async with AsyncSessionLocal() as db:
+                result = await db.execute(
+                    select(User).where(User.id == user_id)
+                )
+                user = result.scalar_one_or_none()
+                
+                if not user:
+                    await websocket.close(code=1008, reason="User not found")
+                    return
+                
+                # Enforce 2FA verification for 2FA-enabled users
+                if user.totp_enabled and not mfa_verified:
+                    await websocket.close(code=1008, reason="2FA verification required")
+                    return
+        except Exception as e:
+            await websocket.close(code=1008, reason="Invalid authentication token")
+            return
+        
         await manager.connect(websocket, user_id)
         try:
             while True:

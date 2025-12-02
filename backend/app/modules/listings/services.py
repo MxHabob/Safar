@@ -177,6 +177,20 @@ class ListingService:
             uow.db.add(location)
         
         await uow.commit()
+        
+        # Invalidate search cache and trigger recommendation reindex
+        try:
+            from app.infrastructure.cache.redis import CacheService
+            await CacheService.delete_pattern("search:*")
+            
+            from app.modules.recommendations.ml_service import MLRecommendationEngine
+            ml_engine = MLRecommendationEngine()
+            await ml_engine.trigger_reindex(created.id)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to invalidate cache/reindex after listing creation: {e}")
+        
         return created
     
     @staticmethod
@@ -203,6 +217,11 @@ class ListingService:
                 detail="Not authorized to update this listing"
             )
         
+        # Track if images changed for CDN purge
+        images_changed = False
+        old_listing = await uow.listings.get_by_id(listing_id)
+        image_fields = ['cover_image_url', 'photos', 'images']
+        
         # Update fields
         update_data = listing_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
@@ -213,6 +232,8 @@ class ListingService:
                     setattr(listing, field, value.value if hasattr(value, 'value') else value)
                 else:
                     setattr(listing, field, value)
+                    if field in image_fields:
+                        images_changed = True
         
         # Use domain logic to validate
         if listing.status == "active" and not listing.can_be_booked():
@@ -223,6 +244,44 @@ class ListingService:
         
         updated = await uow.listings.update(listing)
         await uow.commit()
+        
+        # Invalidate search cache and trigger recommendation reindex
+        try:
+            from app.infrastructure.cache.redis import CacheService
+            await CacheService.delete_pattern("search:*")
+            
+            from app.modules.recommendations.ml_service import MLRecommendationEngine
+            ml_engine = MLRecommendationEngine()
+            await ml_engine.trigger_reindex(listing_id)
+            
+            # Purge CDN cache if images changed
+            if images_changed:
+                from app.modules.listings.models import Listing as ListingModel
+                from sqlalchemy import select
+                from sqlalchemy.orm import selectinload
+                result = await uow.db.execute(
+                    select(ListingModel)
+                    .where(ListingModel.id == listing_id)
+                    .options(selectinload(ListingModel.photos), selectinload(ListingModel.images))
+                )
+                listing_model = result.scalar_one_or_none()
+                if listing_model:
+                    image_urls = []
+                    if listing_model.cover_image_url:
+                        image_urls.append(listing_model.cover_image_url)
+                    if listing_model.photos:
+                        image_urls.extend([p.url for p in listing_model.photos if p.url])
+                    if listing_model.images:
+                        image_urls.extend([img.url for img in listing_model.images if img.url])
+                    
+                    if image_urls:
+                        from app.infrastructure.storage.cdn import CDNService
+                        await CDNService.invalidate_cache(image_urls)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to invalidate cache/reindex after listing update: {e}")
+        
         return updated
     
     @staticmethod
@@ -250,6 +309,20 @@ class ListingService:
         
         deleted = await uow.listings.delete(listing_id)
         await uow.commit()
+        
+        # Invalidate search cache and trigger recommendation reindex
+        try:
+            from app.infrastructure.cache.redis import CacheService
+            await CacheService.delete_pattern("search:*")
+            
+            from app.modules.recommendations.ml_service import MLRecommendationEngine
+            ml_engine = MLRecommendationEngine()
+            await ml_engine.trigger_reindex(listing_id)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to invalidate cache/reindex after listing deletion: {e}")
+        
         return deleted
     
     @staticmethod

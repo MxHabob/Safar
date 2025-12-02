@@ -241,6 +241,28 @@ async def handle_payment_intent_succeeded(
     
     amount = Decimal(intent_data.get("amount", 0)) / Decimal(100)  # Convert from cents
     
+    # Extract payment method from payment intent
+    payment_method_type = None
+    payment_method_data = intent_data.get("payment_method", {})
+    if isinstance(payment_method_data, dict):
+        payment_method_type_str = payment_method_data.get("type", "")
+        if payment_method_type_str == "apple_pay":
+            from app.modules.bookings.models import PaymentMethodType
+            payment_method_type = PaymentMethodType.APPLE_PAY
+        elif payment_method_type_str == "google_pay":
+            from app.modules.bookings.models import PaymentMethodType
+            payment_method_type = PaymentMethodType.GOOGLE_PAY
+    
+    # Also check metadata for payment method
+    if not payment_method_type:
+        payment_method_meta = metadata.get("payment_method")
+        if payment_method_meta:
+            from app.modules.bookings.models import PaymentMethodType
+            try:
+                payment_method_type = PaymentMethodType(payment_method_meta)
+            except ValueError:
+                pass
+    
     payment = Payment(
         booking_id=booking_id,
         amount=amount,
@@ -253,6 +275,10 @@ async def handle_payment_intent_succeeded(
     )
     
     db.add(payment)
+    
+    # Update booking payment method if available
+    if payment_method_type:
+        booking.payment_method = payment_method_type
     
     # Update booking (within locked transaction)
     booking.payment_status = PaymentStatus.COMPLETED
@@ -272,9 +298,42 @@ async def handle_payment_intent_succeeded(
         # Payment already exists - this is idempotent, so return success
         return
     
+    # Track analytics event with payment method
+    try:
+        from app.modules.analytics.service import AnalyticsService
+        await AnalyticsService.track_event(
+            db=db,
+            user_id=booking.guest_id,
+            event_name="payment_succeeded",
+            source="webhook",
+            payload={
+                "booking_id": str(booking_id),
+                "payment_intent_id": payment_intent_id,
+                "amount": float(amount),
+                "currency": intent_data.get("currency", "usd"),
+                "payment_method": payment_method_type.value if payment_method_type else "card"
+            }
+        )
+    except Exception as e:
+        logger.warning(f"Failed to track payment analytics event: {e}")
+    
+    # Send notification with payment method
+    try:
+        from app.modules.notifications.service import NotificationService
+        await NotificationService.payment_succeeded(
+            db=db,
+            booking_id=booking_id,
+            guest_id=booking.guest_id,
+            payment_method=payment_method_type,
+            amount=float(amount)
+        )
+    except Exception as e:
+        logger.warning(f"Failed to send payment notification: {e}")
+    
     logger.info(
         f"Payment processed via webhook. "
-        f"payment_intent_id={payment_intent_id}, booking_id={booking_id}, amount={amount}"
+        f"payment_intent_id={payment_intent_id}, booking_id={booking_id}, amount={amount}, "
+        f"payment_method={payment_method_type.value if payment_method_type else 'card'}"
     )
 
 

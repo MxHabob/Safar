@@ -233,12 +233,66 @@ async def complete_booking(
             detail="Not authorized to complete this booking"
         )
     
+    # Store old status for analytics
+    old_status = booking.status
+    
     # Update booking status
     booking.status = BookingStatus.COMPLETED
     booking.completed_at = func.now()
     
     await db.commit()
     await db.refresh(booking, ["timeline_events"])
+    
+    # Track analytics event
+    try:
+        from app.modules.analytics.service import AnalyticsService
+        await AnalyticsService.track_event(
+            db=db,
+            user_id=booking.guest_id,
+            event_name="booking_status_changed",
+            source="api",
+            payload={
+                "booking_id": str(booking_id),
+                "old_status": old_status,
+                "new_status": BookingStatus.COMPLETED.value,
+                "changed_by": str(current_user.id)
+            }
+        )
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to track booking status change analytics: {e}")
+    
+    # Send notifications
+    try:
+        from app.modules.notifications.service import NotificationService
+        await NotificationService.booking_completed(
+            db=db,
+            booking_id=booking_id,
+            guest_id=booking.guest_id,
+            host_id=current_user.id
+        )
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to send booking completed notification: {e}")
+    
+    # Emit WebSocket event to host dashboard
+    try:
+        from app.infrastructure.websocket.manager import manager
+        await manager.send_to_room(
+            {
+                "type": "booking_updated",
+                "booking_id": str(booking_id),
+                "status": BookingStatus.COMPLETED.value,
+                "booking_number": booking.booking_number
+            },
+            room_id=f"host_dashboard_{current_user.id}"
+        )
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to emit WebSocket event: {e}")
     
     # Award loyalty points (async via Celery task)
     try:

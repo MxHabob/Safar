@@ -124,6 +124,7 @@ class BookingResponse(BaseModel):
     fees: Optional[dict] = None
     status: str
     payment_status: str
+    payment_method: Optional[str] = None  # Payment method (e.g., "apple_pay", "google_pay", "credit_card")
     payment_id: Optional[int] = None
     special_requests: Optional[str] = None
     guest_message: Optional[str] = None

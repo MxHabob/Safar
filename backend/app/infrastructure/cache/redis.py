@@ -144,4 +144,34 @@ class CacheService:
         """Atomically decrement an integer value stored at key."""
         redis = await get_redis()
         return await redis.decrby(key, amount)
+    
+    @staticmethod
+    async def delete_pattern(pattern: str) -> int:
+        """Delete all keys matching a pattern.
+        
+        Args:
+            pattern: Redis key pattern (e.g., "search:*")
+        
+        Returns:
+            Number of keys deleted
+        """
+        redis = await get_redis()
+        deleted_count = 0
+        
+        # For Redis Cluster, use SCAN
+        if hasattr(redis, 'scan_iter'):
+            # Single Redis instance or cluster with scan_iter
+            async for key in redis.scan_iter(match=pattern):
+                await redis.delete(key)
+                deleted_count += 1
+        else:
+            # Fallback: get all keys matching pattern (use with caution in production)
+            try:
+                keys = await redis.keys(pattern)
+                if keys:
+                    deleted_count = await redis.delete(*keys)
+            except Exception as e:
+                logger.warning(f"Failed to delete pattern {pattern}: {e}")
+        
+        return deleted_count
 

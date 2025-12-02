@@ -216,6 +216,29 @@ class MLRecommendationEngine:
             "review_count": review_stats[1] if review_stats else 0
         }
     
+    async def trigger_reindex(self, listing_id: ID) -> None:
+        """Trigger reindexing for a specific listing.
+        
+        This invalidates cached recommendations and triggers model retraining
+        if needed.
+        
+        Args:
+            listing_id: Listing ID to reindex
+        """
+        try:
+            # Invalidate cached recommendations for this listing
+            from app.infrastructure.cache.redis import CacheService
+            await CacheService.delete_pattern(f"recommendations:*{listing_id}*")
+            await CacheService.delete_pattern(f"recommendations:similar:{listing_id}")
+            
+            # Mark model as stale (will trigger retraining on next request)
+            self.model_cache.clear()
+            self.feature_cache.clear()
+            
+            logger.info(f"Triggered reindex for listing {listing_id}")
+        except Exception as e:
+            logger.warning(f"Failed to trigger reindex for listing {listing_id}: {e}")
+    
     async def _get_candidate_listings(
         self,
         db: AsyncSession,

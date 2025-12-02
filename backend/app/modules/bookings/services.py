@@ -501,6 +501,9 @@ class BookingService:
                 detail="Booking cannot be cancelled"
             )
         
+        # Store old status for analytics
+        old_status = booking.status
+        
         # Update booking
         booking.status = BookingStatus.CANCELLED.value
         booking.cancelled_at = datetime.utcnow()
@@ -508,6 +511,70 @@ class BookingService:
         
         updated = await uow.bookings.update(booking)
         await uow.commit()
+        
+        # Track analytics event
+        try:
+            from app.modules.analytics.service import AnalyticsService
+            await AnalyticsService.track_event(
+                db=uow.db,
+                user_id=booking.guest_id,
+                event_name="booking_status_changed",
+                source="api",
+                payload={
+                    "booking_id": str(booking_id),
+                    "old_status": old_status,
+                    "new_status": BookingStatus.CANCELLED.value,
+                    "changed_by": str(user_id),
+                    "cancellation_reason": reason
+                }
+            )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to track booking cancellation analytics: {e}")
+        
+        # Send notifications
+        try:
+            from app.modules.notifications.service import NotificationService
+            await NotificationService.booking_cancelled(
+                db=uow.db,
+                booking_id=booking_id,
+                guest_id=booking.guest_id,
+                host_id=booking.listing.host_id if hasattr(booking, 'listing') and booking.listing else None,
+                cancelled_by=user_id,
+                reason=reason
+            )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to send booking cancellation notification: {e}")
+        
+        # Emit WebSocket event to host dashboard
+        try:
+            from app.modules.bookings.models import Booking as BookingModel
+            from sqlalchemy import select
+            from sqlalchemy.orm import selectinload
+            result = await uow.db.execute(
+                select(BookingModel)
+                .where(BookingModel.id == booking_id)
+                .options(selectinload(BookingModel.listing))
+            )
+            booking_model = result.scalar_one_or_none()
+            if booking_model and booking_model.listing:
+                from app.infrastructure.websocket.manager import manager
+                await manager.send_to_room(
+                    {
+                        "type": "booking_updated",
+                        "booking_id": str(booking_id),
+                        "status": BookingStatus.CANCELLED.value,
+                        "booking_number": booking_model.booking_number
+                    },
+                    room_id=f"host_dashboard_{booking_model.listing.host_id}"
+                )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to emit WebSocket event for cancellation: {e}")
         
         return updated
     
@@ -575,12 +642,60 @@ class BookingService:
                 detail=f"Booking cannot be confirmed. Current status: {booking.status}"
             )
         
+        # Store old status for analytics
+        old_status = booking.status
+        
         # Update booking status
         booking.status = BookingStatus.CONFIRMED.value
         booking.confirmed_at = datetime.utcnow()
         
         await db.flush()
         await db.refresh(booking)
+        
+        # Track analytics event
+        try:
+            from app.modules.analytics.service import AnalyticsService
+            await AnalyticsService.track_event(
+                db=db,
+                user_id=booking.guest_id,
+                event_name="booking_status_changed",
+                source="api",
+                payload={
+                    "booking_id": str(booking_id),
+                    "old_status": old_status,
+                    "new_status": BookingStatus.CONFIRMED.value,
+                    "changed_by": str(host_id)
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Failed to track booking status change analytics: {e}")
+        
+        # Send notifications
+        try:
+            from app.modules.notifications.service import NotificationService
+            await NotificationService.booking_confirmed(
+                db=db,
+                booking_id=booking_id,
+                guest_id=booking.guest_id,
+                host_id=host_id
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send booking confirmed notification: {e}")
+        
+        # Emit WebSocket event to host dashboard
+        try:
+            from app.infrastructure.websocket.manager import manager
+            await manager.send_to_room(
+                {
+                    "type": "booking_updated",
+                    "booking_id": str(booking_id),
+                    "status": BookingStatus.CONFIRMED.value,
+                    "booking_number": booking.booking_number
+                },
+                room_id=f"host_dashboard_{host_id}"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to emit WebSocket event: {e}")
         
         logger.info(
             f"Booking confirmed successfully. "

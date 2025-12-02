@@ -173,8 +173,8 @@ async def login(
             headers={"X-Requires-2FA": "true", "X-User-ID": str(user_entity.id)}
         )
     
-    # Create tokens using service
-    tokens = await UserService.create_access_token_for_user(user_entity)
+    # Create tokens using service (mfa_verified=False for regular login without 2FA)
+    tokens = await UserService.create_access_token_for_user(user_entity, mfa_verified=False)
     
     return {
         **tokens,
@@ -460,7 +460,7 @@ async def oauth_login(
             email=user_entity.email,
             first_name=user_entity.first_name,
             last_name=user_entity.last_name,
-            avatar_url=user_info.get("picture"),
+            avatar_url=get_cdn_url(user_info.get("picture")) if user_info.get("picture") else None,
             is_email_verified=user_entity.is_email_verified,
             role=UserRole.GUEST,
             status=UserStatus.ACTIVE if user_entity.is_email_verified else UserStatus.PENDING_VERIFICATION,
@@ -507,12 +507,15 @@ async def oauth_login(
         )
         user_model = result.scalar_one_or_none()
         if user_model and user_info.get("picture") and not user_model.avatar_url:
-            user_model.avatar_url = user_info.get("picture")
+            # Convert OAuth picture URL to CDN URL
+            from app.core.utils.images import get_cdn_url
+            user_model.avatar_url = get_cdn_url(user_info.get("picture"))
         
         await uow.commit()
     
-    # Create tokens
-    tokens = await UserService.create_access_token_for_user(user_entity)
+    # Create tokens (OAuth login - check if 2FA is enabled, if so mfa_verified=False)
+    # User will need to verify 2FA separately if enabled
+    tokens = await UserService.create_access_token_for_user(user_entity, mfa_verified=False)
     
     return {
         **tokens,
@@ -714,7 +717,7 @@ async def verify_2fa_login(
     user.last_login_ip = request.client.host if request.client else None
     await db.commit()
     
-    # Create tokens
+    # Create tokens with mfa_verified=True (2FA was just verified)
     from app.domain.entities.user import UserEntity
     user_entity = UserEntity(
         id=user.id,
@@ -724,7 +727,7 @@ async def verify_2fa_login(
         is_email_verified=user.is_email_verified,
         is_phone_verified=user.is_phone_verified
     )
-    tokens = await UserService.create_access_token_for_user(user_entity)
+    tokens = await UserService.create_access_token_for_user(user_entity, mfa_verified=True)
     
     return {
         **tokens,

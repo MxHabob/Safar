@@ -219,15 +219,29 @@ class UserService:
     
     @staticmethod
     async def create_access_token_for_user(
-        user: UserEntity
+        user: UserEntity,
+        mfa_verified: bool = False
     ) -> dict:
-        """Create access and refresh tokens for the given user."""
+        """Create access and refresh tokens for the given user.
+        
+        Args:
+            user: User entity
+            mfa_verified: Whether 2FA was verified (default: False)
+        """
         from app.core.id import ID
+        
+        # Get user model to check 2FA status
+        from app.modules.users.models import User
+        from sqlalchemy import select
+        
+        # Note: If user is from entity, we need to fetch from DB to get totp_enabled
+        # For now, we'll pass mfa_verified as parameter (set to True after 2FA verification)
         
         token_data = {
             "sub": str(user.id),
             "email": user.email,
-            "role": user.role
+            "role": user.role,
+            "mfa_verified": mfa_verified  # Include 2FA verification status in JWT
         }
         
         access_token = create_access_token(data=token_data)
