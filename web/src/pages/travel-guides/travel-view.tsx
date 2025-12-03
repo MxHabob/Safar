@@ -6,23 +6,28 @@ import { CoverPhoto } from "./components/cover-photo";
 import { Introduction } from "./components/introduction";
 import { CityItem } from "./components/city-item";
 import { TravelGuideResponse } from "@/generated/schemas";
-import { useGetGuidesApiV1TravelGuidesGet } from "@/generated/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export const TravelView = () => {
-  const { data } = useGetGuidesApiV1TravelGuidesGet();
+interface TravelViewProps {
+  data: TravelGuideResponse[];
+}
+
+export const TravelView = ({ data }: TravelViewProps) => {
   const [activeTravelGuide, setActiveTravelGuide] = useState<TravelGuideResponse | null>(null);
 
+  // Ensure data is always an array
+  const guides = Array.isArray(data) ? data : [];
+
   useEffect(() => {
-    if (!activeTravelGuide && data && data.length > 0) {
+    if (!activeTravelGuide && guides.length > 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveTravelGuide(data[0]);
+      setActiveTravelGuide(guides[0]);
     }
-  }, [activeTravelGuide, data]);
+  }, [activeTravelGuide, guides]);
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen w-full">
-      <CoverPhoto travelGuideId={activeTravelGuide?.id || ""} travelGuides={data || []} />
+      <CoverPhoto travelGuideId={activeTravelGuide?.id || ""} travelGuides={guides} />
 
       {/* Spacer for fixed left content */}
       <div className="hidden lg:block lg:w-1/2" />
@@ -31,7 +36,7 @@ export const TravelView = () => {
       <div className="w-full mt-3 lg:mt-0 lg:w-1/2 space-y-3 pb-3">
         <Introduction />
         <div className="space-y-3">
-          {data?.map((travelGuide: TravelGuideResponse) => (
+          {guides.map((travelGuide: TravelGuideResponse) => (
             <CityItem key={travelGuide.id} travelGuide={travelGuide} onMouseEnter={setActiveTravelGuide} />
           ))}
         </div>

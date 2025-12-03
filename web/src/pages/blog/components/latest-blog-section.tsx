@@ -12,11 +12,14 @@ interface LatestPostSectionProps {
 }
 
 export const LatestPostSection = ({ data }: LatestPostSectionProps) => {
+  if (!data?.id) {
+    return null;
+  }
+
   return (
     <Link
-      href={`/blog/${data?.slug}`}
+      href={`/blog/${encodeURIComponent(data.id)}`}
       className="block w-full h-full relative rounded-xl overflow-hidden group cursor-pointer"
-      aria-disabled={!data?.slug}
     >
       <Image
         src={keyToImage(data?.cover_image_url) || "/placeholder.svg"}

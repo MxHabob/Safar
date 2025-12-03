@@ -1,22 +1,17 @@
-"use client";
-
 import BlurImage from "@/components/shared/blur-image";
 import Footer from "@/components/footer";
 import { FramedPhoto } from "@/components/shared/framed-photo";
 import VectorCombined from "@/components/shared/vector-combined";
 import { keyToImage } from "@/lib/keyToImage";
 import { format } from "date-fns";
-import { useGetGuideApiV1TravelGuidesGuideIdGet } from "@/generated/hooks";
 import { TravelGuideResponse } from "@/generated/schemas";
+import { Skeleton } from "@/components/ui/skeleton";
+
 interface Props {
-  travelGuideId: string;
+  travelGuide: TravelGuideResponse;
 }
 
-export const CityView = ({ travelGuideId }: Props) => {
-  const { data } = useGetGuideApiV1TravelGuidesGuideIdGet(travelGuideId, {
-    enabled: !!travelGuideId,
-  });
-  const travelGuide = data as TravelGuideResponse;
+export const CityView = ({ travelGuide }: Props) => {
 
   return (
     <div className="size-full">
@@ -117,6 +112,36 @@ export const CityView = ({ travelGuideId }: Props) => {
             ))}
           </div>
           {/* FOOTER  */}
+          <Footer />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const CityViewLoadingStatus = () => {
+  return (
+    <div className="size-full">
+      <div className="flex flex-col gap-3 lg:gap-0 lg:flex-row w-full">
+        {/* LEFT CONTENT - Fixed */}
+        <div className="w-full h-[70vh] lg:w-1/2 lg:fixed lg:top-0 lg:left-0 lg:h-screen p-0 lg:p-3">
+          <Skeleton className="w-full h-full rounded-xl" />
+        </div>
+
+        {/* Spacer for fixed left content */}
+        <div className="hidden lg:block lg:w-1/2" />
+
+        {/* RIGHT CONTENT - Scrollable */}
+        <div className="w-full lg:w-1/2 space-y-3 pb-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-1 2xl:grid-cols-3 gap-4">
+            <Skeleton className="h-64 rounded-xl" />
+            <Skeleton className="h-64 rounded-xl" />
+            <Skeleton className="h-64 rounded-xl" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="w-full h-48 rounded-xl" />
+            <Skeleton className="w-full h-48 rounded-xl" />
+          </div>
           <Footer />
         </div>
       </div>

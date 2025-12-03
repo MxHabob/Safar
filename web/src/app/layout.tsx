@@ -16,15 +16,33 @@ const readexPro = Readex_Pro({
 export const metadata: Metadata = {
   title: {
     template: "%s - Safar",
-    default: "Safar",
+    default: "Safar - Travel Guides & Stories",
   },
-  description: "Safar",
-  keywords: ["travel", "accommodation", "bookings", "travel guides"],
+  description: "Discover amazing travel destinations, stories, and guides. Share your travel experiences and explore the world with Safar.",
+  keywords: ["travel", "accommodation", "bookings", "travel guides", "travel stories", "destinations", "photography"],
   authors: [{ name: "Safar" }],
   openGraph: {
     type: "website",
     locale: "en_US",
     siteName: "Safar",
+    title: "Safar - Travel Guides & Stories",
+    description: "Discover amazing travel destinations, stories, and guides. Share your travel experiences and explore the world with Safar.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Safar - Travel Guides & Stories",
+    description: "Discover amazing travel destinations, stories, and guides.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 
@@ -39,8 +57,8 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
-        {/* <SpeedInsights /> */}
-        {/* <Analytics /> */}
+        <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   );

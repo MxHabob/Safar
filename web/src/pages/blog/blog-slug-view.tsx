@@ -1,19 +1,27 @@
 "use client";
-
 import VectorCombined from "@/components/shared/vector-combined";
 import { ArrowDownIcon } from "lucide-react";
 import Image from "next/image";
 import Footer from "@/components/footer";
 import { keyToImage } from "@/lib/keyToImage";
 import RichTextViewer from "@/components/editor/rich-text-viewer";
-import { useGetGuideApiV1TravelGuidesGuideIdGet } from "@/generated/hooks";
 import ContactCard from "@/components/shared/contact-card";
+import { TravelGuideResponse } from "@/generated/schemas";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useSuspenseGetGuideApiV1TravelGuidesGuideIdGet } from "@/generated/hooks/travelGuides";
 
+interface BlogSlugViewProps {
+  id: string;
+  initialData: TravelGuideResponse;
+} 
 
-export const BlogSlugView = ({ id }: { id: string }) => {
-  const { data } = useGetGuideApiV1TravelGuidesGuideIdGet(id, {
-    enabled: !!id,
-  });
+export const BlogSlugView = ({ id, initialData }: BlogSlugViewProps) => {
+  const { data } = useSuspenseGetGuideApiV1TravelGuidesGuideIdGet(id ,
+    {
+      enabled: true,
+      initialData: initialData,
+    }
+  );
   return (
     <div className="flex flex-col gap-3 lg:gap-0 lg:flex-row w-full">
       {/* LEFT CONTENT - Fixed */}
@@ -87,6 +95,33 @@ export const BlogSlugView = ({ id }: { id: string }) => {
         />
 
         {/* FOOTER  */}
+        <Footer />
+      </div>
+    </div>
+  );
+};
+
+export const BlogSlugViewLoadingStatus = () => {
+  return (
+    <div className="flex flex-col gap-3 lg:gap-0 lg:flex-row w-full">
+      {/* LEFT CONTENT - Fixed */}
+      <div className="w-full h-[50vh] lg:w-1/2 lg:fixed lg:top-0 lg:left-0 md:h-[80vh] lg:h-screen p-0 lg:p-3 group">
+        <Skeleton className="w-full h-full rounded-xl" />
+      </div>
+
+      {/* Spacer for fixed left content */}
+      <div className="hidden lg:block lg:w-1/2" />
+
+      {/* RIGHT CONTENT - Scrollable */}
+      <div className="w-full lg:w-1/2 space-y-3 pb-3">
+        <Skeleton className="w-full h-[400px] rounded-xl" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Skeleton className="h-20 rounded-xl" />
+          <Skeleton className="h-20 rounded-xl" />
+          <Skeleton className="h-20 rounded-xl" />
+        </div>
+        <Skeleton className="w-full h-[600px] rounded-xl" />
+        <Skeleton className="w-full h-14 rounded-xl" />
         <Footer />
       </div>
     </div>

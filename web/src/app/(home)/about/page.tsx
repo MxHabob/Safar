@@ -12,7 +12,11 @@ import VectorCombined from "@/components/shared/vector-combined";
 
 export const metadata: Metadata = {
   title: "About",
-  description: "About page",
+  description: "Learn more about ECarry, a photographer dedicated to capturing authentic moments and telling stories through creative imagery.",
+  openGraph: {
+    title: "About - Safar",
+    description: "Learn more about ECarry, a photographer dedicated to capturing authentic moments and telling stories through creative imagery.",
+  },
 };
 
 const AboutPage = () => {

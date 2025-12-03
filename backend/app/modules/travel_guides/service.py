@@ -6,8 +6,9 @@ import re
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, func, desc, case
+from sqlalchemy import select, and_, or_, func, desc, case, String
 from sqlalchemy.orm import selectinload
+from sqlalchemy.dialects.postgresql import ARRAY
 from fastapi import HTTPException, status
 
 from app.modules.travel_guides.models import (
@@ -153,9 +154,20 @@ class TravelGuideService:
         if city:
             conditions.append(TravelGuide.city.ilike(f"%{city}%"))
         if tags:
-            conditions.append(TravelGuide.tags.contains(tags))
+            # For PostgreSQL ARRAY, check if any of the tags exist in the array
+            # Using array overlap operator (&&) to check if arrays have any common elements
+            if isinstance(tags, list):
+                # Use array overlap operator && to check if arrays have any common elements
+                tags_array = func.cast(tags, ARRAY(String))
+                conditions.append(TravelGuide.tags.op('&&')(tags_array))
+            else:
+                # If tags is a single value, check if it exists in the array using @> operator
+                single_tag_array = func.cast([tags], ARRAY(String))
+                conditions.append(TravelGuide.tags.op('@>')(single_tag_array))
         if category:
-            conditions.append(TravelGuide.categories.contains([category]))
+            # For PostgreSQL ARRAY, use @> operator to check if category exists in array
+            category_array = func.cast([category], ARRAY(String))
+            conditions.append(TravelGuide.categories.op('@>')(category_array))
         if author_id:
             conditions.append(TravelGuide.author_id == author_id)
         if is_official is not None:

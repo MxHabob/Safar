@@ -1,19 +1,21 @@
 import { Suspense } from "react";
-import { ErrorBoundary } from "react-error-boundary";
+import { Metadata } from "next";
 import { DiscoverView } from "@/pages/discover/discover-view";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Discover",
-  description: "Discover",
+  description: "Discover amazing travel destinations on an interactive map",
+  openGraph: {
+    title: "Discover - Safar",
+    description: "Discover amazing travel destinations on an interactive map",
+  },
 };
 
 const page = () => {
   return (
-      <Suspense fallback={<p>Loading...</p>}>
-        <ErrorBoundary fallback={<p>Error</p>}>
-          <DiscoverView />
-        </ErrorBoundary>
-      </Suspense>
+    <Suspense fallback={<div className="w-full h-screen rounded-xl bg-muted animate-pulse" />}>
+      <DiscoverView />
+    </Suspense>
   );
 };
 

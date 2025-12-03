@@ -20,7 +20,7 @@ export const PostsSection = ({ data }: PostsSectionProps) => {
       {postsToShow.map((item) => (
         <AspectRatio ratio={3 / 4} key={item.id}>
           <Link
-            href={`/blog/${item.id}`}
+            href={`/blog/${encodeURIComponent(item.id)}`}
             className="block w-full h-full relative rounded-xl overflow-hidden group cursor-pointer"
           >
             <Image

@@ -7,7 +7,7 @@ import { usePhotoClustering } from "@/pages/discover/hooks/use-photo-clustering"
 import { PhotoMarker } from "@/pages/discover/components/photo-marker";
 import { ClusterMarker } from "@/pages/discover/components/cluster-marker";
 import { PhotoPopup } from "@/pages/discover/components/photo-popup";
-import type { PhotoPoint } from "@/pages/discover/lib/clustering";
+import type { PhotoPoint, Cluster } from "@/pages/discover/lib/clustering";
 import { FramedPhoto } from "@/components/shared/framed-photo";
 import { format } from "date-fns/format";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -19,10 +19,18 @@ import {
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 
+// TODO: Replace with actual photo data fetching from API
+// For now, using empty array - this should be fetched from server
+const EMPTY_PHOTOS: PhotoPoint[] = [];
+
 export const DiscoverView = () => {
-
-
   const isMobile = useIsMobile();
+  
+  // Use photo clustering hook
+  const { clusters, singlePhotos, handleMove } = usePhotoClustering({
+    photos: EMPTY_PHOTOS,
+    initialZoom: 3,
+  });
   const [selectedPhotos, setSelectedPhotos] = useState<PhotoPoint[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
@@ -53,7 +61,7 @@ export const DiscoverView = () => {
     }> = [];
 
     // Add cluster markers
-    clusters.forEach((cluster) => {
+    clusters.forEach((cluster: Cluster) => {
       result.push({
         id: cluster.id,
         longitude: cluster.longitude,
@@ -72,7 +80,7 @@ export const DiscoverView = () => {
     });
 
     // Add single photo markers
-    singlePhotos.forEach((photo) => {
+    singlePhotos.forEach((photo: PhotoPoint) => {
       result.push({
         id: photo.id,
         longitude: photo.longitude!,

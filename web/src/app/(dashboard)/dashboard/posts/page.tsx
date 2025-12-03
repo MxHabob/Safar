@@ -1,17 +1,16 @@
 import { Suspense } from "react";
 import type { SearchParams } from "nuqs/server";
-import { ErrorBoundary } from "react-error-boundary";
+import { Metadata } from "next";
 import { loadSearchParams } from "@/pages/posts/params";
 import { PostsListHeader } from "@/pages/posts/components/posts-list-header";
 import {
   DashboardPostsView,
-  ErrorStatus,
   LoadingStatus,
 } from "@/pages/posts/dashboard-posts-view";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Posts",
-  description: "Posts",
+  description: "Manage and view your blog posts",
 };
 
 type Props = {
@@ -24,11 +23,9 @@ const page = async ({ searchParams }: Props) => {
   return (
     <>
       <PostsListHeader />
-        <Suspense fallback={<LoadingStatus />}>
-          <ErrorBoundary fallback={<ErrorStatus />}>
-            <DashboardPostsView />
-          </ErrorBoundary>
-        </Suspense>
+      <Suspense fallback={<LoadingStatus />}>
+        <DashboardPostsView />
+      </Suspense>
     </>
   );
 };

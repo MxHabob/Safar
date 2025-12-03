@@ -1,20 +1,24 @@
-"use client";
-
 import CardContainer from "@/components/shared/card-container";
 import Footer from "@/components/footer";
 import ContactCard from "@/components/shared/contact-card";
 import { PostsSection } from "./components/blog-items";
 import { LatestPostSection } from "./components/latest-blog-section";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useGetGuidesApiV1TravelGuidesGet } from "@/generated/hooks/travelGuides";
+import { TravelGuideResponse } from "@/generated/schemas";
 
-export const BlogView = () => {
-  const { data } = useGetGuidesApiV1TravelGuidesGet();
+interface TravelGuidesViewProps {
+  data: TravelGuideResponse[];
+}
+
+export const TravelGuidesView = ({ data }: TravelGuidesViewProps) => {
+  // Ensure data is always an array
+  const guides = Array.isArray(data) ? data : [];
+
   return (
     <div className="flex flex-col gap-3 lg:gap-0 lg:flex-row w-full">
       {/* LEFT CONTENT - Fixed */}
       <div className="w-full h-[50vh] lg:w-1/2 lg:fixed lg:top-0 lg:left-0 md:h-[80vh] lg:h-screen p-0 lg:p-3 group">
-        <LatestPostSection data={data?.[0]} />
+        <LatestPostSection data={guides[0]} />
       </div>
 
       {/* Spacer for fixed left content */}
@@ -39,8 +43,7 @@ export const BlogView = () => {
         </CardContainer>
 
         {/* POST LIST  */}
-
-        <PostsSection data={data || []} />
+        <PostsSection data={guides} />
 
         {/* CONTACT CARDS  */}
         <div className="w-full mt-3">
@@ -57,7 +60,7 @@ export const BlogView = () => {
   );
 };
 
-export const BlogViewLoadingStatus = () => {
+export const TravelGuidesViewLoadingStatus = () => {
   return (
     <div className="flex flex-col gap-3 lg:gap-0 lg:flex-row w-full">
       {/* LEFT CONTENT - Fixed */}
@@ -97,10 +100,7 @@ export const BlogViewLoadingStatus = () => {
         </div>
 
         {/* CONTACT CARDS  */}
-        <div className="w-full grid grid-cols-2 gap-3 mt-3">
-          <ContactCard title="Instagram" />
-          <ContactCard title="GitHub" />
-          <ContactCard title="X" />
+        <div className="w-full mt-3">
           <ContactCard
             title="Contact me"
             className="bg-primary hover:bg-primary-hover text-white dark:text-black"

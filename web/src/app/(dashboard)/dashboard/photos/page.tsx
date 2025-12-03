@@ -1,17 +1,16 @@
 import { Suspense } from "react";
 import type { SearchParams } from "nuqs/server";
-import { ErrorBoundary } from "react-error-boundary";
+import { Metadata } from "next";
 import { loadSearchParams } from "@/pages/photos/params";
 import { PhotosListHeader } from "@/pages/photos/components/photos-list-header";
 import {
   DashboardPhotosView,
-  ErrorStatus,
   LoadingStatus,
 } from "@/pages/photos/dashboard-photos-view";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Photo Collection",
-  description: "Photo Collection",
+  description: "Manage and view your photo collection",
 };
 
 type Props = {
@@ -24,11 +23,9 @@ const page = async ({ searchParams }: Props) => {
   return (
     <>
       <PhotosListHeader />
-        <Suspense fallback={<LoadingStatus />}>
-          <ErrorBoundary fallback={<ErrorStatus />}>
-            <DashboardPhotosView />
-          </ErrorBoundary>
-        </Suspense>
+      <Suspense fallback={<LoadingStatus />}>
+        <DashboardPhotosView />
+      </Suspense>
     </>
   );
 };

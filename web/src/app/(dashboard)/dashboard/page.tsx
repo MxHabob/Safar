@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { ErrorBoundary } from "react-error-boundary";
+import { Metadata } from "next";
 import { MapView } from "@/pages/dashboard/map-view";
 import {
   ChartAreaView,
@@ -9,6 +9,11 @@ import {
   SectionCardsView,
   SectionCardsLoading,
 } from "@/pages/dashboard/section-cards-view";
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+  description: "View your photos, travel history, and statistics",
+};
 
 const page = async () => {
   return (
@@ -21,16 +26,13 @@ const page = async () => {
       </div>
       <div className="@container/main flex flex-1 flex-col">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <Suspense fallback={<SectionCardsLoading />}>
-              <SectionCardsView />
-            </Suspense>
-            <Suspense fallback={<ChartAreaLoading />}>
-              <ErrorBoundary fallback={<p>Error</p>}>
-                <ChartAreaView />
-              </ErrorBoundary>
-            </Suspense>
-
-            <MapView />
+          <Suspense fallback={<SectionCardsLoading />}>
+            <SectionCardsView />
+          </Suspense>
+          <Suspense fallback={<ChartAreaLoading />}>
+            <ChartAreaView />
+          </Suspense>
+          <MapView />
         </div>
       </div>
     </div>
