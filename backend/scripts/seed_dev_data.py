@@ -757,7 +757,22 @@ class DevDataSeeder:
             {"rating": 4, "comment": "Comfortable and clean. Good communication with host."},
         ]
         
-        for booking in completed_bookings[:min(10, len(completed_bookings))]:  # Create up to 10 reviews
+        # Track which (listing_id, guest_id) combinations already have reviews
+        # This prevents violating the unique constraint idx_review_listing_guest
+        reviewed_pairs = set()
+        reviews_created = 0
+        max_reviews = 10
+        
+        for booking in completed_bookings:
+            # Skip if we've already created the max number of reviews
+            if reviews_created >= max_reviews:
+                break
+            
+            # Check if this guest has already reviewed this listing
+            review_key = (booking.listing_id, booking.guest_id)
+            if review_key in reviewed_pairs:
+                continue  # Skip - guest already reviewed this listing
+            
             template = random.choice(review_templates)
             
             # Get listing to get host_id
@@ -765,6 +780,9 @@ class DevDataSeeder:
                 select(Listing).where(Listing.id == booking.listing_id)
             )
             listing = listing_result.scalar_one_or_none()
+            
+            if not listing:
+                continue  # Skip if listing not found
             
             review = Review(
                 id=generate_typed_id("rev"),
@@ -778,9 +796,11 @@ class DevDataSeeder:
                 moderation_status="approved",
             )
             self.session.add(review)
+            reviewed_pairs.add(review_key)
+            reviews_created += 1
         
         await self.session.flush()
-        print("✅ Created reviews")
+        print(f"✅ Created {reviews_created} reviews")
     
     async def _seed_messages(self):
         """Create conversations and messages."""
