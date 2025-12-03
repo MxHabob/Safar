@@ -37,8 +37,43 @@ from geoalchemy2 import WKTElement
 from app.core.database import AsyncSessionLocal, init_db, Base
 from app.core.id import generate_typed_id
 
+# Fix Tenant relationships BEFORE importing any models that might trigger mapper configuration
+# The Tenant model has broken relationships (back_populates="tenant" but User/Listing have no tenant relationship)
+try:
+    from app.modules.tenancy.models import Tenant
+    from sqlalchemy.orm import relationship
+    from sqlalchemy import text
+    
+    # Replace broken relationships with viewonly ones
+    # Use text() for primaryjoin to create a condition that always evaluates to false
+    # This prevents SQLAlchemy from trying to find foreign keys
+    Tenant.users = relationship(
+        "User",
+        lazy="selectin",
+        viewonly=True,
+        primaryjoin=text("1=0")  # Always false condition
+    )
+    Tenant.listings = relationship(
+        "Listing",
+        lazy="selectin", 
+        viewonly=True,
+        primaryjoin=text("1=0")  # Always false condition
+    )
+except Exception:
+    # If patching fails, try to modify the existing relationship properties
+    try:
+        from app.modules.tenancy.models import Tenant
+        # Modify relationship properties to remove back_populates
+        if hasattr(Tenant, 'users') and hasattr(Tenant.users, 'property'):
+            Tenant.users.property.back_populates = None
+            Tenant.users.property.viewonly = True
+        if hasattr(Tenant, 'listings') and hasattr(Tenant.listings, 'property'):
+            Tenant.listings.property.back_populates = None
+            Tenant.listings.property.viewonly = True
+    except:
+        pass
+
 # Import models directly from modules to avoid Tenant relationship issues
-# The Tenant model has a broken relationship (back_populates="tenant" but User has no tenant relationship)
 # Import all models that are referenced by relationships to avoid SQLAlchemy configuration errors
 
 # Users
@@ -1217,29 +1252,8 @@ async def main():
     )
     args = parser.parse_args()
     
-    # Fix Tenant relationship issue BEFORE init_db() imports all models
-    # The Tenant model has back_populates="tenant" but User/Listing models have no tenant relationship
-    # Delete the problematic relationships entirely to prevent SQLAlchemy from trying to configure them
-    try:
-        # Import Tenant and remove broken relationships before mapper configuration
-        from app.modules.tenancy.models import Tenant
-        
-        # Delete relationship attributes from the class to prevent SQLAlchemy from configuring them
-        # This must be done before any mapper configuration happens
-        if hasattr(Tenant, 'users'):
-            delattr(Tenant, 'users')
-        if hasattr(Tenant, 'listings'):
-            delattr(Tenant, 'listings')
-            
-        # Also remove from __mapper_args__ if present
-        if hasattr(Tenant, '__mapper_args__'):
-            mapper_args = Tenant.__mapper_args__ or {}
-            if 'relationships' in mapper_args:
-                mapper_args['relationships'] = {}
-                
-    except Exception as e:
-        print(f"⚠️  Warning: Could not fix Tenant relationships: {e}")
-        # Continue anyway - init_db might still work
+    # Tenant relationships should already be fixed at import time above
+    # No need to fix again here
     
     # Initialize database schema
     # This will import all models, but Tenant relationships should already be fixed
