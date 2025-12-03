@@ -12,7 +12,7 @@ import { useSuspenseGetGuideApiV1TravelGuidesGuideIdGet } from "@/generated/hook
 
 interface BlogSlugViewProps {
   id: string;
-  initialData: TravelGuideResponse;
+  initialData?: TravelGuideResponse;
 } 
 
 export const BlogSlugView = ({ id, initialData }: BlogSlugViewProps) => {
