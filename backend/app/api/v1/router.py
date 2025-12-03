@@ -45,5 +45,4 @@ api_router.include_router(premium_listings_router)
 api_router.include_router(travel_guides_router)
 api_router.include_router(subscriptions_router)
 api_router.include_router(tenancy_router)
-api_router.include_router(premium_listings_router)
 
