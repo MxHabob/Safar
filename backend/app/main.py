@@ -24,6 +24,8 @@ from app.api.v1.router import api_router
 
 from app.core.logging_config import setup_logging
 from app.core.tracing import setup_tracing, instrument_app
+from app.core import models
+
 setup_logging()
 logger = logging.getLogger(__name__)
 
