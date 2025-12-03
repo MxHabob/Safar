@@ -35,23 +35,55 @@ from sqlalchemy import select, delete, insert
 from geoalchemy2 import WKTElement
 
 from app.core.database import AsyncSessionLocal, init_db, Base
+from app.core.id import generate_typed_id
+
 # Import models directly from modules to avoid Tenant relationship issues
 # The Tenant model has a broken relationship (back_populates="tenant" but User has no tenant relationship)
-from app.modules.users.models import User, Agency, HostProfile
+# Import all models that are referenced by relationships to avoid SQLAlchemy configuration errors
+
+# Users
+from app.modules.users.models import User, UserRole, UserStatus, HostProfile, Agency
+
+# Listings
 from app.modules.listings.models import (
-    Listing, ListingImage, ListingLocation, Amenity, ListingAmenity,
+    Listing, ListingType, ListingStatus, BookingType,
+    ListingImage, ListingLocation, Amenity, ListingAmenity,
     ListingRule, Calendar, PriceCalendar
 )
-from app.modules.bookings.models import Booking, Payment
+
+# Bookings (must import Dispute before Booking to satisfy relationship)
+from app.modules.disputes.models import Dispute, DisputeEvidence
+from app.modules.bookings.models import Booking, BookingStatus, Payment, PaymentStatus, PaymentMethodType
+
+# Reviews
 from app.modules.reviews.models import Review
-from app.modules.messages.models import Conversation, Message, conversation_participants
+
+# Messages
+from app.modules.messages.models import Conversation, Message, conversation_participants, MessageAutomation
+
+# Wishlist
 from app.modules.wishlist.models import Wishlist
-from app.modules.promotions.models import Coupon, Promotion, PromotionRedemption
-from app.modules.travel_guides.models import TravelGuide, UserStory, TravelGuideBookmark, TravelGuideLike
-from app.modules.notifications.models import Notification
+
+# Promotions
+from app.modules.promotions.models import Coupon, Promotion, DiscountType, PromotionType, PromotionRedemption
+
+# Travel Guides
+from app.modules.travel_guides.models import (
+    TravelGuide, UserStory, TravelGuideBookmark, TravelGuideLike,
+    UserStoryLike, UserStoryComment
+)
+
+# Notifications
+from app.modules.notifications.models import Notification, NotificationType
+
+# Analytics
 from app.modules.analytics.models import AnalyticsEvent
+
+# Loyalty
 from app.modules.loyalty.models import LoyaltyProgram, LoyaltyLedger
-from app.core.id import generate_typed_id
+
+# Files
+from app.modules.files.models import File, FileType, FileCategory
 
 # Password hashing helper with bcrypt fallback
 def safe_password_hash(password: str) -> str:
@@ -77,24 +109,6 @@ def safe_password_hash(password: str) -> str:
             return get_password_hash(password)
         except Exception as e:
             raise RuntimeError(f"Failed to hash password: {e}. Please ensure bcrypt is installed.")
-from app.modules.users.models import User, UserRole, UserStatus, HostProfile
-from app.modules.listings.models import (
-    Listing, ListingType, ListingStatus, BookingType,
-    ListingImage, ListingLocation, Amenity, ListingAmenity,
-    ListingRule, Calendar, PriceCalendar
-)
-from app.modules.bookings.models import Booking, BookingStatus, Payment, PaymentStatus, PaymentMethodType
-from app.modules.reviews.models import Review
-from app.modules.bookings.models import Booking
-from app.modules.messages.models import Conversation, Message, conversation_participants
-from app.modules.wishlist.models import Wishlist
-from app.modules.promotions.models import Coupon, Promotion, DiscountType, PromotionType, PromotionRedemption
-from app.modules.travel_guides.models import TravelGuide, UserStory, TravelGuideBookmark, TravelGuideLike, UserStoryLike, UserStoryComment
-from app.modules.messages.models import MessageAutomation
-from app.modules.notifications.models import Notification, NotificationType
-from app.modules.analytics.models import AnalyticsEvent
-from app.modules.loyalty.models import LoyaltyProgram, LoyaltyLedger
-from app.modules.files.models import File, FileType, FileCategory
 
 
 # Real image URLs from Unsplash (using specific image IDs for reliability)
@@ -258,7 +272,7 @@ class DevDataSeeder:
     async def _clear_data(self):
         """Clear existing data (in reverse dependency order)."""
         try:
-            # Clear in reverse dependency order
+            # Clear in reverse dependency order (child tables first)
             await self.session.execute(delete(UserStoryComment))
             await self.session.execute(delete(UserStoryLike))
             await self.session.execute(delete(TravelGuideLike))
@@ -272,6 +286,8 @@ class DevDataSeeder:
             await self.session.execute(delete(AnalyticsEvent))
             await self.session.execute(delete(LoyaltyLedger))
             await self.session.execute(delete(LoyaltyProgram))
+            await self.session.execute(delete(DisputeEvidence))
+            await self.session.execute(delete(Dispute))
             await self.session.execute(delete(Message))
             await self.session.execute(delete(MessageAutomation))
             await self.session.execute(delete(Conversation))
