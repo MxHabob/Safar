@@ -37,7 +37,31 @@ from geoalchemy2 import WKTElement
 from app.core.database import AsyncSessionLocal, init_db
 from app.core.models import *
 from app.core.id import generate_typed_id
-from app.core.security import get_password_hash
+
+# Password hashing helper with bcrypt fallback
+def safe_password_hash(password: str) -> str:
+    """
+    Hash password with fallback for bcrypt compatibility issues.
+    Handles bcrypt/passlib version compatibility problems.
+    Uses bcrypt directly to avoid passlib initialization issues.
+    """
+    try:
+        import bcrypt
+        # Ensure password is bytes and not longer than 72 bytes (bcrypt limit)
+        password_bytes = password.encode('utf-8')
+        if len(password_bytes) > 72:
+            password_bytes = password_bytes[:72]
+        # Generate salt and hash
+        salt = bcrypt.gensalt(rounds=12)
+        hashed = bcrypt.hashpw(password_bytes, salt)
+        return hashed.decode('utf-8')
+    except ImportError:
+        # If bcrypt is not available, try passlib
+        try:
+            from app.core.security import get_password_hash
+            return get_password_hash(password)
+        except Exception as e:
+            raise RuntimeError(f"Failed to hash password: {e}. Please ensure bcrypt is installed.")
 from app.modules.users.models import User, UserRole, UserStatus, HostProfile
 from app.modules.listings.models import (
     Listing, ListingType, ListingStatus, BookingType,
@@ -263,7 +287,7 @@ class DevDataSeeder:
             id=generate_typed_id("usr"),
             email="admin@safar.com",
             username="admin",
-            hashed_password=get_password_hash("admin123"),
+            hashed_password=safe_password_hash("admin123"),
             first_name="Admin",
             last_name="User",
             full_name="Admin User",
@@ -293,7 +317,7 @@ class DevDataSeeder:
                 id=generate_typed_id("usr"),
                 email=f"{username}@safar.com",
                 username=username,
-                hashed_password=get_password_hash("host123"),
+                hashed_password=safe_password_hash("host123"),
                 first_name=first_name,
                 last_name=last_name,
                 full_name=f"{first_name} {last_name}",
@@ -336,7 +360,7 @@ class DevDataSeeder:
                 id=generate_typed_id("usr"),
                 email=f"{username}@safar.com",
                 username=username,
-                hashed_password=get_password_hash("guest123"),
+                hashed_password=safe_password_hash("guest123"),
                 first_name=first_name,
                 last_name=last_name,
                 full_name=f"{first_name} {last_name}",
