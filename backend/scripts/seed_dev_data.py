@@ -34,8 +34,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, insert
 from geoalchemy2 import WKTElement
 
-from app.core.database import AsyncSessionLocal, init_db
-from app.core.models import *
+from app.core.database import AsyncSessionLocal, init_db, Base
+# Import models directly from modules to avoid Tenant relationship issues
+# The Tenant model has a broken relationship (back_populates="tenant" but User has no tenant relationship)
+from app.modules.users.models import User, Agency, HostProfile
+from app.modules.listings.models import (
+    Listing, ListingImage, ListingLocation, Amenity, ListingAmenity,
+    ListingRule, Calendar, PriceCalendar
+)
+from app.modules.bookings.models import Booking, Payment
+from app.modules.reviews.models import Review
+from app.modules.messages.models import Conversation, Message, conversation_participants
+from app.modules.wishlist.models import Wishlist
+from app.modules.promotions.models import Coupon, Promotion, PromotionRedemption
+from app.modules.travel_guides.models import TravelGuide, UserStory, TravelGuideBookmark, TravelGuideLike
+from app.modules.notifications.models import Notification
+from app.modules.analytics.models import AnalyticsEvent
+from app.modules.loyalty.models import LoyaltyProgram, LoyaltyLedger
 from app.core.id import generate_typed_id
 
 # Password hashing helper with bcrypt fallback
@@ -1185,6 +1200,24 @@ async def main():
         help="Clear existing data before seeding",
     )
     args = parser.parse_args()
+    
+    # Fix Tenant relationship issue before initializing database
+    # The Tenant model has back_populates="tenant" but User model has no tenant relationship
+    try:
+        from app.modules.tenancy.models import Tenant
+        from sqlalchemy.orm import configure_mappers
+        # Remove the broken back_populates
+        if hasattr(Tenant, 'users') and hasattr(Tenant.users.property, 'back_populates'):
+            Tenant.users.property.back_populates = None
+        # Also fix listings relationship if it has the same issue
+        if hasattr(Tenant, 'listings') and hasattr(Tenant.listings.property, 'back_populates'):
+            # Check if Listing has tenant relationship
+            from app.modules.listings.models import Listing
+            if not hasattr(Listing, 'tenant'):
+                Tenant.listings.property.back_populates = None
+    except Exception as e:
+        print(f"⚠️  Warning: Could not fix Tenant relationships: {e}")
+        pass  # Continue anyway
     
     # Initialize database schema
     print("🔧 Initializing database schema...")
