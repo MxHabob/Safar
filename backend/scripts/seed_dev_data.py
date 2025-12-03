@@ -703,13 +703,34 @@ class DevDataSeeder:
             
             # Create payment for completed/confirmed bookings
             if status in [BookingStatus.CONFIRMED, BookingStatus.COMPLETED, BookingStatus.CHECKED_OUT]:
+                # Select a random payment method
+                payment_method_type = random.choice(list(PaymentMethodType))
+                payment_method_value = payment_method_type.value
+                
+                # Determine processor based on payment method
+                if payment_method_type == PaymentMethodType.PAYPAL:
+                    processor = "paypal"
+                elif payment_method_type == PaymentMethodType.MPESA:
+                    processor = "mpesa"
+                elif payment_method_type == PaymentMethodType.FAWRY:
+                    processor = "fawry"
+                elif payment_method_type == PaymentMethodType.KLARNA:
+                    processor = "klarna"
+                elif payment_method_type == PaymentMethodType.TAMARA:
+                    processor = "tamara"
+                elif payment_method_type == PaymentMethodType.TABBY:
+                    processor = "tabby"
+                else:
+                    processor = "stripe"  # Default for credit/debit cards and other methods
+                
                 payment = Payment(
                     id=generate_typed_id("pay"),
                     booking_id=booking.id,
                     amount=total_amount,
                     currency="USD",
+                    processor=processor,  # Required field
                     status=PaymentStatus.COMPLETED.value if status != BookingStatus.PENDING else PaymentStatus.PENDING.value,
-                    payment_method=random.choice(list(PaymentMethodType)).value,
+                    payment_method=payment_method_value,
                     transaction_id=f"TXN{random.randint(100000, 999999)}",
                 )
                 self.session.add(payment)
