@@ -1,9 +1,9 @@
 "use client";
 
-import BlurImage from "@/components/blur-image";
+import BlurImage from "@/components/Shared/blur-image";
 import Footer from "@/components/footer";
-import { FramedPhoto } from "@/components/framed-photo";
-import VectorCombined from "@/components/vector-combined";
+import { FramedPhoto } from "@/components/Shared/framed-photo";
+import VectorCombined from "@/components/Shared/vector-combined";
 import { keyToImage } from "@/lib/keyToImage";
 import { useTRPC } from "@/trpc/client";
 import { useSuspenseQuery } from "@tanstack/react-query";

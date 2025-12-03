@@ -3,7 +3,7 @@ import "./globals.css";
 
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "@/components/ui/sonner";
-import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider } from "@/components/Shared/theme-provider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // Vercel Analytics
 import { SpeedInsights } from "@vercel/speed-insights/next";

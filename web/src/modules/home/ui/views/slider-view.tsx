@@ -2,10 +2,10 @@
 
 // UI Components
 import Link from "next/link";
-import Carousel from "@/components/photo-carousel";
-import BlurImage from "@/components/blur-image";
+import Carousel from "@/components/Shared/photo-carousel";
+import BlurImage from "@/components/Shared/blur-image";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/empty-state";
+import { EmptyState } from "@/components/Shared/empty-state";
 import { keyToImage } from "@/lib/keyToImage";
 import { useTRPC } from "@/trpc/client";
 import { useSuspenseQuery } from "@tanstack/react-query";

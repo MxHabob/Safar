@@ -2,9 +2,9 @@
 
 import { useTRPC } from "@/trpc/client";
 import { columns } from "../components/columns";
-import { DataTable } from "@/components/data-table";
+import { DataTable } from "@/components/Shared/data-table";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { DataPagination } from "@/components/data-pagination";
+import { DataPagination } from "@/components/Shared/data-pagination";
 import { usePhotosFilters } from "../../hooks/use-photos-filters";
 
 import {

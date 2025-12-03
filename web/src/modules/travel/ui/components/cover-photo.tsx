@@ -1,7 +1,7 @@
-import BlurImage from "@/components/blur-image";
+import BlurImage from "@/components/Shared/blur-image";
 import { CitySetWithPhotos } from "@/db/schema";
 import { keyToImage } from "@/lib/keyToImage";
-import VectorCombined from "@/components/vector-combined";
+import VectorCombined from "@/components/Shared/vector-combined";
 
 interface CoverPhotoProps {
   citySet: CitySetWithPhotos;

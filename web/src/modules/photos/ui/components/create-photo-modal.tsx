@@ -1,6 +1,6 @@
 "use client";
 
-import { ResponsiveModal } from "@/components/responsive-modal";
+import { ResponsiveModal } from "@/components/Shared/responsive-modal";
 import MultiStepForm from "./multi-step-form";
 import { useModal } from "@/hooks/use-modal";
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import BlurImage from "@/components/blur-image";
+import BlurImage from "@/components/Shared/blur-image";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Copy, Check, ArrowRight } from "lucide-react";
 import {

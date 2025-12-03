@@ -1,6 +1,6 @@
 import Logo from "./logo";
-import FlipLink from "@/components/flip-link";
-import { ThemeSwitch } from "@/components/theme-toggle";
+import FlipLink from "@/components/Shared/flip-link";
+import { ThemeSwitch } from "@/components/Shared/theme-toggle";
 
 const Navbar = () => {
   return (

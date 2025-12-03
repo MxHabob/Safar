@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { photoGetMany } from "../../types";
 import { keyToImage } from "@/lib/keyToImage";
-import BlurImage from "@/components/blur-image";
+import BlurImage from "@/components/Shared/blur-image";
 import { format } from "date-fns";
 import { FavoriteToggle } from "./favorite-toggle";
 import { VisibilityToggle } from "./visibility-toggle";

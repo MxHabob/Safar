@@ -1,4 +1,4 @@
-import BlurImage from "@/components/blur-image";
+import BlurImage from "@/components/Shared/blur-image";
 import { keyToImage } from "@/lib/keyToImage";
 import type { PhotoPoint } from "@/modules/discover/lib/clustering";
 

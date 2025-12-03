@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Mapbox from "@/modules/mapbox/ui/components/map";
-import VectorCombined from "@/components/vector-combined";
+import VectorCombined from "@/components/Shared/vector-combined";
 import { useTRPC } from "@/trpc/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { usePhotoClustering } from "@/modules/discover/hooks/use-photo-clustering";
@@ -10,7 +10,7 @@ import { PhotoMarker } from "@/modules/discover/ui/components/photo-marker";
 import { ClusterMarker } from "@/modules/discover/ui/components/cluster-marker";
 import { PhotoPopup } from "@/modules/discover/ui/components/photo-popup";
 import type { PhotoPoint } from "@/modules/discover/lib/clustering";
-import { FramedPhoto } from "@/components/framed-photo";
+import { FramedPhoto } from "@/components/Shared/framed-photo";
 import { format } from "date-fns/format";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {

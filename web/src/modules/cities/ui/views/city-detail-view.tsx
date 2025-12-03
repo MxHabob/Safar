@@ -32,7 +32,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { FramedPhoto } from "@/components/framed-photo";
+import { FramedPhoto } from "@/components/Shared/framed-photo";
 
 const cityDescriptionSchema = z.object({
   description: z.string().optional(),

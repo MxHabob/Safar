@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import BlurImage from "@/components/blur-image";
+import BlurImage from "@/components/Shared/blur-image";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { type Photo } from "@/db/schema";
 import VectorTopLeftAnimation from "./vector-top-left-animation";

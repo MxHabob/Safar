@@ -1,7 +1,7 @@
 "use client";
 
-import BlurImage from "@/components/blur-image";
-import { BrandsLogo } from "@/components/brands-logo";
+import BlurImage from "@/components/Shared/blur-image";
+import { BrandsLogo } from "@/components/Shared/brands-logo";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { formatExposureTime } from "@/modules/photos/lib/utils";

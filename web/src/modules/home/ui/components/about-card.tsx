@@ -1,4 +1,4 @@
-import CardContainer from "@/components/card-container";
+import CardContainer from "@/components/Shared/card-container";
 
 const AboutCard = () => {
   return (

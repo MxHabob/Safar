@@ -4,11 +4,11 @@ import { type Metadata } from "next";
 // Internal dependencies - UI Components
 import Footer from "@/components/footer";
 import AboutCard from "../../../modules/home/ui/components/about-card";
-import TechMarquee from "@/components/tech-marquee";
+import TechMarquee from "@/components/Shared/tech-marquee";
 import CameraCard from "../../../modules/home/ui/components/camera-card";
 import ProfileCard from "../../../modules/home/ui/components/profile-card";
-import CardContainer from "@/components/card-container";
-import VectorCombined from "@/components/vector-combined";
+import CardContainer from "@/components/Shared/card-container";
+import VectorCombined from "@/components/Shared/vector-combined";
 
 export const metadata: Metadata = {
   title: "About",

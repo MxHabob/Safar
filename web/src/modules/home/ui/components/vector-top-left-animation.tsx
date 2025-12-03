@@ -1,4 +1,4 @@
-import Graphic from "@/components/graphic";
+import Graphic from "@/components/Shared/graphic";
 import { ArrowRight } from "lucide-react";
 
 interface Props {

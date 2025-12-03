@@ -2,7 +2,7 @@
 import Link from "next/link";
 
 // Internal dependencies - UI Components
-import ContactCard from "../../../../components/contact-card";
+import ContactCard from "../../../../components/Shared/contact-card";
 import { ArrowUpRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 

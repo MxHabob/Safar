@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import BlurImage from "@/components/blur-image";
+import BlurImage from "@/components/Shared/blur-image";
 import { keyToImage } from "@/lib/keyToImage";
 import type { CityGetMany } from "../../types";
 

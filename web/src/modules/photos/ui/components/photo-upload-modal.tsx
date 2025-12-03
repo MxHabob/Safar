@@ -1,6 +1,6 @@
 "use client";
 
-import { ResponsiveModal } from "@/components/responsive-modal";
+import { ResponsiveModal } from "@/components/Shared/responsive-modal";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PhotoUploader } from "./photo-uploader";
 import { useState } from "react";
