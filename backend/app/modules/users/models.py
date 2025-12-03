@@ -13,6 +13,9 @@ import enum
 
 from app.shared.base import BaseModel, StringIDBaseModel
 
+# Import conversation_participants for many-to-many relationship
+from app.modules.messages.models import conversation_participants
+
 
 class UserRole(str, enum.Enum):
     """User roles."""
@@ -108,7 +111,7 @@ class User(BaseModel):
     passkeys = relationship("UserPasskey", back_populates="user", cascade="all, delete-orphan", lazy="selectin")
     two_factor_challenges = relationship("TwoFactorChallenge", back_populates="user", cascade="all, delete-orphan", lazy="selectin")
     host_profile = relationship("HostProfile", back_populates="user", uselist=False, cascade="all, delete-orphan", lazy="selectin")
-    conversations = relationship("Conversation", back_populates="participants", lazy="selectin")
+    conversations = relationship("Conversation", secondary=conversation_participants, back_populates="participants", lazy="selectin")
     loyalty_ledgers = relationship("LoyaltyLedger", back_populates="user", lazy="selectin")
     promotion_redemptions = relationship("PromotionRedemption", back_populates="user", lazy="selectin")
     notifications = relationship("Notification", back_populates="user", lazy="selectin")
