@@ -1,4 +1,4 @@
-import LinkRotate from "../Shared/link-rotate";
+import LinkRotate from "../shared/link-rotate";
 
 interface Props {
   title: string;

@@ -1,4 +1,4 @@
-import Graphic from "@/components/Shared/graphic";
+import Graphic from "@/components/shared/graphic";
 import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
 
