@@ -43,10 +43,7 @@ export const BlogView = () => {
         <PostsSection data={data || []} />
 
         {/* CONTACT CARDS  */}
-        <div className="w-full grid grid-cols-2 gap-3 mt-3">
-          <ContactCard title="Instagram" />
-          <ContactCard title="GitHub" />
-          <ContactCard title="X" />
+        <div className="w-full mt-3">
           <ContactCard
             title="Contact me"
             className="bg-primary hover:bg-primary-hover text-white dark:text-black"

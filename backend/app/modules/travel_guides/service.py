@@ -390,9 +390,17 @@ class TravelGuideService:
     async def increment_view_count(
         db: AsyncSession,
         guide_id: Optional[ID] = None,
-        story_id: Optional[ID] = None
+        story_id: Optional[ID] = None,
+        commit: bool = False
     ) -> None:
-        """Increment view count for a guide or story."""
+        """Increment view count for a guide or story.
+        
+        Args:
+            db: Database session
+            guide_id: Guide ID to increment view count for
+            story_id: Story ID to increment view count for
+            commit: Whether to commit the transaction (default: False, let caller handle commit)
+        """
         if guide_id:
             result = await db.execute(
                 select(TravelGuide).where(TravelGuide.id == guide_id)
@@ -400,7 +408,8 @@ class TravelGuideService:
             guide = result.scalar_one_or_none()
             if guide:
                 guide.view_count += 1
-                await db.commit()
+                if commit:
+                    await db.commit()
         
         if story_id:
             result = await db.execute(
@@ -409,5 +418,6 @@ class TravelGuideService:
             story = result.scalar_one_or_none()
             if story:
                 story.view_count += 1
-                await db.commit()
+                if commit:
+                    await db.commit()
 

@@ -4,27 +4,27 @@ import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
 type Props = {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ id: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const slug = (await params).slug;
+  const id = (await params).id;
   // Decode URL-encoded params
-  const decodedSlug = decodeURIComponent(slug);
+  const decodedId = decodeURIComponent(id);
   return {
-    title: decodedSlug,
-    description: decodedSlug,
+    title: decodedId,
+    description: decodedId,
   };
 }
 
 export default async function page({ params }: Props) {
-  const slug = (await params).slug;
+  const id = (await params).id;
   // Decode URL-encoded params
-  const decodedSlug = decodeURIComponent(slug);
+  const decodedId = decodeURIComponent(id);
   return (
       <Suspense fallback={<p>Loading...</p>}>
         <ErrorBoundary fallback={<p>Error</p>}>
-          <BlogSlugView slug={decodedSlug} />
+          <BlogSlugView id={decodedId} />
         </ErrorBoundary>
       </Suspense>
   );

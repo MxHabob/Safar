@@ -27,9 +27,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import { cn, duplicateContent } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
-const Mapbox = dynamic(() => import("@/modules/mapbox/ui/components/map"), {
+const Mapbox = dynamic(() => import("@/components/shared/map"), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center h-full bg-muted">
@@ -481,10 +481,16 @@ function TiptapMapbox(props: NodeViewProps) {
                 >
                   <DropdownMenuItem
                     onClick={() => {
-                      duplicateContent(editor);
+                      editor.chain().focus().setMapbox({
+                        markers: Array.isArray(node.attrs.markers) ? node.attrs.markers : [],
+                        zoom: node.attrs.zoom,
+                        scrollZoom: node.attrs.scrollZoom,
+                        doubleClickZoom: node.attrs.doubleClickZoom,
+                        dragRotate: node.attrs.dragRotate,
+                      }).run();
                     }}
                   >
-                    <Copy className="mr-2 size-4" /> Duplicate
+                    <Copy className="mr-2 size-4" /> Copy Map
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem

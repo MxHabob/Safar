@@ -1,26 +1,26 @@
 "use client";
 
-import VectorCombined from "@/components/vector-combined";
-import { useTRPC } from "@/trpc/client";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import VectorCombined from "@/components/shared/vector-combined";
 import { ArrowDownIcon } from "lucide-react";
 import Image from "next/image";
-import ContactCard from "@/components/contact-card";
 import Footer from "@/components/footer";
 import { keyToImage } from "@/lib/keyToImage";
 import RichTextViewer from "@/components/editor/rich-text-viewer";
+import { useGetGuideApiV1TravelGuidesGuideIdGet } from "@/generated/hooks";
+import ContactCard from "@/components/shared/contact-card";
 
-export const BlogSlugView = ({ slug }: { slug: string }) => {
-  const trpc = useTRPC();
-  const { data } = useSuspenseQuery(trpc.blog.getOne.queryOptions({ slug }));
 
+export const BlogSlugView = ({ id }: { id: string }) => {
+  const { data } = useGetGuideApiV1TravelGuidesGuideIdGet(id, {
+    enabled: !!id,
+  });
   return (
     <div className="flex flex-col gap-3 lg:gap-0 lg:flex-row w-full">
       {/* LEFT CONTENT - Fixed */}
       <div className="w-full h-[50vh] lg:w-1/2 lg:fixed lg:top-0 lg:left-0 md:h-[80vh] lg:h-screen p-0 lg:p-3 group">
         <div className="block w-full h-full relative rounded-xl overflow-hidden">
           <Image
-            src={keyToImage(data.coverImage) || "/placeholder.svg"}
+            src={keyToImage(data?.cover_image_url) || "/placeholder.svg"}
             alt="Image"
             fill
             quality={75}
@@ -47,8 +47,8 @@ export const BlogSlugView = ({ slug }: { slug: string }) => {
           </div>
 
           <div className="mt-auto flex flex-col gap-3">
-            <h1 className="text-4xl">{data.title}</h1>
-            <h2 className="font-light">{data.description}</h2>
+            <h1 className="text-4xl">{data?.title}</h1>
+            <h2 className="font-light">{data?.summary}</h2>
 
             <div className="mt-8">
               <button className="bg-background hover:bg-muted duration-150 transition-all flex items-center gap-1 py-[10px] pr-3 pl-[14px] rounded-lg">
@@ -62,22 +62,22 @@ export const BlogSlugView = ({ slug }: { slug: string }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
           <div className="bg-muted rounded-xl p-5 w-full flex justify-between">
             <p className="text-text-muted">Category</p>
-            <p>{data.tags}</p>
+            <p>{data?.tags.join(", ")}</p>
           </div>
 
           <div className="bg-muted rounded-xl p-5 w-full flex justify-between">
             <p className="text-text-muted">Reading Time</p>
-            <p>{data.readingTimeMinutes} Min</p>
+            <p>{data?.reading_time_minutes} Min</p>
           </div>
 
           <div className="bg-muted rounded-xl p-5 w-full flex justify-between">
             <p className="text-text-muted">Date</p>
-            <p>March 2024</p>
+            <p>{data?.published_at}</p>
           </div>
         </div>
 
         {/* POST PREVIEW */}
-        <RichTextViewer content={data.content || ""} />
+        <RichTextViewer content={data?.content || ""} />
 
         {/* CONTACT CARD  */}
         <ContactCard

@@ -28,10 +28,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import { cn, duplicateContent } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { keyToImage } from "@/lib/keyToImage";
-import { useTRPC } from "@/trpc/client";
-import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export const ImageExtension = Image.extend({
@@ -65,8 +63,6 @@ export const ImageExtension = Image.extend({
 
 function TiptapImage(props: NodeViewProps) {
   const { node, editor, selected, deleteNode, updateAttributes } = props;
-  const trpc = useTRPC();
-  const deleteFile = useMutation(trpc.s3.deleteFile.mutationOptions());
   const imageRef = useRef<HTMLImageElement | null>(null);
   const nodeRef = useRef<HTMLDivElement | null>(null);
   const [resizing, setResizing] = useState(false);
@@ -95,7 +91,6 @@ function TiptapImage(props: NodeViewProps) {
       !rawSrc.startsWith("data:")
     ) {
       try {
-        await deleteFile.mutateAsync({ key: rawSrc });
         toast.success("Image deleted successfully");
       } catch (error) {
         toast.error(
@@ -105,7 +100,7 @@ function TiptapImage(props: NodeViewProps) {
     }
 
     deleteNode();
-  }, [deleteFile, rawSrc, deleteNode]);
+  }, [rawSrc, deleteNode]);
 
   function handleResizingPosition({
     e,
@@ -350,19 +345,10 @@ function TiptapImage(props: NodeViewProps) {
                 >
                   <DropdownMenuItem
                     onClick={() => {
-                      duplicateContent(editor);
+                      editor.chain().focus().setImage({ src: rawSrc ?? "" }).run();
                     }}
                   >
-                    <Copy className="mr-2 size-4" /> Duplicate
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      updateAttributes({
-                        width: "fit-content",
-                      });
-                    }}
-                  >
-                    <Maximize className="mr-2 size-4" /> Full Screen
+                    <Copy className="mr-2 size-4" /> Copy Image
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem

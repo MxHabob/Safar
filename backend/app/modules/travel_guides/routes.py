@@ -108,10 +108,12 @@ async def get_guide(
             detail="Travel guide not found"
         )
     
-    # Increment view count
-    await TravelGuideService.increment_view_count(db, guide_id=guide_id)
+    # Increment view count (don't commit, let the route handler's session commit)
+    await TravelGuideService.increment_view_count(db, guide_id=guide_id, commit=False)
     
-    return guide
+    # Explicitly convert to Pydantic model while session is still open
+    # This ensures all attributes are accessed before session closes
+    return TravelGuideResponse.model_validate(guide)
 
 
 @router.post("/{guide_id}/bookmark")
@@ -230,8 +232,10 @@ async def get_story(
             detail="User story not found"
         )
     
-    # Increment view count
-    await TravelGuideService.increment_view_count(db, story_id=story_id)
+    # Increment view count (don't commit, let the route handler's session commit)
+    await TravelGuideService.increment_view_count(db, story_id=story_id, commit=False)
     
-    return story
+    # Explicitly convert to Pydantic model while session is still open
+    # This ensures all attributes are accessed before session closes
+    return UserStoryResponse.model_validate(story)
 
