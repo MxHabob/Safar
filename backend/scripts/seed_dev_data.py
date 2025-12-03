@@ -39,37 +39,42 @@ from app.core.id import generate_typed_id
 
 # Fix Tenant relationships BEFORE importing any models that might trigger mapper configuration
 # The Tenant model has broken relationships (back_populates="tenant" but User/Listing have no tenant relationship)
+# We'll replace the relationships with ones that don't use back_populates
 try:
     from app.modules.tenancy.models import Tenant
     from sqlalchemy.orm import relationship
-    from sqlalchemy import text
     
-    # Replace broken relationships with viewonly ones
-    # Use text() for primaryjoin to create a condition that always evaluates to false
-    # This prevents SQLAlchemy from trying to find foreign keys
+    # Replace relationships with new ones that don't have back_populates
+    # We'll use a primaryjoin that references the Tenant table's id column
+    # Since there's no FK, we create a condition that's always false using column expressions
+    tenant_id_col = Tenant.__table__.c.id
+    
+    # Create new relationships without back_populates
+    # Use a primaryjoin that always evaluates to false: tenant.id != tenant.id
     Tenant.users = relationship(
         "User",
         lazy="selectin",
         viewonly=True,
-        primaryjoin=text("1=0")  # Always false condition
+        primaryjoin=tenant_id_col != tenant_id_col  # Always false - no matches
     )
+    
     Tenant.listings = relationship(
         "Listing",
-        lazy="selectin", 
+        lazy="selectin",
         viewonly=True,
-        primaryjoin=text("1=0")  # Always false condition
+        primaryjoin=tenant_id_col != tenant_id_col  # Always false - no matches
     )
 except Exception:
-    # If patching fails, try to modify the existing relationship properties
+    # Fallback: create simple relationships without primaryjoin
+    # SQLAlchemy will try to find FKs and fail, but we'll catch that
     try:
         from app.modules.tenancy.models import Tenant
-        # Modify relationship properties to remove back_populates
-        if hasattr(Tenant, 'users') and hasattr(Tenant.users, 'property'):
-            Tenant.users.property.back_populates = None
-            Tenant.users.property.viewonly = True
-        if hasattr(Tenant, 'listings') and hasattr(Tenant.listings, 'property'):
-            Tenant.listings.property.back_populates = None
-            Tenant.listings.property.viewonly = True
+        from sqlalchemy.orm import relationship
+        
+        # Simple relationships without back_populates
+        # These will fail if SQLAlchemy tries to auto-detect FKs, but we'll handle it
+        Tenant.users = relationship("User", lazy="selectin", viewonly=True, foreign_keys=[])
+        Tenant.listings = relationship("Listing", lazy="selectin", viewonly=True, foreign_keys=[])
     except:
         pass
 
