@@ -1217,25 +1217,32 @@ async def main():
     )
     args = parser.parse_args()
     
-    # Fix Tenant relationship issue before initializing database
-    # The Tenant model has back_populates="tenant" but User model has no tenant relationship
+    # Fix Tenant relationship issue BEFORE init_db() imports all models
+    # The Tenant model has back_populates="tenant" but User/Listing models have no tenant relationship
+    # Delete the problematic relationships entirely to prevent SQLAlchemy from trying to configure them
     try:
+        # Import Tenant and remove broken relationships before mapper configuration
         from app.modules.tenancy.models import Tenant
-        from sqlalchemy.orm import configure_mappers
-        # Remove the broken back_populates
-        if hasattr(Tenant, 'users') and hasattr(Tenant.users.property, 'back_populates'):
-            Tenant.users.property.back_populates = None
-        # Also fix listings relationship if it has the same issue
-        if hasattr(Tenant, 'listings') and hasattr(Tenant.listings.property, 'back_populates'):
-            # Check if Listing has tenant relationship
-            from app.modules.listings.models import Listing
-            if not hasattr(Listing, 'tenant'):
-                Tenant.listings.property.back_populates = None
+        
+        # Delete relationship attributes from the class to prevent SQLAlchemy from configuring them
+        # This must be done before any mapper configuration happens
+        if hasattr(Tenant, 'users'):
+            delattr(Tenant, 'users')
+        if hasattr(Tenant, 'listings'):
+            delattr(Tenant, 'listings')
+            
+        # Also remove from __mapper_args__ if present
+        if hasattr(Tenant, '__mapper_args__'):
+            mapper_args = Tenant.__mapper_args__ or {}
+            if 'relationships' in mapper_args:
+                mapper_args['relationships'] = {}
+                
     except Exception as e:
         print(f"⚠️  Warning: Could not fix Tenant relationships: {e}")
-        pass  # Continue anyway
+        # Continue anyway - init_db might still work
     
     # Initialize database schema
+    # This will import all models, but Tenant relationships should already be fixed
     print("🔧 Initializing database schema...")
     await init_db()
     
