@@ -37,46 +37,10 @@ from geoalchemy2 import WKTElement
 from app.core.database import AsyncSessionLocal, init_db, Base
 from app.core.id import generate_typed_id
 
-# Fix Tenant relationships BEFORE importing any models that might trigger mapper configuration
-# The Tenant model has broken relationships (back_populates="tenant" but User/Listing have no tenant relationship)
-# We'll replace the relationships with ones that don't use back_populates
-try:
-    from app.modules.tenancy.models import Tenant
-    from sqlalchemy.orm import relationship
-    
-    # Replace relationships with new ones that don't have back_populates
-    # We'll use a primaryjoin that references the Tenant table's id column
-    # Since there's no FK, we create a condition that's always false using column expressions
-    tenant_id_col = Tenant.__table__.c.id
-    
-    # Create new relationships without back_populates
-    # Use a primaryjoin that always evaluates to false: tenant.id != tenant.id
-    Tenant.users = relationship(
-        "User",
-        lazy="selectin",
-        viewonly=True,
-        primaryjoin=tenant_id_col != tenant_id_col  # Always false - no matches
-    )
-    
-    Tenant.listings = relationship(
-        "Listing",
-        lazy="selectin",
-        viewonly=True,
-        primaryjoin=tenant_id_col != tenant_id_col  # Always false - no matches
-    )
-except Exception:
-    # Fallback: create simple relationships without primaryjoin
-    # SQLAlchemy will try to find FKs and fail, but we'll catch that
-    try:
-        from app.modules.tenancy.models import Tenant
-        from sqlalchemy.orm import relationship
-        
-        # Simple relationships without back_populates
-        # These will fail if SQLAlchemy tries to auto-detect FKs, but we'll handle it
-        Tenant.users = relationship("User", lazy="selectin", viewonly=True, foreign_keys=[])
-        Tenant.listings = relationship("Listing", lazy="selectin", viewonly=True, foreign_keys=[])
-    except:
-        pass
+# Note: Tenant model relationships have been fixed in the model file itself
+# The broken relationships (users and listings with back_populates="tenant") 
+# have been commented out in app/modules/tenancy/models.py
+# No workaround needed here anymore
 
 # Import models directly from modules to avoid Tenant relationship issues
 # Import all models that are referenced by relationships to avoid SQLAlchemy configuration errors

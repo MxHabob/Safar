@@ -60,8 +60,11 @@ class Tenant(BaseModel):
     tenant_metadata = Column("metadata", JSONB, default=dict, nullable=True)
     
     # Relationships
-    users = relationship("User", back_populates="tenant", lazy="selectin")
-    listings = relationship("Listing", back_populates="tenant", lazy="selectin")
+    # Note: User and Listing models don't have tenant_id foreign keys or tenant relationships
+    # These relationships are commented out to avoid SQLAlchemy configuration errors
+    # If multi-tenancy is needed, add tenant_id foreign keys to User and Listing models first
+    # users = relationship("User", back_populates="tenant", lazy="selectin")
+    # listings = relationship("Listing", back_populates="tenant", lazy="selectin")
     
     __table_args__ = (
         Index("idx_tenant_slug_active", "slug", "is_active"),
