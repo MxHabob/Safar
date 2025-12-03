@@ -20,8 +20,8 @@ type NextReadonlyHeaders = Awaited<ReturnType<NextHeadersModule['headers']>>
 type NextReadonlyCookies = Awaited<ReturnType<NextHeadersModule['cookies']>>
 
 let serverOnlyModules: {
-  cookies?: () => NextReadonlyCookies
-  headers?: () => Headers
+  cookies?: () => Promise<NextReadonlyCookies>
+  headers?: () => Promise<Headers>
   after?: (fn: () => void | Promise<void>) => void
   updateTag?: (tag: string) => void
 } | null = null
@@ -51,11 +51,11 @@ async function getServerModules() {
       const serverModule = await import('next/server').catch(() => null)
       const cacheModule = await import('next/cache').catch(() => null)
       
-      const getReadonlyHeaders = headersModule?.headers as (() => NextReadonlyHeaders) | undefined
-      const getReadonlyCookies = headersModule?.cookies as (() => NextReadonlyCookies) | undefined
+      const getReadonlyHeaders = headersModule?.headers as (() => Promise<NextReadonlyHeaders>) | undefined
+      const getReadonlyCookies = headersModule?.cookies as (() => Promise<NextReadonlyCookies>) | undefined
       serverOnlyModules = {
         cookies: getReadonlyCookies,
-        headers: getReadonlyHeaders ? () => toMutableHeaders(getReadonlyHeaders()) : undefined,
+        headers: getReadonlyHeaders ? async () => toMutableHeaders(await getReadonlyHeaders()) : undefined,
         after: serverModule?.after,
         updateTag: cacheModule?.updateTag,
       }
@@ -315,8 +315,8 @@ export class BaseApiClient {
       // Get auth token from various sources (server-side only)
       if (serverModules?.cookies && serverModules.headers) {
         try {
-          const cookieStore = serverModules.cookies()
-          const headersList = serverModules.headers()
+          const cookieStore = await serverModules.cookies()
+          const headersList = await serverModules.headers()
           
           // Try cookie first
           const tokenFromCookie = cookieStore.get('auth-token')?.value
@@ -360,7 +360,7 @@ export class BaseApiClient {
       
       if (serverModules?.headers) {
         try {
-          const headersList = serverModules.headers()
+          const headersList = await serverModules.headers()
           
           // CSRF protection
           const csrfToken = headersList.get('x-csrf-token')
