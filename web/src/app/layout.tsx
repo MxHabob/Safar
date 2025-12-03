@@ -15,10 +15,17 @@ const readexPro = Readex_Pro({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s - ECarry Photography",
-    default: "ECarry Photography",
+    template: "%s - Safar",
+    default: "Safar",
   },
-  description: "ECarry Photography",
+  description: "Safar",
+  keywords: ["travel", "accommodation", "bookings", "travel guides"],
+  authors: [{ name: "Safar" }],
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: "Safar",
+  },
 };
 
 export default function RootLayout({
@@ -32,8 +39,8 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
-        <SpeedInsights />
-        <Analytics />
+        {/* <SpeedInsights /> */}
+        {/* <Analytics /> */}
       </body>
     </html>
   );

@@ -8,13 +8,13 @@ const Footer = () => {
         {/* AVATAR  */}
         <Avatar className="size-[60px]">
           <AvatarImage src="/avatar.jpg" alt="avatar" sizes="60px" />
-          <AvatarFallback>EC</AvatarFallback>
+          <AvatarFallback>SA</AvatarFallback>
         </Avatar>
 
         {/* NAME  */}
         <div className="flex flex-col items-center lg:items-start gap-[2px]">
-          <h1 className="text-2xl">ECarry</h1>
-          <p className="text-sm opacity-60">Photographer</p>
+          <h1 className="text-2xl">Safar</h1>
+          <p className="text-sm opacity-60">Travel Companion</p>
         </div>
       </div>
       <div className="grid lg:w-full grid-cols-1 lg:grid-cols-3 gap-7 lg:gap-14">
@@ -41,23 +41,14 @@ const Footer = () => {
       {/* Attribution */}
       <div className="text-xs md:text-sm text-center md:text-left">
         <p>
-          <span className="opacity-60">© Design by </span>
+          <span className="opacity-60">Powered by </span>
           <a
-            href="https://templates.gola.io/template/hanssen"
+            href="https://mulverse.com"
             target="_blank"
             rel="noopener noreferrer"
             className="underline underline-offset-2"
           >
-            Pawel Gola
-          </a>
-          <span className="opacity-60">. Powered by </span>
-          <a
-            href="https://github.com/ecarry"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline underline-offset-2"
-          >
-            ECarry
+            Mulverse
           </a>
         </p>
       </div>

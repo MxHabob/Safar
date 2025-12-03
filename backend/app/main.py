@@ -6,7 +6,7 @@ from datetime import datetime
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
-from fastapi.exceptions import RequestValidationError
+from fastapi.exceptions import RequestValidationError, HTTPException as FastAPIHTTPException
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import time
 import logging
@@ -158,6 +158,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
+    # Re-raise HTTPException so it can be handled by the specific handler
+    # FastAPI's HTTPException is a subclass of StarletteHTTPException
+    if isinstance(exc, (StarletteHTTPException, FastAPIHTTPException)):
+        raise exc
+    
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
     
     # Send to Sentry if configured

@@ -1,15 +1,13 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import Mapbox from "@/modules/mapbox/ui/components/map";
+import Mapbox from "@/components/shared/map";
 import VectorCombined from "@/components/shared/vector-combined";
-import { useTRPC } from "@/trpc/client";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { usePhotoClustering } from "@/modules/discover/hooks/use-photo-clustering";
-import { PhotoMarker } from "@/modules/discover/ui/components/photo-marker";
-import { ClusterMarker } from "@/modules/discover/ui/components/cluster-marker";
-import { PhotoPopup } from "@/modules/discover/ui/components/photo-popup";
-import type { PhotoPoint } from "@/modules/discover/lib/clustering";
+import { usePhotoClustering } from "@/pages/discover/hooks/use-photo-clustering";
+import { PhotoMarker } from "@/pages/discover/components/photo-marker";
+import { ClusterMarker } from "@/pages/discover/components/cluster-marker";
+import { PhotoPopup } from "@/pages/discover/components/photo-popup";
+import type { PhotoPoint } from "@/pages/discover/lib/clustering";
 import { FramedPhoto } from "@/components/shared/framed-photo";
 import { format } from "date-fns/format";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -22,20 +20,12 @@ import {
 import { cn } from "@/lib/utils";
 
 export const DiscoverView = () => {
-  const trpc = useTRPC();
-  const { data } = useSuspenseQuery(
-    trpc.discover.getManyPhotos.queryOptions({})
-  );
+
 
   const isMobile = useIsMobile();
   const [selectedPhotos, setSelectedPhotos] = useState<PhotoPoint[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Use clustering hook
-  const { clusters, singlePhotos, handleMove } = usePhotoClustering({
-    photos: data,
-    initialZoom: 3,
-  });
 
   const handleSelectPhotos = useCallback(
     (photos: PhotoPoint[]) => {
