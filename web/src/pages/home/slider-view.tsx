@@ -7,39 +7,33 @@ import BlurImage from "@/components/shared/blur-image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
 import { keyToImage } from "@/lib/keyToImage";
-import { useTRPC } from "@/trpc/client";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ImageOff } from "lucide-react";
 
 export const SliderView = () => {
-  const trpc = useTRPC();
-  const { data: photos } = useSuspenseQuery(
-    trpc.home.getManyLikePhotos.queryOptions({ limit: 10 })
-  );
 
-  if (photos.length === 0) {
-    return (
-      <EmptyState
-        icon={<ImageOff className="h-12 w-12" />}
-        title="No photos yet"
-        description="Upload some photos and like your favorites to get started"
-        action={
-          <Button asChild>
-            <Link href="/dashboard/photos">Go to Dashboard</Link>
-          </Button>
-        }
-        height="h-full"
-      />
-    );
-  }
+  // if (photos.length === 0) {
+  //   return (
+  //     <EmptyState
+  //       icon={<ImageOff className="h-12 w-12" />}
+  //       title="No photos yet"
+  //       description="Upload some photos and like your favorites to get started"
+  //       action={
+  //         <Button asChild>
+  //           <Link href="/dashboard/photos">Go to Dashboard</Link>
+  //         </Button>
+  //       }
+  //       height="h-full"
+  //     />
+  //   );
+  // }
 
   return (
     <Carousel
       className="absolute top-0 left-0 w-full h-full rounded-xl"
       containerClassName="h-full"
     >
-      {photos.map((photo, index) => {
+      {/* {photos.map((photo, index) => {
         const shouldPreload = index < 1;
 
         return (
@@ -56,7 +50,8 @@ export const SliderView = () => {
             />
           </div>
         );
-      })}
+      })} */}
+      <div className="flex-[0_0_100%] h-full relative"></div>
     </Carousel>
   );
 };

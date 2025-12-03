@@ -1,26 +1,26 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import TextScroll from "./text-scroll";
-import { CitySetWithPhotos } from "@/db/schema";
+import { TravelGuideResponse } from "@/generated/schemas";
 
 interface CityItemProps {
-  city: CitySetWithPhotos;
-  onMouseEnter: (city: CitySetWithPhotos) => void;
-}
+  travelGuide: TravelGuideResponse;
+  onMouseEnter: (travelGuide: TravelGuideResponse) => void;
+} 
 
-export const CityItem = ({ city, onMouseEnter }: CityItemProps) => {
+export const CityItem = ({ travelGuide, onMouseEnter }: CityItemProps) => {
   return (
-    <Link href={`/travel/${encodeURIComponent(city.city)}`} className="block">
+    <Link href={`/travel/${encodeURIComponent(travelGuide.city)}`} className="block">
       <div
-        key={city.id}
+        key={travelGuide.id}
         className="w-full py-5 px-3 bg-muted hover:bg-muted-hover rounded-xl grid grid-cols-2 items-center cursor-pointer group transition-all duration-150 ease-[cubic-bezier(0.22, 1, 0.36, 1)] flex-1 overflow-hidden"
-        onMouseEnter={() => onMouseEnter(city)}
+        onMouseEnter={() => onMouseEnter(travelGuide)}
       >
-        <p className="text-xs lg:text-sm line-clamp-1">{city.city}</p>
+        <p className="text-xs lg:text-sm line-clamp-1">{travelGuide.city}</p>
         <div className="relative overflow-hidden flex justify-end">
           <div className="flex items-center gap-2 transform transition-transform duration-200 ease-in-out group-hover:-translate-x-7">
             <span className="font-light text-xs lg:text-sm whitespace-nowrap text-right">
-              <TextScroll className="w-28 lg:w-full">{city.country}</TextScroll>
+              <TextScroll className="w-28 lg:w-full">{travelGuide.country}</TextScroll>
             </span>
           </div>
           <div className="absolute right-0 transform translate-x-full transition-transform duration-200 ease-in-out group-hover:translate-x-0 flex items-center">

@@ -1,9 +1,8 @@
 "use client";
 
-import React from "react";
-import Graphic from "../../../../components/shared/graphic";
+import Graphic from "@/components/shared/graphic";
 import { useState } from "react";
-import MobileMenu from "./mobile-menu";
+import MobileMenu from "@/pages/home/components/header/mobile-menu";
 
 const MobileMenuButton = () => {
   const [isOpen, setIsOpen] = useState(false);

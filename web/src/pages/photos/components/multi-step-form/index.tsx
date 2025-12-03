@@ -13,8 +13,6 @@ import { ProgressBar } from "./components/progress-bar";
 import { StepIndicator } from "./components/step-indicator";
 import { SuccessScreen } from "./components/success-screen";
 import { toast } from "sonner";
-import { useTRPC } from "@/trpc/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 // ============================================================================
 // TYPES
@@ -33,11 +31,6 @@ export default function MultiStepForm({
   className,
   onSubmit,
 }: MultiStepFormProps) {
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
-
-  const createPhoto = useMutation(trpc.photos.create.mutationOptions());
-  const removeS3Object = useMutation(trpc.s3.deleteFile.mutationOptions());
   // ========================================
   // State Management
   // ========================================
@@ -77,7 +70,6 @@ export default function MultiStepForm({
 
   // Handle re-upload
   const handleReupload = (url: string) => {
-    removeS3Object.mutate({ key: url });
     setUrl(null);
     setExif(null);
     setImageInfo(undefined);
@@ -147,35 +139,6 @@ export default function MultiStepForm({
 
       setIsSubmitting(true);
 
-      // Use tRPC mutation instead of callback
-      createPhoto.mutate(finalData, {
-        onSuccess: async () => {
-          // Invalidate queries to refetch photos list
-          await queryClient.invalidateQueries(
-            trpc.photos.getMany.queryOptions({})
-          );
-          await queryClient.invalidateQueries(
-            trpc.home.getManyLikePhotos.queryOptions({ limit: 10 })
-          );
-          await queryClient.invalidateQueries(
-            trpc.home.getCitySets.queryOptions({ limit: 9 })
-          );
-          await queryClient.invalidateQueries(trpc.city.getMany.queryOptions());
-
-          toast.success("Photo uploaded successfully!");
-          setIsComplete(true);
-          setIsSubmitting(false);
-
-          // Also call the optional callback if provided
-          if (onSubmit) {
-            onSubmit(finalData as PhotoFormData);
-          }
-        },
-        onError: (error) => {
-          toast.error(error.message);
-          setIsSubmitting(false);
-        },
-      });
     }
   };
 

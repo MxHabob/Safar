@@ -1,31 +1,31 @@
 import BlurImage from "@/components/shared/blur-image";
-import { CitySetWithPhotos } from "@/db/schema";
+import { TravelGuideResponse } from "@/generated/schemas";
 import { keyToImage } from "@/lib/keyToImage";
 import VectorCombined from "@/components/shared/vector-combined";
 
 interface CoverPhotoProps {
-  citySet: CitySetWithPhotos;
-  citySets: CitySetWithPhotos[];
+  travelGuideId: string;
+  travelGuides: TravelGuideResponse[];
 }
 
-export const CoverPhoto = ({ citySet, citySets }: CoverPhotoProps) => {
+export const CoverPhoto = ({ travelGuideId, travelGuides }: CoverPhotoProps) => {
   return (
     <div className="w-full h-[70vh] lg:w-1/2 lg:fixed lg:top-0 lg:left-0 lg:h-screen p-0 lg:p-3">
       <div className="w-full h-full relative rounded-xl overflow-hidden">
         {/* Cover photo */}
         <div className="relative w-full h-full">
-          {citySets?.map((city) => (
+          {travelGuides?.map((travelGuide) => (
             <div
-              key={city.id}
+              key={travelGuide.id}
               className={`absolute inset-0 transition-opacity duration-300 ${
-                city.id === citySet.id ? "opacity-100 z-10" : "opacity-0 z-0"
+                travelGuide.id === travelGuideId ? "opacity-100 z-10" : "opacity-0 z-0"
               }`}
             >
               <BlurImage
-                src={keyToImage(city.coverPhoto.url)}
-                alt={city.city}
+                src={keyToImage(travelGuide.cover_image_url)}
+                alt={travelGuide.city}
                 fill
-                blurhash={city.coverPhoto.blurData}
+                blurhash={travelGuide.id}
                 sizes="75vw"
                 className="object-cover"
               />
@@ -34,7 +34,7 @@ export const CoverPhoto = ({ citySet, citySets }: CoverPhotoProps) => {
         </div>
 
         <div className="absolute right-0 bottom-0 z-10">
-          <VectorCombined title={citySet?.city || ""} position="bottom-right" />
+          <VectorCombined title={ ""} position="bottom-right" />
         </div>
       </div>
     </div>

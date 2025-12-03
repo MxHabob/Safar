@@ -1,7 +1,4 @@
 import { Suspense } from "react";
-import { trpc } from "@/trpc/server";
-import { getQueryClient } from "@/trpc/server";
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { ErrorBoundary } from "react-error-boundary";
 import {
   CityListView,
@@ -15,9 +12,6 @@ export const metadata = {
 };
 
 const CityPage = async () => {
-  const queryClient = getQueryClient();
-  void queryClient.prefetchQuery(trpc.city.getMany.queryOptions());
-
   return (
     <>
       <div className="py-4 px-4 md:px-8 flex flex-col gap-y-8">
@@ -29,13 +23,11 @@ const CityPage = async () => {
         </div>
       </div>
 
-      <HydrationBoundary state={dehydrate(queryClient)}>
         <ErrorBoundary FallbackComponent={CityListErrorView}>
           <Suspense fallback={<CityListLoadingView />}>
             <CityListView />
           </Suspense>
         </ErrorBoundary>
-      </HydrationBoundary>
     </>
   );
 };

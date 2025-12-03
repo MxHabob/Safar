@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
-import { useTRPC } from "@/trpc/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -14,13 +12,9 @@ interface VisibilityToggleProps {
 
 export function VisibilityToggle({
   photoId,
-  initialValue,
+  initialValue = "private",
 }: VisibilityToggleProps) {
   const [visibility, setVisibility] = useState(initialValue);
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
-
-  const updatePhoto = useMutation(trpc.photos.update.mutationOptions());
 
   const handleToggle = async (checked: boolean) => {
     const newValue = checked ? "public" : "private";
@@ -28,30 +22,26 @@ export function VisibilityToggle({
     // Optimistic update
     setVisibility(newValue);
 
-    updatePhoto.mutate(
-      {
-        id: photoId,
-        visibility: newValue,
-      },
-      {
-        onSuccess: async () => {
-          // Invalidate queries to refetch photos list
-          await queryClient.invalidateQueries(
-            trpc.photos.getMany.queryOptions({})
-          );
-          toast.success(
-            `Photo is now ${newValue === "public" ? "public" : "private"}`
-          );
-        },
-        onError: (error) => {
-          // Revert on error
-          setVisibility(newValue === "public" ? "private" : "public");
-          toast.error(error.message || "Failed to update visibility");
-        },
-      }
-    );
+    // updatePhoto.mutate(
+    //   {
+    //     id: photoId,
+    //     visibility: newValue,
+    //   },
+    //   {
+    //     onSuccess: async () => {
+    //       // Invalidate queries to refetch photos list
+    //       await queryClient.invalidateQueries(
+    //         trpc.photos.getMany.queryOptions({})
+    //       );
+    //     },
+    //     onError: (error) => {
+    //       // Revert on error
+    //       setVisibility(newValue === "public" ? "private" : "public");
+    //       toast.error(error.message || "Failed to update visibility");
+    //     },
+    //   }
+    // );
   };
-
   return (
     <div
       className="flex items-center gap-2"
@@ -65,7 +55,7 @@ export function VisibilityToggle({
       <Switch
         checked={visibility === "public"}
         onCheckedChange={handleToggle}
-        disabled={updatePhoto.isPending}
+        disabled={false}
         aria-label="Toggle visibility"
       />
       <span className="text-sm text-muted-foreground min-w-[50px]">

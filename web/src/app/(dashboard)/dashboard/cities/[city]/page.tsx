@@ -1,7 +1,4 @@
 import { Suspense } from "react";
-import { trpc } from "@/trpc/server";
-import { getQueryClient } from "@/trpc/server";
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { ErrorBoundary } from "react-error-boundary";
 import {
   CityDetailView,
@@ -21,21 +18,12 @@ const CityDetailPage = async ({ params }: Props) => {
   // Decode URL-encoded params
   const decodedCity = decodeURIComponent(city);
 
-  const queryClient = getQueryClient();
-  void queryClient.prefetchQuery(
-    trpc.city.getOne.queryOptions({
-      city: decodedCity,
-    })
-  );
-
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
       <ErrorBoundary FallbackComponent={CityDetailErrorView}>
         <Suspense fallback={<CityDetailLoadingView />}>
           <CityDetailView city={decodedCity} />
         </Suspense>
       </ErrorBoundary>
-    </HydrationBoundary>
   );
 };
 

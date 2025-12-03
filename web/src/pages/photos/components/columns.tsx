@@ -1,7 +1,6 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { photoGetMany } from "../../types";
 import { keyToImage } from "@/lib/keyToImage";
 import BlurImage from "@/components/shared/blur-image";
 import { format } from "date-fns";
@@ -11,23 +10,24 @@ import { DeletePhotoButton } from "./delete-photo-button";
 import Link from "next/link";
 import { PenBoxIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FileUploadResponse } from "@/generated/schemas";
 
-export const columns: ColumnDef<photoGetMany[number]>[] = [
+export const columns: ColumnDef<FileUploadResponse["file"]>[] = [
   {
     accessorKey: "url",
     header: "Image",
     cell: ({ row }) => {
-      const url = row.original.url;
+      const url = row.original.file_url;
       const imageUrl = keyToImage(url);
 
       return (
         <div className="w-16 h-16 overflow-hidden">
           <BlurImage
             src={imageUrl}
-            alt={row.original.title}
+            alt={row.original.original_filename}
             width={64}
             height={64}
-            blurhash={row.original.blurData}
+            blurhash={row.original.description}
             className="w-16 h-16 object-cover"
           />
         </div>
@@ -42,7 +42,7 @@ export const columns: ColumnDef<photoGetMany[number]>[] = [
     accessorKey: "dateTimeOriginal",
     header: "Taken At",
     cell: ({ row }) => {
-      const takenAt = row.original.dateTimeOriginal;
+      const takenAt = row.original.created_at;
       if (!takenAt) return <span>-</span>;
 
       // Use date-fns for consistent formatting across SSR and client
@@ -55,7 +55,7 @@ export const columns: ColumnDef<photoGetMany[number]>[] = [
     accessorKey: "city",
     header: "City",
     cell: ({ row }) => {
-      const location = row.original.city + ", " + row.original.countryCode;
+      const location = row.original.file_category;
       return <span>{location}</span>;
     },
   },
@@ -65,8 +65,8 @@ export const columns: ColumnDef<photoGetMany[number]>[] = [
     cell: ({ row }) => {
       return (
         <FavoriteToggle
-          photoId={row.original.id}
-          initialValue={row.original.isFavorite}
+          photoId={row.original.id.toString()}
+          initialValue={false}
         />
       );
     },
@@ -77,8 +77,8 @@ export const columns: ColumnDef<photoGetMany[number]>[] = [
     cell: ({ row }) => {
       return (
         <VisibilityToggle
-          photoId={row.original.id}
-          initialValue={row.original.visibility}
+          photoId={row.original.id.toString()}
+          initialValue="private"
         />
       );
     },
@@ -90,12 +90,12 @@ export const columns: ColumnDef<photoGetMany[number]>[] = [
       return (
         <div className="flex items-center gap-2">
           <DeletePhotoButton
-            photoId={row.original.id}
-            photoTitle={row.original.title}
+            photoId={row.original.id.toString()}
+            photoTitle={row.original.original_filename}
           />
 
           <Button variant="ghost" size="icon" asChild>
-            <Link href={`/dashboard/photos/${row.original.id}`}>
+            <Link href={`/dashboard/photos/${row.original.id.toString()}`}>
               <PenBoxIcon className="h-4 w-4" />
             </Link>
           </Button>

@@ -1,14 +1,13 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { PostGetMany } from "../../types";
 import { VisibilityToggle } from "./visibility-toggle";
 import { DeletePostButton } from "./delete-post-button";
 import Link from "next/link";
 import { PenBoxIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export const columns: ColumnDef<PostGetMany[number]>[] = [
+export const columns: ColumnDef<any>[] = [
   {
     accessorKey: "title",
     header: "Title",

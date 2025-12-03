@@ -22,18 +22,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CopyCheckIcon, CopyIcon } from "lucide-react";
 
 // Internal dependencies - Hooks & Types
-import { toast } from "sonner";
-import { useTRPC } from "@/trpc/client";
 import { useForm } from "react-hook-form";
-import { photosInsertSchema } from "@/db/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useGetAddress } from "@/modules/mapbox/hooks/use-get-address";
+import { useGetAddress } from "@/hooks/use-get-address";
 import type { TExifData, TImageInfo } from "@/pages/photos/lib/utils";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { keyToImage } from "@/lib/keyToImage";
+import { UploadFileApiV1FilesUploadPostRequestSchema } from "@/generated/schemas";
+import { Switch } from "@/components/ui/switch";
 
 const MapboxComponent = dynamic(
-  () => import("@/modules/mapbox/ui/components/map"),
+  () => import("@/components/shared/map"),
   {
     ssr: false,
     loading: () => (
@@ -70,48 +68,14 @@ export function PhotoForm({
     lng: currentLocation.lng,
   });
 
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
+  
 
-  const createPhoto = useMutation(
-    trpc.photos.create.mutationOptions({
-      onSuccess: async () => {
-        toast.success("Photo created");
-        await queryClient.invalidateQueries(
-          trpc.photos.getMany.queryOptions({})
-        );
-        await queryClient.invalidateQueries(
-          trpc.home.getManyLikePhotos.queryOptions({})
-        );
-        await queryClient.invalidateQueries(
-          trpc.home.getCitySets.queryOptions({})
-        );
-
-        onCreateSuccess?.();
-      },
-      onError: (error) => {
-        toast.error(error.message);
-      },
-    })
-  );
-
-  const form = useForm<z.infer<typeof photosInsertSchema>>({
-    resolver: zodResolver(photosInsertSchema),
+  const form = useForm<z.infer<typeof UploadFileApiV1FilesUploadPostRequestSchema>>({
+    resolver: zodResolver(UploadFileApiV1FilesUploadPostRequestSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      visibility: "private",
-      isFavorite: false,
-      url,
-      aspectRatio: imageInfo.aspectRatio,
-      width: imageInfo.width,
-      height: imageInfo.height,
-      blurData: imageInfo.blurhash,
-      latitude: exif?.latitude ?? currentLocation.lat,
-      longitude: exif?.longitude ?? currentLocation.lng,
-      ...exif,
+      file: url,
     },
-  });
+    });
 
   const mapValues = {
     markers:
@@ -126,26 +90,11 @@ export function PhotoForm({
         ],
   };
 
-  const onSubmit = (values: z.infer<typeof photosInsertSchema>) => {
-    const formData = {
-      ...values,
-      country: address?.features[0].properties.context.country?.name,
-      countryCode:
-        address?.features[0].properties.context.country?.country_code,
-      region: address?.features[0].properties.context.region?.name,
-      city:
-        address?.features[0].properties.context.country?.country_code ===
-          "JP" ||
-          address?.features[0].properties.context.country?.country_code === "TW"
-          ? address?.features[0].properties.context.region?.name
-          : address?.features[0].properties.context.place?.name,
-      district: address?.features[0].properties.context.locality?.name,
-      fullAddress: address?.features[0].properties.full_address,
-      placeFormatted: address?.features[0].properties.place_formatted,
-    };
+  const onSubmit = (values: z.infer<typeof UploadFileApiV1FilesUploadPostRequestSchema>) => {
+    
 
 
-    createPhoto.mutate(formData);
+    // createPhoto.mutate(formData);
   };
 
   const [isCopied, setIsCopied] = useState(false);
@@ -165,7 +114,7 @@ export function PhotoForm({
           <div className="space-y-6 lg:col-span-3">
             <FormField
               control={form.control}
-              name="title"
+              name="file"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Title</FormLabel>
@@ -177,45 +126,9 @@ export function PhotoForm({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      rows={5}
-                      className="resize-none"
-                      placeholder="Photo description"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="visibility"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Visibility</FormLabel>
-                  <FormControl>
-                    <select {...field} className="w-full p-2 border rounded-md">
-                      <option value="private">Private</option>
-                      <option value="public">Public</option>
-                    </select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             {/* Location Fields */}
-            <FormItem>
-              <FormLabel>Location</FormLabel>
+            {/* <FormItem>
+              <FormLabel>Map</FormLabel>
               <FormControl>
                 <div className="h-[300px] w-full rounded-md overflow-hidden border">
                   <Suspense
@@ -248,9 +161,9 @@ export function PhotoForm({
               <FormDescription>
                 {address?.features?.[0]?.properties?.full_address}
               </FormDescription>
-            </FormItem>
+            </FormItem> */}
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="latitude"
@@ -304,7 +217,7 @@ export function PhotoForm({
                   </FormItem>
                 )}
               />
-            </div>
+            </div> */}
           </div>
 
           <div className="flex flex-col gap-y-8 lg:col-span-2">
@@ -346,7 +259,7 @@ export function PhotoForm({
               </div>
             </div>
 
-            <FormField
+            {/* <FormField
               control={form.control}
               name="isFavorite"
               render={({ field }) => (
@@ -365,7 +278,7 @@ export function PhotoForm({
                   </FormControl>
                 </FormItem>
               )}
-            />
+            /> */}
           </div>
         </div>
         <div className="flex items-center justify-end mt-6">

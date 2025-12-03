@@ -3,9 +3,6 @@
 import { useState, Suspense } from "react";
 import dynamic from "next/dynamic";
 import { FramedPhoto } from "@/components/shared/framed-photo";
-import { photosUpdateSchema } from "@/db/schema";
-import { useTRPC } from "@/trpc/client";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -28,12 +25,13 @@ import { ShutterSpeedSelector } from "./components/shutter-speed-selector";
 import { ISOSelector } from "./components/iso-selector";
 import { ExposureCompensationSelector } from "./components/exposure-compensation-selector";
 
+
 interface PhotoIdViewProps {
   id: string;
 }
 
 const MapboxComponent = dynamic(
-  () => import("@/modules/mapbox/ui/components/map"),
+  () => import("@/components/shared/map"),
   {
     ssr: false,
     loading: () => (
@@ -44,72 +42,55 @@ const MapboxComponent = dynamic(
   }
 );
 
-const formSchema = photosUpdateSchema.extend({
-  make: z.string().optional(),
-  model: z.string().optional(),
-  lensModel: z.string().optional(),
-  focalLength: z.number().optional(),
-  focalLength35mm: z.number().optional(),
-  fNumber: z.number().optional(),
-  iso: z.number().optional(),
-  exposureTime: z.number().optional(),
-  exposureCompensation: z.number().optional(),
-});
+// const formSchema = photosUpdateSchema.extend({
+//   make: z.string().optional(),
+//   model: z.string().optional(),
+//   lensModel: z.string().optional(),
+//   focalLength: z.number().optional(),
+//   focalLength35mm: z.number().optional(),
+//   fNumber: z.number().optional(),
+//   iso: z.number().optional(),
+//   exposureTime: z.number().optional(),
+//   exposureCompensation: z.number().optional(),
+// });
 
 export const PhotoIdView = ({ id }: PhotoIdViewProps) => {
-  const trpc = useTRPC();
-  const { data } = useSuspenseQuery(
-    trpc.photos.getOne.queryOptions({
-      id,
-    })
-  );
-
-  const updateMutation = useMutation(
-    trpc.photos.update.mutationOptions({
-      onSuccess: () => {},
-      onError: () => {},
-    })
-  );
 
   const [currentLocation, setCurrentLocation] = useState<{
     lat: number | null;
     lng: number | null;
   }>({
-    lat: data.latitude ?? null,
-    lng: data.longitude ?? null,
+    lat: null,
+    lng: null,
   });
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<any>>({
+    // resolver: zodResolver(),
     defaultValues: {
-      id: data.id,
-      title: data.title ?? "",
-      description: data.description ?? "",
-      visibility: data.visibility ?? "private",
-      isFavorite: data.isFavorite ?? false,
-      latitude: data.latitude ?? undefined,
-      longitude: data.longitude ?? undefined,
-      make: data.make ?? undefined,
-      model: data.model ?? undefined,
-      lensModel: data.lensModel ?? undefined,
-      focalLength: data.focalLength ?? undefined,
-      focalLength35mm: data.focalLength35mm ?? undefined,
-      fNumber: data.fNumber ?? undefined,
-      iso: data.iso ?? undefined,
-      exposureTime: data.exposureTime ?? undefined,
-      exposureCompensation: data.exposureCompensation ?? undefined,
+      id: id,
+      title: "",
+      description: "",
+      visibility: "private",
+      isFavorite: false,
+      latitude: undefined,
+      longitude: undefined,
+      make: undefined,
+      model: undefined,
+      lensModel: undefined,
+      focalLength: undefined,
+      focalLength35mm: undefined,
+      fNumber: undefined,
+      iso: undefined,
+      exposureTime: undefined,
+      exposureCompensation: undefined,
     },
   });
 
-  const isSubmitting = updateMutation.isPending;
+  const isSubmitting = false;
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    updateMutation.mutate({ ...values, id: data.id });
+  function onSubmit(values: z.infer<any>) {
+    console.log(values);
   }
-
-  const takenAt = data.dateTimeOriginal
-    ? format(new Date(data.dateTimeOriginal), "d MMM yyyy")
-    : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -117,13 +98,13 @@ export const PhotoIdView = ({ id }: PhotoIdViewProps) => {
         <div className="mb-6 flex items-baseline justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              {data.title || "Untitled photo"}
+              {"Untitled photo"}
             </h1>
-            {takenAt && (
+            {/* {takenAt && (
               <p className="text-sm text-muted-foreground">
                 Taken on {takenAt}
               </p>
-            )}
+            )} */}
           </div>
         </div>
 
@@ -413,9 +394,8 @@ export const PhotoIdView = ({ id }: PhotoIdViewProps) => {
                                 lat:
                                   numericValue ??
                                   prev?.lat ??
-                                  data.latitude ??
                                   null,
-                                lng: prev?.lng ?? data.longitude ?? null,
+                                lng: prev?.lng ?? null,
                               }));
                             }}
                             placeholder="e.g. 37.7749"
@@ -443,11 +423,10 @@ export const PhotoIdView = ({ id }: PhotoIdViewProps) => {
                                 value === "" ? undefined : Number(value);
                               field.onChange(numericValue);
                               setCurrentLocation((prev) => ({
-                                lat: prev?.lat ?? data.latitude ?? null,
+                                lat: prev?.lat ?? null,
                                 lng:
                                   numericValue ??
                                   prev?.lng ??
-                                  data.longitude ??
                                   null,
                               }));
                             }}
@@ -473,11 +452,11 @@ export const PhotoIdView = ({ id }: PhotoIdViewProps) => {
           <div className="space-y-4">
             <div className="flex items-center justify-center bg-gray-50 dark:bg-muted rounded-xl p-6">
               <FramedPhoto
-                src={data.url}
-                alt={data.title}
-                blurhash={data.blurData}
-                width={data.width}
-                height={data.height}
+                  src={""}
+                alt={""}
+                blurhash={""}
+                width={0}
+                height={0}
                 className="max-h-[50vh]"
               />
             </div>

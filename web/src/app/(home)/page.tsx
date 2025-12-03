@@ -1,11 +1,8 @@
 import { Suspense } from "react";
-import { trpc } from "@/trpc/server";
-import { getQueryClient } from "@/trpc/server";
 import { ErrorBoundary } from "react-error-boundary";
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 
-import ProfileCard from "@/pages/home/ui/components/profile-card";
-import LatestTravelCard from "@/pages/home/ui/components/latest-travel-card";
+import ProfileCard from "@/pages/home/components/profile-card";
+import LatestTravelCard from "@/pages/home/components/latest-travel-card";
 import Footer from "@/components/footer";
 
 import {
@@ -18,16 +15,9 @@ import {
 } from "@/pages/home/slider-view";
 
 const page = async () => {
-  const queryClient = getQueryClient();
-  void queryClient.prefetchQuery(
-    trpc.home.getManyLikePhotos.queryOptions({ limit: 10 })
-  );
-  void queryClient.prefetchQuery(
-    trpc.home.getCitySets.queryOptions({ limit: 9 })
-  );
+
 
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
       <div className="flex flex-col lg:flex-row min-h-screen w-full">
         {/* LEFT CONTENT - Fixed */}
         <div className="w-full lg:w-1/2 h-[70vh] lg:fixed lg:top-0 lg:left-0 lg:h-screen p-0 lg:p-3 rounded-xl">
@@ -57,7 +47,6 @@ const page = async () => {
           <Footer />
         </div>
       </div>
-    </HydrationBoundary>
   );
 };
 

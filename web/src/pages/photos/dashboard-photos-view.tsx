@@ -1,9 +1,7 @@
 "use client";
 
-import { useTRPC } from "@/trpc/client";
 import { columns } from "./components/columns";
 import { DataTable } from "@/components/shared/data-table";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { DataPagination } from "@/components/shared/data-pagination";
 import { usePhotosFilters } from "./hooks/use-photos-filters";
 
@@ -30,28 +28,24 @@ import { useErrorBoundary } from "react-error-boundary";
 import { useModal } from "@/hooks/use-modal";
 
 export const DashboardPhotosView = () => {
-  const trpc = useTRPC();
   const [filters, setFilters] = usePhotosFilters();
-  const { data } = useSuspenseQuery(
-    trpc.photos.getMany.queryOptions({ ...filters })
-  );
 
   return (
     <div className="px-4 md:px-8">
-      {data.items.length === 0 ? (
+      {/* {data.items.length === 0 ? ( */}
         <EmptyStatus />
-      ) : (
+      {/* ) : ( */}
         <>
-          <DataTable data={data.items} columns={columns} />
-          <DataPagination
+          {/* <DataTable data={data.items} columns={columns} /> */}
+          {/* <DataPagination
             page={filters.page}
             totalPages={data.totalPages}
             onPageChange={(page) => {
               setFilters({ page });
             }}
-          />
+          /> */}
         </>
-      )}
+      {/* )} */}
     </div>
   );
 };

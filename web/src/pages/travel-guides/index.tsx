@@ -5,19 +5,18 @@ import Footer from "@/components/footer";
 import { FramedPhoto } from "@/components/shared/framed-photo";
 import VectorCombined from "@/components/shared/vector-combined";
 import { keyToImage } from "@/lib/keyToImage";
-import { useTRPC } from "@/trpc/client";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-
+import { useGetGuideApiV1TravelGuidesGuideIdGet } from "@/generated/hooks";
+import { TravelGuideResponse } from "@/generated/schemas";
 interface Props {
-  city: string;
+  travelGuideId: string;
 }
 
-export const CityView = ({ city }: Props) => {
-  const trpc = useTRPC();
-  const { data } = useSuspenseQuery(trpc.travel.getOne.queryOptions({ city }));
-
-  const coverPhoto = data.photos.find((item) => data.coverPhotoId === item.id);
+export const CityView = ({ travelGuideId }: Props) => {
+  const { data } = useGetGuideApiV1TravelGuidesGuideIdGet(travelGuideId, {
+    enabled: !!travelGuideId,
+  });
+  const travelGuide = data as TravelGuideResponse;
 
   return (
     <div className="size-full">
@@ -26,16 +25,16 @@ export const CityView = ({ city }: Props) => {
         <div className="w-full h-[70vh] lg:w-1/2 lg:fixed lg:top-0 lg:left-0 lg:h-screen p-0 lg:p-3">
           <div className="w-full h-full relative">
             <BlurImage
-              src={keyToImage(coverPhoto?.url) || "/placeholder.svg"}
-              alt={data.city}
+              src={keyToImage(travelGuide?.cover_image_url) || "/placeholder.svg"}
+              alt={travelGuide.city}
               fill
-              quality={75}
-              blurhash={coverPhoto?.blurData || ""}
+              quality={75}  
+              blurhash={travelGuide?.id || ""}
               sizes="75vw"
               className="object-cover rounded-xl overflow-hidden cursor-pointer"
             />
             <div className="absolute right-0 bottom-0">
-              <VectorCombined title={data.city} position="bottom-right" />
+              <VectorCombined title={travelGuide.city} position="bottom-right" />
             </div>
           </div>
         </div>
@@ -53,14 +52,14 @@ export const CityView = ({ city }: Props) => {
                   {/* NAME  */}
                   <div className="flex flex-col gap-[2px]">
                     <h1 className="text-4xl">
-                      {data.city} {data.countryCode}
+                      {travelGuide.city} {travelGuide.country}
                     </h1>
                   </div>
                 </div>
 
                 <div>
                   <p className="text-text-muted text-[15px]">
-                    {data.description}
+                    {travelGuide.summary}
                   </p>
                 </div>
               </div>
@@ -69,48 +68,48 @@ export const CityView = ({ city }: Props) => {
             <div className="col-span-1 md:col-span-1 lg:col-span-1 2xl:col-span-1 flex flex-col gap-3">
               <div className="w-full h-full p-3 lg:p-5 bg-muted rounded-xl flex justify-between items-center">
                 <p className="text-xs text-text-muted">Country</p>
-                <p className="text-xs">{data.country}</p>
+                <p className="text-xs">{travelGuide.country}</p>
               </div>
 
               <div className="w-full h-full p-3 lg:p-5 bg-muted rounded-xl flex justify-between items-center">
                 <p className="text-xs text-text-muted">City</p>
-                <p className="text-xs">{data.city}</p>
+                <p className="text-xs">{travelGuide.city}</p>
               </div>
 
               <div className="w-full h-full p-3 lg:p-5 bg-muted rounded-xl flex justify-between items-center">
                 <p className="text-xs text-text-muted">Year</p>
                 <p className="text-xs">
-                  {new Date(coverPhoto?.dateTimeOriginal || "").getFullYear()}
+                  {new Date(travelGuide.published_at || "").getFullYear()}
                 </p>
               </div>
 
               <div className="w-full h-full p-3 lg:p-5 bg-muted rounded-xl flex justify-between items-center">
                 <p className="text-xs text-text-muted">Photos</p>
-                <p className="text-xs">{data.photos?.length}</p>
+                <p className="text-xs">{travelGuide.image_urls?.length}</p>
               </div>
             </div>
           </div>
 
           {/* IMAGES  */}
           <div className="w-full space-y-2">
-            {data.photos?.map((photo) => (
-              <div key={photo.id} className="space-y-2">
+            {travelGuide.image_urls?.map((imageUrl) => (
+              <div key={imageUrl} className="space-y-2">
                 <div className="flex items-center justify-center bg-gray-50 dark:bg-muted p-4 rounded-xl">
                   <FramedPhoto
-                    src={photo.url}
-                    alt={photo.title}
-                    blurhash={photo.blurData!}
-                    width={photo.width}
-                    height={photo.height}
+                    src={imageUrl}
+                    alt={travelGuide.title}
+                    blurhash={imageUrl}
+                    width={100}
+                    height={100}
                   />
                 </div>
                 <div className="flex flex-col items-center justify-center">
                   <p className="text-sm font-medium text-center">
-                    {photo.title}
+                    {travelGuide.title}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {photo.dateTimeOriginal
-                      ? format(photo.dateTimeOriginal, "d MMM yyyy")
+                    {travelGuide.published_at
+                      ? format(travelGuide.published_at, "d MMM yyyy")
                       : ""}
                   </p>
                 </div>

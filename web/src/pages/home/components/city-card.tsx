@@ -3,13 +3,13 @@
 import { useRouter } from "next/navigation";
 import BlurImage from "@/components/shared/blur-image";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { type Photo } from "@/db/schema";
+import { type FileUploadResponse } from "@/generated/schemas";
 import VectorTopLeftAnimation from "./vector-top-left-animation";
 import { keyToImage } from "@/lib/keyToImage";
 
 interface Props {
   title: string;
-  coverPhoto: Photo;
+  coverPhoto: FileUploadResponse;
 }
 
 const CityCard = ({ title, coverPhoto }: Props) => {
@@ -25,13 +25,13 @@ const CityCard = ({ title, coverPhoto }: Props) => {
         className="overflow-hidden rounded-lg relative"
       >
         <BlurImage
-          src={keyToImage(coverPhoto.url)}
-          alt={coverPhoto.title}
+          src={keyToImage(coverPhoto.file.file_url)}
+          alt={coverPhoto.file.original_filename}
           fill
           sizes="(max-width: 767px) 100vw, (max-width: 1535px) 50vw, 33vw"
           quality={65}
           className="object-cover lg:group-hover:blur-xs lg:transition-[filter] lg:duration-300 lg:ease-out"
-          blurhash={coverPhoto.blurData}
+          blurhash={coverPhoto.file.description}
         />
       </AspectRatio>
 

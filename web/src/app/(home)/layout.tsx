@@ -1,4 +1,4 @@
-import Header from "@/pages/home/ui/components/header";
+import Header from "@/pages/home/components/header";
 
 const HomeLayout = ({ children }: { children: React.ReactNode }) => {
   return (

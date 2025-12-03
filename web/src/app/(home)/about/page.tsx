@@ -3,10 +3,10 @@ import { type Metadata } from "next";
 
 // Internal dependencies - UI Components
 import Footer from "@/components/footer";
-import AboutCard from "../../../pages/home/ui/components/about-card";
+import AboutCard from "@/pages/home/components/about-card";
 import TechMarquee from "@/components/shared/tech-marquee";
-import CameraCard from "../../../pages/home/ui/components/camera-card";
-import ProfileCard from "../../../pages/home/ui/components/profile-card";
+import CameraCard from "@/pages/home/components/camera-card";
+import ProfileCard from "@/pages/home/components/profile-card";
 import CardContainer from "@/components/shared/card-container";
 import VectorCombined from "@/components/shared/vector-combined";
 

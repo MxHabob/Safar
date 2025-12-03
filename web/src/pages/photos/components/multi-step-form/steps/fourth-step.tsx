@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Form } from "@/components/ui/form";
 import { fourthStepSchema, StepProps } from "../types";
-import { PhotoPreviewCard } from "../../photo-preview-card";
+import { PhotoPreviewCard } from "@/pages/photos/components/photo-preview-card";
 
 export function FourthStep({
   onNext,

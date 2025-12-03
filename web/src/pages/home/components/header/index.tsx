@@ -1,4 +1,4 @@
-import Graphic from "../../../../components/shared/graphic";
+import Graphic from "@/components/shared/graphic";
 import MobileMenuButton from "./mobile-menu-button";
 import Navbar from "./navbar";
 

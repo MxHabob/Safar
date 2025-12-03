@@ -192,7 +192,6 @@ export const BookingListResponseSchema = z.object({
   limit: z.number().int()
 })
 export type BookingListResponse = z.infer<typeof BookingListResponseSchema>
-
 /**
  * Schema for creating a conversation.
  */

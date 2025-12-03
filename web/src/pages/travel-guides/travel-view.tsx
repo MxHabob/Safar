@@ -2,30 +2,27 @@
 
 import { useState, useEffect } from "react";
 import Footer from "@/components/footer";
-import { CoverPhoto } from "../components/cover-photo";
-import { Introduction } from "../components/introduction";
-import { CityItem } from "../components/city-item";
-import { CitySetWithPhotos } from "@/db/schema";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
+import { CoverPhoto } from "./components/cover-photo";
+import { Introduction } from "./components/introduction";
+import { CityItem } from "./components/city-item";
+import { TravelGuideResponse } from "@/generated/schemas";
+import { useGetGuidesApiV1TravelGuidesGet } from "@/generated/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const TravelView = () => {
-  const trpc = useTRPC();
-  const [activeCity, setActiveCity] = useState<CitySetWithPhotos | null>(null);
-
-  const { data } = useSuspenseQuery(trpc.travel.getCitySets.queryOptions({}));
+  const { data } = useGetGuidesApiV1TravelGuidesGet();
+  const [activeTravelGuide, setActiveTravelGuide] = useState<TravelGuideResponse | null>(null);
 
   useEffect(() => {
-    if (!activeCity && data && data.length > 0) {
+    if (!activeTravelGuide && data && data.length > 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveCity(data[0]);
+      setActiveTravelGuide(data[0]);
     }
-  }, [activeCity, data]);
+  }, [activeTravelGuide, data]);
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen w-full">
-      <CoverPhoto citySet={activeCity || data[0]} citySets={data} />
+      <CoverPhoto travelGuideId={activeTravelGuide?.id || ""} travelGuides={data || []} />
 
       {/* Spacer for fixed left content */}
       <div className="hidden lg:block lg:w-1/2" />
@@ -34,8 +31,8 @@ export const TravelView = () => {
       <div className="w-full mt-3 lg:mt-0 lg:w-1/2 space-y-3 pb-3">
         <Introduction />
         <div className="space-y-3">
-          {data.map((city) => (
-            <CityItem key={city.id} city={city} onMouseEnter={setActiveCity} />
+          {data?.map((travelGuide: TravelGuideResponse) => (
+            <CityItem key={travelGuide.id} travelGuide={travelGuide} onMouseEnter={setActiveTravelGuide} />
           ))}
         </div>
         <Footer />
