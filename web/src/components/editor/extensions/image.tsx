@@ -28,7 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
+import { cn, duplicateContent } from "@/lib/utils";
 import { keyToImage } from "@/lib/keyToImage";
 import { toast } from "sonner";
 
@@ -345,10 +345,10 @@ function TiptapImage(props: NodeViewProps) {
                 >
                   <DropdownMenuItem
                     onClick={() => {
-                      editor.chain().focus().setImage({ src: rawSrc ?? "" }).run();
+                      duplicateContent(editor);
                     }}
                   >
-                    <Copy className="mr-2 size-4" /> Copy Image
+                    <Copy className="mr-2 size-4" /> Duplicate
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem

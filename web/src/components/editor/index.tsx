@@ -35,9 +35,6 @@ import { YoutubeExtension } from "./extensions/youtube";
 import { MapboxToolbar } from "./toolbars/mapbox";
 import { MapboxExtension } from "./extensions/mapbox";
 import TextAlign from "@tiptap/extension-text-align";
-import { useTRPC } from "@/trpc/client";
-import { useMutation } from "@tanstack/react-query";
-import { s3Client } from "@/modules/s3/lib/s3";
 import { toast } from "sonner";
 import { ToolbarProvider } from "./toolbars/toolbar-provider";
 import { HeadingToolbar } from "./toolbars/heading";
@@ -48,11 +45,6 @@ interface TiptapEditorProps {
 }
 
 const TiptapEditor = ({ content, onChange }: TiptapEditorProps) => {
-  const trpc = useTRPC();
-  const createPresignedUrl = useMutation(
-    trpc.s3.createPresignedUrl.mutationOptions()
-  );
-
   const extensions = useMemo(
     () =>
       [
@@ -112,25 +104,7 @@ const TiptapEditor = ({ content, onChange }: TiptapEditorProps) => {
             if (!file) return;
 
             try {
-              const { publicUrl } = await s3Client.upload({
-                file,
-                folder: "posts",
-                getUploadUrl: async ({ filename, contentType, folder }) => {
-                  const data = await createPresignedUrl.mutateAsync({
-                    filename,
-                    contentType,
-                    size: file.size,
-                    folder,
-                  });
-
-                  return {
-                    uploadUrl: data.presignedUrl,
-                    publicUrl: data.key,
-                  };
-                },
-              });
-
-              editor.chain().focus().setImage({ src: publicUrl }).run();
+              editor.chain().focus().setImage({ src: "" }).run();
 
               toast.success("Image uploaded successfully");
             } catch (error) {
@@ -143,7 +117,7 @@ const TiptapEditor = ({ content, onChange }: TiptapEditorProps) => {
           },
         }),
       ] as Extension[],
-    [createPresignedUrl]
+    []
   );
 
   const editor = useEditor({

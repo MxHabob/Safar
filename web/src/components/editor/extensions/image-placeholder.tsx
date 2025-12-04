@@ -8,11 +8,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-	NODE_HANDLES_SELECTED_STYLE_CLASSNAME,
-	cn,
-	isValidUrl,
-} from "@/lib/utils";
+import { cn, isValidUrl, NODE_HANDLES_SELECTED_STYLE_CLASSNAME } from "@/lib/utils";
 import {
 	type CommandProps,
 	type Editor,
