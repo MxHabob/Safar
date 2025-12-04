@@ -55,7 +55,8 @@ async def create_booking(
     )
     booking = result.scalar_one_or_none()
     
-    return booking
+    # Convert SQLAlchemy model to Pydantic schema
+    return BookingResponse.model_validate(booking)
 
 
 @router.get("", response_model=BookingListResponse)
@@ -155,7 +156,8 @@ async def get_booking(
     )
     booking = result.scalar_one_or_none()
     
-    return booking
+    # Convert SQLAlchemy model to Pydantic schema
+    return BookingResponse.model_validate(booking)
 
 
 @router.post("/{booking_id}/cancel", response_model=BookingResponse)
@@ -182,7 +184,8 @@ async def cancel_booking(
     )
     booking = result.scalar_one_or_none()
     
-    return booking
+    # Convert SQLAlchemy model to Pydantic schema
+    return BookingResponse.model_validate(booking)
 
 
 @router.post("/{booking_id}/confirm", response_model=BookingResponse)
@@ -198,7 +201,8 @@ async def confirm_booking(
     
     await db.refresh(booking, ["timeline_events"])
     
-    return booking
+    # Convert SQLAlchemy model to Pydantic schema
+    return BookingResponse.model_validate(booking)
 
 
 @router.post("/{booking_id}/complete", response_model=BookingResponse)
@@ -304,7 +308,8 @@ async def complete_booking(
         logger = logging.getLogger(__name__)
         logger.warning(f"Failed to queue loyalty points award: {str(e)}")
     
-    return booking
+    # Convert SQLAlchemy model to Pydantic schema
+    return BookingResponse.model_validate(booking)
 
 
 @router.get("/host/listings", response_model=BookingListResponse)

@@ -80,7 +80,8 @@ async def list_listings(
         )
         listing_model = result.scalar_one_or_none()
         if listing_model:
-            items.append(listing_model)
+            # Convert SQLAlchemy model to Pydantic schema
+            items.append(ListingResponse.model_validate(listing_model))
     
     return {
         "items": items,
@@ -251,7 +252,8 @@ async def create_listing(
     )
     listing_model = result.scalar_one_or_none()
     
-    return listing_model
+    # Convert SQLAlchemy model to Pydantic schema
+    return ListingResponse.model_validate(listing_model)
 
 
 @router.put("/{listing_id}", response_model=ListingResponse)
@@ -289,7 +291,8 @@ async def update_listing(
     )
     listing_model = result.scalar_one_or_none()
     
-    return listing_model
+    # Convert SQLAlchemy model to Pydantic schema
+    return ListingResponse.model_validate(listing_model)
 
 
 @router.delete("/{listing_id}", response_class=Response)
@@ -379,4 +382,5 @@ async def create_listing_location(
     )
     listing_model = result.scalar_one_or_none()
     
-    return listing_model
+    # Convert SQLAlchemy model to Pydantic schema
+    return ListingResponse.model_validate(listing_model)
