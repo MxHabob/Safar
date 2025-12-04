@@ -24,11 +24,13 @@ SUSPICIOUS_PATTERNS = [
     r"^$",  # Empty user agent
 ]
 
-# Public routes that should have different rate limits
+# Public routes that should have different (higher) rate limits.
+# These are endpoints that are expected to receive higher unauthenticated traffic.
 PUBLIC_ROUTES = [
     "/api/v1/listings",
     "/api/v1/search",
     "/api/v1/reviews/listings",
+    "/api/v1/travel-guides",  # Treat travel guides as a public, higher-throughput endpoint
 ]
 
 
@@ -114,10 +116,13 @@ async def check_suspicious_activity(client_ip: str) -> bool:
         if len(endpoints) > 50:  # More than 50 different endpoints
             return True
         
-        # Check request frequency (too many requests in short time)
+        # Check request frequency (too many requests in short time).
+        # Use global per-minute rate limit from settings instead of a hardcoded value
+        # so that "suspicious" roughly means "well above what we normally allow".
         recent_key = f"recent_requests:{client_ip}"
         recent_count = await redis.get(recent_key)
-        if recent_count and int(recent_count) > 10:  # More than 10 requests in last minute
+        per_minute_limit = getattr(settings, "rate_limit_per_minute", 60)
+        if recent_count and int(recent_count) > per_minute_limit:
             return True
         
         return False
