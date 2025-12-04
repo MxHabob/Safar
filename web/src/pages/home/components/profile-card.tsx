@@ -17,7 +17,7 @@ const ProfileCard = () => {
           <div className="flex gap-4 items-center">
             {/* AVATAR  */}
             <Avatar className="size-[60px]">
-              <AvatarImage src="/avatar.jpg" alt="Avatar" />
+              <AvatarImage src="/avatar.jpg" alt="ECarry - Photographer" />
               <AvatarFallback>EC</AvatarFallback>
             </Avatar>
 

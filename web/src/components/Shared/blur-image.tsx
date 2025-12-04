@@ -6,19 +6,27 @@ import { Blurhash } from "react-blurhash";
 
 interface BlurImageProps extends Omit<ImageProps, "onLoad"> {
   blurhash: string;
+  priority?: boolean; // For LCP images
 }
 
 /**
- * BlurImage component displays an image with a blurhash placeholder.
+ * Optimized BlurImage component with Next.js 16 best practices.
+ * 
+ * Performance optimizations:
+ * - Uses next/image for automatic WebP/AVIF conversion
+ * - Blurhash placeholder for zero CLS
+ * - Lazy loading by default (use priority=true for LCP images)
+ * - Memoized to prevent unnecessary re-renders
  *
  * @param {string} src - The source of the image.
- * @param {string} alt - The alt text of the image.
+ * @param {string} alt - The alt text of the image (required for accessibility).
  * @param {number} width - The width of the image.
  * @param {number} height - The height of the image.
- * @param {string} fill - The fill of the image.
+ * @param {boolean} fill - Use fill instead of width/height.
  * @param {string} className - Optional className for the component.
  * @param {string} blurhash - The blurhash of the image.
- * @returns {JSX.Element} - The BlurImage component.
+ * @param {boolean} priority - Set to true for LCP images (above the fold).
+ * @returns {JSX.Element} - The optimized BlurImage component.
  */
 const BlurImage = memo(function BlurImage({
   src,
@@ -28,6 +36,8 @@ const BlurImage = memo(function BlurImage({
   fill,
   className,
   blurhash,
+  priority = false,
+  loading = priority ? undefined : "lazy",
   ...props
 }: BlurImageProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -36,8 +46,8 @@ const BlurImage = memo(function BlurImage({
 
   return (
     <div className={containerStyle}>
-      {!imageLoaded && (
-        <div className={`absolute inset-0 ${className}`}>
+      {!imageLoaded && blurhash && (
+        <div className={`absolute inset-0 ${className}`} aria-hidden="true">
           <Blurhash
             hash={blurhash}
             width="100%"
@@ -54,6 +64,8 @@ const BlurImage = memo(function BlurImage({
         width={width}
         height={height}
         fill={fill}
+        priority={priority}
+        loading={loading}
         className={`${className} transition-opacity duration-500 ease-in-out ${
           imageLoaded ? "opacity-100" : "opacity-0"
         }`}

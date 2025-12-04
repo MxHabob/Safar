@@ -28,10 +28,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       return {
         title: `${guide.city}, ${guide.country} - Safar`,
         description: guide.summary || `Travel guide for ${guide.city}, ${guide.country}`,
+        keywords: [guide.city, guide.country, "travel guide", "destinations"],
         openGraph: {
           title: `${guide.city}, ${guide.country}`,
           description: guide.summary || `Travel guide for ${guide.city}, ${guide.country}`,
           images: guide.cover_image_url ? [guide.cover_image_url] : [],
+          type: "website",
+          siteName: "Safar",
+        },
+        twitter: {
+          card: "summary_large_image",
+          title: `${guide.city}, ${guide.country}`,
+          description: guide.summary || `Travel guide for ${guide.city}, ${guide.country}`,
+        },
+        alternates: {
+          canonical: `/travel/${encodeURIComponent(city)}`,
         },
       };
     }

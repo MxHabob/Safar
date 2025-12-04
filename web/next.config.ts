@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   reactCompiler: true,
+  cacheComponents: true,
   images: {
     remotePatterns: [
       {
@@ -18,11 +19,10 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60,
+    qualities: [75, 85],
   },
-  // Performance optimizations
   compress: true,
   poweredByHeader: false,
-  // Experimental features for better performance
   experimental: {
     optimizePackageImports: [
       "@radix-ui/react-accordion",
@@ -38,8 +38,6 @@ const nextConfig: NextConfig = {
     ],
   },
   webpack: (config, { isServer }) => {
-    // Ensure webpack handles font resolution instead of Turbopack
-    // This prevents the '@vercel/turbopack-next/internal/font/google/font' resolution error
     if (!isServer && config.resolve) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -47,7 +45,7 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
-  turbopack: {}, // Empty config to silence warning when webpack is used
+  turbopack: {},
 };
 
 export default nextConfig;

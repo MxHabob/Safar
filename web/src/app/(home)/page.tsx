@@ -17,10 +17,20 @@ import {
 export const metadata: Metadata = {
   title: "Home",
   description: "Welcome to Safar - Discover amazing travel destinations and stories",
+  keywords: ["travel", "travel guides", "destinations", "photography", "stories"],
   openGraph: {
     title: "Safar - Travel Guides & Stories",
     description: "Welcome to Safar - Discover amazing travel destinations and stories",
     type: "website",
+    siteName: "Safar",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Safar - Travel Guides & Stories",
+    description: "Discover amazing travel destinations and stories",
+  },
+  alternates: {
+    canonical: "/",
   },
 };
 

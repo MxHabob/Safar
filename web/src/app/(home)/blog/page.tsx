@@ -10,9 +10,20 @@ import { ErrorBoundary } from "react-error-boundary";
 export const metadata: Metadata = {
   title: "Blog",
   description: "Welcome to my blog, where I share my thoughts, experiences, and insights on a wide range of topics.",
+  keywords: ["blog", "travel stories", "experiences", "insights", "articles"],
   openGraph: {
     title: "Blog - Safar",
     description: "Welcome to my blog, where I share my thoughts, experiences, and insights on a wide range of topics.",
+    type: "website",
+    siteName: "Safar",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Blog - Safar",
+    description: "Welcome to my blog, where I share my thoughts, experiences, and insights",
+  },
+  alternates: {
+    canonical: "/blog",
   },
 };
 

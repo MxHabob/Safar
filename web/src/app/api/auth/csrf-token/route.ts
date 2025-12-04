@@ -5,6 +5,9 @@
  * Token is also stored in httpOnly cookie for verification.
  * 
  * @security Implements Double Submit Cookie Pattern for CSRF protection
+ * 
+ * Note: Edge runtime can be enabled for routes that don't use Node.js-specific APIs
+ * For routes using cookies(), ensure Edge runtime compatibility in Next.js 16+
  */
 
 import { NextRequest, NextResponse } from 'next/server'

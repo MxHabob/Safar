@@ -23,9 +23,10 @@ export const CityView = ({ travelGuide }: Props) => {
               src={keyToImage(travelGuide?.cover_image_url) || "/placeholder.svg"}
               alt={travelGuide.city}
               fill
-              quality={75}  
+              quality={85}
+              priority
               blurhash={travelGuide?.id || ""}
-              sizes="75vw"
+              sizes="(max-width: 1024px) 100vw, 50vw"
               className="object-cover rounded-xl overflow-hidden cursor-pointer"
             />
             <div className="absolute right-0 bottom-0">

@@ -13,9 +13,20 @@ import VectorCombined from "@/components/shared/vector-combined";
 export const metadata: Metadata = {
   title: "About",
   description: "Learn more about ECarry, a photographer dedicated to capturing authentic moments and telling stories through creative imagery.",
+  keywords: ["about", "photographer", "photography", "travel photographer"],
   openGraph: {
     title: "About - Safar",
     description: "Learn more about ECarry, a photographer dedicated to capturing authentic moments and telling stories through creative imagery.",
+    type: "website",
+    siteName: "Safar",
+  },
+  twitter: {
+    card: "summary",
+    title: "About - Safar",
+    description: "Learn more about ECarry, a photographer dedicated to capturing authentic moments",
+  },
+  alternates: {
+    canonical: "/about",
   },
 };
 

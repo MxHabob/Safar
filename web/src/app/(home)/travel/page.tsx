@@ -8,10 +8,21 @@ import { getGuidesApiV1TravelGuidesGet } from "@/generated/actions/travelGuides"
 
 export const metadata: Metadata = {
   title: "Travel Guides",
-  description: "Discover amazing travel destinations and guides",
+  description: "Discover amazing travel destinations and guides. Explore curated travel guides, tips, and stories from around the world.",
+  keywords: ["travel guides", "destinations", "travel tips", "adventure", "exploration"],
   openGraph: {
     title: "Travel Guides - Safar",
     description: "Discover amazing travel destinations and guides",
+    type: "website",
+    siteName: "Safar",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Travel Guides - Safar",
+    description: "Discover amazing travel destinations and guides",
+  },
+  alternates: {
+    canonical: "/travel",
   },
 };
 

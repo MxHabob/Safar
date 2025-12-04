@@ -25,8 +25,9 @@ export const LatestPostSection = ({ data }: LatestPostSectionProps) => {
         src={keyToImage(data?.cover_image_url) || "/placeholder.svg"}
         alt={data?.title || "Blog post"}
         fill
-        unoptimized
         priority
+        quality={85}
+        sizes="(max-width: 1280px) 100vw, 50vw"
         className="object-cover group-hover:blur-xs transition-[filter] duration-300 ease-out"
       />
 

@@ -21,10 +21,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
       title: data?.data?.title || decodedId,
       description: data?.data?.summary || "Travel guide",
+      keywords: data?.data?.tags || ["blog", "travel"],
       openGraph: {
         title: data?.data?.title || decodedId,
         description: data?.data?.summary || "Travel guide",
         images: data?.data?.cover_image_url ? [data.data.cover_image_url] : [],
+        type: "article",
+        siteName: "Safar",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: data?.data?.title || decodedId,
+        description: data?.data?.summary || "Travel guide",
+      },
+      alternates: {
+        canonical: `/blog/${encodeURIComponent(id)}`,
       },
     };
   } catch {
