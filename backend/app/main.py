@@ -135,13 +135,21 @@ if settings.rate_limit_enabled:
 # Exception handlers
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    response_content = {
+        "error": True,
+        "message": exc.detail,
+        "status_code": exc.status_code
+    }
+    
+    # Add Retry-After header for rate limit errors
+    headers = {}
+    if exc.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
+        headers["Retry-After"] = "60"  # Retry after 60 seconds
+    
     return JSONResponse(
         status_code=exc.status_code,
-        content={
-            "error": True,
-            "message": exc.detail,
-            "status_code": exc.status_code
-        }
+        content=response_content,
+        headers=headers
     )
 
 
@@ -163,6 +171,10 @@ async def general_exception_handler(request: Request, exc: Exception):
     # Re-raise HTTPException so it can be handled by the specific handler
     # FastAPI's HTTPException is a subclass of StarletteHTTPException
     if isinstance(exc, (StarletteHTTPException, FastAPIHTTPException)):
+        # For 429 errors, don't log as errors - they're expected behavior
+        if hasattr(exc, 'status_code') and exc.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
+            # Rate limiting is working as intended, no need to log as error
+            raise exc
         raise exc
     
     logger.error(f"Unhandled exception: {exc}", exc_info=True)

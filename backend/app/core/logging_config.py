@@ -14,6 +14,22 @@ from app.core.config import get_settings
 settings = get_settings()
 
 
+class RateLimitErrorFilter(logging.Filter):
+    """Filter to suppress noisy 429 error tracebacks in ASGI logs."""
+    
+    def filter(self, record: logging.LogRecord) -> bool:
+        # Suppress full tracebacks for 429 errors - they're expected behavior
+        message = record.getMessage()
+        if "429" in message or "Too many requests" in message:
+            # If this is an ASGI error log with a traceback, suppress it
+            # We still want warnings from our middleware, but not the full ASGI stack trace
+            if record.exc_info and "ASGI application" in message:
+                # Remove exception info to suppress traceback
+                record.exc_info = None
+                record.exc_text = None
+        return True
+
+
 class JSONFormatter(logging.Formatter):
     """JSON formatter for structured logging."""
     
@@ -97,7 +113,12 @@ def setup_logging():
     root_logger.addHandler(error_handler)
     
     # Set levels for third-party loggers
-    logging.getLogger("uvicorn").setLevel(logging.INFO)
+    uvicorn_logger = logging.getLogger("uvicorn")
+    uvicorn_logger.setLevel(logging.INFO)
+    # Add filter to suppress 429 error tracebacks
+    rate_limit_filter = RateLimitErrorFilter()
+    uvicorn_logger.addFilter(rate_limit_filter)
+    
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)

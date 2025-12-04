@@ -240,6 +240,19 @@ class RequestMonitoringMiddleware(BaseHTTPMiddleware):
             status_code = e.status_code
             response_time = (time.time() - start_time) * 1000
             
+            # For 429 errors, log at info level (rate limiting is expected behavior)
+            # For other HTTP errors, log normally
+            if status_code == status.HTTP_429_TOO_MANY_REQUESTS:
+                logger.debug(
+                    f"Rate limit response: client_ip={client_ip}, "
+                    f"path={request.url.path}, status={status_code}"
+                )
+            else:
+                logger.warning(
+                    f"HTTP error: client_ip={client_ip}, "
+                    f"path={request.url.path}, status={status_code}"
+                )
+            
             # Log error request
             try:
                 await log_request(
