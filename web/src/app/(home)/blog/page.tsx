@@ -5,6 +5,7 @@ import {
   TravelGuidesViewLoadingStatus,
 } from "@/pages/blog/blog-view";
 import { getGuidesApiV1TravelGuidesGet } from "@/generated/actions/travelGuides";
+import { ErrorBoundary } from "react-error-boundary";
 
 export const metadata: Metadata = {
   title: "Blog",
@@ -15,31 +16,20 @@ export const metadata: Metadata = {
   },
 };
 
-async function BlogData() {
-  try {
-    const data = await getGuidesApiV1TravelGuidesGet({
-      query: {
-        status: "published",
-        limit: 20,
-      },
-    });
 
-    // Ensure data is always an array
-    const guides = Array.isArray(data) ? data : [];
-    
-    return <TravelGuidesView data={guides} />;
-  } catch (error) {
-    console.error("Error fetching blog guides:", error);
-    return <TravelGuidesView data={[]} />;
-  }
-}
-
-const page = async () => {
+export default async function BlogPage() {
+  const data = await getGuidesApiV1TravelGuidesGet({
+    query: {
+      status: "published",
+      limit: 20,
+    },
+  });
+  
   return (
     <Suspense fallback={<TravelGuidesViewLoadingStatus />}>
-      <BlogData />
+      <ErrorBoundary fallback={<p>Error</p>}>
+        <TravelGuidesView data={data?.data ?? []} />
+      </ErrorBoundary>
     </Suspense>
   );
-};
-
-export default page;
+}

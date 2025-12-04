@@ -3,6 +3,7 @@ import { BlogSlugView, BlogSlugViewLoadingStatus } from "@/pages/blog/blog-slug-
 import { Suspense } from "react";
 import { getGuideApiV1TravelGuidesGuideIdGet } from "@/generated/actions/travelGuides";
 import { notFound } from "next/navigation";
+import { ErrorBoundary } from "react-error-boundary";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -34,29 +35,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-async function BlogSlugData({ id }: { id: string }) {
-  try {
-    const data = await getGuideApiV1TravelGuidesGuideIdGet({
-      path: { guide_id: id },
-    });
-
-    if (!data) {
-      notFound();
-    }
-
-    return <BlogSlugView id={id} initialData={data?.data } />;
-  } catch {
-    notFound();
-  }
-}
 
 export default async function page({ params }: Props) {
   const id = (await params).id;
   const decodedId = decodeURIComponent(id);
+  const data = await getGuideApiV1TravelGuidesGuideIdGet({
+    path: { guide_id: decodedId },
+  });
+
+  if (!data) {
+    notFound();
+  }
   
   return (
     <Suspense fallback={<BlogSlugViewLoadingStatus />}>
-      <BlogSlugData id={decodedId} />
+      <ErrorBoundary fallback={<p>Error</p>}>
+        <BlogSlugView id={decodedId} initialData={data?.data } />
+      </ErrorBoundary>
     </Suspense>
   );
 }

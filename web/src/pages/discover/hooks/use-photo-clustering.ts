@@ -4,7 +4,7 @@ import {
   getClustersFromIndex,
   calculateBounds,
   type PhotoPoint,
-} from "@/modules/discover/lib/clustering";
+} from "@/pages/discover/lib/clustering";
 
 interface UsePhotoClusteringProps {
   photos: PhotoPoint[];
