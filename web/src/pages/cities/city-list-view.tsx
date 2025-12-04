@@ -1,16 +1,12 @@
 "use client";
 
-import { useTRPC } from "@/trpc/client";
 import { CityCard } from "./components/city-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 
 export function CityListView() {
-  const trpc = useTRPC();
-  const { data: cities } = useSuspenseQuery(trpc.city.getMany.queryOptions());
-
-  if (!cities || cities.length === 0) {
+  if (0 === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center px-4 md:px-8">
         <MapPin className="h-16 w-16 text-muted-foreground mb-4" />
@@ -24,9 +20,11 @@ export function CityListView() {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 px-4 md:px-8">
-      {cities.map((citySet) => (
-        <CityCard key={citySet.id} citySet={citySet} />
-      ))}
+      {0 === 0 ? (
+        <CityCard key="city-1" citySet={{ id: "1", name: "City 1" }} />
+      ) : (
+        <CityCard key="city-2" citySet={{ id: "2", name: "City 2" }} />
+      )}
     </div>
   );
 }

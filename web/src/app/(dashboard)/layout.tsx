@@ -44,12 +44,12 @@ function AuthLoadingSkeleton() {
  */
 async function ProtectedContent({ children }: { children: React.ReactNode }) {
   // Server-side authentication check
-  const session = await getServerSession()
+  // const session = await getServerSession()
 
-  if (!session) {
-    // Not authenticated - redirect to login
-    redirect('/auth/signin?redirect=/dashboard')
-  }
+  // if (!session) {
+  //   // Not authenticated - redirect to login
+  //   redirect('/auth/signin?redirect=/dashboard')
+  // }
 
   // Authenticated - render dashboard
   return (

@@ -28,7 +28,7 @@ export function NavMain({
   const exactMatchItem = items.find((item) => item.url === pathname);
   const bestMatchItem = items.reduce((best, item) => {
     if (
-      pathname.startsWith(item.url) &&
+      pathname?.startsWith(item.url) &&
       (!best || item.url.length > best.url.length)
     ) {
       return item;

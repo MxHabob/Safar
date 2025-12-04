@@ -1,10 +1,8 @@
 "use client";
 
-import { useTRPC } from "@/trpc/client";
 import { usePostsFilters } from "./hooks/use-posts-filters";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { DataTable } from "@/components/shared/data-table";
-import { columns } from "../components/columns";
+import { columns } from "@/pages/posts/components/columns";
 import { DataPagination } from "@/components/shared/data-pagination";
 import {
   Empty,
@@ -26,24 +24,20 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const DashboardPostsView = () => {
-  const trpc = useTRPC();
   const [filters, setFilters] = usePostsFilters();
 
-  const { data } = useSuspenseQuery(
-    trpc.posts.getMany.queryOptions({ ...filters })
-  );
 
   return (
     <>
       <div className="flex-1 pb-4 px-4 md:px-8 flex flex-col gap-y-4">
-        {data.items.length === 0 ? (
+        {0 === 0 ? (
           <EmptyStatus />
         ) : (
           <>
-            <DataTable columns={columns} data={data.items} />
+            <DataTable columns={columns} data={[]} />
             <DataPagination
               page={filters.page}
-              totalPages={data.totalPages}
+              totalPages={0}
               onPageChange={(page) => {
                 setFilters({ page });
               }}

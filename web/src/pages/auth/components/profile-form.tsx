@@ -22,7 +22,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Auth
-import { authClient } from "@/modules/auth/lib/auth-client";
+import { useAuth } from "@/lib/auth";
 
 // Helper function to convert image to base64
 const convertImageToBase64 = async (file: File): Promise<string> => {
@@ -36,7 +36,7 @@ const convertImageToBase64 = async (file: File): Promise<string> => {
 
 export const ProfileForm = () => {
   const router = useRouter();
-  const { data } = authClient.useSession();
+  const { user, updateUser } = useAuth();
 
   // Edit Profile State
   const [name, setName] = useState<string>("");
@@ -66,21 +66,9 @@ export const ProfileForm = () => {
   const handleUpdateProfile = async () => {
     setIsUpdatingProfile(true);
     try {
-      await authClient.updateUser({
-        image: image ? await convertImageToBase64(image) : undefined,
+      await updateUser({
+        avatar: image ? await convertImageToBase64(image) : undefined,
         name: name || undefined,
-        fetchOptions: {
-          onSuccess: () => {
-            toast.success("Profile updated successfully");
-            setName("");
-            setImage(null);
-            setImagePreview(null);
-            router.refresh();
-          },
-          onError: (error) => {
-            toast.error(error.error.message || "Failed to update profile");
-          },
-        },
       });
     } finally {
       setIsUpdatingProfile(false);
@@ -99,25 +87,13 @@ export const ProfileForm = () => {
 
     setIsChangingPassword(true);
     try {
-      const res = await authClient.changePassword({
-        newPassword: newPassword,
+      const res = await updateUser({
+        password: newPassword,
         currentPassword: currentPassword,
         revokeOtherSessions: signOutDevices,
       });
-
-      if (res.error) {
-        toast.error(
-          res.error.message ||
-            "Couldn't change your password! Make sure it's correct"
-        );
-      } else {
-        toast.success("Password changed successfully");
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-        setSignOutDevices(false);
-        router.refresh();
-      }
+    } catch (error) {
+      toast.error("Failed to change password");
     } finally {
       setIsChangingPassword(false);
     }
@@ -153,10 +129,10 @@ export const ProfileForm = () => {
                         className="object-cover"
                       />
                     </div>
-                  ) : data?.user.image ? (
+                  ) : user?.avatar ? (
                     <div className="relative w-24 h-24 rounded-lg overflow-hidden border-2 border-primary/20">
                       <Image
-                        src={data.user.image}
+                        src={user.avatar}
                         alt="Current profile"
                         fill
                         className="object-cover"
@@ -218,7 +194,7 @@ export const ProfileForm = () => {
               <Input
                 id="name"
                 type="text"
-                placeholder={data?.user.name || "Enter your name"}
+                placeholder={user?.name || "Enter your name"}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="h-10"

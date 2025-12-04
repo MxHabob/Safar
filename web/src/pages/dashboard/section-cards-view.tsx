@@ -12,48 +12,38 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useTRPC } from "@/trpc/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function SectionCardsView() {
-  const trpc = useTRPC();
-  const { data: stats } = useSuspenseQuery(
-    trpc.dashboard.getDashboardStats.queryOptions()
-  );
   return (
     <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Total Photos</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {stats.totalPhotos.toLocaleString()}
+            0
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
-              {stats.thisYearPercentChange >= 0 ? (
+              0
                 <>
-                  <TrendingUp />+{stats.thisYearPercentChange}%
+                  <TrendingUp />+0%
                 </>
               ) : (
                 <>
                   <TrendingDown />
-                  {stats.thisYearPercentChange}%
+                  0%
                 </>
-              )}
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            {stats.thisYearPercentChange >= 0
-              ? "Growth this year"
-              : "Decline this year"}{" "}
+            Growth this year
             <TrendingUp className="size-4" />
           </div>
           <div className="text-muted-foreground">
-            {Math.abs(stats.thisYearPercentChange)}%{" "}
-            {stats.thisYearPercentChange >= 0 ? "increase" : "decrease"} vs last
-            year
+            0% increase vs last year
           </div>
         </CardFooter>
       </Card>
@@ -61,34 +51,29 @@ export function SectionCardsView() {
         <CardHeader>
           <CardDescription>This Year Photos</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {stats.thisYearPhotos.toLocaleString()}
+            0
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
-              {stats.thisYearPercentChange >= 0 ? (
+              0
                 <>
-                  <TrendingUp />+{stats.thisYearPercentChange}%
+                  <TrendingUp />+0%
                 </>
               ) : (
                 <>
                   <TrendingDown />
-                  {stats.thisYearPercentChange}%
+                  0%
                 </>
-              )}
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            {stats.thisYearPercentChange >= 0
-              ? "Year-over-year growth"
-              : "Year-over-year decline"}{" "}
+            Year-over-year growth
             <TrendingUp className="size-4" />
           </div>
           <div className="text-muted-foreground">
-            {Math.abs(stats.thisYearPercentChange)}%{" "}
-            {stats.thisYearPercentChange >= 0 ? "increase" : "decrease"} vs last
-            year
+            0% increase vs last year
           </div>
         </CardFooter>
       </Card>
@@ -96,34 +81,29 @@ export function SectionCardsView() {
         <CardHeader>
           <CardDescription>Countries Visited</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {stats.totalCountries}
+            0
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
-              {stats.countriesPercentChange >= 0 ? (
+              0
                 <>
-                  <TrendingUp />+{stats.countriesPercentChange}%
+                  <TrendingUp />+0%
                 </>
               ) : (
                 <>
                   <TrendingDown />
-                  {stats.countriesPercentChange}%
+                    0%
                 </>
-              )}
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            {stats.countriesPercentChange >= 0
-              ? "New countries"
-              : "Countries decreased"}{" "}
+            New countries
             <TrendingUp className="size-4" />
           </div>
           <div className="text-muted-foreground">
-            {Math.abs(stats.countriesPercentChange)}%{" "}
-            {stats.countriesPercentChange >= 0 ? "increase" : "decrease"} vs
-            last year
+            0% increase vs last year
           </div>
         </CardFooter>
       </Card>
@@ -131,32 +111,29 @@ export function SectionCardsView() {
         <CardHeader>
           <CardDescription>Total Cities</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {stats.totalCities}
+            0
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
-              {stats.citiesPercentChange >= 0 ? (
+              0
                 <>
-                  <TrendingUp />+{stats.citiesPercentChange}%
+                  <TrendingUp />+0%
                 </>
               ) : (
                 <>
                   <TrendingDown />
-                  {stats.citiesPercentChange}%
+                  0%
                 </>
-              )}
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            {stats.citiesPercentChange >= 0 ? "New cities" : "Cities decreased"}{" "}
+            New cities
             <TrendingUp className="size-4" />
           </div>
           <div className="text-muted-foreground">
-            {Math.abs(stats.citiesPercentChange)}%{" "}
-            {stats.citiesPercentChange >= 0 ? "increase" : "decrease"} vs last
-            year
+              0% increase vs last year
           </div>
         </CardFooter>
       </Card>

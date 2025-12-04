@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
-import { useTRPC } from "@/trpc/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -17,10 +15,6 @@ export function VisibilityToggle({
   initialValue,
 }: VisibilityToggleProps) {
   const [visibility, setVisibility] = useState(initialValue);
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
-
-  const updatePost = useMutation(trpc.posts.update.mutationOptions());
 
   const handleToggle = async (checked: boolean) => {
     const newValue = checked ? "public" : "private";
@@ -28,28 +22,6 @@ export function VisibilityToggle({
     // Optimistic update
     setVisibility(newValue);
 
-    updatePost.mutate(
-      {
-        id: photoId,
-        visibility: newValue,
-      },
-      {
-        onSuccess: async () => {
-          // Invalidate queries to refetch posts list
-          await queryClient.invalidateQueries(
-            trpc.posts.getMany.queryOptions({})
-          );
-          toast.success(
-            `Post is now ${newValue === "public" ? "public" : "private"}`
-          );
-        },
-        onError: (error) => {
-          // Revert on error
-          setVisibility(newValue === "public" ? "private" : "public");
-          toast.error(error.message || "Failed to update visibility");
-        },
-      }
-    );
   };
 
   return (
@@ -65,7 +37,7 @@ export function VisibilityToggle({
       <Switch
         checked={visibility === "public"}
         onCheckedChange={handleToggle}
-        disabled={updatePost.isPending}
+        disabled={false}
         aria-label="Toggle visibility"
       />
       <span className="text-sm text-muted-foreground min-w-[50px]">

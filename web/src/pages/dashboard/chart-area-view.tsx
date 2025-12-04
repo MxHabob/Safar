@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const description = "Monthly photo count chart";
@@ -40,7 +39,6 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function ChartAreaView() {
-  const trpc = useTRPC();
   const isMobile = useIsMobile();
   const [timeRange, setTimeRange] = React.useState("3y");
 
@@ -64,36 +62,14 @@ export function ChartAreaView() {
     }
   }, [timeRange]);
 
-  const { data: photosCountByMonth } = useSuspenseQuery(
-    trpc.dashboard.getPhotosCountByMonth.queryOptions({ years })
-  );
 
-  // Transform data for chart
-  const chartData = React.useMemo(() => {
-    return photosCountByMonth.map((item) => ({
-      date: item.month + "-01", // Add day for proper date parsing
-      photos: item.count,
-    }));
-  }, [photosCountByMonth]);
+
 
   // Calculate total photos and peak month
   const totalPhotos = React.useMemo(() => {
-    return photosCountByMonth.reduce((sum, item) => sum + item.count, 0);
-  }, [photosCountByMonth]);
+    return 0;
+  }, []);
 
-  const peakMonth = React.useMemo(() => {
-    if (photosCountByMonth.length === 0) return null;
-    const peak = photosCountByMonth.reduce((max, item) =>
-      item.count > max.count ? item : max
-    );
-    return {
-      month: new Date(peak.month + "-01").toLocaleDateString("en-US", {
-        month: "long",
-        year: "numeric",
-      }),
-      count: peak.count,
-    };
-  }, [photosCountByMonth]);
 
   return (
     <Card className="@container/card">
@@ -103,11 +79,11 @@ export function ChartAreaView() {
           <span className="hidden @[540px]/card:block">
             {totalPhotos.toLocaleString()} photos taken in the last {years} year
             {years > 1 ? "s" : ""}
-            {peakMonth && (
+            {/* {peakMonth && (
               <span className="ml-2 text-muted-foreground">
                 • Peak: {peakMonth.month} ({peakMonth.count} photos)
               </span>
-            )}
+            )} */}
           </span>
           <span className="@[540px]/card:hidden">
             {totalPhotos.toLocaleString()} photos • Last {years}y
@@ -152,7 +128,7 @@ export function ChartAreaView() {
           config={chartConfig}
           className="aspect-auto h-[250px] w-full"
         >
-          <AreaChart data={chartData}>
+          <AreaChart data={[]}>
             <defs>
               <linearGradient id="fillPhotos" x1="0" y1="0" x2="0" y2="1">
                 <stop

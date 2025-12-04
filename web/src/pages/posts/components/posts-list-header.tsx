@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PlusIcon, XCircle } from "lucide-react";
-import { usePostsFilters } from "../../hooks/use-posts-filters";
+import { usePostsFilters } from "@/pages/posts/hooks/use-posts-filters";
 import { DEFAULT_PAGE } from "@/constants";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { PostsSearchFilter } from "./posts-search-filter";

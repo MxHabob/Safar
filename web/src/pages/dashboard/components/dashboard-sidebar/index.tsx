@@ -1,6 +1,6 @@
-import { NavMain } from "@/modules/dashboard/ui/components/dashboard-sidebar/nav-main";
-import { NavSecondary } from "@/modules/dashboard/ui/components/dashboard-sidebar/nav-secondary";
-import { NavUser } from "@/modules/dashboard/ui/components/dashboard-sidebar/nav-user";
+import { NavMain } from "@/pages/dashboard/components/dashboard-sidebar/nav-main";
+import { NavSecondary } from "@/pages/dashboard/components/dashboard-sidebar/nav-secondary";
+import { NavUser } from "@/pages/dashboard/components/dashboard-sidebar/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { Camera } from "lucide-react";
-import { User } from "@/modules/auth/lib/auth-types";
-import { getSession } from "@/modules/auth/lib/get-session";
+import { getServerSession } from "@/lib/auth/server";
+import { ServerSession } from "@/lib/auth/types";
 
 const data = {
   navMain: [
@@ -62,7 +62,7 @@ const data = {
 export const DashboardSidebar = async ({
   ...props
 }: React.ComponentProps<typeof Sidebar>) => {
-  const session = await getSession();
+  const session = await getServerSession();
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -86,7 +86,7 @@ export const DashboardSidebar = async ({
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={session?.user as User} />
+        <NavUser user={session?.user as ServerSession['user']} />
       </SidebarFooter>
     </Sidebar>
   );

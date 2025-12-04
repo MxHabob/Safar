@@ -10,23 +10,23 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { LogOut, Loader2 } from "lucide-react";
-import { authClient } from "@/modules/auth/lib/auth-client";
+import { useAuth } from "@/lib/auth";
 
 const UserButton = () => {
   const router = useRouter();
   const [isSignOut, setIsSignOut] = useState<boolean>(false);
-  const { data: session } = authClient.useSession();
+  const { user, logout } = useAuth();
 
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Avatar className="size-9 hover:opacity-80 transition-opacity cursor-pointer">
           <AvatarImage
-            src={session?.user.image || "#"}
+            src={user?.avatar || "#"}
             alt="Avatar"
             className="object-cover"
           />
-          <AvatarFallback>{session?.user.name.charAt(0)}</AvatarFallback>
+          <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -35,27 +35,13 @@ const UserButton = () => {
             className="w-full"
             onClick={async () => {
               setIsSignOut(true);
-              await authClient.signOut({
-                fetchOptions: {
-                  onSuccess() {
-                    router.push("/");
-                  },
-                },
-              });
-              setIsSignOut(false);
+              await logout();
+              router.push("/");
             }}
             disabled={isSignOut}
           >
-            <span className="text-sm">
-              {isSignOut ? (
-                <Loader2 size={15} className="animate-spin" />
-              ) : (
-                <div className="flex items-center gap-2">
-                  <LogOut size={16} />
-                  Sign Out
-                </div>
-              )}
-            </span>
+            <LogOut size={16} />
+            Sign Out
           </button>
         </DropdownMenuItem>
       </DropdownMenuContent>

@@ -81,6 +81,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "ts-exif-parser": "^0.2.2",
+    "ua-parser-js": "^2.0.6",
     "vaul": "^1.1.2",
     "vitest": "^4.0.14",
     "zustand": "^5.0.9"

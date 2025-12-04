@@ -13,11 +13,14 @@ export interface AuthUser {
   email: string
   first_name?: string | null
   last_name?: string | null
+  full_name?: string | null
   is_email_verified: boolean
   is_phone_verified: boolean
   role: string
   status: string
   is_active: boolean
+  avatar?: string | null
+  name?: string | null
 }
 
 /**

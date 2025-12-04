@@ -33,9 +33,9 @@ const publicRoutes = [
 
 // Protected routes that require authentication
 const protectedRoutes = [
-  '/dashboard',
-  '/profile',
-  '/settings',
+  // '/dashboard',
+  // '/profile',
+  // '/settings',
 ]
 
 // Auth endpoints that need rate limiting

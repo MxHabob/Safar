@@ -6,24 +6,16 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, ArrowLeft, X, MapPin } from "lucide-react";
 import { Form, FormControl, FormItem, FormLabel } from "@/components/ui/form";
 import { thirdStepSchema, StepProps } from "../types";
-import { Skeleton } from "@/components/ui/skeleton";
-import { formatGPSCoordinates } from "@/lib/utils";
-import { useGetAddress } from "@/modules/mapbox/hooks/use-get-address";
+import { useGetAddress } from "@/hooks/use-get-address";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ButtonGroup } from "@/components/ui/button-group";
+import { formatGPSCoordinatesFromLatLng } from "@/lib/format-gps-coordinates";
 
 const MapboxComponent = dynamic(
-  () => import("@/modules/mapbox/ui/components/map"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="size-full flex items-center justify-center bg-muted">
-        <Skeleton className="h-full w-full" />
-      </div>
-    ),
-  }
+  () => import("@/components/shared/map"),
+  { ssr: false }
 );
 
 interface SearchResult {
@@ -258,7 +250,7 @@ export function ThirdStep({
               <MapPin className="h-3 w-3" />
               <span className="text-xs">
                 {currentLocation.lat !== 0 && currentLocation.lng !== 0
-                  ? formatGPSCoordinates(
+                  ? formatGPSCoordinatesFromLatLng(
                       currentLocation.lat,
                       currentLocation.lng
                     )

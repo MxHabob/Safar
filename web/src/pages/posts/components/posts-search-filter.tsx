@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui/input";
-import { usePostsFilters } from "../../hooks/use-posts-filters";
+import { usePostsFilters } from "@/pages/posts/hooks/use-posts-filters";
 import { SearchIcon } from "lucide-react";
 
 export const PostsSearchFilter = () => {

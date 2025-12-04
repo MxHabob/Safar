@@ -11,21 +11,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Globe, Clock, Dot, Monitor, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { ProfileForm } from "@/modules/auth/ui/components/profile-form";
+import { ProfileForm } from "@/pages/auth/components/profile-form";
 
 // Types
-import { Session } from "../../lib/auth-types";
-import { authClient } from "../../lib/auth-client";
+import { ServerSession } from "@/lib/auth/types";
+import { useAuth } from "@/lib/auth";
 
-import {
-  formatLastActive,
-  getDeviceDescription,
-  getDeviceIcon,
-} from "../../lib/utils";
 
 const SecurityAccessCard = (props: {
-  session: Session | null;
-  activeSessions: Session["session"][];
+  session: ServerSession | null;
+  activeSessions: ServerSession[];
 }) => {
   const router = useRouter();
   const [isTerminating, setIsTerminating] = useState<string>();
@@ -50,22 +45,16 @@ const SecurityAccessCard = (props: {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {props.activeSessions
-            .filter((session) => session.userAgent)
+            .filter((session) => session.accessToken !== null)
             .map((session) => {
-              const parser = new UAParser(session.userAgent || "");
-              const isCurrentSession = session.id === props.session?.session.id;
-              const deviceType = parser.getDevice().type;
-              const DeviceIcon = getDeviceIcon(parser, deviceType);
-              const deviceDescription = getDeviceDescription(
-                parser,
-                deviceType
-              );
+              const parser = new UAParser(session.accessToken || "");
+              const isCurrentSession = session.accessToken === props.session?.accessToken;
               const browser = parser.getBrowser();
               const os = parser.getOS();
 
               return (
                 <Card
-                  key={session.id}
+                  key={session.user.id || "ss"}
                   className={`overflow-hidden transition-all duration-200 hover:shadow-sm min-w-[400px] ${
                     isCurrentSession
                       ? "ring-1 ring-primary/30 border-primary/40 bg-primary/5"
@@ -82,14 +71,14 @@ const SecurityAccessCard = (props: {
                             : "bg-muted text-muted-foreground"
                         }`}
                       >
-                        <DeviceIcon size={18} />
+                        {/* <DeviceIcon size={18} /> */}
                       </div>
 
                       {/* Device Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-medium text-sm truncate">
-                            {deviceDescription}
+                            {/* {deviceDescription} */}
                           </h3>
                           {isCurrentSession && (
                             <Badge
@@ -121,7 +110,7 @@ const SecurityAccessCard = (props: {
 
                           <div className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            <span>{formatLastActive(session.createdAt)}</span>
+                            {/* <span>{formatLastActive(session)}</span> */}
                           </div>
                         </div>
                       </div>
@@ -131,26 +120,26 @@ const SecurityAccessCard = (props: {
                         variant={isCurrentSession ? "default" : "outline"}
                         size="sm"
                         className="h-8 px-3 text-xs min-w-[80px]"
-                        onClick={async () => {
-                          setIsTerminating(session.id);
-                          const res = await authClient.revokeSession({
-                            token: session.token,
-                          });
+                        // onClick={async () => {
+                        //   setIsTerminating(session.id);
+                        //   const res = await revokeSession({
+                        //     token: session.token,
+                        //   });
 
-                          if (res.error) {
-                            toast.error(res.error.message);
-                          } else {
-                            toast.success(
-                              isCurrentSession
-                                ? "Signed out successfully"
-                                : "Session terminated successfully"
-                            );
-                          }
-                          router.refresh();
-                          setIsTerminating(undefined);
-                        }}
+                        //   if (res.error) {
+                        //     toast.error(res.error.message);
+                        //   } else {
+                        //     toast.success(
+                        //       isCurrentSession
+                        //         ? "Signed out successfully"
+                        //         : "Session terminated successfully"
+                        //     );
+                        //   }
+                        //   router.refresh();
+                        //   setIsTerminating(undefined);
+                        // }}
                       >
-                        {isTerminating === session.id ? (
+                        {isTerminating === session.user.id ? (
                           <Loader2 size={12} className="animate-spin" />
                         ) : isCurrentSession ? (
                           "Sign Out"

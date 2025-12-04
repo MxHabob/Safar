@@ -1,8 +1,7 @@
 "use client";
 
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
-import Mapbox from "@/modules/mapbox/ui/components/map";
+import Mapbox from "@/components/shared/map";
 import { useMemo } from "react";
 
 import { TrendingUp } from "lucide-react";
@@ -23,10 +22,6 @@ import {
 } from "@/components/ui/chart";
 
 export const MapView = () => {
-  const trpc = useTRPC();
-  const { data } = useSuspenseQuery(
-    trpc.dashboard.getVisitedCountriesWithGeoJson.queryOptions()
-  );
 
   const chartConfig = {
     photoCount: {
@@ -36,15 +31,15 @@ export const MapView = () => {
   } satisfies ChartConfig;
 
   // Use real data from database
-  const countriesData = useMemo(() => data?.countries || [], [data]);
+  const countriesData = useMemo(() => [], []);
 
   // Prepare chart data for the bar chart using countryCode from database
   const chartData = countriesData
     .slice(0, 10) // Show top 10 countries
-    .map((country) => ({
-      country: country.country || "Unknown",
-      countryShort: country.countryCode || "N/A",
-      photoCount: country.photoCount,
+    .map(() => ({
+      country: "Unknown",
+      countryShort: "N/A",
+      photoCount: 0,
     }));
 
   return (
@@ -67,8 +62,8 @@ export const MapView = () => {
             longitude: 0,
             latitude: 20,
             zoom: 0,
-          }}
-          geoJsonData={data?.geoJson || undefined}
+          }}  
+          geoJsonData={undefined}
         />
       </div>
 
@@ -131,7 +126,7 @@ export const MapView = () => {
               <div className="text-muted-foreground leading-none">
                 Total:{" "}
                 {countriesData
-                  .reduce((sum, c) => sum + c.photoCount, 0)
+                  .reduce((sum, c: any) => sum + (c?.photoCount || 0), 0)
                   .toLocaleString()}{" "}
                 photos
               </div>
