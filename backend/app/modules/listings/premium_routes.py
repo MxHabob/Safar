@@ -10,6 +10,8 @@ from app.core.dependencies import get_current_active_user, require_host
 from app.modules.users.models import User
 from app.modules.listings.premium_service import PremiumListingService
 from app.modules.listings.models import Listing
+from app.modules.listings.schemas import ListingResponse
+from sqlalchemy import select
 
 router = APIRouter(prefix="/listings/premium", tags=["Premium Listings"])
 
@@ -87,7 +89,7 @@ async def feature_listing(
     return result
 
 
-@router.get("/featured", response_model=List[Any])
+@router.get("/featured", response_model=List[ListingResponse])
 async def get_featured_listings(
     limit: int = Query(10, ge=1, le=50),
     city: Optional[str] = Query(None),
@@ -102,10 +104,11 @@ async def get_featured_listings(
     listings = await PremiumListingService.get_featured_listings(
         db, limit, city, country
     )
-    return listings
+    # Convert SQLAlchemy models to Pydantic schemas
+    return [ListingResponse.model_validate(listing) for listing in listings]
 
 
-@router.get("/premium", response_model=List[Any])
+@router.get("/premium", response_model=List[ListingResponse])
 async def get_premium_listings(
     limit: int = Query(20, ge=1, le=100),
     city: Optional[str] = Query(None),
@@ -120,7 +123,8 @@ async def get_premium_listings(
     listings = await PremiumListingService.get_premium_listings(
         db, limit, city, country
     )
-    return listings
+    # Convert SQLAlchemy models to Pydantic schemas
+    return [ListingResponse.model_validate(listing) for listing in listings]
 
 
 @router.get("/pricing")

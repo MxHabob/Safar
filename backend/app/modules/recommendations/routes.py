@@ -32,7 +32,8 @@ async def get_my_recommendations(
     recommendations = await RecommendationService.get_recommendations_for_user(
         db, user_id=current_user.id, limit=limit
     )
-    return recommendations
+    # Convert SQLAlchemy models to Pydantic schemas
+    return [ListingResponse.model_validate(listing) for listing in recommendations]
 
 
 @router.get("/similar/{listing_id}", response_model=List[ListingResponse])
@@ -48,7 +49,8 @@ async def get_similar_listings(
     recommendations = await RecommendationService.get_similar_listings(
         db, listing_id=listing_id, limit=limit
     )
-    return recommendations
+    # Convert SQLAlchemy models to Pydantic schemas
+    return [ListingResponse.model_validate(listing) for listing in recommendations]
 
 
 @router.get("/trending", response_model=List[ListingResponse])
@@ -65,7 +67,8 @@ async def get_trending_listings(
     recommendations = await RecommendationService.get_trending_listings(
         db, limit=limit, days=days
     )
-    return recommendations
+    # Convert SQLAlchemy models to Pydantic schemas
+    return [ListingResponse.model_validate(listing) for listing in recommendations]
 
 
 # ML-based Recommendation Engine v2 Endpoints

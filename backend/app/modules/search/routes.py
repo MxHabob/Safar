@@ -13,6 +13,7 @@ from app.modules.search.schemas import (
 )
 from app.modules.search.services import SearchService
 from app.modules.listings.models import ListingType
+from app.modules.listings.schemas import ListingResponse
 
 router = APIRouter(prefix="/search", tags=["Search"])
 
@@ -82,8 +83,11 @@ async def search_listings(
         ab_test_variant=ab_test_variant
     )
     
+    # Convert SQLAlchemy models to Pydantic schemas
+    items = [ListingResponse.model_validate(listing) for listing in listings]
+    
     return {
-        "items": listings,
+        "items": items,
         "total": total,
         "skip": skip,
         "limit": limit,
