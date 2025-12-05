@@ -118,17 +118,6 @@ app.add_middleware(
     max_age=3600,  # Cache preflight requests for 1 hour (reduces server load)
 )
 
-# Security Middleware Stack (order matters - executes in REVERSE order of addition)
-# Execution order (innermost to outermost):
-#   1. Rate Limiting (if enabled) - First to execute, protects against abuse
-#   2. Bot Detection - Blocks automated requests
-#   3. Security Headers - Adds security headers to responses
-#   4. Request Monitoring - Logs all requests for analysis
-#   5. CORS Preflight - Handles OPTIONS requests before route handlers
-#   6. CORS Middleware - Last to execute, handles CORS headers
-#
-# Note: All security middlewares skip OPTIONS requests to allow CORS preflight
-# This maintains security while enabling cross-origin requests from allowed origins
 
 # 1. Request Monitoring (outermost - logs all requests, executes last)
 app.add_middleware(RequestMonitoringMiddleware)
