@@ -63,26 +63,36 @@ class UserService:
             is_phone_verified=False
         )
         
-        # Save through repository
+        # Save through repository (this creates and adds User model to session)
         created = await uow.users.create(user)
         
-        # Create User model for password storage (since domain entity doesn't store password)
-        user_model = User(
-            id=created.id,
-            email=created.email,
-            phone_number=created.phone_number,
-            username=created.username,
-            hashed_password=hashed_password,
-            first_name=created.first_name,
-            last_name=created.last_name,
-            language=created.language,
-            currency=created.currency,
-            role=UserRole.GUEST,
-            status=UserStatus.PENDING_VERIFICATION,
-            is_active=True
+        # Get the User model that was created by the repository and update it with password
+        # (since domain entity doesn't store password)
+        result = await uow.db.execute(
+            select(User).where(User.id == created.id)
         )
+        user_model = result.scalar_one_or_none()
         
-        uow.db.add(user_model)
+        if user_model:
+            user_model.hashed_password = hashed_password
+        else:
+            # Fallback: if model not found, create it (shouldn't happen)
+            user_model = User(
+                id=created.id,
+                email=created.email,
+                phone_number=created.phone_number,
+                username=created.username,
+                hashed_password=hashed_password,
+                first_name=created.first_name,
+                last_name=created.last_name,
+                language=created.language,
+                currency=created.currency,
+                role=UserRole.GUEST,
+                status=UserStatus.PENDING_VERIFICATION,
+                is_active=True
+            )
+            uow.db.add(user_model)
+        
         await uow.commit()
         
         return created
