@@ -6,6 +6,7 @@ Includes JWT handling, password hashing, and related helpers.
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 import re
+import hashlib
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import HTTPException, status
@@ -16,15 +17,40 @@ settings = get_settings()
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# Bcrypt has a 72-byte limit on password length
+BCRYPT_MAX_PASSWORD_LENGTH = 72
+
+
+def _normalize_password_for_bcrypt(password: str) -> str:
+    """
+    Normalize password for bcrypt compatibility.
+    
+    Bcrypt has a 72-byte limit. If the password exceeds this limit,
+    we pre-hash it with SHA-256 to ensure it fits within bcrypt's constraints.
+    This maintains security while working around bcrypt's limitation.
+    """
+    password_bytes = password.encode('utf-8')
+    
+    if len(password_bytes) <= BCRYPT_MAX_PASSWORD_LENGTH:
+        # Password fits within bcrypt's limit, use as-is
+        return password
+    else:
+        # Password exceeds bcrypt's limit, pre-hash with SHA-256
+        # SHA-256 produces 32 bytes (64 hex chars), which fits within the limit
+        sha256_hash = hashlib.sha256(password_bytes).hexdigest()
+        return sha256_hash
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plain-text password against its hashed value."""
-    return pwd_context.verify(plain_password, hashed_password)
+    normalized_password = _normalize_password_for_bcrypt(plain_password)
+    return pwd_context.verify(normalized_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
     """Hash a password for secure storage."""
-    return pwd_context.hash(password)
+    normalized_password = _normalize_password_for_bcrypt(password)
+    return pwd_context.hash(normalized_password)
 
 
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
