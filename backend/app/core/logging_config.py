@@ -60,8 +60,17 @@ class JSONFormatter(logging.Formatter):
         return json.dumps(log_data, ensure_ascii=False)
 
 
+# Global flag to prevent multiple setups
+_logging_configured = False
+
 def setup_logging():
     """Configure root logging with console and rotating file handlers."""
+    global _logging_configured
+    
+    # Prevent multiple configurations
+    if _logging_configured:
+        return
+    
     # Create logs directory
     logs_dir = Path("logs")
     logs_dir.mkdir(exist_ok=True)
@@ -70,13 +79,10 @@ def setup_logging():
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG if settings.debug else logging.INFO)
     
-    # Remove existing handlers only if not already configured
-    # This prevents removing handlers set by uvicorn's log_config
-    if not any(isinstance(h, logging.StreamHandler) and h.stream == sys.stdout 
-               for h in root_logger.handlers):
-        root_logger.handlers.clear()
+    # Always clear existing handlers to ensure clean setup
+    root_logger.handlers.clear()
     
-    # Console handler
+    # Console handler - CRITICAL: Must use sys.stdout for Docker
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(logging.INFO)
     console_formatter = logging.Formatter(
@@ -117,11 +123,12 @@ def setup_logging():
     
     # Set levels for third-party loggers
     # Ensure uvicorn loggers use the same handlers
+    # Note: These will be configured again in run.py after uvicorn imports
     uvicorn_logger = logging.getLogger("uvicorn")
     uvicorn_logger.setLevel(logging.INFO)
     uvicorn_logger.handlers = []  # Clear existing handlers
     uvicorn_logger.addHandler(console_handler)  # Use our console handler
-    uvicorn_logger.propagate = False  # Don't propagate to root logger
+    uvicorn_logger.propagate = True  # Allow propagation to root logger
     
     # Add filter to suppress 429 error tracebacks
     rate_limit_filter = RateLimitErrorFilter()
@@ -132,14 +139,17 @@ def setup_logging():
     uvicorn_error_logger.setLevel(logging.INFO)
     uvicorn_error_logger.handlers = []
     uvicorn_error_logger.addHandler(console_handler)
-    uvicorn_error_logger.propagate = False
+    uvicorn_error_logger.propagate = True  # Allow propagation
     
-    # Configure uvicorn.access logger (set to WARNING to reduce noise)
+    # Configure uvicorn.access logger
     uvicorn_access_logger = logging.getLogger("uvicorn.access")
-    uvicorn_access_logger.setLevel(logging.WARNING)
+    uvicorn_access_logger.setLevel(logging.INFO)  # Show access logs
     uvicorn_access_logger.handlers = []
     uvicorn_access_logger.addHandler(console_handler)
-    uvicorn_access_logger.propagate = False
+    uvicorn_access_logger.propagate = True  # Allow propagation
+    
+    # Mark as configured
+    _logging_configured = True
     
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)

@@ -26,6 +26,7 @@ from app.core.logging_config import setup_logging, get_uvicorn_log_config
 from app.core.tracing import setup_tracing, instrument_app
 from app.core import models
 
+# Setup logging (will be idempotent if already configured)
 setup_logging()
 logger = logging.getLogger(__name__)
 
@@ -291,7 +292,8 @@ if __name__ == "__main__":
         host=settings.host,
         port=settings.port,
         reload=settings.debug,
-        log_config=get_uvicorn_log_config(),
-        use_colors=False  # Disable colors in Docker/containers
+        use_colors=False,  # Disable colors in Docker/containers
+        log_level="info",  # Set log level explicitly
+        access_log=True,  # Enable access logs
     )
 
