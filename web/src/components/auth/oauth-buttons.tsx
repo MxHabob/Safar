@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useOauthLoginApiV1UsersOauthLoginPostMutation } from "@/generated/hooks/users";
 import { tokenStorage } from "@/lib/auth";
-import { useAuth } from "@/lib/auth/client";
 import { useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
 import { Chrome, Apple } from "lucide-react";
@@ -18,21 +17,17 @@ interface OAuthButtonsProps {
 export function OAuthButtons({ onError }: OAuthButtonsProps) {
   const [loading, setLoading] = useState<OAuthProvider | null>(null);
   const router = useRouter();
-  const { updateUser } = useAuth();
 
   const oauthLoginMutation = useOauthLoginApiV1UsersOauthLoginPostMutation({
     showToast: false,
     onSuccess: (data) => {
-      // Store tokens
       const expiresIn = data.expires_in || 1800;
       tokenStorage.setAccessToken(data.access_token, expiresIn);
       
-      // Store refresh token in localStorage
       if (data.refresh_token) {
         tokenStorage.setRefreshToken(data.refresh_token);
       }
 
-      // Redirect to dashboard - user will be fetched automatically by useAuth
       router.push("/");
       setLoading(null);
     },
@@ -47,9 +42,6 @@ export function OAuthButtons({ onError }: OAuthButtonsProps) {
   const handleOAuthLogin = (provider: OAuthProvider) => {
     setLoading(provider);
     
-    // For OAuth, we need to get the token from the provider first
-    // This is a simplified version - in production, you'd use the provider's SDK
-    // For now, we'll show an error message
     if (onError) {
       onError(`OAuth login with ${provider} requires provider SDK integration. Please use email/password login for now.`);
     }
@@ -109,10 +101,7 @@ export function OAuthButtons({ onError }: OAuthButtonsProps) {
   );
 }
 
-// Export function to handle OAuth callback (to be used in callback route)
 export async function handleOAuthCallback(provider: OAuthProvider, token: string) {
-  // This function can be called from the OAuth callback route
-  // Implementation would be similar to handleOAuthLogin but receives token from callback
   return { provider, token };
 }
 
