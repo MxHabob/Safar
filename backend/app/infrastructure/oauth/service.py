@@ -14,7 +14,12 @@ class OAuthService:
     
     @staticmethod
     async def verify_google_token(token: str) -> Dict[str, Any]:
-        """Verify a Google ID token."""
+        """
+        Verify a Google ID token using Google Identity Services.
+        
+        Uses Google's tokeninfo endpoint to verify the ID token.
+        This endpoint validates the token signature, expiration, and audience.
+        """
         if not settings.google_client_id:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -22,20 +27,31 @@ class OAuthService:
             )
         
         try:
-            async with httpx.AsyncClient() as client:
-                # Verify token with Google
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                # Verify token with Google's tokeninfo endpoint
+                # This endpoint validates the token signature, expiration, and audience
                 response = await client.get(
                     f"https://www.googleapis.com/oauth2/v3/tokeninfo?id_token={token}"
                 )
                 response.raise_for_status()
                 data = response.json()
                 
-                # Verify audience
+                # Verify audience matches our client ID
                 if data.get("aud") != settings.google_client_id:
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="Invalid token audience"
                     )
+                
+                # Check if token is expired (tokeninfo endpoint should handle this, but double-check)
+                exp = data.get("exp")
+                if exp:
+                    import time
+                    if time.time() > exp:
+                        raise HTTPException(
+                            status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Google token has expired"
+                        )
                 
                 return {
                     "email": data.get("email"),
@@ -46,11 +62,18 @@ class OAuthService:
                     "sub": data.get("sub"),  # Google user ID
                     "email_verified": data.get("email_verified", False)
                 }
-        except httpx.HTTPStatusError:
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 400:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid Google token format or signature"
+                )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid Google token"
+                detail=f"Failed to verify Google token: {str(e)}"
             )
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
