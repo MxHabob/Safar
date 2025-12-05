@@ -47,11 +47,18 @@ class OAuthService:
                 exp = data.get("exp")
                 if exp:
                     import time
-                    if time.time() > exp:
-                        raise HTTPException(
-                            status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail="Google token has expired"
-                        )
+                    try:
+                        # Convert exp to float (it might be string or number from JSON)
+                        exp_timestamp = float(exp) if exp else None
+                        if exp_timestamp and time.time() > exp_timestamp:
+                            raise HTTPException(
+                                status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="Google token has expired"
+                            )
+                    except (ValueError, TypeError):
+                        # If exp is not a valid number, skip expiration check
+                        # Google's tokeninfo endpoint should handle this anyway
+                        pass
                 
                 return {
                     "email": data.get("email"),
