@@ -19,9 +19,6 @@ setup_logging()
 
 # Test logging to ensure it works
 logger = logging.getLogger(__name__)
-logger.info("=" * 60)
-logger.info("Starting Safar Backend Server...")
-logger.info("=" * 60)
 
 # Configure uvicorn loggers to use our handlers
 # This must be done after setup_logging() but before importing uvicorn
