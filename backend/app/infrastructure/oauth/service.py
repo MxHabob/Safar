@@ -60,6 +60,15 @@ class OAuthService:
                         # Google's tokeninfo endpoint should handle this anyway
                         pass
                 
+                # Convert email_verified to boolean (Google API may return string "true"/"false")
+                email_verified = data.get("email_verified", False)
+                if isinstance(email_verified, str):
+                    email_verified = email_verified.lower() in ("true", "1", "yes")
+                elif email_verified is None:
+                    email_verified = False
+                else:
+                    email_verified = bool(email_verified)
+                
                 return {
                     "email": data.get("email"),
                     "name": data.get("name"),
@@ -67,7 +76,7 @@ class OAuthService:
                     "family_name": data.get("family_name"),
                     "picture": data.get("picture"),
                     "sub": data.get("sub"),  # Google user ID
-                    "email_verified": data.get("email_verified", False)
+                    "email_verified": email_verified
                 }
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 400:
