@@ -52,15 +52,27 @@ class EmailService:
                 html_part = MIMEText(html_body, "html", "utf-8")
                 message.attach(html_part)
             
-            # Send email
-            await aiosmtplib.send(
-                message,
-                hostname=settings.smtp_host,
-                port=settings.smtp_port,
-                username=settings.smtp_user,
-                password=settings.smtp_password,
-                use_tls=settings.smtp_port == 587,
-            )
+
+            if settings.smtp_port == 465:
+                smtp = aiosmtplib.SMTP(
+                    hostname=settings.smtp_host,
+                    port=settings.smtp_port,
+                    use_tls=True
+                )
+            else:
+                smtp = aiosmtplib.SMTP(
+                    hostname=settings.smtp_host,
+                    port=settings.smtp_port,
+                    use_tls=False
+                )
+            
+            await smtp.connect()
+            if settings.smtp_port != 465:
+                # Use STARTTLS for ports other than 465
+                await smtp.starttls()
+            await smtp.login(settings.smtp_user, settings.smtp_password)
+            await smtp.send_message(message)
+            await smtp.quit()
             
             return True
         except Exception as e:
