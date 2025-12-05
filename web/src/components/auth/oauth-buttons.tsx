@@ -1,237 +1,84 @@
-"use client";
+'use client'
 
-import { Button } from "@/components/ui/button";
-import { useState, useEffect, useRef } from "react";
-import { useOauthLoginApiV1UsersOauthLoginPostMutation } from "@/generated/hooks/users";
-import { tokenStorage } from "@/lib/auth";
-import { useRouter } from "next/navigation";
-import { Spinner } from "@/components/ui/spinner";
-import { Chrome, Apple } from "lucide-react";
-import { loadGoogleScript, renderGoogleButton } from "@/lib/auth/google-oauth";
-
-type OAuthProvider = "google" | "apple" | "facebook" | "github";
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Alert, AlertTitle } from '@/components/ui/alert'
+import { OctagonAlert } from 'lucide-react'
+import type { OAuthProvider } from '@/lib/auth/oauth'
 
 interface OAuthButtonsProps {
-  onError?: (error: string) => void;
+  onError?: (error: string) => void
 }
 
 export function OAuthButtons({ onError }: OAuthButtonsProps) {
-  const [loading, setLoading] = useState<OAuthProvider | null>(null);
-  const [googleClientId, setGoogleClientId] = useState<string | null>(null);
-  const googleButtonRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
+  const router = useRouter()
+  const [loading, setLoading] = useState<OAuthProvider | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  // Get Google Client ID from environment or config
-  useEffect(() => {
-    // Try to get from environment variable
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (clientId) {
-      setGoogleClientId(clientId);
-    } else {
-      // If not in env, you might want to fetch it from your backend
-      // For now, we'll show an error if it's not configured
-      console.warn("Google Client ID not configured. Set NEXT_PUBLIC_GOOGLE_CLIENT_ID environment variable.");
-    }
-  }, []);
+  const handleOAuth = (provider: OAuthProvider) => {
+    setError(null)
+    setLoading(provider)
 
-  const oauthLoginMutation = useOauthLoginApiV1UsersOauthLoginPostMutation({
-    showToast: false,
-    onSuccess: (data) => {
-      const expiresIn = data.expires_in || 1800;
-      tokenStorage.setAccessToken(data.access_token, expiresIn);
+    try {
+      // Get current path for redirect after OAuth
+      const redirectTo = window.location.pathname === '/auth/login' 
+        ? '/' 
+        : window.location.pathname
+
+      // Build OAuth initiation URL
+      const oauthUrl = `/api/auth/oauth/${provider}?redirect=${encodeURIComponent(redirectTo)}`
       
-      if (data.refresh_token) {
-        tokenStorage.setRefreshToken(data.refresh_token);
-      }
-
-      router.push("/");
-      setLoading(null);
-    },
-    onError: (error) => {
+      // Use window.location for full page redirect
+      // This is required for OAuth flows as they need to redirect to external providers
+      // fetch() cannot follow cross-origin redirects due to CORS
+      window.location.href = oauthUrl
+      
+      // Note: setLoading(null) won't be called because page will redirect
+      // But we keep it for error cases
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : `Failed to sign in with ${provider}`
+      setError(errorMessage)
+      setLoading(null)
       if (onError) {
-        onError(error.message || "Failed to login. Please try again.");
+        onError(errorMessage)
       }
-      setLoading(null);
-    },
-  });
-
-  // Initialize Google Sign-In button
-  useEffect(() => {
-    if (!googleClientId || !googleButtonRef.current || loading) {
-      return;
     }
+  }
 
-    let isMounted = true;
-    const element = googleButtonRef.current;
-
-    const initializeGoogleButton = async () => {
-      try {
-        // Clear any existing content
-        if (element) {
-          element.innerHTML = "";
-        }
-
-        await renderGoogleButton(
-          element,
-          googleClientId,
-          (idToken: string) => {
-            if (!isMounted) return;
-            setLoading("google");
-            oauthLoginMutation.mutate({
-              provider: "google" as any,
-              token: idToken,
-            });
-          },
-          (error: Error) => {
-            if (!isMounted) return;
-            console.error("Google Sign-In error:", error);
-            if (onError) {
-              onError(`Google Sign-In failed: ${error.message}`);
-            }
-            setLoading(null);
-          }
-        );
-      } catch (error: any) {
-        if (!isMounted) return;
-        console.error("Failed to initialize Google button:", error);
-        if (onError) {
-          onError(
-            error.message?.includes("origin")
-              ? "Google Sign-In is not configured for this domain. Please contact support."
-              : "Failed to initialize Google Sign-In. Please refresh the page."
-          );
-        }
-      }
-    };
-
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(() => {
-      initializeGoogleButton();
-    }, 100);
-
-    return () => {
-      isMounted = false;
-      clearTimeout(timer);
-      // Clean up Google button if component unmounts
-      if (element) {
-        element.innerHTML = "";
-      }
-    };
-  }, [googleClientId, loading]);
-
-  const handleOAuthLogin = async (provider: OAuthProvider) => {
-    if (provider === "google") {
-      if (!googleClientId) {
-        if (onError) {
-          onError("Google Sign-In is not configured. Please contact support.");
-        }
-        return;
-      }
-
-      try {
-        setLoading("google");
-        await loadGoogleScript(googleClientId);
-        
-        // Trigger Google Sign-In
-        if (window.google?.accounts?.id) {
-          window.google.accounts.id.initialize({
-            client_id: googleClientId,
-            callback: (response: { credential: string }) => {
-              if (response.credential) {
-                oauthLoginMutation.mutate({
-                  provider: "google" as any,
-                  token: response.credential,
-                });
-              } else {
-                setLoading(null);
-                if (onError) {
-                  onError("No credential received from Google");
-                }
-              }
-            },
-          });
-          
-          // Prompt for sign-in
-          window.google.accounts.id.prompt();
-        } else {
-          throw new Error("Google Identity Services not available");
-        }
-      } catch (error: any) {
-        setLoading(null);
-        if (onError) {
-          onError(`Google Sign-In failed: ${error.message || "Unknown error"}`);
-        }
-      }
-    } else if (provider === "apple") {
-      setLoading(provider);
-      if (onError) {
-        onError("Apple Sign-In requires provider SDK integration. Please use email/password login for now.");
-      }
-      setLoading(null);
-    } else {
-      setLoading(provider);
-      if (onError) {
-        onError(`OAuth login with ${provider} requires provider SDK integration. Please use email/password login for now.`);
-      }
-      setLoading(null);
-    }
-  };
+  const providers: Array<{ name: OAuthProvider; label: string; icon?: string }> = [
+    { name: 'google', label: 'Continue with Google' },
+    { name: 'github', label: 'Continue with GitHub' },
+    { name: 'facebook', label: 'Continue with Facebook' },
+    { name: 'apple', label: 'Continue with Apple' },
+  ]
 
   return (
     <div className="space-y-3">
-      {/* Google Sign-In Button - Rendered by Google SDK */}
-      {googleClientId ? (
-        <div 
-          ref={googleButtonRef} 
-          className="w-full flex justify-center min-h-[40px]"
-          style={{ minHeight: "40px" }}
-        />
-      ) : (
+      {error && (
+        <Alert className="bg-destructive/10 border-destructive/20 rounded-[18px]">
+          <OctagonAlert className="h-4 w-4 text-destructive" />
+          <AlertTitle className="text-sm">{error}</AlertTitle>
+        </Alert>
+      )}
+
+      {providers.map((provider) => (
         <Button
+          key={provider.name}
           type="button"
           variant="outline"
           className="w-full h-11 rounded-[18px] font-light"
-          onClick={() => handleOAuthLogin("google")}
-          disabled={loading !== null || oauthLoginMutation.isPending}
+          onClick={() => handleOAuth(provider.name)}
+          disabled={loading !== null}
         >
-          {loading === "google" || oauthLoginMutation.isPending ? (
-            <>
-              <Spinner className="size-4" />
-              <span>Connecting...</span>
-            </>
+          {loading === provider.name ? (
+            <span>Connecting...</span>
           ) : (
-            <>
-              <Chrome className="size-4" />
-              <span>Continue with Google</span>
-            </>
+            <span>{provider.label}</span>
           )}
         </Button>
-      )}
-
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full h-11 rounded-[18px] font-light"
-        onClick={() => handleOAuthLogin("apple")}
-        disabled={loading !== null || oauthLoginMutation.isPending}
-      >
-        {loading === "apple" || oauthLoginMutation.isPending ? (
-          <>
-            <Spinner className="size-4" />
-            <span>Connecting...</span>
-          </>
-        ) : (
-          <>
-            <Apple className="size-4" />
-            <span>Continue with Apple</span>
-          </>
-        )}
-      </Button>
+      ))}
     </div>
-  );
-}
-
-export async function handleOAuthCallback(provider: OAuthProvider, token: string) {
-  return { provider, token };
+  )
 }
 

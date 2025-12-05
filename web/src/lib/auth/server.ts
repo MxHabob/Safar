@@ -1,256 +1,224 @@
+'use server'
+
+import { cookies, headers } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { decodeJwt } from 'jose'
+import type { TokenResponse, GetCurrentUserInfoApiV1UsersMeGetResponse } from '@/generated/schemas'
+import { getCurrentUserInfoApiV1UsersMeGet } from '@/generated/actions/users'
+
 /**
- * Server-Side Authentication Utilities
- * 
- * Provides server-side token validation and session management.
- * Works in Server Components, Route Handlers, and Middleware.
- * 
- * Security: Validates JWT signature, expiry, and blacklist status.
+ * Cookie names for authentication tokens
  */
+const COOKIE_NAMES = {
+  ACCESS_TOKEN: 'auth-token',
+  REFRESH_TOKEN: 'refresh-token',
+} as const
 
-import { jwtVerify, type JWTPayload as JoseJWTPayload } from 'jose'
-import type { AuthUser, JWTPayload, TokenValidationResult, ServerSession } from './types'
-
-// JWT secret from environment (must match backend)
-const JWT_SECRET = process.env.JWT_SECRET || process.env.SECRET_KEY || ''
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'https://safar.mulverse.com'
-
-if (!JWT_SECRET) {
-  console.warn('⚠️  JWT_SECRET not set. Token validation will fail.')
+/**
+ * Session data structure
+ */
+export interface ServerSession {
+  user: GetCurrentUserInfoApiV1UsersMeGetResponse
+  accessToken: string
+  expiresAt: number
 }
 
 /**
- * Validates JWT access token signature and expiry
- * 
- * @param token - JWT access token to validate
- * @returns Validation result with payload if valid
- * 
- * @example
- * ```ts
- * const result = await validateToken(token)
- * if (result.valid && result.payload) {
- *   // Token is valid, use payload
- * }
- * ```
+ * Decoded JWT token structure
  */
-export async function validateToken(
-  token: string
-): Promise<TokenValidationResult> {
-  try {
-    if (!JWT_SECRET) {
-      return { valid: false, error: 'invalid' }
-    }
-
-    // Verify token signature and expiry
-    const secret = new TextEncoder().encode(JWT_SECRET)
-    const { payload } = await jwtVerify(token, secret, {
-      algorithms: ['HS256'],
-    })
-
-    const jwtPayload = payload as unknown as JWTPayload
-
-    // Check if token is expired (jose already checks this, but double-check)
-    if (jwtPayload.exp && jwtPayload.exp * 1000 < Date.now()) {
-      return { valid: false, error: 'expired' }
-    }
-
-    // Check token type (should be access token)
-    if (jwtPayload.type !== 'access') {
-      return { valid: false, error: 'invalid' }
-    }
-
-    // Check if token is blacklisted (requires Redis check)
-    const isBlacklisted = await checkTokenBlacklist(jwtPayload.jti)
-    if (isBlacklisted) {
-      return { valid: false, error: 'blacklisted' }
-    }
-
-    return {
-      valid: true,
-      payload: jwtPayload,
-    }
-  } catch (error: any) {
-    // Handle specific JWT errors
-    if (error.code === 'ERR_JWT_EXPIRED' || error.name === 'JWTExpired') {
-      return { valid: false, error: 'expired' }
-    }
-    if (error.code === 'ERR_JWT_INVALID' || error.name === 'JWTInvalid') {
-      return { valid: false, error: 'invalid' }
-    }
-    return { valid: false, error: 'malformed' }
-  }
+interface DecodedToken {
+  sub?: string
+  exp?: number
+  iat?: number
+  [key: string]: unknown
 }
 
 /**
- * Checks if a token JTI is in the blacklist
- * 
- * @param jti - JWT ID to check
- * @returns True if token is blacklisted
- * 
- * @security This prevents revoked tokens from being used
+ * Get access token from cookies
  */
-async function checkTokenBlacklist(jti: string): Promise<boolean> {
+export async function getAccessToken(): Promise<string | null> {
+  const cookieStore = await cookies()
+  return cookieStore.get(COOKIE_NAMES.ACCESS_TOKEN)?.value ?? null
+}
+
+/**
+ * Get refresh token from cookies
+ */
+export async function getRefreshToken(): Promise<string | null> {
+  const cookieStore = await cookies()
+  return cookieStore.get(COOKIE_NAMES.REFRESH_TOKEN)?.value ?? null
+}
+
+/**
+ * Set authentication tokens in cookies
+ * Follows Next.js 16 and OAuth 2026 best practices:
+ * - httpOnly cookies for XSS protection
+ * - Secure flag in production
+ * - SameSite=lax for CSRF protection
+ * - Proper expiration handling
+ */
+export async function setAuthTokens(tokens: TokenResponse): Promise<void> {
+  const cookieStore = await cookies()
+  const expiresIn = tokens.expires_in || 1800 // Default 30 minutes
+  const isProduction = process.env.NODE_ENV === 'production'
+  
+  // Set access token (short-lived, httpOnly for security)
+  // Next.js 16: cookies() API handles async properly
+  cookieStore.set(COOKIE_NAMES.ACCESS_TOKEN, tokens.access_token, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'lax', // CSRF protection while allowing OAuth redirects
+    maxAge: expiresIn,
+    path: '/',
+    // Partition cookies for better security (if supported)
+    ...(isProduction && { partitioned: false }), // Set to true when browser support is better
+  })
+
+  // Set refresh token (long-lived, httpOnly for security)
+  cookieStore.set(COOKIE_NAMES.REFRESH_TOKEN, tokens.refresh_token, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    path: '/',
+    ...(isProduction && { partitioned: false }),
+  })
+}
+
+/**
+ * Clear authentication tokens
+ */
+export async function clearAuthTokens(): Promise<void> {
+  const cookieStore = await cookies()
+  cookieStore.delete(COOKIE_NAMES.ACCESS_TOKEN)
+  cookieStore.delete(COOKIE_NAMES.REFRESH_TOKEN)
+}
+
+/**
+ * Validate and decode JWT token
+ */
+async function validateToken(token: string): Promise<DecodedToken | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/users/token/check`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jti }),
-      cache: 'no-store',
-    })
-
-    if (!response.ok) {
-      return false
+    const decoded = decodeJwt<DecodedToken>(token)
+    
+    // Check if token is expired
+    if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+      return null
     }
-
-    const data = await response.json()
-    return data.blacklisted === true
+    
+    return decoded
   } catch (error) {
-    console.error('Blacklist check failed:', error)
-    return false
+    return null
   }
 }
 
 /**
- * Gets the current user session from request cookies
- * 
- * Works in Server Components, Route Handlers, and Middleware.
- * 
- * @param request - Optional Next.js request object (for middleware)
- * @returns Server session with user data, or null if not authenticated
- * 
- * @example
- * ```ts
- * // In Server Component
- * import { getServerSession } from '@/lib/auth/server'
- * 
- * export default async function Page() {
- *   const session = await getServerSession()
- *   if (!session) {
- *     redirect('/login')
- *   }
- *   return <div>Hello {session.user.email}</div>
- * }
- * ```
- * 
- * @example
- * ```ts
- * // In Route Handler
- * import { getServerSession } from '@/lib/auth/server'
- * 
- * export async function GET() {
- *   const session = await getServerSession()
- *   if (!session) {
- *     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
- *   }
- *   // Use session.user
- * }
- * ```
+ * Get current session from server
+ * Validates token and fetches user data
+ * Next.js 16: Uses async cookies() API and proper error handling
  */
-export async function getServerSession(
-  request?: Request
-): Promise<ServerSession | null> {
+export async function getServerSession(): Promise<ServerSession | null> {
   try {
-    let accessToken: string | null = null
-
-    if (request) {
-      accessToken = extractAccessToken(request)
-    } else {
-      const { cookies } = await import('next/headers')
-      const cookieStore = await cookies()
-      
-      accessToken = cookieStore.get('access_token')?.value || null
-    }
-
+    const accessToken = await getAccessToken()
+    
     if (!accessToken) {
       return null
     }
 
-    const validation = await validateToken(accessToken)
-    if (!validation.valid || !validation.payload) {
+    // Validate token structure and expiration
+    const decoded = await validateToken(accessToken)
+    if (!decoded) {
+      // Token is invalid or expired, try to refresh
+      const refreshToken = await getRefreshToken()
+      if (refreshToken) {
+        // Attempt automatic token refresh
+        try {
+          const { refreshTokenAction } = await import('./actions')
+          await refreshTokenAction()
+          // Retry getting token after refresh
+          const newToken = await getAccessToken()
+          if (newToken) {
+            const newDecoded = await validateToken(newToken)
+            if (newDecoded) {
+              // Fetch user with new token
+              const userResult = await getCurrentUserInfoApiV1UsersMeGet()
+              if (userResult) {
+                return {
+                  user: userResult as GetCurrentUserInfoApiV1UsersMeGetResponse,
+                  accessToken: newToken,
+                  expiresAt: newDecoded.exp ? newDecoded.exp * 1000 : Date.now() + 1800000,
+                }
+              }
+            }
+          }
+        } catch (refreshError) {
+          // Refresh failed, clear tokens
+          await clearAuthTokens()
+          return null
+        }
+      } else {
+        // No refresh token, clear access token
+        await clearAuthTokens()
+        return null
+      }
       return null
     }
 
-    const user = await fetchUserData(accessToken, validation.payload.sub)
-    if (!user) {
+    // Token is valid, fetch user data
+    // Note: This action requires auth, so it will use the token from cookies automatically
+    const userResult = await getCurrentUserInfoApiV1UsersMeGet()
+    
+    // Check if result is valid
+    if (!userResult) {
+      await clearAuthTokens()
       return null
     }
+
+    // userResult is already the user data (GetCurrentUserInfoApiV1UsersMeGetResponse)
+    const user = userResult as GetCurrentUserInfoApiV1UsersMeGetResponse
 
     return {
       user,
       accessToken,
-      expiresAt: validation.payload.exp * 1000,
+      expiresAt: decoded.exp ? decoded.exp * 1000 : Date.now() + 1800000, // 30 min default
     }
   } catch (error) {
-    console.error('getServerSession error:', error)
+    // If there's an error, clear tokens and return null
+    // Next.js 16: Proper error handling without exposing sensitive info
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[Auth] Session error:', error)
+    }
+    await clearAuthTokens()
     return null
   }
 }
 
 /**
- * Fetches user data from backend API
- * 
- * @param accessToken - Valid access token
- * @param userId - User ID from token payload
- * @returns User data or null
+ * Require authentication - throws error or redirects if not authenticated
  */
-async function fetchUserData(
-  accessToken: string,
-  userId: string
-): Promise<AuthUser | null> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      cache: 'no-store',
-    })
-
-    if (!response.ok) {
-      return null
-    }
-
-    const data = await response.json()
-    return data as AuthUser
-  } catch (error) {
-    console.error('fetchUserData error:', error)
-    return null
+export async function requireAuth(): Promise<ServerSession> {
+  const session = await getServerSession()
+  
+  if (!session) {
+    redirect('/auth/login')
   }
+  
+  return session
 }
 
 /**
- * Extracts access token from request
- * 
- * @param request - Next.js request object
- * @returns Access token or null
+ * Check if user is authenticated
  */
-export function extractAccessToken(request: Request): string | null {
-  const authHeader = request.headers.get('authorization')
-  if (authHeader?.startsWith('Bearer ')) {
-    return authHeader.substring(7)
-  }
-
-  const cookieHeader = request.headers.get('cookie')
-  if (cookieHeader) {
-    const cookies = parseCookies(cookieHeader)
-    return cookies.get('access_token') || null
-  }
-
-  return null
+export async function isAuthenticated(): Promise<boolean> {
+  const session = await getServerSession()
+  return session !== null
 }
 
 /**
- * Parses cookie string into Map
- * 
- * @param cookieString - Cookie header value
- * @returns Map of cookie names to values
+ * Get current user (for use in server actions)
  */
-function parseCookies(cookieString: string): Map<string, string> {
-  const cookies = new Map<string, string>()
-  cookieString.split(';').forEach((cookie) => {
-    const [name, ...rest] = cookie.trim().split('=')
-    if (name && rest.length > 0) {
-      cookies.set(name, decodeURIComponent(rest.join('=')))
-    }
-  })
-  return cookies
+export async function getCurrentUser(): Promise<GetCurrentUserInfoApiV1UsersMeGetResponse | null> {
+  const session = await getServerSession()
+  return session?.user ?? null
 }
 

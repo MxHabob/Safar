@@ -148,8 +148,18 @@ export const authActionClient = actionClientWithMeta
     return next();
   });
 
-// Mock user function
+/**
+ * Get current user from session
+ * Uses the auth server utilities
+ */
 async function getCurrentUser() {
-  // Implement your authentication logic here
-  return null;
+  try {
+    const { getCurrentUser: getCurrentUserFromAuth } = await import('@/lib/auth/server')
+    return await getCurrentUserFromAuth()
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[Auth] Failed to get current user:', error)
+    }
+    return null
+  }
 }

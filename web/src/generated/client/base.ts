@@ -318,7 +318,7 @@ export class BaseApiClient {
           const cookieStore = await serverModules.cookies()
           const headersList = await serverModules.headers()
           
-          // Try cookie first
+          // Try cookie first (using our auth system)
           const tokenFromCookie = cookieStore.get('auth-token')?.value
           if (tokenFromCookie) {
             getAuthHeaders.Authorization = `Bearer ${tokenFromCookie}`
@@ -333,6 +333,21 @@ export class BaseApiClient {
           }
         } catch (error) {
           // Server modules not available (client-side) or error accessing
+        }
+      }
+      
+      // Client-side: Try to get token from localStorage (fallback for client-side calls)
+      if (typeof window !== 'undefined') {
+        try {
+          // Note: Access tokens should ideally be in httpOnly cookies
+          // This is a fallback for client-side API calls
+          const tokenFromStorage = localStorage.getItem('auth-token')
+          if (tokenFromStorage) {
+            getAuthHeaders.Authorization = `Bearer ${tokenFromStorage}`
+            return getAuthHeaders
+          }
+        } catch (error) {
+          // localStorage not available
         }
       }
       

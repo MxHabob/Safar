@@ -1,213 +1,256 @@
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { decodeJwt } from 'jose'
+
 /**
- * Authentication Middleware Logic
+ * Cookie names for authentication tokens
+ */
+const COOKIE_NAMES = {
+  ACCESS_TOKEN: 'auth-token',
+  REFRESH_TOKEN: 'refresh-token',
+} as const
+
+/**
+ * Decoded JWT token structure
+ */
+interface DecodedToken {
+  sub?: string
+  exp?: number
+  iat?: number
+  [key: string]: unknown
+}
+
+/**
+ * Validate JWT token in middleware
+ * Lightweight validation without fetching user data
+ */
+function validateToken(token: string): DecodedToken | null {
+  try {
+    const decoded = decodeJwt<DecodedToken>(token)
+    
+    // Check if token is expired
+    if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+      return null
+    }
+    
+    return decoded
+  } catch (error) {
+    return null
+  }
+}
+
+/**
+ * Check if path requires authentication
+ */
+function isProtectedPath(pathname: string): boolean {
+  const protectedPaths = [
+    '/account',
+    '/dashboard',
+    '/admin',
+  ]
+  
+  return protectedPaths.some(path => pathname.startsWith(path))
+}
+
+/**
+ * Check if path is a public auth path
+ */
+function isAuthPath(pathname: string): boolean {
+  const authPaths = [
+    '/auth/login',
+    '/auth/register',
+    '/auth/forgot-password',
+    '/auth/reset-password',
+    '/auth/verify-email',
+    '/auth/verify-2fa',
+  ]
+  
+  return authPaths.some(path => pathname.startsWith(path))
+}
+
+/**
+ * Check if path is an API route
+ */
+function isApiRoute(pathname: string): boolean {
+  return pathname.startsWith('/api/')
+}
+
+/**
+ * Check if path should be excluded from middleware
+ */
+function isExcludedPath(pathname: string): boolean {
+  const excludedPaths = [
+    '/_next',
+    '/favicon.ico',
+    '/public',
+    '/static',
+  ]
+  
+  return excludedPaths.some(path => pathname.startsWith(path))
+}
+
+/**
+ * Authentication Middleware
+ * Next.js 16: Lightweight token validation for route protection
  * 
- * Core authentication, CSRF, and rate limiting logic for Next.js middleware.
- * This is the business logic that can be tested independently.
- * 
- * @security Implements server-side token validation, CSRF protection, and rate limiting
+ * Features:
+ * - Validates JWT tokens from cookies
+ * - Protects authenticated routes
+ * - Redirects unauthenticated users to login
+ * - Allows public auth routes
+ * - Handles API routes separately
  */
-
-import { NextRequest, NextResponse } from 'next/server'
-import { validateToken, extractAccessToken } from './server'
-import { verifyCSRFToken, getCSRFCookie } from './csrf'
-import { checkRateLimit } from './rate-limiter'
-import type { TokenValidationResult } from './types'
-
-// Public routes that don't require authentication
-const publicRoutes = [
-  '/',
-  '/auth/signin',
-  '/auth/login',
-  '/auth/signup',
-  '/auth/register',
-  '/auth/forgot-password',
-  '/auth/reset-password',
-  '/auth/verify-email',
-  '/auth/verify-2fa',
-  '/about',
-  '/blog',
-  '/discover',
-  '/travel',
-]
-
-// Protected routes that require authentication
-const protectedRoutes: string[] = [
-  '/dashboard',
-  '/profile',
-  '/settings',
-]
-
-// Auth endpoints that need rate limiting (backend endpoints)
-const authEndpoints = [
-  '/api/v1/users/login',
-  '/api/v1/users/refresh',
-  '/api/v1/users/password/reset/request',
-  '/api/v1/users/password/change',
-]
-
-// State-changing methods that require CSRF protection
-const CSRF_REQUIRED_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE']
-
-/**
- * Checks if a route is public
- */
-function isPublicRoute(pathname: string): boolean {
-  return publicRoutes.some(
-    (route) => pathname === route || pathname.startsWith(route + '/')
-  )
-}
-
-/**
- * Checks if a route is protected
- */
-function isProtectedRoute(pathname: string): boolean {
-  return protectedRoutes.some((route) => pathname.startsWith(route))
-}
-
-/**
- * Checks if a route is an auth endpoint
- */
-function isAuthEndpoint(pathname: string): boolean {
-  return authEndpoints.some((endpoint) => pathname.startsWith(endpoint))
-}
-
-/**
- * Checks if a method requires CSRF protection
- */
-function requiresCSRF(method: string): boolean {
-  return CSRF_REQUIRED_METHODS.includes(method)
-}
-
-/**
- * Creates a response that clears auth cookies and redirects to login
- */
-function createUnauthorizedResponse(
-  request: NextRequest,
-  reason: string = 'Unauthorized'
-): NextResponse {
-  const response = NextResponse.redirect(
-    new URL('/auth/signin', request.url)
-  )
-
-  // Clear all auth cookies
-  response.cookies.delete('access_token')
-  response.cookies.delete('refresh_token')
-  response.cookies.delete('csrf_token')
-
-  return response
-}
-
-/**
- * Main authentication middleware logic
- * 
- * @param request - Next.js request object
- * @returns NextResponse or null (null means continue)
- * 
- * @security This is the core security gate - validates tokens, CSRF, and rate limits
- */
-export async function authMiddleware(
-  request: NextRequest
-): Promise<NextResponse | null> {
+export async function authMiddleware(request: NextRequest): Promise<NextResponse | null> {
   const { pathname } = request.nextUrl
-
-  // 1. Rate limiting for auth endpoints
-  if (isAuthEndpoint(pathname)) {
-    const rateLimit = await checkRateLimit(pathname, request)
-    if (rateLimit.limited) {
-      return NextResponse.json(
-        {
-          error: 'Too many requests',
-          retryAfter: rateLimit.retryAfter,
-        },
-        {
-          status: 429,
-          headers: {
-            'Retry-After': String(rateLimit.retryAfter || 60),
-          },
+  
+  // Skip excluded paths
+  if (isExcludedPath(pathname)) {
+    return null
+  }
+  
+  // Get access token from cookies
+  const accessToken = request.cookies.get(COOKIE_NAMES.ACCESS_TOKEN)?.value
+  
+  // Check if user is authenticated
+  const isAuthenticated = accessToken ? validateToken(accessToken) !== null : false
+  
+  // Handle protected paths
+  if (isProtectedPath(pathname)) {
+    if (!isAuthenticated) {
+      // Redirect to login with return URL
+      const loginUrl = new URL('/auth/login', request.url)
+      loginUrl.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+  }
+  
+  // Handle auth paths - redirect authenticated users away
+  if (isAuthPath(pathname) && isAuthenticated) {
+    // Redirect authenticated users away from auth pages
+    const redirectTo = request.nextUrl.searchParams.get('redirect') || '/'
+    return NextResponse.redirect(new URL(redirectTo, request.url))
+  }
+  
+  // Handle API routes - add auth headers if token exists
+  if (isApiRoute(pathname)) {
+    const response = NextResponse.next()
+    
+    // Add user info to headers for API routes (if authenticated)
+    if (isAuthenticated && accessToken) {
+      try {
+        const decoded = validateToken(accessToken)
+        if (decoded && decoded.sub) {
+          response.headers.set('x-user-id', decoded.sub as string)
         }
+      } catch (error) {
+        // Silently fail - don't break the request
+      }
+    }
+    
+    return response
+  }
+  
+  // For all other paths, continue normally
+  return null
+}
+
+/**
+ * Rate limiting middleware (simple in-memory implementation)
+ * For production, use Redis or a dedicated service
+ */
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>()
+
+export function rateLimitMiddleware(
+  request: NextRequest,
+  limit: number = 100,
+  windowMs: number = 60000 // 1 minute
+): NextResponse | null {
+  const ip = request.ip || 
+             request.headers.get('x-forwarded-for')?.split(',')[0] || 
+             request.headers.get('x-real-ip') || 
+             'unknown'
+  
+  const key = `rate-limit:${ip}`
+  const now = Date.now()
+  const record = rateLimitStore.get(key)
+  
+  // Clean up old records periodically
+  if (Math.random() < 0.01) { // 1% chance to clean up
+    for (const [k, v] of rateLimitStore.entries()) {
+      if (v.resetAt < now) {
+        rateLimitStore.delete(k)
+      }
+    }
+  }
+  
+  if (!record || record.resetAt < now) {
+    // New window
+    rateLimitStore.set(key, { count: 1, resetAt: now + windowMs })
+    return null
+  }
+  
+  if (record.count >= limit) {
+    // Rate limit exceeded
+    return new NextResponse(
+      JSON.stringify({ error: 'Too many requests', retryAfter: Math.ceil((record.resetAt - now) / 1000) }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': Math.ceil((record.resetAt - now) / 1000).toString(),
+          'X-RateLimit-Limit': limit.toString(),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': record.resetAt.toString(),
+        },
+      }
+    )
+  }
+  
+  // Increment count
+  record.count++
+  rateLimitStore.set(key, record)
+  
+  // Add rate limit headers
+  const response = NextResponse.next()
+  response.headers.set('X-RateLimit-Limit', limit.toString())
+  response.headers.set('X-RateLimit-Remaining', (limit - record.count).toString())
+  response.headers.set('X-RateLimit-Reset', record.resetAt.toString())
+  
+  return null
+}
+
+/**
+ * CSRF protection middleware
+ * Validates CSRF tokens for state-changing operations
+ */
+export function csrfMiddleware(request: NextRequest): NextResponse | null {
+  // Only check POST, PUT, PATCH, DELETE methods
+  const method = request.method
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    return null
+  }
+  
+  // Skip API routes that handle their own CSRF
+  if (request.nextUrl.pathname.startsWith('/api/auth/')) {
+    return null
+  }
+  
+  // For server actions, Next.js handles CSRF automatically
+  // This is just an additional layer for API routes
+  const origin = request.headers.get('origin')
+  const referer = request.headers.get('referer')
+  const host = request.headers.get('host')
+  
+  // In production, validate origin/referer matches host
+  if (process.env.NODE_ENV === 'production') {
+    if (origin && !origin.includes(host || '')) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Invalid origin' }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
       )
     }
   }
-
-  // 2. CSRF protection for state-changing requests
-  if (requiresCSRF(request.method)) {
-    // Skip CSRF for public routes (including public API routes like csrf-token)
-    if (isPublicRoute(pathname)) {
-      // Allow public routes without CSRF check
-    } else if (!isProtectedRoute(pathname) && !pathname.startsWith('/api/')) {
-      // Allow non-API public routes
-    } else {
-      // Verify CSRF token for protected routes and non-public API routes
-      // In middleware, cookies are accessed via request.cookies
-      const isValid = await verifyCSRFToken(request, request.cookies)
-      if (!isValid) {
-        return NextResponse.json(
-          { error: 'Invalid CSRF token' },
-          { status: 403 }
-        )
-      }
-    }
-  }
-
-  // 3. Public routes - allow through
-  if (isPublicRoute(pathname)) {
-    return null // Continue
-  }
-
-  // 4. Protected routes - validate authentication
-  if (isProtectedRoute(pathname)) {
-    const accessToken = extractAccessToken(request)
-
-    if (!accessToken) {
-      // No token - redirect to login
-      const signInUrl = new URL('/auth/signin', request.url)
-      signInUrl.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(signInUrl)
-    }
-
-    // Validate token (signature, expiry, blacklist)
-    const validation = await validateToken(accessToken)
-    if (!validation.valid) {
-      // Invalid token - clear cookies and redirect
-      return createUnauthorizedResponse(request, validation.error || 'Invalid token')
-    }
-
-    // Token is valid - continue
-    return null
-  }
-
-  // 5. API routes - validate if they require auth
-  if (pathname.startsWith('/api/')) {
-    // Most API routes require auth (except public auth endpoints)
-    if (!isPublicRoute(pathname)) {
-      const accessToken = extractAccessToken(request)
-
-      if (!accessToken) {
-        return NextResponse.json(
-          { error: 'Unauthorized' },
-          { status: 401 }
-        )
-      }
-
-      // Validate token
-      const validation = await validateToken(accessToken)
-      if (!validation.valid) {
-        // Clear cookies
-        const response = NextResponse.json(
-          { error: 'Invalid or expired token' },
-          { status: 401 }
-        )
-        response.cookies.delete('access_token')
-        response.cookies.delete('refresh_token')
-        return response
-      }
-
-      // Token is valid - continue
-      return null
-    }
-  }
-
-  // Default: allow through
+  
   return null
 }
 

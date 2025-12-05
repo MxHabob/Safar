@@ -4,7 +4,7 @@ import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { ThemeProvider } from "@/lib/providers/theme-provider";
-import { SessionProvider } from "@/lib/providers/auth-provider";
+import { AuthProvider } from "@/lib/auth/client";
 import { Toaster } from "@/components/ui/sonner";
 
 export const Providers = ({ children }: { children: React.ReactNode }) => {
@@ -25,10 +25,10 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
     <QueryClientProvider client={queryClient}>
       <NuqsAdapter>
         <ThemeProvider attribute="class">
-          <SessionProvider>
+          <AuthProvider>
             <Toaster />
             {children}
-          </SessionProvider>
+          </AuthProvider>
         </ThemeProvider>
       </NuqsAdapter>
     </QueryClientProvider>

@@ -20,8 +20,6 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { OctagonAlert, Shield, ArrowRight } from "lucide-react";
 import Graphic from "@/components/shared/graphic";
-import { useVerify2faLoginApiV1UsersLogin2faVerifyPostMutation } from "@/generated/hooks/users";
-import { tokenStorage } from "@/lib/auth";
 import { useAuth } from "@/lib/auth/client";
 
 const Verify2FASchema = z.object({
@@ -45,38 +43,36 @@ export function Verify2FAView() {
     },
   });
 
-  const verify2FAMutation = useVerify2faLoginApiV1UsersLogin2faVerifyPostMutation({
-    showToast: false,
-    onSuccess: (data) => {
-      // Store tokens
-      const expiresIn = data.expires_in || 1800;
-      tokenStorage.setAccessToken(data.access_token, expiresIn);
-      
-      // Store refresh token in localStorage
-      if (data.refresh_token) {
-        tokenStorage.setRefreshToken(data.refresh_token);
-      }
+  const { verify2FA } = useAuth();
+  const [pending, setPending] = useState(false);
 
-      // Redirect to dashboard - user will be fetched automatically by useAuth
-      router.push("/");
-    },
-    onError: (error) => {
-      setError(error.message || "Invalid verification code. Please try again.");
-    },
-  });
-
-  const onSubmit = (values: z.infer<typeof Verify2FASchema>) => {
+  const onSubmit = async (values: z.infer<typeof Verify2FASchema>) => {
     if (!email) {
       setError("Email is required");
       return;
     }
 
     setError(null);
-    verify2FAMutation.mutate({
-      email,
-      code: values.code,
-      is_backup_code: values.is_backup_code,
-    });
+    setPending(true);
+
+    try {
+      const result = await verify2FA({
+        email,
+        code: values.code,
+        is_backup_code: values.is_backup_code,
+      });
+
+      if (result.success) {
+        // Redirect to dashboard - user will be fetched automatically by useAuth
+        router.push("/");
+      } else if (result.error) {
+        setError(result.error);
+      }
+    } catch (err: any) {
+      setError(err?.message || "Invalid verification code. Please try again.");
+    } finally {
+      setPending(false);
+    }
   };
 
   return (
@@ -171,9 +167,9 @@ export function Verify2FAView() {
                 <Button
                   type="submit"
                   className="w-full h-11 rounded-[18px] font-light"
-                  disabled={verify2FAMutation.isPending}
+                  disabled={pending}
                 >
-                  {verify2FAMutation.isPending ? (
+                  {pending ? (
                     <>
                       <Spinner className="size-4" />
                       <span>Verifying...</span>

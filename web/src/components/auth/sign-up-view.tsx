@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { UserCreateSchema } from "@/generated/schemas";
-import { useRegisterApiV1UsersRegisterPostMutation } from "@/generated/hooks/users";
+import { useAuth } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -34,7 +34,9 @@ const SignUpSchema = UserCreateSchema.extend({
 export function SignUpView() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [pending, setPending] = useState(false);
   const router = useRouter();
+  const { register } = useAuth();
   
   const form = useForm<z.infer<typeof SignUpSchema>>({
     resolver: zodResolver(SignUpSchema),
@@ -47,27 +49,31 @@ export function SignUpView() {
     },
   });
 
-  const registerMutation = useRegisterApiV1UsersRegisterPostMutation({
-    showToast: false,
-    onSuccess: (data, variables) => {
-      setSuccess(true);
-      setTimeout(() => {
-        router.push("/auth/verify-email?email=" + encodeURIComponent(variables.email));
-      }, 2000);
-    },
-    onError: (error) => {
-      setError(error.message || "Registration failed. Please try again.");
-    },
-  });
-
-  const onSubmit = (values: z.infer<typeof SignUpSchema>) => {
+  const onSubmit = async (values: z.infer<typeof SignUpSchema>) => {
     setError(null);
-    registerMutation.mutate({
-      email: values.email,
-      password: values.password,
-      first_name: values.first_name || undefined,
-      last_name: values.last_name || undefined,
-    });
+    setPending(true);
+
+    try {
+      const result = await register({
+        email: values.email,
+        password: values.password,
+        first_name: values.first_name || undefined,
+        last_name: values.last_name || undefined,
+      });
+
+      if (result.success) {
+        setSuccess(true);
+        setTimeout(() => {
+          router.push("/auth/verify-email?email=" + encodeURIComponent(values.email));
+        }, 2000);
+      } else if (result.error) {
+        setError(result.error);
+      }
+    } catch (err: any) {
+      setError(err?.message || "Registration failed. Please try again.");
+    } finally {
+      setPending(false);
+    }
   };
 
   if (success) {
@@ -234,9 +240,9 @@ export function SignUpView() {
                 <Button
                   type="submit"
                   className="w-full h-11 rounded-[18px] font-light"
-                  disabled={registerMutation.isPending}
+                  disabled={pending}
                 >
-                  {registerMutation.isPending ? (
+                  {pending ? (
                     <>
                       <Spinner className="size-4" />
                       <span>Creating account...</span>

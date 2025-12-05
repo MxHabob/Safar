@@ -1,58 +1,57 @@
 /**
- * Authentication Library - Main Exports
+ * Authentication module exports
  * 
- * Central export point for all authentication functionality.
+ * Server-side:
+ * - getServerSession() - Get current session
+ * - requireAuth() - Require authentication (redirects if not)
+ * - isAuthenticated() - Check auth status
+ * - getCurrentUser() - Get current user
+ * 
+ * Client-side:
+ * - useAuth() - React hook for auth state
+ * - AuthProvider - React context provider
+ * 
+ * Actions:
+ * - loginAction() - Login
+ * - registerAction() - Register
+ * - logoutAction() - Logout
+ * - refreshTokenAction() - Refresh token
+ * - verify2FAAction() - Verify 2FA
  */
 
-// Server-side utilities
+// Server-side exports
 export {
   getServerSession,
-  validateToken,
-  extractAccessToken,
+  requireAuth,
+  isAuthenticated,
+  getCurrentUser,
+  getAccessToken,
+  setAuthTokens,
+  clearAuthTokens,
 } from './server'
 
-// Client-side hooks
-export { useAuth, useLogin, useLogout } from './client'
+// Session provider exports
+export { getSession, requireSession } from './session-provider'
 
-// CSRF utilities
-export {
-  generateCSRFToken,
-  setCSRFCookie,
-  getCSRFCookie,
-  verifyCSRFToken,
-  clearCSRFCookie,
-  CSRF_HEADER,
-} from './csrf'
+// Client-side exports
+export { useAuth, AuthProvider } from './client'
 
-// Refresh queue utilities
+// Action exports
 export {
-  queueRefresh,
-  queueRetry,
-  clearRetryQueue,
-} from './refresh-queue'
+  loginAction,
+  registerAction,
+  logoutAction,
+  refreshTokenAction,
+  verify2FAAction,
+} from './actions'
 
-// Rate limiter utilities
+// OAuth exports
 export {
-  checkRateLimit,
-  resetRateLimit,
-  getRateLimitConfig,
-} from './rate-limiter'
+  initiateOAuth,
+  handleOAuthCallback,
+  type OAuthProvider,
+} from './oauth'
 
 // Types
-export type {
-  AuthUser,
-  JWTPayload,
-  TokenValidationResult,
-  RefreshTokenFamily,
-  CSRFTokenData,
-  RateLimitData,
-  AuthContextType,
-  ServerSession,
-} from './types'
+export type { ServerSession } from './server'
 
-// Token storage (for backward compatibility)
-export { tokenStorage } from './token-storage'
-
-// Session provider utilities
-export { SessionProvider } from '../providers/auth-provider'
-export { getSession, requireAuth, isAuthenticated } from './session-provider'

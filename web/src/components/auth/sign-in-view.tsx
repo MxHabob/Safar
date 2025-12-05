@@ -43,33 +43,35 @@ export function SignInView() {
     setPending(true);
 
     try {
-      const result = await login(values.email, values.password);
+      const result = await login({
+        email: values.email,
+        password: values.password,
+      });
       
       // Check if 2FA is required
-      if (result.type === '2fa_required') {
+      if (result.requires2FA) {
         // Redirect to 2FA verification page
         const params = new URLSearchParams({
           email: values.email,
         });
-        if (result.userId) {
-          params.set('userId', result.userId);
-        }
         router.push(`/auth/verify-2fa?${params.toString()}`);
         return;
       }
       
-      // Successful login
-      router.push("/");
+      if (result.success) {
+        // Successful login - redirect will happen automatically via useAuth
+        router.push("/");
+      } else if (result.error) {
+        setError(result.error);
+      }
     } catch (err: any) {
       // Handle different error types
       let errorMessage = "Invalid email or password. Please try again.";
       
-      if (err?.status === 423) {
+      if (err?.status === 423 || err?.message?.includes('locked')) {
         errorMessage = "Account temporarily locked due to too many failed login attempts. Please try again in 15 minutes.";
-      } else if (err?.status === 403) {
+      } else if (err?.status === 403 || err?.message?.includes('inactive')) {
         errorMessage = err?.message || "Account is inactive or access denied.";
-      } else if (err?.response?.data?.detail) {
-        errorMessage = err.response.data.detail;
       } else if (err?.message) {
         errorMessage = err.message;
       }
