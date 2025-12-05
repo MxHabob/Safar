@@ -1,10 +1,13 @@
 """
 Main API v1 router.
 """
+import logging
 from fastapi import APIRouter, Request
 from fastapi.responses import Response
 
 from app.modules.users.routes import router as users_router
+
+logger = logging.getLogger(__name__)
 from app.modules.listings.routes import router as listings_router
 from app.modules.ai_trip_planner.routes import router as ai_travel_planner_router
 from app.modules.files.routes import router as files_router
@@ -28,12 +31,14 @@ api_router = APIRouter()
 
 # Add OPTIONS handler for all API routes (CORS preflight)
 # This ensures OPTIONS requests are handled before reaching route handlers
+# IMPORTANT: This must be registered BEFORE include_router calls
 @api_router.options("/{full_path:path}")
-async def options_handler(request: Request):
+async def options_handler(request: Request, full_path: str = ""):
     """
     Handle OPTIONS preflight requests for all API routes.
     Returns 200 OK - CORSMiddleware will add appropriate CORS headers.
     """
+    logger.debug(f"OPTIONS request received for path: {full_path}")
     return Response(status_code=200)
 
 # Include all routers

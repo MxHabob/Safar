@@ -24,6 +24,22 @@ settings = get_settings()
 logger = logging.getLogger(__name__)
 
 
+class CORSPreflightMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware to handle OPTIONS preflight requests.
+    This ensures OPTIONS requests return 200 OK before reaching route handlers.
+    CORSMiddleware will add the appropriate CORS headers.
+    """
+    
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        # Handle OPTIONS requests immediately
+        if request.method == "OPTIONS":
+            # Return 200 OK - CORSMiddleware will add CORS headers
+            return Response(status_code=200)
+        
+        return await call_next(request)
+
+
 class BotDetectionMiddleware(BaseHTTPMiddleware):
     """
     Bot detection middleware.

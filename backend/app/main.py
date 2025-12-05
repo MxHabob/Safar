@@ -18,7 +18,8 @@ from app.core.middleware import (
     EnhancedRateLimitMiddleware,
     BotDetectionMiddleware,
     SecurityHeadersMiddleware,
-    RequestMonitoringMiddleware
+    RequestMonitoringMiddleware,
+    CORSPreflightMiddleware
 )
 from app.api.v1.router import api_router
 
@@ -123,7 +124,8 @@ app.add_middleware(
 #   2. Bot Detection - Blocks automated requests
 #   3. Security Headers - Adds security headers to responses
 #   4. Request Monitoring - Logs all requests for analysis
-#   5. CORS Middleware - Last to execute, handles CORS headers and OPTIONS preflight
+#   5. CORS Preflight - Handles OPTIONS requests before route handlers
+#   6. CORS Middleware - Last to execute, handles CORS headers
 #
 # Note: All security middlewares skip OPTIONS requests to allow CORS preflight
 # This maintains security while enabling cross-origin requests from allowed origins
@@ -137,7 +139,10 @@ app.add_middleware(SecurityHeadersMiddleware)
 # 3. Bot Detection (blocks automated/scraper requests, before rate limiting)
 app.add_middleware(BotDetectionMiddleware)
 
-# 4. Rate Limiting (innermost - first to execute, protects against abuse)
+# 4. CORS Preflight (handles OPTIONS requests before route handlers)
+app.add_middleware(CORSPreflightMiddleware)
+
+# 5. Rate Limiting (innermost - first to execute, protects against abuse)
 if settings.rate_limit_enabled:
     app.add_middleware(EnhancedRateLimitMiddleware)
 
