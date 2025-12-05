@@ -439,6 +439,7 @@ async def oauth_login(
         # Create new user via service
         from app.modules.users.schemas import UserCreate
         from app.core.id import generate_typed_id
+        from app.core.utils.images import get_cdn_url
         
         # Create user entity
         user_entity = UserEntity(

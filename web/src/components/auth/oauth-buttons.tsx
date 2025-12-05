@@ -57,36 +57,66 @@ export function OAuthButtons({ onError }: OAuthButtonsProps) {
 
   // Initialize Google Sign-In button
   useEffect(() => {
-    if (googleClientId && googleButtonRef.current && !loading) {
-      const initializeGoogleButton = async () => {
-        try {
-          await renderGoogleButton(
-            googleButtonRef.current!,
-            googleClientId,
-            (idToken: string) => {
-              setLoading("google");
-              oauthLoginMutation.mutate({
-                provider: "google" as any,
-                token: idToken,
-              });
-            },
-            (error: Error) => {
-              if (onError) {
-                onError(`Google Sign-In failed: ${error.message}`);
-              }
-              setLoading(null);
-            }
-          );
-        } catch (error) {
-          console.error("Failed to initialize Google button:", error);
-          if (onError) {
-            onError("Failed to initialize Google Sign-In. Please refresh the page.");
-          }
-        }
-      };
-
-      initializeGoogleButton();
+    if (!googleClientId || !googleButtonRef.current || loading) {
+      return;
     }
+
+    let isMounted = true;
+    const element = googleButtonRef.current;
+
+    const initializeGoogleButton = async () => {
+      try {
+        // Clear any existing content
+        if (element) {
+          element.innerHTML = "";
+        }
+
+        await renderGoogleButton(
+          element,
+          googleClientId,
+          (idToken: string) => {
+            if (!isMounted) return;
+            setLoading("google");
+            oauthLoginMutation.mutate({
+              provider: "google" as any,
+              token: idToken,
+            });
+          },
+          (error: Error) => {
+            if (!isMounted) return;
+            console.error("Google Sign-In error:", error);
+            if (onError) {
+              onError(`Google Sign-In failed: ${error.message}`);
+            }
+            setLoading(null);
+          }
+        );
+      } catch (error: any) {
+        if (!isMounted) return;
+        console.error("Failed to initialize Google button:", error);
+        if (onError) {
+          onError(
+            error.message?.includes("origin")
+              ? "Google Sign-In is not configured for this domain. Please contact support."
+              : "Failed to initialize Google Sign-In. Please refresh the page."
+          );
+        }
+      }
+    };
+
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      initializeGoogleButton();
+    }, 100);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+      // Clean up Google button if component unmounts
+      if (element) {
+        element.innerHTML = "";
+      }
+    };
   }, [googleClientId, loading]);
 
   const handleOAuthLogin = async (provider: OAuthProvider) => {
@@ -150,33 +180,13 @@ export function OAuthButtons({ onError }: OAuthButtonsProps) {
   return (
     <div className="space-y-3">
       {/* Google Sign-In Button - Rendered by Google SDK */}
-      <div ref={googleButtonRef} className="w-full flex justify-center">
-        {/* Fallback button if Google SDK fails to render */}
-        {!googleClientId && (
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full h-11 rounded-[18px] font-light"
-            onClick={() => handleOAuthLogin("google")}
-            disabled={loading !== null || oauthLoginMutation.isPending}
-          >
-            {loading === "google" || oauthLoginMutation.isPending ? (
-              <>
-                <Spinner className="size-4" />
-                <span>Connecting...</span>
-              </>
-            ) : (
-              <>
-                <Chrome className="size-4" />
-                <span>Continue with Google</span>
-              </>
-            )}
-          </Button>
-        )}
-      </div>
-
-      {/* Fallback manual Google button */}
-      {googleClientId && (
+      {googleClientId ? (
+        <div 
+          ref={googleButtonRef} 
+          className="w-full flex justify-center min-h-[40px]"
+          style={{ minHeight: "40px" }}
+        />
+      ) : (
         <Button
           type="button"
           variant="outline"

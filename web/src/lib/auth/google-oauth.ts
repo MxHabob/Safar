@@ -23,6 +23,7 @@ declare global {
           initialize: (config: {
             client_id: string;
             callback: (response: { credential: string }) => void;
+            error_callback?: (error: any) => void;
           }) => void;
           prompt: () => void;
           renderButton: (element: HTMLElement, config: any) => void;
@@ -140,30 +141,54 @@ export async function renderGoogleButton(
   onSuccess: (idToken: string) => void,
   onError: (error: Error) => void
 ): Promise<void> {
-  await loadGoogleScript(clientId);
+  try {
+    await loadGoogleScript(clientId);
 
-  if (!window.google?.accounts?.id) {
-    onError(new Error('Google Identity Services not available'));
-    return;
+    if (!window.google?.accounts?.id) {
+      onError(new Error('Google Identity Services not available'));
+      return;
+    }
+
+    // Initialize Google Identity Services
+    window.google.accounts.id.initialize({
+      client_id: clientId,
+      callback: (response: { credential: string }) => {
+        if (response.credential) {
+          onSuccess(response.credential);
+        } else {
+          onError(new Error('No credential received from Google'));
+        }
+      },
+      // Add error handling
+      error_callback: (error: any) => {
+        console.error('Google Sign-In error:', error);
+        if (error.type === 'popup_closed_by_user') {
+          onError(new Error('Sign-in was cancelled'));
+        } else if (error.type === 'popup_blocked') {
+          onError(new Error('Popup was blocked. Please allow popups for this site.'));
+        } else {
+          onError(new Error(error.message || 'Google Sign-In failed'));
+        }
+      },
+    });
+
+    // Render the button
+    try {
+      window.google.accounts.id.renderButton(element, {
+        type: 'standard',
+        theme: 'outline',
+        size: 'large',
+        text: 'signin_with',
+        width: element.offsetWidth || 382,
+        shape: 'rectangular',
+      });
+    } catch (renderError: any) {
+      console.error('Failed to render Google button:', renderError);
+      onError(new Error(`Failed to render Google button: ${renderError.message || 'Unknown error'}`));
+    }
+  } catch (error: any) {
+    console.error('Google OAuth initialization error:', error);
+    onError(new Error(error.message || 'Failed to initialize Google Sign-In'));
   }
-
-  window.google.accounts.id.initialize({
-    client_id: clientId,
-    callback: (response: { credential: string }) => {
-      if (response.credential) {
-        onSuccess(response.credential);
-      } else {
-        onError(new Error('No credential received from Google'));
-      }
-    },
-  });
-
-  window.google.accounts.id.renderButton(element, {
-    type: 'standard',
-    theme: 'outline',
-    size: 'large',
-    text: 'signin_with',
-    width: element.offsetWidth || 300,
-  });
 }
 

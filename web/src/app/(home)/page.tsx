@@ -4,7 +4,7 @@ import { Metadata } from "next";
 import ProfileCard from "@/pages/home/components/profile-card";
 import LatestTravelCard from "@/pages/home/components/latest-travel-card";
 import Footer from "@/components/footer";
-
+import { getSession } from '@/lib/auth/session-provider'
 import {
   CitiesView,
   CitiesViewLoadingStatus,
@@ -35,6 +35,10 @@ export const metadata: Metadata = {
 };
 
 const page = async () => {
+  const session = await getSession()
+  console.log('session', session)
+  
+
   return (
     <div className="flex flex-col lg:flex-row min-h-screen w-full">
       {/* LEFT CONTENT - Fixed */}

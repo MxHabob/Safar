@@ -9,8 +9,9 @@ export default async function AccountLayout({
   children: React.ReactNode
 }) {
   const session = await getSession()
+  console.log('session', session)
   
-  if (!session) {
+  if (!session?.user) {
     redirect('/auth/login')
   }
 
