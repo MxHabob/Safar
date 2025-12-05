@@ -6,6 +6,7 @@ services:
     environment:
       - DEBUG=False
       - ENVIRONMENT=production
+      - UVICORN_WORKERS=4
       - MINIO_ENDPOINT=minio
       - MINIO_PORT=9000
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
@@ -21,7 +22,7 @@ services:
     command: >
       sh -c "
         alembic upgrade head &&
-        uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4 --no-access-log
+        python run.py
       "
     restart: always
     networks:

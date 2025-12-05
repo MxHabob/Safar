@@ -4,7 +4,9 @@
  * React hooks for authentication in client components.
  * Integrates with refresh queue and retry system.
  * 
- * @security Handles token refresh, retry queue, and CSRF tokens
+ * Uses generated API client directly - no internal API routes needed.
+ * 
+ * @security Handles token refresh and retry queue
  */
 
 'use client'
@@ -13,13 +15,13 @@ import { useState, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { tokenStorage } from './token-storage'
-import { queueRefresh, queueRetry } from './refresh-queue'
-import { CSRF_HEADER } from './csrf'
+import { queueRefresh } from './refresh-queue'
 import { apiClient } from '@/generated/client'
 import { z } from 'zod'
 import type {
   AuthUser,
   AuthContextType,
+  LoginResult,
 } from './types'
 import { LoginApiV1UsersLoginPostResponseSchema } from '@/generated/schemas'
 
@@ -110,30 +112,27 @@ export function useAuth(): AuthContextType {
     return (
       (await queueRefresh(async () => {
         try {
-          // Get CSRF token from cookie (via API route)
-          const csrfResponse = await fetch('/api/auth/csrf-token', {
-            credentials: 'include',
-          })
-          const { csrfToken } = await csrfResponse.json()
-
-          const response = await fetch('/api/auth/refresh', {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-              [CSRF_HEADER]: csrfToken,
-            },
-          })
-
-          if (!response.ok) {
+          const refreshTokenValue = tokenStorage.getRefreshToken()
+          if (!refreshTokenValue) {
             return null
           }
 
-          const data = await response.json()
+          // Use generated client to refresh token directly
+          const response = await apiClient.users.refreshTokenApiV1UsersRefreshPost({
+            body: { refresh_token: refreshTokenValue },
+          })
+
+          const data = response.data
 
           // Update access token
           const expiresIn = data.expires_in || 1800
           tokenStorage.setAccessToken(data.access_token, expiresIn)
+          
+          // Update refresh token if a new one is provided
+          if (data.refresh_token) {
+            tokenStorage.setRefreshToken(data.refresh_token)
+          }
+          
           setAccessToken(data.access_token)
 
           return {
@@ -142,6 +141,9 @@ export function useAuth(): AuthContextType {
           }
         } catch (error) {
           console.error('Token refresh failed:', error)
+          // Clear tokens on refresh failure
+          tokenStorage.clearAll()
+          setAccessToken(null)
           return null
         }
       })) !== null
@@ -157,47 +159,52 @@ export function useAuth(): AuthContextType {
       email: string
       password: string
     }) => {
-      // Get CSRF token first
-      const csrfResponse = await fetch('/api/auth/csrf-token', {
-        credentials: 'include',
-      })
-      const { csrfToken } = await csrfResponse.json()
-
-      const response = await apiClient.users.loginApiV1UsersLoginPost({
-        body: { email, password },
-        config: {
-          headers: {
-            [CSRF_HEADER]: csrfToken,
-          },
-        },
-      })
-      return response.data as z.infer<typeof LoginApiV1UsersLoginPostResponseSchema>
+      try {
+        const response = await apiClient.users.loginApiV1UsersLoginPost({
+          body: { email, password },
+        })
+        return { 
+          type: 'success' as const,
+          data: response.data as z.infer<typeof LoginApiV1UsersLoginPostResponseSchema>
+        }
+      } catch (error: any) {
+        // Check if 2FA is required (202 status)
+        // FastAPI returns 202 as an error response when 2FA is required
+        const status = error?.status || error?.response?.status || error?.statusCode
+        if (status === 202) {
+          // Try to get user ID from response headers or error data
+          const headers = error?.response?.headers || error?.headers || {}
+          const userId = headers['x-user-id'] || headers['X-User-ID'] || headers.get?.('x-user-id') || headers.get?.('X-User-ID')
+          return {
+            type: '2fa_required' as const,
+            userId: userId || null,
+            email,
+          }
+        }
+        // Re-throw other errors
+        throw error
+      }
     },
-    onSuccess: async (data) => {
+    onSuccess: async (result) => {
+      // Handle 2FA requirement
+      if (result.type === '2fa_required') {
+        // Don't store tokens yet, user needs to verify 2FA
+        // The component should handle redirecting to 2FA verification
+        return
+      }
+
+      // Handle successful login
+      const data = result.data
       // Store access token
       const expiresIn = data.expires_in || 1800
       tokenStorage.setAccessToken(data.access_token, expiresIn)
-      setAccessToken(data.access_token)
-
-      // Store refresh token in httpOnly cookie via API route
-      try {
-        const csrfResponse = await fetch('/api/auth/csrf-token', {
-          credentials: 'include',
-        })
-        const { csrfToken } = await csrfResponse.json()
-
-        await fetch('/api/auth/set-refresh-token', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            [CSRF_HEADER]: csrfToken,
-          },
-          body: JSON.stringify({ refresh_token: data.refresh_token }),
-          credentials: 'include',
-        })
-      } catch (error) {
-        console.error('Failed to set refresh token:', error)
+      
+      // Store refresh token in localStorage
+      if (data.refresh_token) {
+        tokenStorage.setRefreshToken(data.refresh_token)
       }
+      
+      setAccessToken(data.access_token)
 
       // Invalidate and refetch user data
       await queryClient.invalidateQueries({ queryKey: ['auth', 'user'] })
@@ -210,17 +217,11 @@ export function useAuth(): AuthContextType {
       const token = tokenStorage.getAccessToken()
       if (token) {
         try {
-          // Get CSRF token
-          const csrfResponse = await fetch('/api/auth/csrf-token', {
-            credentials: 'include',
-          })
-          const { csrfToken } = await csrfResponse.json()
-
+          // Call logout endpoint using generated client
           await apiClient.users.logoutApiV1UsersLogoutPost({
             config: {
               headers: {
                 Authorization: `Bearer ${token}`,
-                [CSRF_HEADER]: csrfToken,
               },
             },
           })
@@ -231,27 +232,9 @@ export function useAuth(): AuthContextType {
       }
     },
     onSuccess: async () => {
-      // Clear tokens
-      tokenStorage.removeAccessToken()
+      // Clear all tokens
+      tokenStorage.clearAll()
       setAccessToken(null)
-
-      // Clear refresh token cookie
-      try {
-        const csrfResponse = await fetch('/api/auth/csrf-token', {
-          credentials: 'include',
-        })
-        const { csrfToken } = await csrfResponse.json()
-
-        await fetch('/api/auth/clear-refresh-token', {
-          method: 'POST',
-          headers: {
-            [CSRF_HEADER]: csrfToken,
-          },
-          credentials: 'include',
-        })
-      } catch (error) {
-        console.error('Failed to clear refresh token:', error)
-      }
 
       // Clear all queries
       queryClient.clear()
@@ -301,8 +284,13 @@ export function useAuth(): AuthContextType {
     user: user ?? null,
     isLoading: isLoadingUser || loginMutation.isPending,
     isAuthenticated: !!user && !!accessToken,
-    login: async (email: string, password: string) => {
-      await loginMutation.mutateAsync({ email, password })
+    login: async (email: string, password: string): Promise<LoginResult> => {
+      const result = await loginMutation.mutateAsync({ email, password })
+      // Return result so caller can check if 2FA is required
+      if (result.type === '2fa_required') {
+        return result
+      }
+      return { type: 'success' }
     },
     logout: async () => {
       await logoutMutation.mutateAsync()

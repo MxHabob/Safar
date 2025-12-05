@@ -21,22 +21,7 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 60,
     qualities: [75, 85],
   },
-  compress: true,
-  poweredByHeader: false,
-  experimental: {
-    optimizePackageImports: [
-      "@radix-ui/react-accordion",
-      "@radix-ui/react-alert-dialog",
-      "@radix-ui/react-avatar",
-      "@radix-ui/react-dropdown-menu",
-      "@radix-ui/react-popover",
-      "@radix-ui/react-select",
-      "@radix-ui/react-tabs",
-      "@radix-ui/react-tooltip",
-      "lucide-react",
-      "next-themes",
-    ],
-  },
+
   webpack: (config, { isServer }) => {
     if (!isServer && config.resolve) {
       config.resolve.fallback = {

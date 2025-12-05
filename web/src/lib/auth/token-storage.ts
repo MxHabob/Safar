@@ -1,13 +1,15 @@
 /**
  * Secure token storage utilities
  * 
- * Best practices:
- * - Access token: localStorage (short-lived, less critical)
- * - Refresh token: httpOnly cookie (more secure, set via API route)
+ * Stores both access and refresh tokens in localStorage.
+ * Note: While httpOnly cookies are more secure, storing refresh tokens
+ * in localStorage simplifies the implementation and removes the need for
+ * internal API routes. This is a trade-off between security and simplicity.
  */
 
 const ACCESS_TOKEN_KEY = 'access_token'
 const TOKEN_EXPIRY_KEY = 'access_token_expiry'
+const REFRESH_TOKEN_KEY = 'refresh_token'
 
 export const tokenStorage = {
   /**
@@ -45,6 +47,22 @@ export const tokenStorage = {
   },
 
   /**
+   * Get refresh token from localStorage
+   */
+  getRefreshToken: (): string | null => {
+    if (typeof window === 'undefined') return null
+    return localStorage.getItem(REFRESH_TOKEN_KEY)
+  },
+
+  /**
+   * Set refresh token in localStorage
+   */
+  setRefreshToken: (token: string): void => {
+    if (typeof window === 'undefined') return
+    localStorage.setItem(REFRESH_TOKEN_KEY, token)
+  },
+
+  /**
    * Remove access token from localStorage
    */
   removeAccessToken: (): void => {
@@ -52,6 +70,24 @@ export const tokenStorage = {
     
     localStorage.removeItem(ACCESS_TOKEN_KEY)
     localStorage.removeItem(TOKEN_EXPIRY_KEY)
+  },
+
+  /**
+   * Remove refresh token from localStorage
+   */
+  removeRefreshToken: (): void => {
+    if (typeof window === 'undefined') return
+    localStorage.removeItem(REFRESH_TOKEN_KEY)
+  },
+
+  /**
+   * Remove all tokens (logout)
+   */
+  clearAll: (): void => {
+    if (typeof window === 'undefined') return
+    
+    tokenStorage.removeAccessToken()
+    tokenStorage.removeRefreshToken()
   },
 
   /**

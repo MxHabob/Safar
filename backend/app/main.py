@@ -22,7 +22,7 @@ from app.core.middleware import (
 )
 from app.api.v1.router import api_router
 
-from app.core.logging_config import setup_logging
+from app.core.logging_config import setup_logging, get_uvicorn_log_config
 from app.core.tracing import setup_tracing, instrument_app
 from app.core import models
 
@@ -290,6 +290,8 @@ if __name__ == "__main__":
         "app.main:app",
         host=settings.host,
         port=settings.port,
-        reload=settings.debug
+        reload=settings.debug,
+        log_config=get_uvicorn_log_config(),
+        use_colors=False  # Disable colors in Docker/containers
     )
 

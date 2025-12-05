@@ -52,3 +52,7 @@ export type {
 
 // Token storage (for backward compatibility)
 export { tokenStorage } from './token-storage'
+
+// Session provider utilities
+export { SessionProvider } from '../providers/auth-provider'
+export { getSession, requireAuth, isAuthenticated } from './session-provider'

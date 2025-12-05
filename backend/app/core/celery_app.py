@@ -3,8 +3,13 @@ Celery configuration for background tasks.
 """
 from celery import Celery
 from app.core.config import get_settings
+from app.core.logging_config import setup_logging
 
 settings = get_settings()
+
+# Setup logging for Celery workers
+# This ensures Celery workers use the same logging configuration as the main app
+setup_logging()
 
 # Create Celery app
 celery_app = Celery(
@@ -31,5 +36,8 @@ celery_app.conf.update(
     worker_max_tasks_per_child=1000,
     # Ensure broker connections are retried on startup (Celery 6+ behavior)
     broker_connection_retry_on_startup=True,
+    # Configure Celery logging
+    worker_log_format='[%(asctime)s: %(levelname)s/%(processName)s] %(message)s',
+    worker_task_log_format='[%(asctime)s: %(levelname)s/%(processName)s][%(task_name)s(%(task_id)s)] %(message)s',
 )
 

@@ -70,8 +70,11 @@ def setup_logging():
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG if settings.debug else logging.INFO)
     
-    # Remove existing handlers
-    root_logger.handlers.clear()
+    # Remove existing handlers only if not already configured
+    # This prevents removing handlers set by uvicorn's log_config
+    if not any(isinstance(h, logging.StreamHandler) and h.stream == sys.stdout 
+               for h in root_logger.handlers):
+        root_logger.handlers.clear()
     
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
@@ -113,18 +116,97 @@ def setup_logging():
     root_logger.addHandler(error_handler)
     
     # Set levels for third-party loggers
+    # Ensure uvicorn loggers use the same handlers
     uvicorn_logger = logging.getLogger("uvicorn")
     uvicorn_logger.setLevel(logging.INFO)
+    uvicorn_logger.handlers = []  # Clear existing handlers
+    uvicorn_logger.addHandler(console_handler)  # Use our console handler
+    uvicorn_logger.propagate = False  # Don't propagate to root logger
+    
     # Add filter to suppress 429 error tracebacks
     rate_limit_filter = RateLimitErrorFilter()
     uvicorn_logger.addFilter(rate_limit_filter)
     
-    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+    # Configure uvicorn.error logger
+    uvicorn_error_logger = logging.getLogger("uvicorn.error")
+    uvicorn_error_logger.setLevel(logging.INFO)
+    uvicorn_error_logger.handlers = []
+    uvicorn_error_logger.addHandler(console_handler)
+    uvicorn_error_logger.propagate = False
+    
+    # Configure uvicorn.access logger (set to WARNING to reduce noise)
+    uvicorn_access_logger = logging.getLogger("uvicorn.access")
+    uvicorn_access_logger.setLevel(logging.WARNING)
+    uvicorn_access_logger.handlers = []
+    uvicorn_access_logger.addHandler(console_handler)
+    uvicorn_access_logger.propagate = False
+    
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
+    
+    # Configure Celery loggers
+    celery_logger = logging.getLogger("celery")
+    celery_logger.setLevel(logging.INFO)
+    celery_task_logger = logging.getLogger("celery.task")
+    celery_task_logger.setLevel(logging.INFO)
+    celery_beat_logger = logging.getLogger("celery.beat")
+    celery_beat_logger.setLevel(logging.INFO)
 
 
 def get_logger(name: str) -> logging.Logger:
     """Convenience helper to retrieve a named logger."""
     return logging.getLogger(name)
 
+
+def get_uvicorn_log_config() -> dict[str, Any]:
+    """
+    Get logging configuration dictionary for uvicorn.
+    This ensures uvicorn uses the same logging setup as the application.
+    """
+    return {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "default": {
+                "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                "datefmt": "%Y-%m-%d %H:%M:%S",
+            },
+            "access": {
+                "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                "datefmt": "%Y-%m-%d %H:%M:%S",
+            },
+        },
+        "handlers": {
+            "default": {
+                "formatter": "default",
+                "class": "logging.StreamHandler",
+                "stream": "ext://sys.stdout",
+            },
+            "access": {
+                "formatter": "access",
+                "class": "logging.StreamHandler",
+                "stream": "ext://sys.stdout",
+            },
+        },
+        "loggers": {
+            "uvicorn": {
+                "handlers": ["default"],
+                "level": "INFO",
+                "propagate": False,
+            },
+            "uvicorn.error": {
+                "handlers": ["default"],
+                "level": "INFO",
+                "propagate": False,
+            },
+            "uvicorn.access": {
+                "handlers": ["access"],
+                "level": "INFO",
+                "propagate": False,
+            },
+        },
+        "root": {
+            "level": "INFO",
+            "handlers": ["default"],
+        },
+    }

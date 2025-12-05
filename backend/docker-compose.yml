@@ -178,7 +178,7 @@ services:
         done &&
         echo 'Database is ready!' &&
         alembic upgrade head &&
-        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+        python run.py
       "
     networks:
       - safar_network

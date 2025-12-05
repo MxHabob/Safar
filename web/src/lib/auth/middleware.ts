@@ -17,33 +17,32 @@ import type { TokenValidationResult } from './types'
 const publicRoutes = [
   '/',
   '/auth/signin',
+  '/auth/login',
   '/auth/signup',
+  '/auth/register',
   '/auth/forgot-password',
   '/auth/reset-password',
   '/auth/verify-email',
+  '/auth/verify-2fa',
   '/about',
   '/blog',
   '/discover',
   '/travel',
-  '/api/auth/login',
-  '/api/auth/register',
-  '/api/auth/password/reset/request',
-  '/api/auth/password/reset',
 ]
 
 // Protected routes that require authentication
-const protectedRoutes = [
-  // '/dashboard',
-  // '/profile',
-  // '/settings',
+const protectedRoutes: string[] = [
+  '/dashboard',
+  '/profile',
+  '/settings',
 ]
 
-// Auth endpoints that need rate limiting
+// Auth endpoints that need rate limiting (backend endpoints)
 const authEndpoints = [
-  '/api/auth/login',
-  '/api/auth/refresh',
-  '/api/auth/password/reset/request',
-  '/api/auth/password/change',
+  '/api/v1/users/login',
+  '/api/v1/users/refresh',
+  '/api/v1/users/password/reset/request',
+  '/api/v1/users/password/change',
 ]
 
 // State-changing methods that require CSRF protection
@@ -132,11 +131,13 @@ export async function authMiddleware(
 
   // 2. CSRF protection for state-changing requests
   if (requiresCSRF(request.method)) {
-    // Skip CSRF for public routes
-    if (!isProtectedRoute(pathname) && !pathname.startsWith('/api/')) {
-      // Allow public routes
+    // Skip CSRF for public routes (including public API routes like csrf-token)
+    if (isPublicRoute(pathname)) {
+      // Allow public routes without CSRF check
+    } else if (!isProtectedRoute(pathname) && !pathname.startsWith('/api/')) {
+      // Allow non-API public routes
     } else {
-      // Verify CSRF token for protected routes and API routes
+      // Verify CSRF token for protected routes and non-public API routes
       // In middleware, cookies are accessed via request.cookies
       const isValid = await verifyCSRFToken(request, request.cookies)
       if (!isValid) {

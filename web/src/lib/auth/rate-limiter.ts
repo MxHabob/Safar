@@ -14,21 +14,21 @@ interface RateLimitOptions {
   uniqueTokenPerInterval: number // Max requests per interval
 }
 
-// Default rate limit configurations
+// Default rate limit configurations (backend endpoints)
 const RATE_LIMITS: Record<string, RateLimitOptions> = {
-  '/api/auth/login': {
+  '/api/v1/users/login': {
     interval: 15 * 60 * 1000, // 15 minutes
     uniqueTokenPerInterval: 5, // 5 attempts per 15 minutes
   },
-  '/api/auth/refresh': {
+  '/api/v1/users/refresh': {
     interval: 60 * 1000, // 1 minute
     uniqueTokenPerInterval: 10, // 10 refreshes per minute
   },
-  '/api/auth/password/reset/request': {
+  '/api/v1/users/password/reset/request': {
     interval: 60 * 60 * 1000, // 1 hour
     uniqueTokenPerInterval: 3, // 3 requests per hour
   },
-  '/api/auth/password/change': {
+  '/api/v1/users/password/change': {
     interval: 60 * 1000, // 1 minute
     uniqueTokenPerInterval: 5, // 5 attempts per minute
   },
