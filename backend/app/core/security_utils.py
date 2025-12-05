@@ -27,19 +27,42 @@ SUSPICIOUS_PATTERNS = [
 # Public routes that should have different (higher) rate limits.
 # These are endpoints that are expected to receive higher unauthenticated traffic.
 PUBLIC_ROUTES = [
+    # Listings - public browsing
     "/api/v1/listings",
+    "/api/v1/listings/premium/featured",
+    "/api/v1/listings/premium/premium",
+    
+    # Search endpoints
     "/api/v1/search",
+    "/api/v1/search/listings",
+    "/api/v1/search/suggestions",
+    
+    # Reviews - public viewing
     "/api/v1/reviews/listings",
-    "/api/v1/travel-guides",  
-    "/api/v1/users/me",
-    "/api/v1/users/me/password",
-    "/api/v1/users/me/password/reset",
-    "/api/v1/users/me/password/reset/confirm",
-    "/api/v1/users/me/password/reset/confirm/confirm",
-    "/api/v1/users/me/password/reset/confirm/confirm/confirm",
-    "/api/v1/users/me/password/reset/confirm/confirm/confirm/confirm",
-    "/api/v1/users/me/password/reset/confirm/confirm/confirm/confirm/confirm",
-    "/api/v1/users/me/password/reset/confirm/confirm/confirm/confirm/confirm/confirm",
+    "/api/v1/reviews",
+    
+    # Travel guides - public content
+    "/api/v1/travel-guides",
+    "/api/v1/travel-guides/stories",
+    
+    # Recommendations - public discovery
+    "/api/v1/recommendations/trending",
+    "/api/v1/recommendations/similar",
+    
+    # Promotions - public coupon validation
+    "/api/v1/promotions/coupons",
+    "/api/v1/promotions/applicable",
+    
+    # User authentication endpoints (public, no auth required)
+    "/api/v1/users/register",
+    "/api/v1/users/login",
+    "/api/v1/users/refresh",
+    "/api/v1/users/password/reset/request",
+    "/api/v1/users/password/reset",
+    "/api/v1/users/oauth/login",
+    "/api/v1/users/otp/request",
+    "/api/v1/users/otp/verify",
+    "/api/v1/users/login/2fa/verify",
 ]
 
 
