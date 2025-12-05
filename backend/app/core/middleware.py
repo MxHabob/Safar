@@ -32,6 +32,10 @@ class BotDetectionMiddleware(BaseHTTPMiddleware):
         if request.url.path in ["/health", "/health/live", "/health/ready"]:
             return await call_next(request)
         
+        # Skip bot detection for OPTIONS requests (CORS preflight)
+        if request.method == "OPTIONS":
+            return await call_next(request)
+        
         # Check if request is from a bot
         if is_bot_request(request):
             client_ip = get_client_ip(request)
@@ -64,6 +68,10 @@ class EnhancedRateLimitMiddleware(BaseHTTPMiddleware):
         
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         if not settings.rate_limit_enabled:
+            return await call_next(request)
+        
+        # Skip rate limiting for OPTIONS requests (CORS preflight)
+        if request.method == "OPTIONS":
             return await call_next(request)
         
         # Get client IP (handles proxies)

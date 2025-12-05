@@ -609,12 +609,27 @@ class Settings(BaseSettings):
                 "Authorization",
                 "Accept",
                 "X-Requested-With",
-                "X-CSRF-Token"
+                "X-CSRF-Token",
+                "Origin",
+                "Access-Control-Request-Method",
+                "Access-Control-Request-Headers"
             ]
         try:
             return json.loads(self.cors_allow_headers)
         except json.JSONDecodeError:
-            return [header.strip() for header in self.cors_allow_headers.split(',') if header.strip()]
+            headers = [header.strip() for header in self.cors_allow_headers.split(',') if header.strip()]
+            # Ensure common CORS headers are included
+            required_headers = [
+                "Content-Type",
+                "Authorization",
+                "Origin",
+                "Access-Control-Request-Method",
+                "Access-Control-Request-Headers"
+            ]
+            for req_header in required_headers:
+                if req_header not in headers:
+                    headers.append(req_header)
+            return headers
     
     @property
     def supported_languages_list(self) -> List[str]:
