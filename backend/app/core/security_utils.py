@@ -63,6 +63,10 @@ PUBLIC_ROUTES = [
     "/api/v1/users/otp/request",
     "/api/v1/users/otp/verify",
     "/api/v1/users/login/2fa/verify",
+    
+    # Account verification endpoints (public, may require auth but high traffic)
+    "/api/v1/users/email/verify",
+    "/api/v1/users/email/resend-verification",
 ]
 
 
