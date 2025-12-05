@@ -27,7 +27,6 @@ from app.core.logging_config import setup_logging, get_uvicorn_log_config
 from app.core.tracing import setup_tracing, instrument_app
 from app.core import models
 
-# Setup logging (will be idempotent if already configured)
 setup_logging()
 logger = logging.getLogger(__name__)
 
@@ -38,10 +37,8 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     logger.info("Starting Safar API...")
     
-    # Initialize OpenTelemetry distributed tracing
     setup_tracing()
     
-    # Initialize Sentry for error tracking (if configured)
     if settings.sentry_dsn:
         try:
             import sentry_sdk
@@ -59,8 +56,8 @@ async def lifespan(app: FastAPI):
                 ],
                 traces_sample_rate=1.0 if settings.environment == "production" else 0.1,
                 profiles_sample_rate=1.0 if settings.environment == "production" else 0.1,
-                send_default_pii=False,  # Don't send PII by default
-                before_send=lambda event, hint: event,  # Can add filtering here
+                send_default_pii=False,
+                before_send=lambda event, hint: event,
             )
             logger.info(f"Sentry initialized for environment: {settings.sentry_environment}")
         except ImportError:
@@ -73,14 +70,12 @@ async def lifespan(app: FastAPI):
     await init_db()
     logger.info("Database initialized")
     
-    # CRITICAL: Run startup validation (fails hard if critical requirements not met)
     try:
         from app.core.startup_validation import StartupValidator
         await StartupValidator.validate_all()
         logger.info("✓ All startup validations passed - service ready")
     except Exception as e:
         logger.critical(f"CRITICAL: Startup validation failed: {e}")
-        # In production, we should fail hard
         if settings.environment == "production":
             raise
         else:
@@ -92,7 +87,6 @@ async def lifespan(app: FastAPI):
     logger.info("Database connections closed")
 
 
-# Create FastAPI app (disable docs in production for security)
 docs_enabled = settings.environment.lower() != "production"
 app = FastAPI(
     title=settings.app_name,
@@ -103,44 +97,30 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Instrument app with OpenTelemetry (after app creation)
 instrument_app(app)
 
-# CORS Middleware - CRITICAL: Must be added FIRST (executes LAST in reverse order)
-# FastAPI's CORSMiddleware automatically handles OPTIONS preflight requests
-# Security: Only allow explicit origins, never wildcards in production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,  # Explicit list only - no wildcards
+    allow_origins=settings.cors_origins_list,
     allow_credentials=settings.cors_allow_credentials,
-    allow_methods=settings.cors_allow_methods_list,  # Must include OPTIONS
+    allow_methods=settings.cors_allow_methods_list,
     allow_headers=settings.cors_allow_headers_list,
-    max_age=3600,  # Cache preflight requests for 1 hour (reduces server load)
+    max_age=3600,
 )
 
 
-# 1. Request Monitoring (outermost - logs all requests, executes last)
 app.add_middleware(RequestMonitoringMiddleware)
 
-# 2. Security Headers (adds security headers to all responses)
 app.add_middleware(SecurityHeadersMiddleware)
 
-# 3. Bot Detection (blocks automated/scraper requests, before rate limiting)
 app.add_middleware(BotDetectionMiddleware)
 
-# 4. CORS Preflight (handles OPTIONS requests before route handlers)
 app.add_middleware(CORSPreflightMiddleware)
 
-# 5. Rate Limiting (innermost - first to execute, protects against abuse)
 if settings.rate_limit_enabled:
     app.add_middleware(EnhancedRateLimitMiddleware)
 
 
-# Request logging is now handled by RequestMonitoringMiddleware
-# Removed duplicate logging middleware
-
-
-# Exception handlers
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     response_content = {
@@ -149,10 +129,9 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
         "status_code": exc.status_code
     }
     
-    # Add Retry-After header for rate limit errors
     headers = {}
     if exc.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
-        headers["Retry-After"] = "60"  # Retry after 60 seconds
+        headers["Retry-After"] = "60"
     
     return JSONResponse(
         status_code=exc.status_code,
@@ -176,24 +155,19 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    # Re-raise HTTPException so it can be handled by the specific handler
-    # FastAPI's HTTPException is a subclass of StarletteHTTPException
     if isinstance(exc, (StarletteHTTPException, FastAPIHTTPException)):
-        # For 429 errors, don't log as errors - they're expected behavior
         if hasattr(exc, 'status_code') and exc.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
-            # Rate limiting is working as intended, no need to log as error
             raise exc
         raise exc
     
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
     
-    # Send to Sentry if configured
     if settings.sentry_dsn:
         try:
             import sentry_sdk
             sentry_sdk.capture_exception(exc)
         except Exception:
-            pass  # Don't fail if Sentry is unavailable
+            pass
     
     return JSONResponse(
         status_code=500,
@@ -205,14 +179,12 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 
-# Health check - CRITICAL: Returns 200 only if all services are healthy
 @app.get("/health")
 async def health_check():
     from app.core.monitoring import HealthChecker
     import json
     health = await HealthChecker.get_health_status()
     
-    # Return 503 if any critical service is unhealthy
     if health["status"] != "healthy":
         return JSONResponse(
             content=health,
@@ -245,7 +217,6 @@ async def liveness_check():
     }
 
 
-# Apple Pay Domain Association (required for Apple Pay)
 @app.get("/.well-known/apple-developer-merchantid-domain-association")
 async def apple_pay_domain_association():
     """
@@ -266,15 +237,12 @@ async def apple_pay_domain_association():
             detail="Apple Pay domain association not configured"
         )
     
-    # Return the domain association file content
-    # Content-Type should be text/plain
     return PlainTextResponse(
         content=settings.apple_pay_domain_association,
         media_type="text/plain"
     )
 
 
-# Include API router
 app.include_router(api_router, prefix=settings.api_v1_prefix)
 
 
@@ -299,8 +267,8 @@ if __name__ == "__main__":
         host=settings.host,
         port=settings.port,
         reload=settings.debug,
-        use_colors=False,  # Disable colors in Docker/containers
-        log_level="info",  # Set log level explicitly
-        access_log=True,  # Enable access logs
+        use_colors=False,
+        log_level="info",
+        access_log=True,
     )
 

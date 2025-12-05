@@ -30,7 +30,16 @@ PUBLIC_ROUTES = [
     "/api/v1/listings",
     "/api/v1/search",
     "/api/v1/reviews/listings",
-    "/api/v1/travel-guides",  # Treat travel guides as a public, higher-throughput endpoint
+    "/api/v1/travel-guides",  
+    "/api/v1/users/me",
+    "/api/v1/users/me/password",
+    "/api/v1/users/me/password/reset",
+    "/api/v1/users/me/password/reset/confirm",
+    "/api/v1/users/me/password/reset/confirm/confirm",
+    "/api/v1/users/me/password/reset/confirm/confirm/confirm",
+    "/api/v1/users/me/password/reset/confirm/confirm/confirm/confirm",
+    "/api/v1/users/me/password/reset/confirm/confirm/confirm/confirm/confirm",
+    "/api/v1/users/me/password/reset/confirm/confirm/confirm/confirm/confirm/confirm",
 ]
 
 
