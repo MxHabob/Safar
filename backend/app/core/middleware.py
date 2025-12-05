@@ -25,14 +25,20 @@ logger = logging.getLogger(__name__)
 
 
 class BotDetectionMiddleware(BaseHTTPMiddleware):
-    """Bot detection middleware."""
+    """
+    Bot detection middleware.
+    
+    Security: Blocks automated requests from bots/scrapers.
+    CORS: Skips OPTIONS preflight requests to allow CORS middleware to handle them.
+    """
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Allow health check endpoints
+        # Allow health check endpoints (required for monitoring/load balancers)
         if request.url.path in ["/health", "/health/live", "/health/ready"]:
             return await call_next(request)
         
         # Skip bot detection for OPTIONS requests (CORS preflight)
+        # FastAPI's CORSMiddleware handles OPTIONS automatically
         if request.method == "OPTIONS":
             return await call_next(request)
         
@@ -71,6 +77,8 @@ class EnhancedRateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
         
         # Skip rate limiting for OPTIONS requests (CORS preflight)
+        # FastAPI's CORSMiddleware handles OPTIONS automatically
+        # This prevents preflight requests from consuming rate limit quota
         if request.method == "OPTIONS":
             return await call_next(request)
         

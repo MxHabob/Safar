@@ -105,26 +105,39 @@ app = FastAPI(
 # Instrument app with OpenTelemetry (after app creation)
 instrument_app(app)
 
-# CORS Middleware - CRITICAL: Use list property, never wildcard in production
+# CORS Middleware - CRITICAL: Must be added FIRST (executes LAST in reverse order)
+# FastAPI's CORSMiddleware automatically handles OPTIONS preflight requests
+# Security: Only allow explicit origins, never wildcards in production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+    allow_origins=settings.cors_origins_list,  # Explicit list only - no wildcards
     allow_credentials=settings.cors_allow_credentials,
-    allow_methods=settings.cors_allow_methods_list,
+    allow_methods=settings.cors_allow_methods_list,  # Must include OPTIONS
     allow_headers=settings.cors_allow_headers_list,
+    max_age=3600,  # Cache preflight requests for 1 hour (reduces server load)
 )
 
-# Security Middleware (order matters - apply in reverse order)
-# 1. Request Monitoring (outermost - logs all requests)
+# Security Middleware Stack (order matters - executes in REVERSE order of addition)
+# Execution order (innermost to outermost):
+#   1. Rate Limiting (if enabled) - First to execute, protects against abuse
+#   2. Bot Detection - Blocks automated requests
+#   3. Security Headers - Adds security headers to responses
+#   4. Request Monitoring - Logs all requests for analysis
+#   5. CORS Middleware - Last to execute, handles CORS headers and OPTIONS preflight
+#
+# Note: All security middlewares skip OPTIONS requests to allow CORS preflight
+# This maintains security while enabling cross-origin requests from allowed origins
+
+# 1. Request Monitoring (outermost - logs all requests, executes last)
 app.add_middleware(RequestMonitoringMiddleware)
 
-# 2. Security Headers
+# 2. Security Headers (adds security headers to all responses)
 app.add_middleware(SecurityHeadersMiddleware)
 
-# 3. Bot Detection (before rate limiting)
+# 3. Bot Detection (blocks automated/scraper requests, before rate limiting)
 app.add_middleware(BotDetectionMiddleware)
 
-# 4. Rate Limiting (innermost - applied last)
+# 4. Rate Limiting (innermost - first to execute, protects against abuse)
 if settings.rate_limit_enabled:
     app.add_middleware(EnhancedRateLimitMiddleware)
 
