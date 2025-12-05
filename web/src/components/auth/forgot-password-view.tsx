@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { OctagonAlert, Mail, ArrowRight, CheckCircle2 } from "lucide-react";
 import Graphic from "@/components/shared/graphic";
-import { apiClient } from "@/generated/client";
+import { useRequestPasswordResetApiV1UsersPasswordResetRequestPostMutation } from "@/generated/hooks/users";
 
 const ForgotPasswordSchema = z.object({
   email: z.string().email("Invalid email format"),
@@ -28,7 +28,6 @@ const ForgotPasswordSchema = z.object({
 export function ForgotPasswordView() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [pending, setPending] = useState(false);
   
   const form = useForm<z.infer<typeof ForgotPasswordSchema>>({
     resolver: zodResolver(ForgotPasswordSchema),
@@ -37,25 +36,21 @@ export function ForgotPasswordView() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof ForgotPasswordSchema>) => {
-    setError(null);
-    setPending(true);
-
-    try {
-      await apiClient.users.requestPasswordResetApiV1UsersPasswordResetRequestPost({
-        body: { email: values.email },
-      });
-
+  const requestPasswordResetMutation = useRequestPasswordResetApiV1UsersPasswordResetRequestPostMutation({
+    showToast: false,
+    onSuccess: () => {
       setSuccess(true);
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.detail?.[0]?.msg ||
-        err?.message ||
-        "Failed to send reset email. Please try again."
-      );
-    } finally {
-      setPending(false);
-    }
+    },
+    onError: (error) => {
+      setError(error.message || "Failed to send reset email. Please try again.");
+    },
+  });
+
+  const onSubmit = (values: z.infer<typeof ForgotPasswordSchema>) => {
+    setError(null);
+    requestPasswordResetMutation.mutate({
+      email: values.email,
+    });
   };
 
   if (success) {
@@ -157,9 +152,9 @@ export function ForgotPasswordView() {
                 <Button
                   type="submit"
                   className="w-full h-11 rounded-[18px] font-light"
-                  disabled={pending}
+                  disabled={requestPasswordResetMutation.isPending}
                 >
-                  {pending ? (
+                  {requestPasswordResetMutation.isPending ? (
                     <>
                       <Spinner className="size-4" />
                       <span>Sending...</span>

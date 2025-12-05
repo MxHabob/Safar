@@ -2,8 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { apiClient } from "@/generated/client";
+import { useOauthLoginApiV1UsersOauthLoginPostMutation } from "@/generated/hooks/users";
 import { tokenStorage } from "@/lib/auth";
+import { useAuth } from "@/lib/auth/client";
 import { useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
 import { Chrome, Apple } from "lucide-react";
@@ -17,39 +18,12 @@ interface OAuthButtonsProps {
 export function OAuthButtons({ onError }: OAuthButtonsProps) {
   const [loading, setLoading] = useState<OAuthProvider | null>(null);
   const router = useRouter();
+  const { updateUser } = useAuth();
 
-  const handleOAuthLogin = async (provider: OAuthProvider) => {
-    setLoading(provider);
-    
-    try {
-      // For OAuth, we need to get the token from the provider first
-      // This is a simplified version - in production, you'd use the provider's SDK
-      // For now, we'll show an error message
-      if (onError) {
-        onError(`OAuth login with ${provider} requires provider SDK integration. Please use email/password login for now.`);
-      }
-    } catch (error: any) {
-      if (onError) {
-        onError(`Failed to login with ${provider}. Please try again.`);
-      }
-    } finally {
-      setLoading(null);
-    }
-  };
-
-  const handleOAuthCallback = async (provider: OAuthProvider, token: string) => {
-    setLoading(provider);
-    
-    try {
-      const response = await apiClient.users.oauthLoginApiV1UsersOauthLoginPost({
-        body: {
-          provider: provider as any,
-          token,
-        },
-      });
-
+  const oauthLoginMutation = useOauthLoginApiV1UsersOauthLoginPostMutation({
+    showToast: false,
+    onSuccess: (data) => {
       // Store tokens
-      const data = response.data;
       const expiresIn = data.expires_in || 1800;
       tokenStorage.setAccessToken(data.access_token, expiresIn);
       
@@ -58,19 +32,36 @@ export function OAuthButtons({ onError }: OAuthButtonsProps) {
         tokenStorage.setRefreshToken(data.refresh_token);
       }
 
-      // Redirect to dashboard
+      // Redirect to dashboard - user will be fetched automatically by useAuth
       router.push("/");
-    } catch (error: any) {
-      if (onError) {
-        onError(
-          error?.response?.data?.detail ||
-          error?.message ||
-          `Failed to login with ${provider}. Please try again.`
-        );
-      }
-    } finally {
       setLoading(null);
+    },
+    onError: (error) => {
+      if (onError) {
+        onError(error.message || "Failed to login. Please try again.");
+      }
+      setLoading(null);
+    },
+  });
+
+  const handleOAuthLogin = (provider: OAuthProvider) => {
+    setLoading(provider);
+    
+    // For OAuth, we need to get the token from the provider first
+    // This is a simplified version - in production, you'd use the provider's SDK
+    // For now, we'll show an error message
+    if (onError) {
+      onError(`OAuth login with ${provider} requires provider SDK integration. Please use email/password login for now.`);
     }
+    setLoading(null);
+  };
+
+  const handleOAuthCallback = (provider: OAuthProvider, token: string) => {
+    setLoading(provider);
+    oauthLoginMutation.mutate({
+      provider: provider as any,
+      token,
+    });
   };
 
   return (
@@ -80,9 +71,9 @@ export function OAuthButtons({ onError }: OAuthButtonsProps) {
         variant="outline"
         className="w-full h-11 rounded-[18px] font-light"
         onClick={() => handleOAuthLogin("google")}
-        disabled={loading !== null}
+        disabled={loading !== null || oauthLoginMutation.isPending}
       >
-        {loading === "google" ? (
+        {loading === "google" || oauthLoginMutation.isPending ? (
           <>
             <Spinner className="size-4" />
             <span>Connecting...</span>
@@ -100,9 +91,9 @@ export function OAuthButtons({ onError }: OAuthButtonsProps) {
         variant="outline"
         className="w-full h-11 rounded-[18px] font-light"
         onClick={() => handleOAuthLogin("apple")}
-        disabled={loading !== null}
+        disabled={loading !== null || oauthLoginMutation.isPending}
       >
-        {loading === "apple" ? (
+        {loading === "apple" || oauthLoginMutation.isPending ? (
           <>
             <Spinner className="size-4" />
             <span>Connecting...</span>

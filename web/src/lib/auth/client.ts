@@ -4,7 +4,7 @@
  * React hooks for authentication in client components.
  * Integrates with refresh queue and retry system.
  * 
- * Uses generated API client directly - no internal API routes needed.
+ * Uses generated server actions from @/generated/actions.
  * 
  * @security Handles token refresh and retry queue
  */
@@ -16,7 +16,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { tokenStorage } from './token-storage'
 import { queueRefresh } from './refresh-queue'
-import { apiClient } from '@/generated/client'
 import { z } from 'zod'
 import type {
   AuthUser,
@@ -24,6 +23,12 @@ import type {
   LoginResult,
 } from './types'
 import { LoginApiV1UsersLoginPostResponseSchema } from '@/generated/schemas'
+import {
+  loginApiV1UsersLoginPost,
+  refreshTokenApiV1UsersRefreshPost,
+  getCurrentUserInfoApiV1UsersMeGet,
+  logoutApiV1UsersLogoutPost,
+} from '@/generated/actions'
 
 /**
  * Hook for authentication state and methods
@@ -69,30 +74,40 @@ export function useAuth(): AuthContextType {
       if (!token) return null
 
       try {
-        const response = await apiClient.users.getCurrentUserInfoApiV1UsersMeGet({
-          config: {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        })
-        return response.data as AuthUser
+        const result = await getCurrentUserInfoApiV1UsersMeGet()
+        
+        if (result?.serverError) {
+          // If 401, try to refresh token
+          if (result.serverError.includes('Unauthorized') || result.serverError.includes('401')) {
+            const refreshed = await refreshToken()
+            if (refreshed) {
+              // Retry the request
+              const retryResult = await getCurrentUserInfoApiV1UsersMeGet()
+              if (retryResult?.data) {
+                return retryResult.data as AuthUser
+              }
+            }
+            // Refresh failed, clear token
+            tokenStorage.removeAccessToken()
+            setAccessToken(null)
+          }
+          throw new Error(result.serverError)
+        }
+        
+        if (!result?.data) {
+          return null
+        }
+        
+        return result.data as AuthUser
       } catch (error: any) {
         // If 401, try to refresh token
-        if (error?.status === 401) {
+        if (error?.message?.includes('Unauthorized') || error?.status === 401) {
           const refreshed = await refreshToken()
           if (refreshed) {
             // Retry the request
-            const newToken = tokenStorage.getAccessToken()
-            if (newToken) {
-              const retryResponse = await apiClient.users.getCurrentUserInfoApiV1UsersMeGet({
-                config: {
-                  headers: {
-                    Authorization: `Bearer ${newToken}`,
-                  },
-                },
-              })
-              return retryResponse.data as AuthUser
+            const retryResult = await getCurrentUserInfoApiV1UsersMeGet()
+            if (retryResult?.data) {
+              return retryResult.data as AuthUser
             }
           }
           // Refresh failed, clear token
@@ -117,12 +132,27 @@ export function useAuth(): AuthContextType {
             return null
           }
 
-          // Use generated client to refresh token directly
-          const response = await apiClient.users.refreshTokenApiV1UsersRefreshPost({
-            body: { refresh_token: refreshTokenValue },
+          // Use action to refresh token directly
+          const result = await refreshTokenApiV1UsersRefreshPost({
+            refresh_token: refreshTokenValue,
           })
 
-          const data = response.data
+          if (result?.serverError) {
+            console.error('Token refresh failed:', result.serverError)
+            // Clear tokens on refresh failure
+            tokenStorage.clearAll()
+            setAccessToken(null)
+            return null
+          }
+
+          if (!result?.data) {
+            console.error('Token refresh failed: No data returned')
+            tokenStorage.clearAll()
+            setAccessToken(null)
+            return null
+          }
+
+          const data = result.data
 
           // Update access token
           const expiresIn = data.expires_in || 1800
@@ -160,12 +190,31 @@ export function useAuth(): AuthContextType {
       password: string
     }) => {
       try {
-        const response = await apiClient.users.loginApiV1UsersLoginPost({
-          body: { email, password },
-        })
+        const result = await loginApiV1UsersLoginPost({ email, password })
+        
+        if (result?.serverError) {
+          // Check if 2FA is required (202 status)
+          // FastAPI returns 202 as an error response when 2FA is required
+          if (result.serverError.includes('202') || result.serverError.includes('2FA')) {
+            // Try to get user ID from error details if available
+            const userId = (result as any)?.data?.userId || null
+            return {
+              type: '2fa_required' as const,
+              userId: userId || null,
+              email,
+            }
+          }
+          // Re-throw other errors
+          throw new Error(result.serverError)
+        }
+        
+        if (!result?.data) {
+          throw new Error('Login failed: No data returned')
+        }
+        
         return { 
           type: 'success' as const,
-          data: response.data as z.infer<typeof LoginApiV1UsersLoginPostResponseSchema>
+          data: result.data as z.infer<typeof LoginApiV1UsersLoginPostResponseSchema>
         }
       } catch (error: any) {
         // Check if 2FA is required (202 status)
@@ -217,14 +266,12 @@ export function useAuth(): AuthContextType {
       const token = tokenStorage.getAccessToken()
       if (token) {
         try {
-          // Call logout endpoint using generated client
-          await apiClient.users.logoutApiV1UsersLogoutPost({
-            config: {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            },
-          })
+          // Call logout endpoint using action
+          const result = await logoutApiV1UsersLogoutPost()
+          if (result?.serverError) {
+            // Continue with logout even if API call fails
+            console.error('Logout API error:', result.serverError)
+          }
         } catch (error) {
           // Continue with logout even if API call fails
           console.error('Logout API error:', error)

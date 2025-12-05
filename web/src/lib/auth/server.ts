@@ -90,26 +90,20 @@ export async function validateToken(
  */
 async function checkTokenBlacklist(jti: string): Promise<boolean> {
   try {
-    // Call backend API to check blacklist
-    // In production, you might want to use Redis directly
     const response = await fetch(`${API_BASE_URL}/api/v1/users/token/check`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jti }),
-      // Don't cache this request
       cache: 'no-store',
     })
 
     if (!response.ok) {
-      // If endpoint doesn't exist, assume not blacklisted (fail open for availability)
       return false
     }
 
     const data = await response.json()
     return data.blacklisted === true
   } catch (error) {
-    // Fail open - if we can't check blacklist, allow token (availability over security)
-    // In production, you might want to fail closed
     console.error('Blacklist check failed:', error)
     return false
   }
@@ -157,15 +151,12 @@ export async function getServerSession(
   try {
     let accessToken: string | null = null
 
-    // In middleware, we need to extract from request
     if (request) {
       accessToken = extractAccessToken(request)
     } else {
-      // In Server Components/Route Handlers, use cookies()
       const { cookies } = await import('next/headers')
       const cookieStore = await cookies()
       
-      // Get access token from cookie
       accessToken = cookieStore.get('access_token')?.value || null
     }
 
@@ -173,13 +164,11 @@ export async function getServerSession(
       return null
     }
 
-    // Validate token
     const validation = await validateToken(accessToken)
     if (!validation.valid || !validation.payload) {
       return null
     }
 
-    // Fetch user data from backend
     const user = await fetchUserData(accessToken, validation.payload.sub)
     if (!user) {
       return null
@@ -188,7 +177,7 @@ export async function getServerSession(
     return {
       user,
       accessToken,
-      expiresAt: validation.payload.exp * 1000, // Convert to milliseconds
+      expiresAt: validation.payload.exp * 1000,
     }
   } catch (error) {
     console.error('getServerSession error:', error)
@@ -212,7 +201,7 @@ async function fetchUserData(
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
-      cache: 'no-store', // Always fetch fresh user data
+      cache: 'no-store',
     })
 
     if (!response.ok) {
@@ -234,14 +223,11 @@ async function fetchUserData(
  * @returns Access token or null
  */
 export function extractAccessToken(request: Request): string | null {
-  // Try Authorization header first
   const authHeader = request.headers.get('authorization')
   if (authHeader?.startsWith('Bearer ')) {
     return authHeader.substring(7)
   }
 
-  // Try cookie (for middleware)
-  // Note: In middleware, we need to parse cookies manually
   const cookieHeader = request.headers.get('cookie')
   if (cookieHeader) {
     const cookies = parseCookies(cookieHeader)

@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { OctagonAlert, Lock, ArrowRight, CheckCircle2 } from "lucide-react";
 import Graphic from "@/components/shared/graphic";
-import { apiClient } from "@/generated/client";
+import { useResetPasswordApiV1UsersPasswordResetPostMutation } from "@/generated/hooks/users";
 
 const ResetPasswordSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
@@ -33,7 +33,6 @@ const ResetPasswordSchema = z.object({
 export function ResetPasswordView() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [pending, setPending] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const code = searchParams ? searchParams.get("code") : null;
@@ -53,37 +52,31 @@ export function ResetPasswordView() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof ResetPasswordSchema>) => {
+  const resetPasswordMutation = useResetPasswordApiV1UsersPasswordResetPostMutation({
+    showToast: false,
+    onSuccess: () => {
+      setSuccess(true);
+      setTimeout(() => {
+        router.push("/auth/login");
+      }, 2000);
+    },
+    onError: (error) => {
+      setError(error.message || "Failed to reset password. The token may be expired. Please request a new one.");
+    },
+  });
+
+  const onSubmit = (values: z.infer<typeof ResetPasswordSchema>) => {
     if (!code || !email) {
       setError("Invalid reset link. Please request a new password reset.");
       return;
     }
 
     setError(null);
-    setPending(true);
-
-    try {
-      await apiClient.users.resetPasswordApiV1UsersPasswordResetPost({
-        body: {
-          email,
-          code,
-          new_password: values.password,
-        },
-      });
-
-      setSuccess(true);
-      setTimeout(() => {
-        router.push("/auth/login");
-      }, 2000);
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.detail?.[0]?.msg ||
-        err?.message ||
-        "Failed to reset password. The token may be expired. Please request a new one."
-      );
-    } finally {
-      setPending(false);
-    }
+    resetPasswordMutation.mutate({
+      email,
+      code,
+      new_password: values.password,
+    });
   };
 
   if (success) {
@@ -187,9 +180,9 @@ export function ResetPasswordView() {
                 <Button
                   type="submit"
                   className="w-full h-11 rounded-[18px] font-light"
-                  disabled={pending || !code || !email}
+                  disabled={resetPasswordMutation.isPending || !code || !email}
                 >
-                  {pending ? (
+                  {resetPasswordMutation.isPending ? (
                     <>
                       <Spinner className="size-4" />
                       <span>Resetting...</span>

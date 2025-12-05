@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { UserCreateSchema } from "@/generated/schemas";
+import { useRegisterApiV1UsersRegisterPostMutation } from "@/generated/hooks/users";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -21,7 +22,6 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { OctagonAlert, Mail, Lock, User, ArrowRight, CheckCircle2 } from "lucide-react";
 import Graphic from "@/components/shared/graphic";
-import { apiClient } from "@/generated/client";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
 
 const SignUpSchema = UserCreateSchema.extend({
@@ -34,7 +34,6 @@ const SignUpSchema = UserCreateSchema.extend({
 export function SignUpView() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [pending, setPending] = useState(false);
   const router = useRouter();
   
   const form = useForm<z.infer<typeof SignUpSchema>>({
@@ -48,33 +47,27 @@ export function SignUpView() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof SignUpSchema>) => {
-    setError(null);
-    setPending(true);
-
-    try {
-      await apiClient.users.registerApiV1UsersRegisterPost({
-        body: {
-          email: values.email,
-          password: values.password,
-          first_name: values.first_name || undefined,
-          last_name: values.last_name || undefined,
-        },
-      });
-
+  const registerMutation = useRegisterApiV1UsersRegisterPostMutation({
+    showToast: false,
+    onSuccess: (data, variables) => {
       setSuccess(true);
       setTimeout(() => {
-        router.push("/auth/verify-email?email=" + encodeURIComponent(values.email));
+        router.push("/auth/verify-email?email=" + encodeURIComponent(variables.email));
       }, 2000);
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.detail?.[0]?.msg ||
-        err?.message ||
-        "Registration failed. Please try again."
-      );
-    } finally {
-      setPending(false);
-    }
+    },
+    onError: (error) => {
+      setError(error.message || "Registration failed. Please try again.");
+    },
+  });
+
+  const onSubmit = (values: z.infer<typeof SignUpSchema>) => {
+    setError(null);
+    registerMutation.mutate({
+      email: values.email,
+      password: values.password,
+      first_name: values.first_name || undefined,
+      last_name: values.last_name || undefined,
+    });
   };
 
   if (success) {
@@ -241,9 +234,9 @@ export function SignUpView() {
                 <Button
                   type="submit"
                   className="w-full h-11 rounded-[18px] font-light"
-                  disabled={pending}
+                  disabled={registerMutation.isPending}
                 >
-                  {pending ? (
+                  {registerMutation.isPending ? (
                     <>
                       <Spinner className="size-4" />
                       <span>Creating account...</span>

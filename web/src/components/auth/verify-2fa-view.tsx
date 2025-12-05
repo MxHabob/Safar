@@ -20,52 +20,35 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { OctagonAlert, Shield, ArrowRight } from "lucide-react";
 import Graphic from "@/components/shared/graphic";
-import { apiClient } from "@/generated/client";
+import { useVerify2faLoginApiV1UsersLogin2faVerifyPostMutation } from "@/generated/hooks/users";
 import { tokenStorage } from "@/lib/auth";
 import { useAuth } from "@/lib/auth/client";
 
 const Verify2FASchema = z.object({
   code: z.string().min(6, "Code must be 6 digits").max(6, "Code must be 6 digits"),
-  is_backup_code: z.boolean().default(false),
+  is_backup_code: z.boolean(),
 });
 
 export function Verify2FAView() {
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams?.get("email") || "";
   const userId = searchParams?.get("userId") || "";
   const { updateUser } = useAuth();
 
-  const form = useForm<z.infer<typeof Verify2FASchema>>({
-    resolver: zodResolver(Verify2FASchema),
+  const form = useForm({
+    resolver: zodResolver(Verify2FASchema) as any,
     defaultValues: {
       code: "",
       is_backup_code: false,
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof Verify2FASchema>) => {
-    if (!email) {
-      setError("Email is required");
-      return;
-    }
-
-    setError(null);
-    setPending(true);
-
-    try {
-      const response = await apiClient.users.verify2faLoginApiV1UsersLogin2faVerifyPost({
-        body: {
-          email,
-          code: values.code,
-          is_backup_code: values.is_backup_code,
-        },
-      });
-
+  const verify2FAMutation = useVerify2faLoginApiV1UsersLogin2faVerifyPostMutation({
+    showToast: false,
+    onSuccess: (data) => {
       // Store tokens
-      const data = response.data;
       const expiresIn = data.expires_in || 1800;
       tokenStorage.setAccessToken(data.access_token, expiresIn);
       
@@ -74,22 +57,26 @@ export function Verify2FAView() {
         tokenStorage.setRefreshToken(data.refresh_token);
       }
 
-      // Update user in auth context
-      if (data.user) {
-        updateUser(data.user as any);
-      }
-
-      // Redirect to dashboard
+      // Redirect to dashboard - user will be fetched automatically by useAuth
       router.push("/");
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.detail ||
-        err?.message ||
-        "Invalid verification code. Please try again."
-      );
-    } finally {
-      setPending(false);
+    },
+    onError: (error) => {
+      setError(error.message || "Invalid verification code. Please try again.");
+    },
+  });
+
+  const onSubmit = (values: z.infer<typeof Verify2FASchema>) => {
+    if (!email) {
+      setError("Email is required");
+      return;
     }
+
+    setError(null);
+    verify2FAMutation.mutate({
+      email,
+      code: values.code,
+      is_backup_code: values.is_backup_code,
+    });
   };
 
   return (
@@ -184,9 +171,9 @@ export function Verify2FAView() {
                 <Button
                   type="submit"
                   className="w-full h-11 rounded-[18px] font-light"
-                  disabled={pending}
+                  disabled={verify2FAMutation.isPending}
                 >
-                  {pending ? (
+                  {verify2FAMutation.isPending ? (
                     <>
                       <Spinner className="size-4" />
                       <span>Verifying...</span>

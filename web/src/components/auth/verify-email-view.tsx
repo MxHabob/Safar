@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Mail, ArrowRight, CheckCircle2, OctagonAlert, Loader2 } from "lucide-react";
 import Graphic from "@/components/shared/graphic";
-import { apiClient } from "@/generated/client";
+import { useVerifyEmailApiV1UsersEmailVerifyPostMutation, useResendEmailVerificationApiV1UsersEmailResendVerificationPostMutation } from "@/generated/hooks/users";
 
 export function VerifyEmailView() {
   const [status, setStatus] = useState<"loading" | "success" | "error" | "pending">("loading");
@@ -17,45 +17,42 @@ export function VerifyEmailView() {
   const code = searchParams?.get("code") || null;
   const email = searchParams?.get("email") || null;
 
+  const verifyEmailMutation = useVerifyEmailApiV1UsersEmailVerifyPostMutation({
+    showToast: false,
+    onSuccess: () => {
+      setStatus("success");
+      setTimeout(() => {
+        router.push("/auth/login");
+      }, 3000);
+    },
+    onError: (error) => {
+      setError(error.message || "Verification failed. The link may be expired.");
+      setStatus("error");
+    },
+  });
+
+  const resendVerificationMutation = useResendEmailVerificationApiV1UsersEmailResendVerificationPostMutation({
+    showToast: false,
+    onSuccess: () => {
+      setStatus("pending");
+      setError(null);
+    },
+    onError: () => {
+      setError("Failed to resend verification email. Please try again.");
+    },
+  });
+
   useEffect(() => {
     if (code) {
-      verifyEmail(code);
+      verifyEmailMutation.mutate({ code });
     } else {
       setStatus("pending");
     }
   }, [code]);
 
-  const verifyEmail = async (verificationCode: string) => {
-    try {
-      await apiClient.users.verifyEmailApiV1UsersEmailVerifyPost({
-        body: { code: verificationCode },
-      });
-
-      setStatus("success");
-      setTimeout(() => {
-        router.push("/auth/login");
-      }, 3000);
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.detail?.[0]?.msg ||
-        err?.message ||
-        "Verification failed. The link may be expired."
-      );
-      setStatus("error");
-    }
-  };
-
-  const resendVerification = async () => {
+  const resendVerification = () => {
     if (!email) return;
-
-    try {
-      await apiClient.users.resendEmailVerificationApiV1UsersEmailResendVerificationPost();
-
-      setStatus("pending");
-      setError(null);
-    } catch (err: any) {
-      setError("Failed to resend verification email. Please try again.");
-    }
+    resendVerificationMutation.mutate(undefined);
   };
 
   return (
