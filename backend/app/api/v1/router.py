@@ -1,7 +1,8 @@
 """
 Main API v1 router.
 """
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
+from fastapi.responses import Response
 
 from app.modules.users.routes import router as users_router
 from app.modules.listings.routes import router as listings_router
@@ -24,6 +25,16 @@ from app.modules.subscriptions.routes import router as subscriptions_router
 from app.modules.tenancy.routes import router as tenancy_router
 
 api_router = APIRouter()
+
+# Add OPTIONS handler for all API routes (CORS preflight)
+# This ensures OPTIONS requests are handled before reaching route handlers
+@api_router.options("/{full_path:path}")
+async def options_handler(request: Request):
+    """
+    Handle OPTIONS preflight requests for all API routes.
+    Returns 200 OK - CORSMiddleware will add appropriate CORS headers.
+    """
+    return Response(status_code=200)
 
 # Include all routers
 api_router.include_router(users_router)

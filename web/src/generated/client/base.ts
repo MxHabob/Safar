@@ -623,7 +623,11 @@ export class BaseApiClient {
         // Only include next options if we're on the server (Next.js App Router)
         const fetchInit: RequestInit & { next?: { tags?: string[]; revalidate?: number | false; connection?: string } } = {
           ...requestConfig,
-          signal: controller.signal
+          signal: controller.signal,
+          // CORS: Include credentials for cross-origin requests
+          // This is required when CORS_ALLOW_CREDENTIALS=True on the backend
+          credentials: 'include' as RequestCredentials,
+          mode: 'cors' as RequestMode
         }
         
         // Add Next.js-specific options only if we have cache tags, revalidate, or connection
