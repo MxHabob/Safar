@@ -404,26 +404,48 @@ async def oauth_login(
     """
     Login via OAuth (Google, Apple).
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     from app.infrastructure.oauth.service import OAuthService
     from app.modules.users.models import UserRole, UserStatus
     
+    logger.info(f"OAuth login attempt for provider: {oauth_data.provider}")
+    logger.debug(f"Token length: {len(oauth_data.token) if oauth_data.token else 0} characters")
+    
     # Verify token with provider
-    if oauth_data.provider == "google":
-        user_info = await OAuthService.verify_google_token(oauth_data.token)
-        oauth_id_field = "google_id"
-    elif oauth_data.provider == "apple":
-        user_info = await OAuthService.verify_apple_token(oauth_data.token)
-        oauth_id_field = "apple_id"
-    elif oauth_data.provider == "facebook":
-        user_info = await OAuthService.verify_facebook_token(oauth_data.token)
-        oauth_id_field = "facebook_id"
-    elif oauth_data.provider == "github":
-        user_info = await OAuthService.verify_github_token(oauth_data.token)
-        oauth_id_field = "github_id"
-    else:
+    try:
+        if oauth_data.provider == "google":
+            user_info = await OAuthService.verify_google_token(oauth_data.token)
+            oauth_id_field = "google_id"
+        elif oauth_data.provider == "apple":
+            user_info = await OAuthService.verify_apple_token(oauth_data.token)
+            oauth_id_field = "apple_id"
+        elif oauth_data.provider == "facebook":
+            user_info = await OAuthService.verify_facebook_token(oauth_data.token)
+            oauth_id_field = "facebook_id"
+        elif oauth_data.provider == "github":
+            user_info = await OAuthService.verify_github_token(oauth_data.token)
+            oauth_id_field = "github_id"
+        else:
+            logger.error(f"Invalid OAuth provider: {oauth_data.provider}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid OAuth provider. Supported: google, apple, facebook, github"
+            )
+    except HTTPException as e:
+        logger.error(
+            f"OAuth token verification failed for provider {oauth_data.provider}: "
+            f"status={e.status_code}, detail={e.detail}"
+        )
+        raise
+    except Exception as e:
+        logger.exception(
+            f"Unexpected error during OAuth verification for provider {oauth_data.provider}: {str(e)}"
+        )
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid OAuth provider. Supported: google, apple, facebook, github"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal error during OAuth verification: {str(e)}"
         )
     
     if not user_info.get("email"):
