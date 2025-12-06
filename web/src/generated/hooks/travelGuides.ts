@@ -86,12 +86,12 @@ export function useGetGuidesApiV1TravelGuidesGet(destination?: unknown, country?
         handleActionError(error)
       }
     },
-    staleTime: 180000,
-    gcTime: 360000, // React Query v5: gcTime replaces cacheTime
+    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
+    gcTime: 10 * 60 * 1000, // 10 minutes - cache persists longer (React Query v5)
     enabled: true && (options?.enabled ?? true),
-    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnWindowFocus: false, // Don't refetch on window focus for better performance
     refetchOnReconnect: true, // Refetch when network reconnects
-    refetchOnMount: 'always', // Always refetch on mount for fresh data
+    refetchOnMount: false, // Use cached data if available for faster loads
     refetchInterval: options?.refetchInterval, // Optional polling interval
     // React Query v5: placeholderData replaces keepPreviousData
     placeholderData: (previousData: z.infer<typeof GetGuidesApiV1TravelGuidesGetResponseSchema> | undefined) => previousData,
@@ -119,7 +119,7 @@ export function useSuspenseGetGuidesApiV1TravelGuidesGet(destination?: unknown, 
       const result = await resolveActionResult<z.infer<typeof GetGuidesApiV1TravelGuidesGetResponseSchema>>(getGuidesApiV1TravelGuidesGet({ query: { destination, country, city, tags, category, is_official, status, skip, limit, sort_by } }))
       return result
     },
-    staleTime: 180000,
+    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
     initialData: initialData as z.infer<typeof GetGuidesApiV1TravelGuidesGetResponseSchema> | undefined,
     ...restOptions
   })
@@ -143,12 +143,12 @@ export function useGetGuideApiV1TravelGuidesGuideIdGet(guide_id: string, options
         handleActionError(error)
       }
     },
-    staleTime: 180000,
-    gcTime: 360000, // React Query v5: gcTime replaces cacheTime
+    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
+    gcTime: 10 * 60 * 1000, // 10 minutes - cache persists longer (React Query v5)
     enabled: !!guide_id && (options?.enabled ?? true),
-    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnWindowFocus: false, // Don't refetch on window focus for better performance
     refetchOnReconnect: true, // Refetch when network reconnects
-    refetchOnMount: 'always', // Always refetch on mount for fresh data
+    refetchOnMount: false, // Use cached data if available for faster loads
     refetchInterval: options?.refetchInterval, // Optional polling interval
     // React Query v5: placeholderData replaces keepPreviousData
     placeholderData: (previousData: z.infer<typeof GetGuideApiV1TravelGuidesGuideIdGetResponseSchema> | undefined) => previousData,
@@ -176,7 +176,7 @@ export function useSuspenseGetGuideApiV1TravelGuidesGuideIdGet(guide_id: string,
       const result = await resolveActionResult<z.infer<typeof GetGuideApiV1TravelGuidesGuideIdGetResponseSchema>>(getGuideApiV1TravelGuidesGuideIdGet({ path: { guide_id } }))
       return result
     },
-    staleTime: 180000,
+    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
     initialData: initialData as z.infer<typeof GetGuideApiV1TravelGuidesGuideIdGetResponseSchema> | undefined,
     ...restOptions
   })
@@ -200,12 +200,12 @@ export function useGetStoriesApiV1TravelGuidesStoriesGet(destination?: unknown, 
         handleActionError(error)
       }
     },
-    staleTime: 180000,
-    gcTime: 360000, // React Query v5: gcTime replaces cacheTime
+    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
+    gcTime: 10 * 60 * 1000, // 10 minutes - cache persists longer (React Query v5)
     enabled: true && (options?.enabled ?? true),
-    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnWindowFocus: false, // Don't refetch on window focus for better performance
     refetchOnReconnect: true, // Refetch when network reconnects
-    refetchOnMount: 'always', // Always refetch on mount for fresh data
+    refetchOnMount: false, // Use cached data if available for faster loads
     refetchInterval: options?.refetchInterval, // Optional polling interval
     // React Query v5: placeholderData replaces keepPreviousData
     placeholderData: (previousData: z.infer<typeof GetStoriesApiV1TravelGuidesStoriesGetResponseSchema> | undefined) => previousData,
@@ -233,7 +233,7 @@ export function useSuspenseGetStoriesApiV1TravelGuidesStoriesGet(destination?: u
       const result = await resolveActionResult<z.infer<typeof GetStoriesApiV1TravelGuidesStoriesGetResponseSchema>>(getStoriesApiV1TravelGuidesStoriesGet({ query: { destination, country, author_id, guide_id, is_featured, status, skip, limit, sort_by } }))
       return result
     },
-    staleTime: 180000,
+    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
     initialData: initialData as z.infer<typeof GetStoriesApiV1TravelGuidesStoriesGetResponseSchema> | undefined,
     ...restOptions
   })
@@ -257,12 +257,12 @@ export function useGetStoryApiV1TravelGuidesStoriesStoryIdGet(story_id: string, 
         handleActionError(error)
       }
     },
-    staleTime: 180000,
-    gcTime: 360000, // React Query v5: gcTime replaces cacheTime
+    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
+    gcTime: 10 * 60 * 1000, // 10 minutes - cache persists longer (React Query v5)
     enabled: !!story_id && (options?.enabled ?? true),
-    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnWindowFocus: false, // Don't refetch on window focus for better performance
     refetchOnReconnect: true, // Refetch when network reconnects
-    refetchOnMount: 'always', // Always refetch on mount for fresh data
+    refetchOnMount: false, // Use cached data if available for faster loads
     refetchInterval: options?.refetchInterval, // Optional polling interval
     // React Query v5: placeholderData replaces keepPreviousData
     placeholderData: (previousData: z.infer<typeof GetStoryApiV1TravelGuidesStoriesStoryIdGetResponseSchema> | undefined) => previousData,
@@ -290,7 +290,7 @@ export function useSuspenseGetStoryApiV1TravelGuidesStoriesStoryIdGet(story_id: 
       const result = await resolveActionResult<z.infer<typeof GetStoryApiV1TravelGuidesStoriesStoryIdGetResponseSchema>>(getStoryApiV1TravelGuidesStoriesStoryIdGet({ path: { story_id } }))
       return result
     },
-    staleTime: 180000,
+    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
     initialData: initialData as z.infer<typeof GetStoryApiV1TravelGuidesStoriesStoryIdGetResponseSchema> | undefined,
     ...restOptions
   })

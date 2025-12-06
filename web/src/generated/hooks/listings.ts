@@ -93,12 +93,12 @@ export function useListListingsApiV1ListingsGet(skip?: number, limit?: number, c
         handleActionError(error)
       }
     },
-    staleTime: 180000,
-    gcTime: 360000, // React Query v5: gcTime replaces cacheTime
+    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
+    gcTime: 10 * 60 * 1000, // 10 minutes - cache persists longer (React Query v5)
     enabled: true && (options?.enabled ?? true),
-    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnWindowFocus: false, // Don't refetch on window focus for better performance
     refetchOnReconnect: true, // Refetch when network reconnects
-    refetchOnMount: 'always', // Always refetch on mount for fresh data
+    refetchOnMount: false, // Use cached data if available for faster loads
     refetchInterval: options?.refetchInterval, // Optional polling interval
     // React Query v5: placeholderData replaces keepPreviousData
     placeholderData: (previousData: z.infer<typeof ListListingsApiV1ListingsGetResponseSchema> | undefined) => previousData,

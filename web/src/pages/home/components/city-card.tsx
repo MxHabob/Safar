@@ -22,15 +22,14 @@ const CityCard = ({ title, coverPhoto }: Props) => {
     >
       <AspectRatio
         ratio={0.75 / 1}
-        className="overflow-hidden rounded-lg relative"
+        className="overflow-hidden rounded-[18px] relative group-hover:shadow-xl transition-shadow duration-500"
       >
         <BlurImage
           src={keyToImage(coverPhoto.file.file_url)}
-          alt={coverPhoto.file.original_filename}
+          alt={coverPhoto.file.original_filename || `${title} travel destination`}
           fill
           sizes="(max-width: 767px) 100vw, (max-width: 1535px) 50vw, 33vw"
-          quality={65}
-          className="object-cover lg:group-hover:blur-xs lg:transition-[filter] lg:duration-300 lg:ease-out"
+          className="object-cover transition-transform duration-700 group-hover:scale-105"
           blurhash={coverPhoto.file.description}
         />
       </AspectRatio>

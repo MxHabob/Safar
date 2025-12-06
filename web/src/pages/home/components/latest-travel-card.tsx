@@ -3,7 +3,7 @@ import { ArrowDown } from "lucide-react";
 
 const LatestTravelCard = () => {
   return (
-    <div className="p-4 lg:p-5 bg-muted rounded-xl w-full flex justify-between items-center">
+    <div className="p-4 lg:p-5 bg-muted rounded-[18px] w-full flex justify-between items-center">
       <div className="flex items-center gap-2">
         <p className="text-sm font-light">Latest Travel</p>
         <ArrowDown size={14} />
