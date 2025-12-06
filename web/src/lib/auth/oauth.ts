@@ -303,6 +303,15 @@ async function exchangeCodeForToken(
     }
     
     const data = await response.json()
+    
+    // For Google and Apple OAuth with OpenID Connect, we need the id_token (not access_token)
+    // The backend uses tokeninfo/verification endpoints which validate ID tokens (JWT)
+    // For Facebook and GitHub, we use the access_token
+    if (provider === 'google' || provider === 'apple') {
+      return data.id_token || null
+    }
+    
+    // For Facebook and GitHub, use access_token
     return data.access_token || null
   } catch (error) {
     console.error(`[OAuth] Token exchange error for ${provider}:`, error)
