@@ -106,7 +106,7 @@ export function SecurityView() {
     try {
       const result = await setup2faApiV1Users2faSetupPost()
       // Redirect to 2FA setup page with QR code
-      window.location.href = `/account/security/2fa/setup?secret=${result.secret}&qr_code=${result.qr_code}`
+      window.location.href = `/account/security/2fa/setup?secret=${result.data?.secret}&qr_code=${result.data?.qr_code}`
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to setup 2FA')
     }
@@ -115,7 +115,8 @@ export function SecurityView() {
   const handleDisable2FA = async () => {
     try {
       await disable2faApiV1Users2faDisablePost({
-        password: '', // Will need to prompt for password
+        current_password: '',
+        new_password: '',
       })
       toast.success('2FA disabled successfully')
       queryClient.invalidateQueries({ queryKey: ['2fa-status'] })
@@ -224,7 +225,7 @@ export function SecurityView() {
         <CardContent>
           {isLoading2FA ? (
             <p className="text-sm text-muted-foreground">Loading...</p>
-          ) : twoFactorStatus?.enabled ? (
+          ) : twoFactorStatus?.data?.enabled ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-muted/50 rounded-[18px]">
                 <div className="flex items-center gap-3">
@@ -305,7 +306,7 @@ export function SecurityView() {
         <CardContent>
           {isLoadingDevices ? (
             <p className="text-sm text-muted-foreground">Loading devices...</p>
-          ) : devices && devices.length > 0 ? (
+          ) : devices && Array.isArray(devices) && devices.length > 0 ? (
             <div className="space-y-3">
               {devices.map((device: any) => (
                 <div

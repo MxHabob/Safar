@@ -24,7 +24,6 @@ export function AccountOverview({ user, role }: AccountOverviewProps) {
 
   return (
     <div className="space-y-6">
-      {/* Status Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border rounded-[18px]">
           <CardHeader className="pb-3">
@@ -97,7 +96,6 @@ export function AccountOverview({ user, role }: AccountOverviewProps) {
         </Card>
       </div>
 
-      {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="border rounded-[18px] hover:border-primary/50 transition-colors">
           <CardHeader>
@@ -220,7 +218,6 @@ export function AccountOverview({ user, role }: AccountOverviewProps) {
         )}
       </div>
 
-      {/* Profile Completion */}
       <Card className="border rounded-[18px]">
         <CardHeader>
           <CardTitle>Profile Completion</CardTitle>

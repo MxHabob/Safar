@@ -34,8 +34,8 @@ export function SettingsView() {
   const handleDeleteAccount = async () => {
     try {
       await deleteAccountApiV1UsersAccountDeletePost({
-        password: '', // Will need to prompt for password
-        reason: 'User requested account deletion',
+        password: '',
+        confirm: true,
       })
       toast.success('Account deleted successfully')
       router.push('/auth/login')

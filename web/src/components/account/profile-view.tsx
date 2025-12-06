@@ -67,7 +67,7 @@ export function ProfileView({ user }: ProfileViewProps) {
     }
   }
 
-  const initials = `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}` || user.email[0].toUpperCase()
+  const initials = `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

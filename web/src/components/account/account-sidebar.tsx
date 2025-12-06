@@ -14,10 +14,10 @@ import {
   FileText
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { AuthUser } from '@/lib/auth/types'
+import type { GetCurrentUserInfoApiV1UsersMeGetResponse } from '@/generated/schemas'
 
 interface AccountSidebarProps {
-  user: AuthUser
+  user: GetCurrentUserInfoApiV1UsersMeGetResponse
 }
 
 const guestNavItems = [
@@ -76,7 +76,7 @@ export function AccountSidebar({ user }: AccountSidebarProps) {
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = pathname === item.href || 
-            (item.href !== '/account' && pathname.startsWith(item.href))
+            (item.href !== '/account' && pathname?.startsWith(item.href))
           
           return (
             <Link

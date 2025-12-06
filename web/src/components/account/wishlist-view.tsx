@@ -3,12 +3,11 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Heart, MapPin, DollarSign, Trash2 } from 'lucide-react'
+import { Heart, MapPin, Trash2 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import Image from 'next/image'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
 
 export function WishlistView() {
   const queryClient = useQueryClient()

@@ -19,6 +19,6 @@ export async function requireSession(): Promise<ServerSession> {
     const { redirect } = await import('next/navigation')
     redirect('/auth/login')
   }
-  return session
+  return session as ServerSession
 }
 

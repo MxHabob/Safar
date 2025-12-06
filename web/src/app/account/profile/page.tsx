@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth/session-provider'
-import { getCurrentUserInfoApiV1UsersMeGet } from '@/generated/actions/users'
 import { ProfileView } from '@/components/account/profile-view'
 
 export default async function ProfilePage() {
@@ -8,14 +7,6 @@ export default async function ProfilePage() {
   
   if (!session) {
     redirect('/auth/login')
-  }
-
-  let userData
-  try {
-    userData = await getCurrentUserInfoApiV1UsersMeGet()
-  } catch (error) {
-    console.error('Failed to fetch user data:', error)
-    userData = session.user
   }
 
   return (
@@ -27,7 +18,7 @@ export default async function ProfilePage() {
         </p>
       </div>
 
-      <ProfileView user={userData} />
+      <ProfileView user={session.user} />
     </div>
   )
 }

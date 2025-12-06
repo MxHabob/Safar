@@ -18,10 +18,10 @@ import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import type { AuthUser } from '@/lib/auth/types'
+import type { GetCurrentUserInfoApiV1UsersMeGetResponse } from '@/generated/schemas'
 
 interface MobileAccountNavProps {
-  user: AuthUser
+  user: GetCurrentUserInfoApiV1UsersMeGetResponse
 }
 
 const guestNavItems = [
