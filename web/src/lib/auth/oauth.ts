@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { randomBytes, createHash } from 'crypto'
 import type { OauthLoginApiV1UsersOauthLoginPostRequest } from '@/generated/schemas'
-import { oauthLoginApiV1UsersOauthLoginPost } from '@/generated/actions/users'
+import { apiClient } from '@/generated/client'
 import { setAuthTokens } from './server'
 
 /**
@@ -201,21 +201,48 @@ export async function handleOAuthCallback(
       throw new Error('Failed to exchange OAuth code for token')
     }
     
-    // Send OAuth token to our backend
+    // Send OAuth token to our backend using API client directly (not Server Action)
+    // This avoids the updateTag error when called from Route Handlers
     const request: OauthLoginApiV1UsersOauthLoginPostRequest = {
       provider,
       token: accessToken,
     }
     
-    const result = await oauthLoginApiV1UsersOauthLoginPost(request)
-    
-    // Validate response
-    if (!result || typeof result !== 'object' || !('access_token' in result)) {
-      throw new Error('Invalid OAuth response')
+    try {
+      const response = await apiClient.users.oauthLoginApiV1UsersOauthLoginPost({
+        body: request,
+        config: {
+          timeout: 30000,
+          retries: 3,
+          validateResponse: false,
+        }
+      })
+      
+      // Extract data from API response
+      const data = response.data
+      
+      // Validate response
+      if (!data || typeof data !== 'object') {
+        console.error('[OAuth] Invalid response type:', typeof data, data)
+        throw new Error(`Invalid OAuth response: Expected object, got ${typeof data}`)
+      }
+      
+      if (!('access_token' in data)) {
+        console.error('[OAuth] Missing access_token in response:', Object.keys(data || {}), data)
+        throw new Error(`Invalid OAuth response: Missing access_token in response. Got keys: ${Object.keys(data || {}).join(', ')}`)
+      }
+      
+      // Set tokens in cookies
+      await setAuthTokens(data as any)
+    } catch (error) {
+      // Handle API errors
+      if (error && typeof error === 'object' && 'message' in error) {
+        const errorMessage = typeof error.message === 'string' ? error.message : 'OAuth login failed'
+        console.error('[OAuth] API error:', error)
+        throw new Error(errorMessage)
+      }
+      throw error
     }
-    
-    // Set tokens in cookies
-    await setAuthTokens(result as any)
     
     // Clear OAuth state
     await clearOAuthState(provider)

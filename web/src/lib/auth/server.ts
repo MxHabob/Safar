@@ -4,7 +4,7 @@ import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { decodeJwt } from 'jose'
 import type { TokenResponse, GetCurrentUserInfoApiV1UsersMeGetResponse } from '@/generated/schemas'
-import { getCurrentUserInfoApiV1UsersMeGet } from '@/generated/actions/users'
+import { apiClient } from '@/generated/client'
 
 /**
  * Cookie names for authentication tokens
@@ -140,14 +140,25 @@ export async function getServerSession(): Promise<ServerSession | null> {
           if (newToken) {
             const newDecoded = await validateToken(newToken)
             if (newDecoded) {
-              // Fetch user with new token
-              const userResult = await getCurrentUserInfoApiV1UsersMeGet()
-              if (userResult) {
-                return {
-                  user: userResult as GetCurrentUserInfoApiV1UsersMeGetResponse,
-                  accessToken: newToken,
-                  expiresAt: newDecoded.exp ? newDecoded.exp * 1000 : Date.now() + 1800000,
+              // Fetch user with new token using API client directly (avoid circular dependency)
+              try {
+                const response = await apiClient.users.getCurrentUserInfoApiV1UsersMeGet({
+                  config: {
+                    timeout: 10000,
+                    retries: 1,
+                  }
+                })
+                if (response.data) {
+                  return {
+                    user: response.data as GetCurrentUserInfoApiV1UsersMeGetResponse,
+                    accessToken: newToken,
+                    expiresAt: newDecoded.exp ? newDecoded.exp * 1000 : Date.now() + 1800000,
+                  }
                 }
+              } catch (error) {
+                // API call failed, clear tokens
+                await clearAuthTokens()
+                return null
               }
             }
           }
@@ -164,18 +175,31 @@ export async function getServerSession(): Promise<ServerSession | null> {
       return null
     }
 
-    // Token is valid, fetch user data
-    // Note: This action requires auth, so it will use the token from cookies automatically
-    const userResult = await getCurrentUserInfoApiV1UsersMeGet()
-    
-    // Check if result is valid
-    if (!userResult) {
+    // Token is valid, fetch user data using API client directly (avoid circular dependency)
+    // Using API client instead of Server Action prevents infinite loop when action requires auth
+    let user: GetCurrentUserInfoApiV1UsersMeGetResponse
+    try {
+      const response = await apiClient.users.getCurrentUserInfoApiV1UsersMeGet({
+        config: {
+          timeout: 10000,
+          retries: 1,
+        }
+      })
+      
+      if (!response.data) {
+        await clearAuthTokens()
+        return null
+      }
+      
+      user = response.data as GetCurrentUserInfoApiV1UsersMeGetResponse
+    } catch (error) {
+      // API call failed, clear tokens and return null
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[Auth] Failed to fetch user data:', error)
+      }
       await clearAuthTokens()
       return null
     }
-
-    // userResult is already the user data (GetCurrentUserInfoApiV1UsersMeGetResponse)
-    const user = userResult as GetCurrentUserInfoApiV1UsersMeGetResponse
 
     return {
       user,
