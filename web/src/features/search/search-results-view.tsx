@@ -30,7 +30,7 @@ export const SearchResultsView = () => {
     query: parseAsString.withDefault(""),
     city: parseAsString.withDefault(""),
     country: parseAsString.withDefault(""),
-    listing_type: parseAsStringEnum<ListingType>(Object.values(ListingType)),
+    listing_type: parseAsStringEnum<"apartment" | "house" | "room" | "hotel" | "other">(["apartment", "house", "room", "hotel", "other"]),
     minPrice: parseAsInteger,
     maxPrice: parseAsInteger,
     guests: parseAsInteger,
@@ -52,7 +52,7 @@ export const SearchResultsView = () => {
     searchQuery || undefined,
     city || undefined,
     country || undefined,
-    params.listing_type || undefined,
+    params.listing_type as ListingType | undefined,
     params.minPrice || undefined,
     params.maxPrice || undefined,
     params.guests || (guests ? parseInt(guests) : undefined),
@@ -83,9 +83,6 @@ export const SearchResultsView = () => {
       />
     );
   }
-
-  const listings = data?.items || [];
-  const total = data?.total || 0;
 
   const listings = data?.items || [];
   const total = data?.total || 0;
