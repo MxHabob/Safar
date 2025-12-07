@@ -135,7 +135,7 @@ UNSPLASH_IMAGES = {
     "villa": [
         "https://images.unsplash.com/photo-1600585152915-d208bec867a1?w=800&h=600&fit=crop",  # Luxury villa
         "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&h=600&fit=crop",  # Villa pool
-        "https://images.unsplash.com/photo-1600607687644-c7171b42498b?w=800&h=600&fit=crop",  # Villa exterior
+        "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800&h=600&fit=crop",  # Villa exterior
         "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&h=600&fit=crop",  # Villa interior
         "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=800&h=600&fit=crop",  # Villa garden
     ],
