@@ -4,7 +4,7 @@ import Graphic from "@/components/shared/graphic";
 import { useState } from "react";
 import MobileMenu from "@/features/home/components/header/mobile-menu";
 
-const MobileMenuButton = () => {
+export const MobileMenuButton = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -25,4 +25,3 @@ const MobileMenuButton = () => {
   );
 };
 
-export default MobileMenuButton;

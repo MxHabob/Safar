@@ -1,8 +1,9 @@
 import Logo from "./logo";
 import FlipLink from "@/components/shared/flip-link";
+import Graphic from "@/components/shared/graphic";
 import { ThemeSwitch } from "@/components/shared/theme-toggle";
 
-const Navbar = () => {
+export const LeftSideNavbar = () => {
   return (
     <nav>
       <div className="flex items-center gap-5 pb-3 px-4 relative">
@@ -17,4 +18,3 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;

@@ -2,7 +2,7 @@
 
 // Header components
 export { default as Header } from "./header";
-export { default as Navbar } from "./header/navbar";
+export { default as Navbar } from "./header/left-side-navbar";
 export { default as Logo } from "./header/logo";
 export { default as MobileMenu } from "./header/mobile-menu";
 export { default as MobileMenuButton } from "./header/mobile-menu-button";
