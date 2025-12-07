@@ -1,8 +1,10 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ListingSlider, ListingSliderLoading } from "@/features/listings/listing-slider";
 import { ListingDetailView, ListingDetailLoading } from "@/features/listings/listing-detail-view";
 import { getListingApiV1ListingsListingIdGet } from "@/generated/actions/listings";
+import { ErrorBoundary } from "react-error-boundary";
 
 type Params = Promise<{ id: string }>;
 
@@ -49,39 +51,36 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   }
 }
 
-/**
- * Listing detail page
- * Performance: ISR with 60s revalidation for dynamic listing data
- */
 export const revalidate = 60; // ISR: Revalidate every 60 seconds
 
 export default async function ListingDetailPage({ params }: { params: Params }) {
   const { id } = await params;
+  const listing = await getListingApiV1ListingsListingIdGet({
+    path: { listing_id: id },
+  });
 
   return (
-    <Suspense fallback={<ListingDetailLoading />}>
-      <ListingDetailContent id={id} />
-    </Suspense>
+
+<div className="flex flex-col lg:flex-row min-h-screen w-full">
+        <div className="w-full lg:w-1/2 h-[70vh] lg:fixed lg:top-0 lg:left-0 lg:h-screen p-0 lg:p-3 rounded-xl">
+          <Suspense fallback={<ListingSliderLoading />}>
+            <ErrorBoundary fallback={<p>Something went wrong</p>}>
+              <ListingSlider photos={listing?.data?.images || []} />
+            </ErrorBoundary>
+          </Suspense>
+        </div>
+        <div className="hidden lg:block lg:w-1/2" />
+        <div className="w-full mt-3 lg:mt-0 lg:w-1/2 space-y-3 pb-3">
+
+          <Suspense fallback={<ListingDetailLoading />}>
+            <ErrorBoundary fallback={<p>Something went wrong</p>}>
+              <ListingDetailView listing={listing.data} />
+            </ErrorBoundary>
+          </Suspense>
+
+        </div>
+      </div>
   );
 }
 
-async function ListingDetailContent({ id }: { id: string }) {
-  try {
-    const result = await getListingApiV1ListingsListingIdGet({
-      path: { listing_id: id },
-    }).catch(() => null);
-
-    // Safe actions return { data: ... } structure
-    const listing = (result as any)?.data || result;
-
-    if (!listing || !listing.title) {
-      notFound();
-    }
-
-    return <ListingDetailView listing={listing} />;
-  } catch (error) {
-    console.error("Error fetching listing:", error);
-    notFound();
-  }
-}
 

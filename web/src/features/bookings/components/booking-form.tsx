@@ -126,33 +126,33 @@ export function BookingForm({ listing, checkIn, checkOut, guests: initialGuests 
   };
 
   return (
-    <Card className="sticky top-24 rounded-[18px] border">
-      <CardContent className="p-6">
+    <Card className="rounded-[18px] border">
+      <CardContent className="p-6 lg:p-8">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 lg:space-y-8">
             {/* Price per night */}
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-light">
+            <div className="flex items-baseline gap-2 pb-2">
+              <span className="text-3xl lg:text-4xl font-light">
                 {listing.currency} {basePrice}
               </span>
-              <span className="text-muted-foreground font-light">per night</span>
+              <span className="text-muted-foreground font-light text-sm lg:text-base">per night</span>
             </div>
 
             {/* Date Picker */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 lg:gap-4">
               <FormField
                 control={form.control}
                 name="check_in"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel className="text-sm font-light">Check-in</FormLabel>
+                    <FormLabel className="text-sm lg:text-base font-light mb-1.5">Check-in</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
                             variant="outline"
                             className={cn(
-                              "w-full justify-start text-left font-normal rounded-[18px]",
+                              "w-full justify-start text-left font-normal rounded-[18px] h-11 lg:h-12 text-base",
                               !field.value && "text-muted-foreground"
                             )}
                           >
@@ -185,14 +185,14 @@ export function BookingForm({ listing, checkIn, checkOut, guests: initialGuests 
                 name="check_out"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel className="text-sm font-light">Check-out</FormLabel>
+                    <FormLabel className="text-sm lg:text-base font-light mb-1.5">Check-out</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
                             variant="outline"
                             className={cn(
-                              "w-full justify-start text-left font-normal rounded-[18px]",
+                              "w-full justify-start text-left font-normal rounded-[18px] h-11 lg:h-12 text-base",
                               !field.value && "text-muted-foreground"
                             )}
                           >
@@ -230,7 +230,7 @@ export function BookingForm({ listing, checkIn, checkOut, guests: initialGuests 
               name="guests"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-light">Guests</FormLabel>
+                  <FormLabel className="text-sm lg:text-base font-light mb-1.5">Guests</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Users className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -238,7 +238,7 @@ export function BookingForm({ listing, checkIn, checkOut, guests: initialGuests 
                         type="number"
                         min={1}
                         max={listing.max_guests || 10}
-                        className="pl-10 rounded-[18px]"
+                        className="pl-10 h-11 lg:h-12 rounded-[18px] text-base"
                         {...field}
                         onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
                       />
@@ -285,32 +285,32 @@ export function BookingForm({ listing, checkIn, checkOut, guests: initialGuests 
 
             {/* Price Breakdown */}
             {nights > 0 && (
-              <div className="space-y-2 pt-4 border-t">
-                <div className="flex justify-between text-sm">
+              <div className="space-y-3 pt-4 lg:pt-6 border-t">
+                <div className="flex justify-between text-sm lg:text-base">
                   <span className="text-muted-foreground font-light">
                     {listing.currency} {basePrice} × {nights} {nights === 1 ? "night" : "nights"}
                   </span>
                   <span className="font-light">{listing.currency} {subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-sm lg:text-base">
                   <span className="text-muted-foreground font-light">Service fee</span>
                   <span className="font-light">{listing.currency} {serviceFee.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-sm lg:text-base">
                   <span className="text-muted-foreground font-light">Cleaning fee</span>
                   <span className="font-light">{listing.currency} {cleaningFee.toFixed(2)}</span>
                 </div>
                 {appliedCoupon && (
-                  <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                  <div className="flex justify-between text-sm lg:text-base text-green-600 dark:text-green-400">
                     <span className="font-light">Coupon discount ({appliedCoupon.code})</span>
                     <span className="font-light">
                       -{listing.currency} {appliedCoupon.discountAmount.toFixed(2)}
                     </span>
                   </div>
                 )}
-                <div className="flex justify-between pt-2 border-t font-light">
-                  <span>Total</span>
-                  <span className="text-lg">{listing.currency} {Math.max(0, total).toFixed(2)}</span>
+                <div className="flex justify-between pt-3 lg:pt-4 border-t font-light">
+                  <span className="text-base lg:text-lg">Total</span>
+                  <span className="text-lg lg:text-xl font-medium">{listing.currency} {Math.max(0, total).toFixed(2)}</span>
                 </div>
               </div>
             )}
@@ -318,7 +318,7 @@ export function BookingForm({ listing, checkIn, checkOut, guests: initialGuests 
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full rounded-[18px] font-light"
+              className="w-full rounded-[18px] font-light h-12 lg:h-14 text-base lg:text-lg"
               disabled={isSubmitting || !checkInDate || !checkOutDate}
             >
               {isSubmitting ? (

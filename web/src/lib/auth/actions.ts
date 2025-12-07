@@ -36,8 +36,26 @@ export async function loginAction(credentials: LoginApiV1UsersLoginPostRequest) 
     // Set tokens first
     await setAuthTokens(result as TokenResponse)
     
-    // Fetch user data to create session (will be done automatically on next getServerSession call)
-    // This avoids circular dependencies
+    // Fetch user data and create session with cookie
+    // This is safe here because we're in a Server Action
+    try {
+      const { getServerSession, setSessionTokenCookie } = await import('./server')
+      const session = await getServerSession()
+      
+      // If session was created, set the cookie now (we're in a Server Action, so it's safe)
+      if (session?.sessionToken) {
+        const expiresAt = session.expiresAt
+        const maxAge = Math.floor((expiresAt - Date.now()) / 1000)
+        if (maxAge > 0) {
+          await setSessionTokenCookie(session.sessionToken, maxAge)
+        }
+      }
+    } catch (error) {
+      // If fetching fails, tokens are still set and session will be created on next request
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[Auth] Could not set session cookie after login, session will be created on next request')
+      }
+    }
     
     return {
       success: true,

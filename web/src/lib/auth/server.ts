@@ -63,8 +63,10 @@ export async function getSessionToken(): Promise<string | null> {
 
 /**
  * Set session token in cookie
+ * This can only be called from Server Actions or Route Handlers
+ * Exported for use in actions.ts
  */
-async function setSessionToken(sessionToken: string, maxAge: number = 30 * 24 * 60 * 60): Promise<void> {
+export async function setSessionTokenCookie(sessionToken: string, maxAge: number = 30 * 24 * 60 * 60): Promise<void> {
   const cookieStore = await cookies()
   const isProduction = process.env.NODE_ENV === 'production'
   
@@ -123,7 +125,9 @@ export async function setAuthTokens(
     ...(isProduction && { partitioned: false }),
   })
 
-  // Create and store session (similar to auth.js)
+  // Create and store session in store (similar to auth.js)
+  // Note: Session cookie will be set by Server Actions, not here
+  // This function can be called from cached functions, so we can't modify cookies
   if (user) {
     const sessionToken = generateSessionToken()
     const decoded = await validateToken(tokens.access_token)
@@ -136,7 +140,8 @@ export async function setAuthTokens(
       expiresAt - Date.now()
     )
     
-    await setSessionToken(sessionToken, Math.floor((expiresAt - Date.now()) / 1000))
+    // Note: Session cookie cannot be set here because setAuthTokens may be called from cached functions
+    // Session is created in store, cookie will be set by Server Actions when needed
   }
 }
 
@@ -255,18 +260,19 @@ export const getServerSession = cache(async (): Promise<ServerSession | null> =>
               // Fetch user with new token
               const user = await fetchUserFromAPI()
               if (user) {
-                // Create new session in store
-                const newSessionToken = generateSessionToken()
-                const expiresAt = newDecoded.exp ? newDecoded.exp * 1000 : Date.now() + 1800000
-                
-                sessionStore.create(
-                  newSessionToken,
-                  user.id,
-                  user,
-                  expiresAt - Date.now()
-                )
-                
-                await setSessionToken(newSessionToken, Math.floor((expiresAt - Date.now()) / 1000))
+              // Create new session in store
+              const newSessionToken = generateSessionToken()
+              const expiresAt = newDecoded.exp ? newDecoded.exp * 1000 : Date.now() + 1800000
+              
+              sessionStore.create(
+                newSessionToken,
+                user.id,
+                user,
+                expiresAt - Date.now()
+              )
+              
+              // Note: Session cookie cannot be set here because getServerSession is cached
+              // Session is created in store, cookie will be set by Server Actions when needed
                 
                 return {
                   user,
@@ -316,6 +322,8 @@ export const getServerSession = cache(async (): Promise<ServerSession | null> =>
     }
 
     // Create session in store
+    // Note: We can't set cookies here because getServerSession is cached
+    // Session cookie will be set by Server Actions when needed
     const newSessionToken = generateSessionToken()
     const expiresAt = decoded.exp ? decoded.exp * 1000 : Date.now() + 1800000
     
@@ -326,7 +334,8 @@ export const getServerSession = cache(async (): Promise<ServerSession | null> =>
       expiresAt - Date.now()
     )
     
-    await setSessionToken(newSessionToken, Math.floor((expiresAt - Date.now()) / 1000))
+    // Note: Session cookie cannot be set here because getServerSession is cached
+    // Cookie will be set by Server Actions (e.g., loginAction) when needed
 
     return {
       user,
