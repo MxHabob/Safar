@@ -21,7 +21,7 @@ export default function Error({
   }, [error])
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4">
+    <div className="flex h-full flex-col items-center justify-center p-4">
       <div className="max-w-md w-full space-y-4 text-center">
         <AlertCircle className="h-12 w-12 mx-auto text-destructive" />
         <h2 className="text-2xl font-bold">Something went wrong!</h2>

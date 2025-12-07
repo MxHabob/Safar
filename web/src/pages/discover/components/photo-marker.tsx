@@ -1,3 +1,4 @@
+import { memo } from "react";
 import BlurImage from "@/components/shared/blur-image";
 import { keyToImage } from "@/lib/keyToImage";
 import type { PhotoPoint } from "@/pages/discover/lib/clustering";
@@ -7,7 +8,7 @@ interface PhotoMarkerProps {
   onClick?: () => void;
 }
 
-export const PhotoMarker = ({ photo, onClick }: PhotoMarkerProps) => (
+export const PhotoMarker = memo(({ photo, onClick }: PhotoMarkerProps) => (
   <div className="relative group cursor-pointer" onClick={onClick}>
     {/* Container positioned so arrow tip is at coordinate center */}
     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center">
@@ -26,4 +27,8 @@ export const PhotoMarker = ({ photo, onClick }: PhotoMarkerProps) => (
       <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-8 border-t-white drop-shadow-lg" />
     </div>
   </div>
-);
+), (prevProps, nextProps) => {
+  // Only re-render if photo ID or URL changes
+  return prevProps.photo.id === nextProps.photo.id && 
+         prevProps.photo.url === nextProps.photo.url;
+});

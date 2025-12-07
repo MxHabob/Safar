@@ -85,7 +85,7 @@ export const DiscoverView = () => {
   }, [data]);
   
   // Use photo clustering hook
-  const { clusters, singlePhotos, handleMove } = usePhotoClustering({
+  const { clusters, singlePhotos, handleMoveEnd } = usePhotoClustering({
     photos: photoPoints,
     initialZoom: 3,
   });
@@ -195,7 +195,7 @@ export const DiscoverView = () => {
               zoom: 3,
             }}
             markers={markers}
-            onMove={handleMove}
+            onMoveEnd={handleMoveEnd}
             onMapClick={() => {
               if (hasSelection) {
                 clearSelection();

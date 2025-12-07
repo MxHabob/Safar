@@ -1,3 +1,4 @@
+import { memo } from "react";
 import BlurImage from "@/components/shared/blur-image";
 import { keyToImage } from "@/lib/keyToImage";
 import type { Cluster } from "@/pages/discover/lib/clustering";
@@ -7,7 +8,7 @@ interface ClusterMarkerProps {
   onClick?: () => void;
 }
 
-export const ClusterMarker = ({ cluster, onClick }: ClusterMarkerProps) => {
+export const ClusterMarker = memo(({ cluster, onClick }: ClusterMarkerProps) => {
   // Use first photo as thumbnail
   const thumbnail = cluster.photos[0];
 
@@ -39,4 +40,9 @@ export const ClusterMarker = ({ cluster, onClick }: ClusterMarkerProps) => {
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Only re-render if cluster ID, count, or first photo changes
+  return prevProps.cluster.id === nextProps.cluster.id && 
+         prevProps.cluster.count === nextProps.cluster.count &&
+         prevProps.cluster.photos[0]?.id === nextProps.cluster.photos[0]?.id;
+});

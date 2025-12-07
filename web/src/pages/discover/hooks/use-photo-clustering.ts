@@ -44,14 +44,11 @@ export function usePhotoClustering({
     const result = getClustersFromIndex(clusterIndex, zoom, bounds);
 
     return result;
+  }, [clusterIndex, zoom, bounds]);
 
-
-  }, [clusterIndex, zoom, bounds, validPhotos.length]);
-
-  // Handle map move/zoom changes
-  const handleMove = useCallback(
+  // Handle map move end - only update when movement stops
+  const handleMoveEnd = useCallback(
     (viewState: { zoom: number; latitude: number; longitude: number }) => {
-
       setZoom(viewState.zoom);
 
       // Calculate approximate bounds based on viewport
@@ -69,6 +66,6 @@ export function usePhotoClustering({
     clusters,
     singlePhotos,
     zoom,
-    handleMove,
+    handleMoveEnd,
   };
 }
