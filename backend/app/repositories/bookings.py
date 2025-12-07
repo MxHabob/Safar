@@ -70,6 +70,11 @@ class BookingRepository(BaseRepository[BookingEntity], IBookingRepository):
         if not model:
             return None
         
+        # Handle payment_id - use payment_intent_id if payment_id doesn't exist
+        payment_id = getattr(model, 'payment_id', None)
+        if payment_id is None:
+            payment_id = getattr(model, 'payment_intent_id', None)
+        
         return BookingEntity(
             id=model.id,
             booking_number=model.booking_number,
@@ -87,7 +92,7 @@ class BookingRepository(BaseRepository[BookingEntity], IBookingRepository):
             currency=model.currency,
             status=model.status.value if hasattr(model.status, 'value') else str(model.status),
             payment_status=model.payment_status.value if hasattr(model.payment_status, 'value') else str(model.payment_status),
-            payment_id=model.payment_id,
+            payment_id=payment_id,
             special_requests=model.special_requests,
             guest_message=model.guest_message,
             cancelled_at=model.cancelled_at,
