@@ -23,9 +23,17 @@ export function StripeProvider({
   clientSecret,
   options,
 }: StripeProviderProps) {
+  // If no Stripe key is configured or no clientSecret, render children without Stripe Elements
+  if (!stripePromise || !clientSecret) {
+    return <>{children}</>;
+  }
+
+  // At this point, TypeScript knows clientSecret is a string
+  // When using clientSecret, mode should not be included
+  const { mode, ...restOptions } = options || {};
   const elementsOptions: StripeElementsOptions = useMemo(
     () => ({
-      clientSecret: clientSecret || undefined,
+      clientSecret: clientSecret,
       appearance: {
         theme: "stripe",
         variables: {
@@ -56,15 +64,10 @@ export function StripeProvider({
         },
       },
       locale: "en",
-      ...options,
+      ...restOptions,
     }),
-    [clientSecret, options]
+    [clientSecret, restOptions]
   );
-
-  // If no Stripe key is configured, render children without Stripe Elements
-  if (!stripePromise || !clientSecret) {
-    return <>{children}</>;
-  }
 
   return (
     <Elements stripe={stripePromise} options={elementsOptions}>
