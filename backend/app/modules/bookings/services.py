@@ -377,12 +377,11 @@ class BookingService:
                     logger.warning(f"Error applying coupon usage {coupon_code}: {str(e)}")
                     # Don't fail booking if coupon usage tracking fails
             
-            # Use domain logic
+            # Use domain logic - update status for instant bookings
             if listing.booking_type == "instant":
-                booking.status = BookingStatus.CONFIRMED.value
-            
-            # Save through repository (within locked transaction)
-            created = await uow.bookings.create(booking)
+                created.status = BookingStatus.CONFIRMED.value
+                # Update the booking with the new status
+                created = await uow.bookings.update(created)
             
             try:
                 await uow.commit()
