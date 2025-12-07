@@ -1,8 +1,9 @@
 import { Metadata } from "next";
 import { Suspense } from "react";
-import { CityView, CityViewLoadingStatus } from "@/pages/travel-guides/index";
+import { CityView, CityViewLoadingStatus } from "@/features/travel-guides/index";
 import { getGuidesApiV1TravelGuidesGet, getGuideApiV1TravelGuidesGuideIdGet } from "@/generated/actions/travelGuides";
 import { notFound } from "next/navigation";
+import { TravelGuideResponse } from "@/generated/schemas";
 
 type Props = {
   params: Promise<{
@@ -23,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
     });
 
-    const guide = guides?.[0];
+    const guide = guides?.data?.[0];
     if (guide) {
       return {
         title: `${guide.city}, ${guide.country} - Safar`,
@@ -73,14 +74,14 @@ async function CityData({ city }: { city: string }) {
           limit: 1,
         },
       });
-      guide = guides?.[0];
+      guide = guides?.data?.[0];
     }
 
     if (!guide) {
       notFound();
     }
 
-    return <CityView travelGuide={guide} />;
+    return <CityView travelGuide={guide as TravelGuideResponse} />;
   } catch {
     notFound();
   }

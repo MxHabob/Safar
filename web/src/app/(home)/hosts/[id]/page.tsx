@@ -1,10 +1,10 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
-import { HostProfileView, HostProfileLoading } from "@/pages/hosts/host-profile-view";
+import { HostProfileView, HostProfileLoading } from "@/features/hosts/host-profile-view";
 
 type Params = Promise<{ id: string }>;
 
-export const revalidate = 300; // ISR: Revalidate every 5 minutes (host profiles change less frequently)
+export const revalidate = 300;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { id } = await params;
@@ -24,10 +24,6 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   };
 }
 
-/**
- * Host profile page
- * Shows host information and their listings
- */
 export default async function HostProfilePage({ params }: { params: Params }) {
   const { id } = await params;
 

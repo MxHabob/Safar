@@ -1,5 +1,5 @@
-import { HeroSliderLoading } from "@/pages/home/hero-slider";
-import { TravelGuidesViewLoading } from "@/pages/home/travel-guides-view";
+import { HeroSliderLoading } from "@/features/home/hero-slider";
+import { TravelGuidesViewLoading } from "@/features/home/travel-guides-view";
 import Footer from "@/components/footer";
 import { Skeleton } from "@/components/ui/skeleton";
 

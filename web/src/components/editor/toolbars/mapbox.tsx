@@ -24,7 +24,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const Mapbox = dynamic(() => import("@/modules/mapbox/ui/components/map"), {
+const Mapbox = dynamic(() => import("@/components/shared/map"), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center h-full bg-muted">
@@ -172,7 +172,7 @@ export const MapboxToolbar = React.forwardRef<HTMLButtonElement>((_, ref) => {
                   )
                 );
               }}
-              onMove={(viewState) => {
+              onMoveEnd={(viewState) => {
                 setZoom(Math.round(viewState.zoom).toString());
               }}
             />

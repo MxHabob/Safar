@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
-import { UserProfileView, UserProfileLoading } from "@/pages/profile/user-profile-view";
+import { UserProfileView, UserProfileLoading } from "@/features/profile/user-profile-view";
 
 type Params = Promise<{ id: string }>;
 

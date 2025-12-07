@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
-import { DiscoverView } from "@/pages/discover/discover-view";
+import { DiscoverView } from "@/features/discover/discover-view";
 
 export const metadata: Metadata = {
   title: "Discover",

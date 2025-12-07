@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
-import { SearchResultsView, SearchResultsLoading } from "@/pages/search/search-results-view";
+import { SearchResultsView, SearchResultsLoading } from "@/features/search/search-results-view";
 
 export const metadata: Metadata = {
   title: "Search",

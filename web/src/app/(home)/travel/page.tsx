@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import {
   TravelView,
   LoadingStatus,
-} from "@/pages/travel-guides/travel-view";
+} from "@/features/travel-guides/travel-view";
 import { getGuidesApiV1TravelGuidesGet } from "@/generated/actions/travelGuides";
 
 export const metadata: Metadata = {

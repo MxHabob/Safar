@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
-import { ListingsView, ListingsViewLoading } from "@/pages/listings/listings-view";
+import { ListingsView, ListingsViewLoading } from "@/features/listings/listings-view";
 
 export const metadata: Metadata = {
   title: "Browse Listings",

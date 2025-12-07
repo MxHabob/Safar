@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ListingDetailView, ListingDetailLoading } from "@/pages/listings/listing-detail-view";
+import { ListingDetailView, ListingDetailLoading } from "@/features/listings/listing-detail-view";
 import { getListingApiV1ListingsListingIdGet } from "@/generated/actions/listings";
 
 type Params = Promise<{ id: string }>;

@@ -3,14 +3,14 @@ import "./globals.css";
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
-import { Readex_Pro } from "next/font/google";
+// import { Readex_Pro } from "next/font/google";
 import { Providers } from "@/lib/providers";
 
-const readexPro = Readex_Pro({
-  subsets: ["latin"],
-  display: "swap",
-  preload: true,
-});
+// const readexPro = Readex_Pro({
+//   subsets: ["latin"],
+//   display: "swap",
+//   preload: true,
+// });
 
 
 export const metadata: Metadata = {
@@ -53,12 +53,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${readexPro.className} antialiased`}>
+      <body className={` antialiased`}>
         <Providers>
           {children}
         </Providers>
-        {/* <SpeedInsights />
-        <Analytics /> */}
+        <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   );

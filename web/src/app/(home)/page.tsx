@@ -4,13 +4,13 @@ import type { Metadata as MetadataType } from "next";
 
 import Footer from "@/components/footer";
 import { getSession } from '@/lib/auth/session-provider'
-import { MinimalHero } from "@/pages/home/components/minimal-hero";
-import { EditorialDestinations } from "@/pages/home/components/editorial-destinations";
-import { CuratedListings } from "@/pages/home/components/curated-listings";
+import { MinimalHero } from "@/features/home/components/minimal-hero";
+import { EditorialDestinations } from "@/features/home/components/editorial-destinations";
+import { CuratedListings } from "@/features/home/components/curated-listings";
 import {
   TravelGuidesView,
   TravelGuidesViewLoading,
-} from "@/pages/home/travel-guides-view";
+} from "@/features/home/travel-guides-view";
 
 // Structured data for SEO
 const structuredData = {
