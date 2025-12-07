@@ -142,13 +142,57 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    # Safely convert errors to JSON-serializable format
+    try:
+        errors = exc.errors()
+        # Ensure all error details are JSON serializable
+        serializable_errors = []
+        for error in errors:
+            serializable_error = {}
+            for key, value in error.items():
+                # Convert any non-serializable values to strings
+                try:
+                    import json
+                    json.dumps(value)  # Test if value is JSON serializable
+                    serializable_error[key] = value
+                except (TypeError, ValueError):
+                    # Convert non-serializable values to strings
+                    serializable_error[key] = str(value) if value is not None else None
+            serializable_errors.append(serializable_error)
+        
+        return JSONResponse(
+            status_code=422,
+            content={
+                "error": True,
+                "message": "Validation error",
+                "details": serializable_errors,
+                "status_code": 422
+            }
+        )
+    except Exception as e:
+        # Fallback if error serialization fails
+        logger.error(f"Error in validation exception handler: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=422,
+            content={
+                "error": True,
+                "message": "Validation error",
+                "details": [{"msg": str(exc), "type": "validation_error"}],
+                "status_code": 422
+            }
+        )
+
+
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    """Handle ValueError exceptions"""
+    logger.warning(f"ValueError: {str(exc)}")
     return JSONResponse(
-        status_code=422,
+        status_code=400,
         content={
             "error": True,
-            "message": "Validation error",
-            "details": exc.errors(),
-            "status_code": 422
+            "message": str(exc),
+            "status_code": 400
         }
     )
 
