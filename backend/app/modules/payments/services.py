@@ -434,9 +434,24 @@ class PaymentService:
                 try:
                     intent = stripe.PaymentIntent.retrieve(payment_intent_id)
                     if intent.status != "succeeded":
+                        # Provide user-friendly error messages based on payment intent status
+                        status_messages = {
+                            "requires_payment_method": "Please complete the payment by providing your payment details.",
+                            "requires_confirmation": "Payment requires confirmation. Please try again.",
+                            "requires_action": "Additional authentication is required. Please complete the verification step.",
+                            "processing": "Your payment is being processed. Please wait a moment and try again.",
+                            "requires_capture": "Payment requires capture. Please contact support.",
+                            "canceled": "The payment was canceled. Please create a new payment.",
+                            "requires_source": "Payment method is required. Please provide your payment details.",
+                            "requires_source_action": "Additional action is required on your payment method. Please check and try again."
+                        }
+                        error_message = status_messages.get(
+                            intent.status,
+                            f"Payment not completed. Status: {intent.status}"
+                        )
                         raise HTTPException(
                             status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"Payment not completed. Status: {intent.status}"
+                            detail=error_message
                         )
                     
                     # Verify amount matches (strict - use Decimal for exact comparison)

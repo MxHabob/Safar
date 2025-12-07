@@ -701,8 +701,10 @@ export class BaseApiClient {
         // Handle HTTP errors
         if (!response.ok) {
           const errorData = await this.parseErrorResponse(response)
+          // FastAPI uses 'detail' field, prioritize it over 'message'
+          const errorMessage = errorData.detail || errorData.message || `HTTP ${response.status}: ${response.statusText}`
           const apiError = new ApiError(
-            errorData.message || `HTTP ${response.status}: ${response.statusText}`,
+            errorMessage,
             response.status,
             response.statusText,
             response,

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { CreditCard, Lock, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { CreditCard, Lock, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -16,7 +16,6 @@ import {
   FormMessage,
   FormDescription,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -62,10 +61,12 @@ export function PaymentForm({ booking, onSuccess, onCancel }: PaymentFormProps) 
   const createIntentMutation = useCreatePaymentIntentApiV1PaymentsIntentPostMutation({
     onSuccess: (data) => {
       setPaymentIntentId(data.payment_intent_id);
-      setClientSecret(data.client_secret);
+      setClientSecret(data.client_secret || null);
     },
     onError: (error) => {
-      toast.error(`Failed to initialize payment: ${error.message}`);
+      // Extract error message - backend returns user-friendly messages
+      const errorMessage = error.message || "Failed to initialize payment. Please try again.";
+      toast.error(errorMessage);
     },
     showToast: false,
   });
@@ -74,10 +75,13 @@ export function PaymentForm({ booking, onSuccess, onCancel }: PaymentFormProps) 
   const processPaymentMutation = useProcessPaymentApiV1PaymentsProcessPostMutation({
     onSuccess: (data) => {
       toast.success("Payment processed successfully!");
+      setIsProcessing(false);
       onSuccess?.(data.id);
     },
     onError: (error) => {
-      toast.error(`Payment failed: ${error.message}`);
+      // Extract error message - backend returns user-friendly messages in error.message
+      const errorMessage = error.message || "Payment failed. Please try again.";
+      toast.error(errorMessage);
       setIsProcessing(false);
     },
     showToast: false,
@@ -99,6 +103,19 @@ export function PaymentForm({ booking, onSuccess, onCancel }: PaymentFormProps) 
       return;
     }
 
+    // For Stripe payments, the payment intent needs to be confirmed first
+    // This is a placeholder - in production, you should integrate Stripe Elements
+    // to collect payment details and confirm the payment intent before processing
+    if (
+      (values.payment_method === "stripe" || 
+       values.payment_method === "credit_card" || 
+       values.payment_method === "debit_card") &&
+      !clientSecret
+    ) {
+      toast.error("Payment method not ready. Please wait for initialization.");
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
@@ -109,12 +126,21 @@ export function PaymentForm({ booking, onSuccess, onCancel }: PaymentFormProps) 
       });
     } catch (error) {
       // Error is handled by onError callback
+      // The error message from backend is already user-friendly
       console.error("Payment processing error:", error);
     }
   };
 
   const isLoading = createIntentMutation.isPending || !paymentIntentId;
-  const canSubmit = !isLoading && !isProcessing && paymentIntentId && clientSecret;
+  // For Stripe payments, clientSecret is required. For other methods, only paymentIntentId is needed
+  const requiresClientSecret = paymentMethod === "stripe" || paymentMethod === "credit_card" || paymentMethod === "debit_card";
+  const canSubmit = 
+    !isLoading && 
+    !isProcessing && 
+    paymentIntentId && 
+    (!requiresClientSecret || clientSecret) &&
+    !createIntentMutation.isError &&
+    !processPaymentMutation.isError;
 
   return (
     <Card className="rounded-[18px] border">
@@ -224,19 +250,28 @@ export function PaymentForm({ booking, onSuccess, onCancel }: PaymentFormProps) 
             />
 
             {/* Payment Method Specific Fields */}
-            {(paymentMethod === "stripe" || paymentMethod === "credit_card" || paymentMethod === "debit_card") && clientSecret && (
+            {(paymentMethod === "stripe" || paymentMethod === "credit_card" || paymentMethod === "debit_card") && (
               <div className="space-y-4 p-4 border rounded-[18px]">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground font-light">
                   <Lock className="size-4" />
                   <span>Secure payment powered by Stripe</span>
                 </div>
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-sm font-light">
-                    Stripe integration will be handled by Stripe Elements. 
-                    Client secret: {clientSecret.substring(0, 20)}...
-                  </AlertDescription>
-                </Alert>
+                {clientSecret ? (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-sm font-light">
+                      Payment ready. Note: Stripe Elements integration is required to collect 
+                      payment details and confirm the payment before processing.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Alert variant="default">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <AlertDescription className="text-sm font-light">
+                      Initializing payment method...
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
             )}
 
@@ -262,7 +297,17 @@ export function PaymentForm({ booking, onSuccess, onCancel }: PaymentFormProps) 
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="font-light">
-                  Failed to initialize payment. Please try again.
+                  {createIntentMutation.error?.message || "Failed to initialize payment. Please try again."}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Payment Processing Error State */}
+            {processPaymentMutation.isError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="font-light">
+                  {processPaymentMutation.error?.message || "Payment processing failed. Please try again."}
                 </AlertDescription>
               </Alert>
             )}
