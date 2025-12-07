@@ -1,5 +1,4 @@
 import { DEFAULT_SERVER_ERROR_MESSAGE, createSafeActionClient } from "next-safe-action";
-import { headers } from "next/headers";
 import { z } from "zod";
 
 /**
@@ -111,6 +110,8 @@ export const authActionClient = actionClientWithMeta
   })
   .use(async ({ next, metadata }) => {
     if (metadata?.rateLimit) {
+      // Lazy import headers to avoid client-side bundling issues
+      const { headers } = await import("next/headers");
       const headersList = await headers(); // Await the headers promise
       const ip = headersList.get("x-forwarded-for") ?? "local";
       const { success, remaining } = await memoryRateLimiter.limit(
