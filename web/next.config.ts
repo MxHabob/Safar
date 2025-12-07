@@ -74,12 +74,13 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  webpack: (config) => {
+  webpack: (config, { dir }) => {
     // Ensure path aliases are properly resolved
+    // Use the 'dir' parameter which is the absolute path to the Next.js project directory
     if (config.resolve) {
       config.resolve.alias = {
-        ...config.resolve.alias,
-        '@': path.join(__dirname, 'src'),
+        ...(config.resolve.alias || {}),
+        '@': path.join(dir, 'src'),
       };
     }
     return config;
