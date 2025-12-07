@@ -50,7 +50,7 @@ export function AdvancedSearchFilters({ onFiltersChange }: AdvancedSearchFilters
     query: parseAsString.withDefault(""),
     city: parseAsString.withDefault(""),
     country: parseAsString.withDefault(""),
-    listing_type: parseAsStringEnum<ListingType>(Object.values(ListingType)),
+    listing_type: parseAsStringEnum<"apartment" | "house" | "room" | "hotel" | "other">(["apartment", "house", "room", "hotel", "other"]),
     minPrice: parseAsInteger,
     maxPrice: parseAsInteger,
     guests: parseAsInteger,
@@ -71,7 +71,7 @@ export function AdvancedSearchFilters({ onFiltersChange }: AdvancedSearchFilters
       query: newParams.query || undefined,
       city: newParams.city || undefined,
       country: newParams.country || undefined,
-      listing_type: newParams.listing_type || undefined,
+      listing_type: newParams.listing_type as ListingType | undefined,
       min_price: newParams.minPrice || undefined,
       max_price: newParams.maxPrice || undefined,
       min_guests: newParams.guests || undefined,
@@ -170,8 +170,8 @@ export function AdvancedSearchFilters({ onFiltersChange }: AdvancedSearchFilters
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">All types</SelectItem>
-                    {Object.values(ListingType).map((type) => (
-                      <SelectItem key={type} value={type}>
+                    {["apartment", "house", "room", "hotel", "other"].map((type) => (
+                      <SelectItem key={type} value={type as ListingType}>
                         {type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
                       </SelectItem>
                     ))}

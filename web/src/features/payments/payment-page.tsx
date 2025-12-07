@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PaymentForm } from "./components/payment-form";
-import { PaymentStatus } from "./components/payment-status";
 import { useGetBookingApiV1BookingsBookingIdGet } from "@/generated/hooks/bookings";
 import { EmptyState } from "@/components/shared/empty-state";
 import { AlertCircle } from "lucide-react";
@@ -161,7 +160,7 @@ export function PaymentPage({ bookingId }: PaymentPageProps) {
   );
 }
 
-function PaymentPageLoading() {
+export function PaymentPageLoading() {
   return (
     <div className="min-h-screen w-full">
       <div className="w-full max-w-4xl mx-auto px-3 lg:px-6 py-8 lg:py-12 space-y-8">

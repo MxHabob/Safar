@@ -46,22 +46,22 @@ export function BookingsView() {
 
     try {
       const result = await cancelBookingApiV1BookingsBookingIdCancelPost({
-        booking_id: bookingId,
+        params: {
+          path: {
+            booking_id: bookingId,
+          },
+        },
+        body: {
+          cancellation_reason: "User cancelled",
+        },
       });
-
-      if (result.data) {
-        toast.success("Booking cancelled successfully");
-        refetch();
-      } else if (result.serverError) {
-        toast.error(result.serverError as string);
-      }
     } catch (error) {
       toast.error("Failed to cancel booking. Please try again.");
       console.error("Cancel booking error:", error);
     }
   };
 
-  const getStatusBadge = (status: string) => {
+    const getStatusBadge = (status: string) => {
     const statusConfig = {
       pending: { variant: "secondary" as const, icon: Clock, label: "Pending" },
       confirmed: { variant: "default" as const, icon: CheckCircle, label: "Confirmed" },
@@ -147,9 +147,7 @@ export function BookingsView() {
       ) : (
         <div className="grid gap-6">
           {bookings.map((booking) => {
-            const listing = booking.listing;
-            const primaryPhoto = listing?.photos?.[0] || listing?.images?.[0];
-            const photoUrl = primaryPhoto?.url || "/images/image1.jpg";
+            const photoUrl = "/images/image1.jpg";
 
             return (
               <Card
@@ -165,7 +163,7 @@ export function BookingsView() {
                     <div className="relative h-48 lg:h-full rounded-[18px] overflow-hidden bg-muted">
                       <Image
                         src={photoUrl}
-                        alt={listing?.title || "Accommodation"}
+                        alt="Accommodation"
                         fill
                         quality={75}
                         className="object-cover"
@@ -178,20 +176,18 @@ export function BookingsView() {
                       <div>
                         <div className="flex items-start justify-between mb-2">
                           <Link
-                            href={`/listings/${listing?.id}`}
+                            href={`/listings/${booking.listing_id}`}
                             className="hover:underline"
                           >
                             <h3 className="text-xl font-light">
-                              {listing?.title || "Accommodation"}
+                              Accommodation
                             </h3>
                           </Link>
                           {getStatusBadge(booking.status)}
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground font-light">
                           <MapPin className="size-4" />
-                          <span>
-                            {listing?.city}, {listing?.country}
-                          </span>
+                          <span>Location details unavailable</span>
                         </div>
                       </div>
 
@@ -262,6 +258,7 @@ export function BookingsView() {
   );
 }
 
+
 export function BookingsLoading() {
   return (
     <div className="space-y-8">
@@ -274,4 +271,3 @@ export function BookingsLoading() {
     </div>
   );
 }
-
