@@ -50,7 +50,7 @@ async def create_booking(
             selectinload(BookingModel.listing),
             selectinload(BookingModel.guest),
             selectinload(BookingModel.timeline_events),
-            selectinload(BookingModel.payment)
+            selectinload(BookingModel.payments)
         )
     )
     booking = result.scalar_one_or_none()
@@ -100,7 +100,7 @@ async def list_bookings(
             selectinload(BookingModel.listing),
             selectinload(BookingModel.guest),
             selectinload(BookingModel.timeline_events),
-            selectinload(BookingModel.payment)
+            selectinload(BookingModel.payments)
         )
     )
     bookings = result.scalars().all()
@@ -150,7 +150,6 @@ async def get_booking(
             selectinload(BookingModel.listing),
             selectinload(BookingModel.guest),
             selectinload(BookingModel.timeline_events),
-            selectinload(BookingModel.payment),
             selectinload(BookingModel.payments)
         )
     )
