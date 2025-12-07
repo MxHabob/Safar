@@ -4,8 +4,7 @@ import { Suspense } from "react";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { SliderView } from "@/pages/home/slider-view";
-import { SliderViewLoadingStatus } from "@/pages/home/slider-view";
+import { HeroSlider, HeroSliderLoading } from "@/pages/home/hero-slider";
 import Graphic from "@/components/shared/graphic";
 
 /**
@@ -17,8 +16,8 @@ export const MinimalHero = () => {
     <section className="relative min-h-screen flex items-center justify-center p-3 lg:p-6">
       {/* Background with graphic corners */}
       <div className="absolute inset-0 rounded-[18px] overflow-hidden bg-muted/30">
-        <Suspense fallback={<SliderViewLoadingStatus />}>
-          <SliderView />
+        <Suspense fallback={<HeroSliderLoading />}>
+          <HeroSlider />
         </Suspense>
         <div className="absolute inset-0 bg-background/40" />
       </div>
@@ -45,9 +44,6 @@ export const MinimalHero = () => {
             <br />
             <span className="font-normal">go next?</span>
           </h1>
-          <p className="text-lg lg:text-xl text-muted-foreground font-light max-w-xl mx-auto">
-            Discover places that inspire. Stay where stories begin.
-          </p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -60,14 +56,6 @@ export const MinimalHero = () => {
               Explore Destinations
               <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
             </Link>
-          </Button>
-          <Button
-            asChild
-            variant="outline"
-            size="lg"
-            className="rounded-[18px] px-8 py-6 text-base border-2"
-          >
-            <Link href="/listings">Find Stays</Link>
           </Button>
         </div>
       </div>

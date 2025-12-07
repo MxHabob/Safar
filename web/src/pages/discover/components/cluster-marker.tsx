@@ -1,6 +1,6 @@
 import BlurImage from "@/components/shared/blur-image";
 import { keyToImage } from "@/lib/keyToImage";
-import type { Cluster } from "@/modules/discover/lib/clustering";
+import type { Cluster } from "@/pages/discover/lib/clustering";
 
 interface ClusterMarkerProps {
   cluster: Cluster;
@@ -23,7 +23,7 @@ export const ClusterMarker = ({ cluster, onClick }: ClusterMarkerProps) => {
             width={80}
             height={80}
             className="object-cover w-full h-full"
-            blurhash={thumbnail.blurData}
+            blurhash={thumbnail.blurData || ""}
           />
           {/* Bottom gradient overlay for better text visibility */}
           <div className="absolute inset-x-0 bottom-0 h-10 bg-linear-to-t from-black/60 to-transparent pointer-events-none" />

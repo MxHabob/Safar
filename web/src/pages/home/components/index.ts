@@ -1,15 +1,15 @@
 // Home Module - Components Barrel Export
 
+// Header components
 export { default as Header } from "./header";
 export { default as Navbar } from "./header/navbar";
 export { default as Logo } from "./header/logo";
 export { default as MobileMenu } from "./header/mobile-menu";
 export { default as MobileMenuButton } from "./header/mobile-menu-button";
-export { default as AboutCard } from "./about-card";
-export { default as CameraCard } from "./camera-card";
-export { default as CityCard } from "./city-card";
-export { default as LatestTravelCard } from "./latest-travel-card";
-export { default as ProfileCard } from "./profile-card";
-export { default as VectorTopLeftAnimation } from "./vector-top-left-animation";
-export { default as WordRotate } from "./word-rotate";
 
+// Home page components
+export { default as TravelGuideCard } from "./travel-guide-card";
+export { default as DestinationLabel } from "./destination-label";
+export { MinimalHero } from "./minimal-hero";
+export { EditorialDestinations } from "./editorial-destinations";
+export { CuratedListings } from "./curated-listings";

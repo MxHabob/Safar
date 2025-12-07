@@ -1,11 +1,15 @@
 import Graphic from "@/components/shared/graphic";
 import { ArrowRight } from "lucide-react";
 
-interface Props {
+interface DestinationLabelProps {
   title: string;
 }
 
-const VectorTopLeftAnimation = ({ title }: Props) => {
+/**
+ * Destination label component - Animated label overlay for travel guide cards
+ * Shows destination name with hover animation
+ */
+const DestinationLabel = ({ title }: DestinationLabelProps) => {
   return (
     <div className="relative bg-background rounded-br-[18px]">
       <div className="pt-2 px-4 pb-3 overflow-hidden">
@@ -28,4 +32,5 @@ const VectorTopLeftAnimation = ({ title }: Props) => {
   );
 };
 
-export default VectorTopLeftAnimation;
+export default DestinationLabel;
+

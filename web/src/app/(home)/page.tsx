@@ -8,9 +8,9 @@ import { MinimalHero } from "@/pages/home/components/minimal-hero";
 import { EditorialDestinations } from "@/pages/home/components/editorial-destinations";
 import { CuratedListings } from "@/pages/home/components/curated-listings";
 import {
-  CitiesView,
-  CitiesViewLoadingStatus,
-} from "@/pages/home/cities-view";
+  TravelGuidesView,
+  TravelGuidesViewLoading,
+} from "@/pages/home/travel-guides-view";
 
 // Structured data for SEO
 const structuredData = {
@@ -115,8 +115,8 @@ const page = async () => {
               </h2>
               <div className="flex-1 h-px bg-border" />
             </div>
-            <Suspense fallback={<CitiesViewLoadingStatus />}>
-              <CitiesView />
+            <Suspense fallback={<TravelGuidesViewLoading />}>
+              <TravelGuidesView />
             </Suspense>
           </section>
         </main>

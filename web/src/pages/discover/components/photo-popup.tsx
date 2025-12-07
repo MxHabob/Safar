@@ -1,6 +1,6 @@
 import BlurImage from "@/components/shared/blur-image";
 import { keyToImage } from "@/lib/keyToImage";
-import type { PhotoPoint } from "@/modules/discover/lib/clustering";
+import type { PhotoPoint } from "@/pages/discover/lib/clustering";
 
 interface PhotoPopupProps {
   photo: PhotoPoint;

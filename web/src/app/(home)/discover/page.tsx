@@ -24,9 +24,11 @@ export const metadata: Metadata = {
 
 const page = () => {
   return (
-    <Suspense fallback={<div className="w-full h-screen rounded-xl bg-muted animate-pulse" />}>
-      <DiscoverView />
-    </Suspense>
+    <div className="w-full h-[calc(100vh-1.5rem)]">
+      <Suspense fallback={<div className="w-full h-full rounded-xl bg-muted animate-pulse" />}>
+        <DiscoverView />
+      </Suspense>
+    </div>
   );
 };
 

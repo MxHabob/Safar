@@ -1,19 +1,18 @@
 "use client";
 
-// UI Components
 import Link from "next/link";
 import Carousel from "@/components/shared/photo-carousel";
 import BlurImage from "@/components/shared/blur-image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
-import { Button } from "@/components/ui/button";
 import { ImageOff } from "lucide-react";
-
-// Generated hooks
 import { useListListingsApiV1ListingsGet } from "@/generated/hooks/listings";
 
-export const SliderView = () => {
-  // Fetch featured listings for the slider
+/**
+ * Hero slider component - Displays featured listings in a carousel
+ * Used in the hero section of the home page
+ */
+export const HeroSlider = () => {
   const { data, isLoading, error } = useListListingsApiV1ListingsGet(
     undefined, // skip
     10, // limit - get 10 featured listings
@@ -45,11 +44,7 @@ export const SliderView = () => {
     );
   }
 
-
-  // Extract listings from response
   const listings = data?.items || [];
-
-  console.log("listings", listings);
   
   // Get all photos from listings (flatten photos arrays)
   const allPhotos = listings
@@ -62,23 +57,7 @@ export const SliderView = () => {
         listingSlug: listing.slug,
       }))
     )
-    .filter((photo) => photo.url && photo.url.trim() !== ""); // Filter out listings without photos
-
-  // if (!allPhotos || allPhotos.length === 0) {
-  //   return (
-  //     <EmptyState
-  //       icon={<ImageOff className="h-12 w-12" />}
-  //       title="No listings available"
-  //       description="Check back soon for amazing travel destinations"
-  //       action={
-  //         <Button asChild>
-  //           <Link href="/listings">Browse All Listings</Link>
-  //         </Button>
-  //       }
-  //       height="h-full"
-  //     />
-  //   );
-  // }
+    .filter((photo) => photo.url && photo.url.trim() !== "");
 
   return (
     <Carousel
@@ -115,10 +94,11 @@ export const SliderView = () => {
   );
 };
 
-export const SliderViewLoadingStatus = () => {
+export const HeroSliderLoading = () => {
   return (
     <div className="absolute inset-0 w-full h-full">
       <Skeleton className="w-full h-full" />
     </div>
   );
 };
+

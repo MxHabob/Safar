@@ -57,10 +57,7 @@ export interface MapboxProps {
   dragPan?: boolean;
 }
 
-const MAP_STYLES = {
-  light: "mapbox://styles/ecarry/cldmhu6tr000001n33ujbxf7j",
-  dark: "mapbox://styles/ecarry/clp8hcmd300km01qx78rt0xaw",
-} as const;
+
 
 const Mapbox = ({
   id,
@@ -187,7 +184,11 @@ const Mapbox = ({
       mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}
       initialViewState={initialViewState}
       style={{ width: "100%", height: "100%" }}
-      // mapStyle={MAP_STYLES[theme === "dark" ? "dark" : "light"]}
+      mapStyle={
+        theme === "dark"
+          ? "mapbox://styles/mapbox/dark-v11"
+          : "mapbox://styles/mapbox/light-v11"
+      }
       interactiveLayerIds={geoJsonData ? ["data"] : undefined}
       onClick={onClick}
       onMove={(evt) => {

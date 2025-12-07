@@ -1,18 +1,18 @@
 "use client";
 
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import CityCard from "@/pages/home/components/city-card";
+import TravelGuideCard from "./components/travel-guide-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import VectorTopLeftAnimation from "@/pages/home/components/vector-top-left-animation";
 import { EmptyState } from "@/components/shared/empty-state";
 import { MapPin } from "lucide-react";
-
-// Generated hooks
 import { useGetGuidesApiV1TravelGuidesGet } from "@/generated/hooks/travelGuides";
 import type { FileUploadResponse } from "@/generated/schemas";
 
-export const CitiesView = () => {
-  // Fetch travel guides grouped by city
+/**
+ * Travel guides view component - Displays travel guides grouped by city
+ * Shows the most viewed published guides in a grid layout
+ */
+export const TravelGuidesView = () => {
   const { data: guides, isLoading, error } = useGetGuidesApiV1TravelGuidesGet(
     undefined, // destination
     undefined, // country
@@ -27,7 +27,7 @@ export const CitiesView = () => {
   );
 
   if (isLoading) {
-    return <CitiesViewLoadingStatus />;
+    return <TravelGuidesViewLoading />;
   }
 
   if (error) {
@@ -86,7 +86,7 @@ export const CitiesView = () => {
         };
 
         return (
-          <CityCard
+          <TravelGuideCard
             key={guide.id}
             title={city}
             coverPhoto={coverPhoto}
@@ -97,7 +97,7 @@ export const CitiesView = () => {
   );
 };
 
-export const CitiesViewLoadingStatus = () => {
+export const TravelGuidesViewLoading = () => {
   return (
     <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {Array.from({ length: 6 }).map((_, index) => (
@@ -108,12 +108,9 @@ export const CitiesViewLoadingStatus = () => {
           >
             <Skeleton className="w-full h-full" />
           </AspectRatio>
-
-          <div className="absolute top-0 left-0 z-20">
-            <VectorTopLeftAnimation title="Loading..." />
-          </div>
         </div>
       ))}
     </div>
   );
 };
+

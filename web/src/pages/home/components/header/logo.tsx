@@ -1,6 +1,6 @@
 import Link from "next/link";
-import WordRotate from "../word-rotate";
 import { SafaLogo } from "@/components/shared/safa-logo";
+import WordRotate from "@/components/shared/word-rotate";
 
 const Logo = () => {
   return (

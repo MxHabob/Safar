@@ -18,17 +18,75 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
+import { useListListingsApiV1ListingsGet } from "@/generated/hooks/listings";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/shared/empty-state";
+import { MapPin } from "lucide-react";
+import { keyToImage } from "@/lib/keyToImage";
 
-// TODO: Replace with actual photo data fetching from API
-// For now, using empty array - this should be fetched from server
-const EMPTY_PHOTOS: PhotoPoint[] = [];
+/**
+ * Convert Listing to PhotoPoint for map display
+ */
+function convertListingToPhotoPoint(listing: any): PhotoPoint | null {
+  // Only include listings with valid coordinates
+  if (!listing.latitude || !listing.longitude) return null;
+
+  const primaryPhoto = listing.photos?.[0] || listing.images?.[0];
+  const photoUrl = primaryPhoto?.url;
+  if (!photoUrl) return null;
+
+  const lat = typeof listing.latitude === "string" 
+    ? parseFloat(listing.latitude) 
+    : listing.latitude;
+  const lng = typeof listing.longitude === "string" 
+    ? parseFloat(listing.longitude) 
+    : listing.longitude;
+
+  // Validate coordinates
+  if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return null;
+
+  return {
+    id: listing.id,
+    title: listing.title || `${listing.city}, ${listing.country}`,
+    url: photoUrl,
+    blurData: primaryPhoto?.blurhash,
+    latitude: lat,
+    longitude: lng,
+    width: primaryPhoto?.width || 800,
+    height: primaryPhoto?.height || 600,
+    dateTimeOriginal: listing.created_at ? new Date(listing.created_at) : undefined,
+  };
+}
 
 export const DiscoverView = () => {
   const isMobile = useIsMobile();
   
+  // Fetch listings from API (listings have latitude/longitude)
+  // Note: API limit max is 100, so we use 100
+  const { data, isLoading, error } = useListListingsApiV1ListingsGet(
+    0, // skip - start from beginning
+    100, // limit - max allowed by API
+    undefined, // city
+    undefined, // country
+    undefined, // listing_type
+    undefined, // min_price
+    undefined, // max_price
+    undefined, // min_guests
+    "active" // status - only active listings
+  );
+
+  // Convert listings to photo points
+  const photoPoints = useMemo(() => {
+    const listings = data?.items || [];
+    if (listings.length === 0) return [];
+    return listings
+      .map(convertListingToPhotoPoint)
+      .filter((point): point is PhotoPoint => point !== null);
+  }, [data]);
+  
   // Use photo clustering hook
   const { clusters, singlePhotos, handleMove } = usePhotoClustering({
-    photos: EMPTY_PHOTOS,
+    photos: photoPoints,
     initialZoom: 3,
   });
   const [selectedPhotos, setSelectedPhotos] = useState<PhotoPoint[]>([]);
@@ -102,6 +160,26 @@ export const DiscoverView = () => {
 
   const hasSelection = selectedPhotos.length > 0;
 
+  if (isLoading) {
+    return (
+      <div className="w-full h-full rounded-xl overflow-hidden">
+        <Skeleton className="w-full h-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full h-full rounded-xl overflow-hidden flex items-center justify-center">
+        <EmptyState
+          icon={<MapPin className="h-12 w-12" />}
+          title="Unable to load destinations"
+          description="There was an error loading travel destinations. Please try again later."
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-full rounded-xl overflow-hidden">
       <div className="flex h-full gap-x-3">
@@ -133,7 +211,7 @@ export const DiscoverView = () => {
         {hasSelection && (
           <div className="hidden md:flex h-full bg-background flex-col w-1/2 rounded-xl">
             <div className="h-full p-4 overflow-y-auto bg-muted rounded-xl hide-scrollbar">
-              {selectedPhotos.length && (
+              {selectedPhotos.length > 0 && (
                 <div
                   className={cn(
                     "w-full grid grid-cols-2 gap-x-1 gap-y-8",

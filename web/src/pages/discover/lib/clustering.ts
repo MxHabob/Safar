@@ -1,7 +1,21 @@
 import Supercluster from "supercluster";
-import { DiscoverGetManyPhotos } from "@/modules/discover/types";
+import type { TravelGuideResponse } from "@/generated/schemas";
 
-export type PhotoPoint = DiscoverGetManyPhotos[number];
+/**
+ * PhotoPoint type for map clustering
+ * Represents a travel guide location on the map
+ */
+export interface PhotoPoint {
+  id: string;
+  title: string;
+  url: string;
+  blurData?: string;
+  latitude?: number;
+  longitude?: number;
+  width?: number;
+  height?: number;
+  dateTimeOriginal?: Date;
+}
 
 export interface Cluster {
   id: string;
