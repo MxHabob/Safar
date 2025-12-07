@@ -3,9 +3,9 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Graphic from "@/components/shared/graphic";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowRight } from "lucide-react";
 import { useEffect } from "react";
+import { SafarLogo } from "@/components/shared/safar-logo";
 
 interface MenuItem {
   label: string;
@@ -16,8 +16,6 @@ const menuItems: MenuItem[] = [
   { label: "Home", href: "/" },
   { label: "Travel", href: "/travel" },
   { label: "Discover", href: "/discover" },
-  { label: "Blog", href: "/blog" },
-  { label: "About", href: "/about" },
 ];
 
 interface Props {
@@ -69,20 +67,7 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
               </button>
 
               <div className="flex gap-4 items-center">
-                {/* AVATAR  */}
-                <Avatar className="size-[60px]">
-                  <AvatarImage
-                    src="https://avatars.githubusercontent.com/u/16572906?s=400&u=a304af70d12572524d540553425d78ff4d1a101a&v=4"
-                    alt="Avatar"
-                  />
-                  <AvatarFallback>EC</AvatarFallback>
-                </Avatar>
-
-                {/* NAME  */}
-                <div className="flex flex-col">
-                  <h1 className="text-lg">ECarry</h1>
-                  <p className="text-sm text-text-muted">Photographer</p>
-                </div>
+                <SafarLogo size={60} />
               </div>
             </div>
 
