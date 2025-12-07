@@ -30,6 +30,8 @@ import { useProcessPaymentApiV1PaymentsProcessPostMutation } from "@/generated/h
 import { toast } from "sonner";
 import type { BookingResponse, PaymentMethodType } from "@/generated/schemas";
 import { PaymentMethodTypeSchema } from "@/generated/schemas";
+import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { StripeProvider } from "@/lib/providers/stripe-provider";
 
 interface PaymentFormProps {
   booking: BookingResponse;
@@ -43,10 +45,164 @@ const paymentFormSchema = z.object({
 
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 
+// Stripe Payment Form Component (wrapped with Stripe Elements)
+function StripePaymentForm({
+  booking,
+  paymentIntentId,
+  clientSecret,
+  onSuccess,
+  onCancel,
+  paymentMethod,
+}: {
+  booking: BookingResponse;
+  paymentIntentId: string;
+  clientSecret: string;
+  onSuccess?: (paymentId: string) => void;
+  onCancel?: () => void;
+  paymentMethod: PaymentMethodType;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+
+  const processPaymentMutation = useProcessPaymentApiV1PaymentsProcessPostMutation({
+    onSuccess: (data) => {
+      toast.success("Payment processed successfully!");
+      setIsProcessing(false);
+      onSuccess?.(data.id);
+    },
+    onError: (error) => {
+      const errorMessage = error.message || "Payment failed. Please try again.";
+      toast.error(errorMessage);
+      setPaymentError(errorMessage);
+      setIsProcessing(false);
+    },
+    showToast: false,
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!stripe || !elements || !paymentIntentId || !booking?.id) {
+      toast.error("Payment system not ready. Please try again.");
+      return;
+    }
+
+    setIsProcessing(true);
+    setPaymentError(null);
+
+    try {
+      // Confirm the payment with Stripe
+      const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/payments/success`,
+        },
+        redirect: "if_required",
+      });
+
+      if (confirmError) {
+        // Handle confirmation error
+        const errorMessage =
+          confirmError.message || "Payment confirmation failed. Please try again.";
+        toast.error(errorMessage);
+        setPaymentError(errorMessage);
+        setIsProcessing(false);
+        return;
+      }
+
+      // If payment intent is already succeeded, process it
+      if (paymentIntent?.status === "succeeded") {
+        await processPaymentMutation.mutateAsync({
+          booking_id: booking.id,
+          payment_intent_id: paymentIntentId,
+          payment_method: paymentMethod,
+        });
+      } else if (paymentIntent?.status === "requires_action") {
+        // Payment requires additional action (e.g., 3D Secure)
+        // Stripe will handle the redirect automatically
+        toast.info("Please complete the additional verification step.");
+      } else {
+        // Payment is processing or in another state
+        await processPaymentMutation.mutateAsync({
+          booking_id: booking.id,
+          payment_intent_id: paymentIntentId,
+          payment_method: paymentMethod,
+        });
+      }
+    } catch (error) {
+      console.error("Payment processing error:", error);
+      const errorMessage = "An unexpected error occurred. Please try again.";
+      toast.error(errorMessage);
+      setPaymentError(errorMessage);
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Stripe Payment Element */}
+      <div className="space-y-4 p-4 border rounded-[18px]">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground font-light">
+          <Lock className="size-4" />
+          <span>Secure payment powered by Stripe</span>
+        </div>
+        <div className="py-2">
+          <PaymentElement />
+        </div>
+        {paymentError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-sm font-light">{paymentError}</AlertDescription>
+          </Alert>
+        )}
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-3 pt-4">
+        {onCancel && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="flex-1 rounded-[18px] font-light"
+            disabled={isProcessing}
+          >
+            Cancel
+          </Button>
+        )}
+        <Button
+          type="submit"
+          className="flex-1 rounded-[18px] font-light"
+          disabled={!stripe || isProcessing}
+        >
+          {isProcessing ? (
+            <>
+              <Loader2 className="size-4 mr-2 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            <>
+              <Lock className="size-4 mr-2" />
+              Pay {booking.currency} {booking.total_amount}
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* Security Notice */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground font-light pt-2">
+        <Lock className="size-3" />
+        <span>Your payment information is encrypted and secure</span>
+      </div>
+    </form>
+  );
+}
+
 export function PaymentForm({ booking, onSuccess, onCancel }: PaymentFormProps) {
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
 
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
@@ -71,21 +227,6 @@ export function PaymentForm({ booking, onSuccess, onCancel }: PaymentFormProps) 
     showToast: false,
   });
 
-  // Process payment mutation
-  const processPaymentMutation = useProcessPaymentApiV1PaymentsProcessPostMutation({
-    onSuccess: (data) => {
-      toast.success("Payment processed successfully!");
-      setIsProcessing(false);
-      onSuccess?.(data.id);
-    },
-    onError: (error) => {
-      // Extract error message - backend returns user-friendly messages in error.message
-      const errorMessage = error.message || "Payment failed. Please try again.";
-      toast.error(errorMessage);
-      setIsProcessing(false);
-    },
-    showToast: false,
-  });
 
   useEffect(() => {
     if (booking?.id && booking?.total_amount) {
@@ -98,49 +239,28 @@ export function PaymentForm({ booking, onSuccess, onCancel }: PaymentFormProps) 
   }, [booking?.id, booking?.total_amount]);
 
   const onSubmit = async (values: PaymentFormValues) => {
-    if (!paymentIntentId || !booking?.id) {
-      toast.error("Payment intent not initialized. Please try again.");
-      return;
-    }
-
-    // For Stripe payments, the payment intent needs to be confirmed first
-    // This is a placeholder - in production, you should integrate Stripe Elements
-    // to collect payment details and confirm the payment intent before processing
+    // For non-Stripe payment methods, handle them here
+    // Stripe payments are handled by StripePaymentForm component
     if (
-      (values.payment_method === "stripe" || 
-       values.payment_method === "credit_card" || 
-       values.payment_method === "debit_card") &&
-      !clientSecret
+      values.payment_method !== "stripe" &&
+      values.payment_method !== "credit_card" &&
+      values.payment_method !== "debit_card"
     ) {
-      toast.error("Payment method not ready. Please wait for initialization.");
-      return;
-    }
+      if (!paymentIntentId || !booking?.id) {
+        toast.error("Payment intent not initialized. Please try again.");
+        return;
+      }
 
-    setIsProcessing(true);
-
-    try {
-      await processPaymentMutation.mutateAsync({
-        booking_id: booking.id,
-        payment_intent_id: paymentIntentId,
-        payment_method: values.payment_method,
-      });
-    } catch (error) {
-      // Error is handled by onError callback
-      // The error message from backend is already user-friendly
-      console.error("Payment processing error:", error);
+      // Handle other payment methods (PayPal, etc.)
+      // This would typically redirect to the payment provider
+      toast.info(`Processing ${values.payment_method} payment...`);
     }
   };
 
   const isLoading = createIntentMutation.isPending || !paymentIntentId;
   // For Stripe payments, clientSecret is required. For other methods, only paymentIntentId is needed
   const requiresClientSecret = paymentMethod === "stripe" || paymentMethod === "credit_card" || paymentMethod === "debit_card";
-  const canSubmit = 
-    !isLoading && 
-    !isProcessing && 
-    paymentIntentId && 
-    (!requiresClientSecret || clientSecret) &&
-    !createIntentMutation.isError &&
-    !processPaymentMutation.isError;
+  const isStripePayment = requiresClientSecret && clientSecret;
 
   return (
     <Card className="rounded-[18px] border">
@@ -177,7 +297,7 @@ export function PaymentForm({ booking, onSuccess, onCancel }: PaymentFormProps) 
                   <Select
                     onValueChange={field.onChange}
                     value={field.value}
-                    disabled={isLoading || isProcessing}
+                    disabled={isLoading}
                   >
                     <FormControl>
                       <SelectTrigger className="rounded-[18px]">
@@ -249,41 +369,6 @@ export function PaymentForm({ booking, onSuccess, onCancel }: PaymentFormProps) 
               )}
             />
 
-            {/* Payment Method Specific Fields */}
-            {(paymentMethod === "stripe" || paymentMethod === "credit_card" || paymentMethod === "debit_card") && (
-              <div className="space-y-4 p-4 border rounded-[18px]">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground font-light">
-                  <Lock className="size-4" />
-                  <span>Secure payment powered by Stripe</span>
-                </div>
-                {clientSecret ? (
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="text-sm font-light">
-                      Payment ready. Note: Stripe Elements integration is required to collect 
-                      payment details and confirm the payment before processing.
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <Alert variant="default">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <AlertDescription className="text-sm font-light">
-                      Initializing payment method...
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            )}
-
-            {paymentMethod === "paypal" && (
-              <div className="space-y-4 p-4 border rounded-[18px]">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground font-light">
-                  <Lock className="size-4" />
-                  <span>You will be redirected to PayPal</span>
-                </div>
-              </div>
-            )}
-
             {/* Loading State */}
             {isLoading && (
               <div className="space-y-2">
@@ -302,58 +387,66 @@ export function PaymentForm({ booking, onSuccess, onCancel }: PaymentFormProps) 
               </Alert>
             )}
 
-            {/* Payment Processing Error State */}
-            {processPaymentMutation.isError && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="font-light">
-                  {processPaymentMutation.error?.message || "Payment processing failed. Please try again."}
-                </AlertDescription>
-              </Alert>
+            {/* Stripe Payment Form */}
+            {isStripePayment && paymentIntentId && clientSecret && (
+              <StripeProvider clientSecret={clientSecret}>
+                <StripePaymentForm
+                  booking={booking}
+                  paymentIntentId={paymentIntentId}
+                  clientSecret={clientSecret}
+                  onSuccess={onSuccess}
+                  onCancel={onCancel}
+                  paymentMethod={paymentMethod}
+                />
+              </StripeProvider>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
-              {onCancel && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onCancel}
-                  className="flex-1 rounded-[18px] font-light"
-                  disabled={isProcessing}
-                >
-                  Cancel
-                </Button>
-              )}
-              <Button
-                type="submit"
-                className="flex-1 rounded-[18px] font-light"
-                disabled={!canSubmit || isProcessing}
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="size-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : isLoading ? (
-                  <>
-                    <Loader2 className="size-4 mr-2 animate-spin" />
-                    Initializing...
-                  </>
-                ) : (
-                  <>
-                    <Lock className="size-4 mr-2" />
-                    Pay {booking.currency} {booking.total_amount}
-                  </>
-                )}
-              </Button>
-            </div>
+            {/* Other Payment Methods */}
+            {!isStripePayment && paymentMethod === "paypal" && (
+              <div className="space-y-4 p-4 border rounded-[18px]">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground font-light">
+                  <Lock className="size-4" />
+                  <span>You will be redirected to PayPal</span>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  {onCancel && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={onCancel}
+                      className="flex-1 rounded-[18px] font-light"
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                  <Button
+                    type="submit"
+                    className="flex-1 rounded-[18px] font-light"
+                    disabled={isLoading || !paymentIntentId}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="size-4 mr-2 animate-spin" />
+                        Initializing...
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="size-4 mr-2" />
+                        Pay {booking.currency} {booking.total_amount}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Security Notice */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground font-light pt-2">
-              <Lock className="size-3" />
-              <span>Your payment information is encrypted and secure</span>
-            </div>
+            {!isStripePayment && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground font-light pt-2">
+                <Lock className="size-3" />
+                <span>Your payment information is encrypted and secure</span>
+              </div>
+            )}
           </form>
         </Form>
       </CardContent>
