@@ -355,6 +355,9 @@ class PaymentService:
                         detail=f"M-Pesa payment not completed: {status_response.get('ResultDesc')}"
                     )
                 processor_ref = status_response.get("CheckoutRequestID")
+            except HTTPException:
+                # Re-raise HTTPExceptions as-is (they already have correct status codes)
+                raise
             except Exception as e:
                 logger.error(f"M-Pesa verification error: {str(e)}")
                 raise HTTPException(
@@ -371,6 +374,9 @@ class PaymentService:
                         detail=f"Fawry payment not completed: {verify_response.get('paymentStatus')}"
                     )
                 processor_ref = verify_response.get("referenceNumber")
+            except HTTPException:
+                # Re-raise HTTPExceptions as-is (they already have correct status codes)
+                raise
             except Exception as e:
                 logger.error(f"Fawry verification error: {str(e)}")
                 raise HTTPException(
@@ -410,6 +416,9 @@ class PaymentService:
                     )
                 
                 processor_ref = capture_data.get("capture_id") or capture_data.get("payment_id")
+            except HTTPException:
+                # Re-raise HTTPExceptions as-is (they already have correct status codes)
+                raise
             except Exception as e:
                 logger.error(
                     f"PayPal API error during payment verification. "
@@ -452,6 +461,9 @@ class PaymentService:
                         )
                     
                     processor_ref = payment_intent_id
+                except HTTPException:
+                    # Re-raise HTTPExceptions as-is (they already have correct status codes)
+                    raise
                 except stripe.error.StripeError as e:
                     logger.error(
                         f"Stripe API error during payment verification. "
