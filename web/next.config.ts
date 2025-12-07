@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -73,17 +74,12 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  webpack: (config, { isServer }) => {
-    if (!isServer && config.resolve) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-      };
-    }
+  webpack: (config) => {
     // Ensure path aliases are properly resolved
     if (config.resolve) {
       config.resolve.alias = {
         ...config.resolve.alias,
-        '@': require('path').resolve(__dirname, './src'),
+        '@': path.join(__dirname, 'src'),
       };
     }
     return config;
