@@ -15,7 +15,7 @@ interface PhotoUploaderProps {
 }
 
 export function PhotoUploader({ onUploadSuccess, folder }: PhotoUploaderProps) {
-  const { isUploading, handleUpload, uploadProgress } = usePhotoUpload({
+  const { isUploading, handleUpload, optimisticData } = usePhotoUpload({
     folder,
     onUploadSuccess,
   });
@@ -24,7 +24,7 @@ export function PhotoUploader({ onUploadSuccess, folder }: PhotoUploaderProps) {
     <UploadZone
       isUploading={isUploading}
       onUpload={handleUpload}
-      uploadProgress={uploadProgress}
+      uploadProgress={typeof optimisticData === "number" ? optimisticData : 0}
     />
   );
 }

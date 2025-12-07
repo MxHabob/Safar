@@ -152,7 +152,7 @@ export function useUploadMultipleFilesApiV1FilesUploadMultiplePostMutationUpload
       
       // Use server action for upload and extract data from SafeActionResult
       const result = await resolveActionResult<z.infer<typeof UploadMultipleFilesApiV1FilesUploadMultiplePostResponseSchema>>(
-        uploadMultipleFilesApiV1FilesUploadMultiplePost(actionInput)
+        uploadMultipleFilesApiV1FilesUploadMultiplePost(actionInput as any)
       )
       return result
     },

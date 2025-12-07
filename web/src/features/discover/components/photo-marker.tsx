@@ -20,7 +20,7 @@ export const PhotoMarker = memo(({ photo, onClick }: PhotoMarkerProps) => (
           width={80}
           height={80}
           className="object-cover w-full h-full"
-          blurhash={photo.blurData}
+          blurhash={photo.blurData || ""}
         />
       </div>
       {/* Arrow pointing down to coordinate center */}

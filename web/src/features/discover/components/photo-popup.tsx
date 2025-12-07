@@ -14,7 +14,7 @@ export const PhotoPopup = ({ photo }: PhotoPopupProps) => (
       width={256}
       height={256}
       className="object-cover w-full h-full"
-      blurhash={photo.blurData}
+      blurhash={photo.blurData || ""}
     />
     <div className="p-2 bg-white dark:bg-gray-900">
       <p className="text-sm font-medium truncate">{photo.title}</p>
