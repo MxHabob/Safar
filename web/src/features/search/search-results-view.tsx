@@ -4,14 +4,19 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Search, MapPin, Star } from "lucide-react";
-import { useListListingsApiV1ListingsGet } from "@/generated/hooks/listings";
+import { useSearchListingsApiV1SearchListingsGet } from "@/generated/hooks/search";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
 import Graphic from "@/components/shared/graphic";
+import { AdvancedSearchFilters, SearchFilters } from "./components/advanced-search-filters";
+import { useState } from "react";
+import { useQueryStates } from "nuqs";
+import { parseAsInteger, parseAsFloat, parseAsString, parseAsStringEnum } from "nuqs";
+import { ListingType } from "@/generated/schemas";
 
 /**
- * Search results view
- * Displays filtered listings based on search parameters
+ * Search results view with advanced search capabilities
+ * Uses the advanced Search API with personalization and ranking
  */
 export const SearchResultsView = () => {
   const searchParams = useSearchParams();
@@ -20,20 +25,49 @@ export const SearchResultsView = () => {
   const checkOut = searchParams?.get("check_out") || "";
   const guests = searchParams?.get("guests") || "";
 
-  // Extract city/country from destination if possible
-  const city = destination.split(",")[0]?.trim() || "";
-  const country = destination.split(",")[1]?.trim() || "";
+  // Use query states for filters
+  const [params] = useQueryStates({
+    query: parseAsString.withDefault(""),
+    city: parseAsString.withDefault(""),
+    country: parseAsString.withDefault(""),
+    listing_type: parseAsStringEnum<ListingType>(Object.values(ListingType)),
+    minPrice: parseAsInteger,
+    maxPrice: parseAsInteger,
+    guests: parseAsInteger,
+    bedrooms: parseAsInteger,
+    bathrooms: parseAsInteger,
+    lat: parseAsFloat,
+    lng: parseAsFloat,
+    radius: parseAsFloat,
+    sortBy: parseAsString.withDefault("relevance"),
+  });
 
-  const { data, isLoading, error } = useListListingsApiV1ListingsGet(
-    0,
-    24,
+  // Extract city/country from destination if available
+  const city = params.city || destination.split(",")[0]?.trim() || "";
+  const country = params.country || destination.split(",")[1]?.trim() || "";
+  const searchQuery = params.query || destination || "";
+
+  // Use advanced search API
+  const { data, isLoading, error } = useSearchListingsApiV1SearchListingsGet(
+    searchQuery || undefined,
     city || undefined,
     country || undefined,
-    undefined,
-    undefined,
-    undefined,
-    guests ? parseInt(guests) : undefined,
-    "active"
+    params.listing_type || undefined,
+    params.minPrice || undefined,
+    params.maxPrice || undefined,
+    params.guests || (guests ? parseInt(guests) : undefined),
+    params.bedrooms || undefined,
+    params.bathrooms || undefined,
+    params.lat || undefined,
+    params.lng || undefined,
+    params.radius || undefined,
+    0, // skip
+    24, // limit
+    params.sortBy || "relevance",
+    true, // enable_personalization
+    true, // enable_popularity_boost
+    true, // enable_location_boost
+    undefined // ab_test_variant
   );
 
   if (isLoading) {
@@ -53,6 +87,9 @@ export const SearchResultsView = () => {
   const listings = data?.items || [];
   const total = data?.total || 0;
 
+  const listings = data?.items || [];
+  const total = data?.total || 0;
+
   return (
     <div className="space-y-8">
       {/* Search Header */}
@@ -64,9 +101,9 @@ export const SearchResultsView = () => {
           <div className="flex-1 h-px bg-border" />
         </div>
 
-        {destination && (
+        {(destination || searchQuery) && (
           <div className="text-sm text-muted-foreground font-light">
-            Searching for: <span className="text-foreground">{destination}</span>
+            Searching for: <span className="text-foreground">{searchQuery || destination}</span>
             {guests && ` • ${guests} ${guests === "1" ? "guest" : "guests"}`}
             {checkIn && checkOut && ` • ${checkIn} to ${checkOut}`}
           </div>
@@ -77,8 +114,11 @@ export const SearchResultsView = () => {
         </p>
       </div>
 
+      {/* Advanced Search Filters */}
+      <AdvancedSearchFilters />
+
       {/* Results */}
-      {listings.length === 0 ? (
+      {!isLoading && listings.length === 0 ? (
         <EmptyState
           icon={<Search className="h-12 w-12" />}
           title="No results found"

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import Graphic from "@/components/shared/graphic";
+import { BookingForm } from "@/features/bookings/components/booking-form";
 import type { ListingResponse } from "@/generated/schemas";
 
 interface ListingDetailViewProps {
@@ -171,61 +172,9 @@ export const ListingDetailView = ({ listing }: ListingDetailViewProps) => {
             </Card>
           </div>
 
-          {/* Booking Card */}
+          {/* Booking Form */}
           <div className="lg:col-span-1">
-            <Card className="rounded-[18px] border-2 border-border sticky top-24">
-              <div className="absolute top-0 right-0 size-[18px] rotate-90">
-                <Graphic />
-              </div>
-              <CardContent className="p-6 space-y-6">
-                <div>
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-3xl font-light">{listing.currency || "USD"} {listing.base_price || "0"}</span>
-                    <span className="text-muted-foreground font-light">per night</span>
-                  </div>
-                  {listing.cleaning_fee && (
-                    <p className="text-sm text-muted-foreground font-light">
-                      + {listing.currency || "USD"} {listing.cleaning_fee} cleaning fee
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  <div className="p-4 border border-border rounded-[18px]">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-light">Check-in</span>
-                      <Calendar className="size-4 text-muted-foreground" />
-                    </div>
-                    <div className="text-muted-foreground font-light">
-                      {listing.check_in_time || "15:00"}
-                    </div>
-                  </div>
-                  <div className="p-4 border border-border rounded-[18px]">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-light">Check-out</span>
-                      <Calendar className="size-4 text-muted-foreground" />
-                    </div>
-                    <div className="text-muted-foreground font-light">
-                      {listing.check_out_time || "11:00"}
-                    </div>
-                  </div>
-                </div>
-
-                <Button
-                  size="lg"
-                  className="w-full rounded-[18px] h-14 text-base"
-                  disabled={!listing.can_book}
-                >
-                  {listing.can_book ? "Reserve" : "Unavailable"}
-                </Button>
-
-                {listing.min_stay_nights && (
-                  <p className="text-xs text-center text-muted-foreground font-light">
-                    Minimum stay: {listing.min_stay_nights} {listing.min_stay_nights === 1 ? "night" : "nights"}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+            <BookingForm listing={listing} />
           </div>
         </div>
       </div>
