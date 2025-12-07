@@ -243,5 +243,7 @@ class BookingRepository(BaseRepository[BookingEntity], IBookingRepository):
             )
         )
         
-        return overlapping.scalar_one_or_none() is None
+        # Check if any overlapping bookings exist (can be multiple)
+        # Use first() instead of scalar_one_or_none() since multiple rows are possible
+        return overlapping.scalars().first() is None
 
