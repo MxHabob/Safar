@@ -79,9 +79,15 @@ const nextConfig: NextConfig = {
         ...config.resolve.fallback,
       };
     }
+    // Ensure path aliases are properly resolved
+    if (config.resolve) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '@': require('path').resolve(__dirname, './src'),
+      };
+    }
     return config;
   },
-  turbopack: {},
 };
 
 export default nextConfig;
