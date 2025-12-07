@@ -38,12 +38,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isPending, startTransition] = useTransition()
 
   // Fetch current user session
+  // Optimized caching strategy similar to auth.js:
+  // - Long staleTime to reduce API calls
+  // - No refetch on mount if data exists (prevents unnecessary calls)
+  // - Only refetch on window focus if data is stale
   const { data: user, isLoading, refetch } = useQuery({
     queryKey: ['auth', 'session'],
     queryFn: async () => {
       try {
         const response = await fetch('/api/auth/session', {
           credentials: 'include',
+          cache: 'no-store', // Always fetch fresh data from server
         })
         
         if (!response.ok) {
@@ -57,7 +62,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     },
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh
+    gcTime: 10 * 60 * 1000, // 10 minutes - cache persists
+    refetchOnWindowFocus: false, // Don't refetch on window focus (reduces API calls)
+    refetchOnMount: false, // Don't refetch on mount if data exists (prevents duplicate calls)
+    refetchOnReconnect: true, // Only refetch on reconnect
   })
 
   // Login mutation

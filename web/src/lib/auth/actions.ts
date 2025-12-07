@@ -33,8 +33,11 @@ export async function loginAction(credentials: LoginApiV1UsersLoginPostRequest) 
       throw new ActionError('Invalid login response', 'INVALID_RESPONSE')
     }
     
-    // Set tokens in cookies
+    // Set tokens first
     await setAuthTokens(result as TokenResponse)
+    
+    // Fetch user data to create session (will be done automatically on next getServerSession call)
+    // This avoids circular dependencies
     
     return {
       success: true,
@@ -118,7 +121,7 @@ export async function refreshTokenAction() {
       throw new ActionError('Invalid refresh response', 'INVALID_RESPONSE')
     }
     
-    // Update tokens
+    // Update tokens (session will be refreshed automatically on next getServerSession call)
     await setAuthTokens(result as TokenResponse)
     
     return {
