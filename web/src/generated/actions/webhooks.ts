@@ -85,7 +85,6 @@ export const stripeWebhookApiV1WebhooksStripePost = actionClientWithMeta
 
       // Execute API call with enhanced configuration
       const response = await apiClient.webhooks.stripeWebhookApiV1WebhooksStripePost({
-        params: validatedParams,
         config: {
           timeout: 30000,
           retries: 3,

@@ -23,6 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useModal } from "@/lib/stores/modal-store";
 
 const Mapbox = dynamic(() => import("@/components/shared/map"), {
   ssr: false,
@@ -35,7 +36,8 @@ const Mapbox = dynamic(() => import("@/components/shared/map"), {
 
 export const MapboxToolbar = React.forwardRef<HTMLButtonElement>((_, ref) => {
   const { editor } = useToolbar();
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, type, onOpen, onClose } = useModal();
+  const isDialogOpen = isOpen && type === "mapboxToolbar";
   const [markers, setMarkers] = useState<MapboxMarker[]>([
     {
       id: "marker-1",
@@ -48,6 +50,21 @@ export const MapboxToolbar = React.forwardRef<HTMLButtonElement>((_, ref) => {
   const [enableZoom, setEnableZoom] = useState(true);
   const [enableScroll, setEnableScroll] = useState(true);
   const [enableDrag, setEnableDrag] = useState(true);
+
+  const resetState = () => {
+    setMarkers([
+      {
+        id: "marker-1",
+        longitude: -122.4194,
+        latitude: 37.7749,
+        label: "Location 1",
+      },
+    ]);
+    setZoom("12");
+    setEnableZoom(true);
+    setEnableScroll(true);
+    setEnableDrag(true);
+  };
 
   const editorState = useEditorState({
     editor,
@@ -101,19 +118,17 @@ export const MapboxToolbar = React.forwardRef<HTMLButtonElement>((_, ref) => {
       })
       .run();
 
-    setIsOpen(false);
-    setMarkers([
-      {
-        id: "marker-1",
-        longitude: -122.4194,
-        latitude: 37.7749,
-        label: "Location 1",
-      },
-    ]);
-    setZoom("12");
-    setEnableZoom(true);
-    setEnableScroll(true);
-    setEnableDrag(true);
+    handleOpenChange(false);
+    resetState();
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      onOpen("mapboxToolbar");
+    } else {
+      onClose();
+      resetState();
+    }
   };
 
   return (
@@ -127,7 +142,7 @@ export const MapboxToolbar = React.forwardRef<HTMLButtonElement>((_, ref) => {
             size="icon"
             className="h-8 w-8"
             disabled={!editorState.canMapbox}
-            onClick={() => setIsOpen(true)}
+            onClick={() => onOpen("mapboxToolbar")}
           >
             <MapPin className="h-4 w-4" />
           </Button>
@@ -137,7 +152,7 @@ export const MapboxToolbar = React.forwardRef<HTMLButtonElement>((_, ref) => {
         </TooltipContent>
       </Tooltip>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Insert Mapbox Map</DialogTitle>
@@ -280,7 +295,7 @@ export const MapboxToolbar = React.forwardRef<HTMLButtonElement>((_, ref) => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setIsOpen(false)}
+              onClick={() => handleOpenChange(false)}
             >
               Cancel
             </Button>

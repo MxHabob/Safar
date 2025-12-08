@@ -21,11 +21,13 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useToolbar } from "./toolbar-provider";
 import { useEditorState } from "@tiptap/react";
+import { useModal } from "@/lib/stores/modal-store";
 
 const YoutubeToolbar = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, onClick, children, ...props }, ref) => {
     const { editor } = useToolbar();
-    const [isOpen, setIsOpen] = useState(false);
+    const { isOpen, type, onOpen, onClose } = useModal();
+    const isDialogOpen = isOpen && type === "youtubeToolbar";
     const [url, setUrl] = useState("");
 
     const editorState = useEditorState({
@@ -41,8 +43,17 @@ const YoutubeToolbar = React.forwardRef<HTMLButtonElement, ButtonProps>(
           src: url,
         });
       }
-      setIsOpen(false);
+      handleOpenChange(false);
       setUrl("");
+    };
+
+    const handleOpenChange = (open: boolean) => {
+      if (open) {
+        onOpen("youtubeToolbar");
+      } else {
+        onClose();
+        setUrl("");
+      }
     };
 
     return (
@@ -59,7 +70,7 @@ const YoutubeToolbar = React.forwardRef<HTMLButtonElement, ButtonProps>(
                 className
               )}
               onClick={(e) => {
-                setIsOpen(true);
+                onOpen("youtubeToolbar");
                 onClick?.(e);
               }}
               ref={ref}
@@ -73,7 +84,7 @@ const YoutubeToolbar = React.forwardRef<HTMLButtonElement, ButtonProps>(
           </TooltipContent>
         </Tooltip>
 
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Insert Youtube Video</DialogTitle>
@@ -102,7 +113,7 @@ const YoutubeToolbar = React.forwardRef<HTMLButtonElement, ButtonProps>(
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsOpen(false)}
+                onClick={() => handleOpenChange(false)}
               >
                 Cancel
               </Button>

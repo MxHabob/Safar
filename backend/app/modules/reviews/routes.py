@@ -16,6 +16,7 @@ from app.modules.reviews.schemas import (
     ReviewHelpfulRequest, ReviewResponseCreate, ReviewResponseResponse
 )
 from app.modules.reviews.services import ReviewService
+from app.core.id import ID
 
 router = APIRouter(prefix="/reviews", tags=["Reviews"])
 
@@ -35,7 +36,7 @@ async def create_review(
 
 @router.get("/listings/{listing_id}", response_model=ReviewListResponse)
 async def get_listing_reviews(
-    listing_id: int,
+    listing_id: ID,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     db: AsyncSession = Depends(get_db)
@@ -73,7 +74,7 @@ async def get_listing_reviews(
 
 @router.get("/{review_id}", response_model=ReviewResponse)
 async def get_review(
-    review_id: int,
+    review_id: ID,
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """Get review details by ID."""
@@ -100,7 +101,7 @@ async def get_review(
 
 @router.post("/{review_id}/response", response_model=ReviewResponseResponse, status_code=status.HTTP_201_CREATED)
 async def create_review_response(
-    review_id: int,
+    review_id: ID,
     response_data: ReviewResponseCreate,
     current_user: User = Depends(require_host),
     db: AsyncSession = Depends(get_db)
@@ -128,7 +129,7 @@ async def create_review_response(
 
 @router.post("/{review_id}/helpful", response_model=dict)
 async def mark_review_helpful(
-    review_id: int,
+    review_id: ID,
     helpful_data: ReviewHelpfulRequest,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)

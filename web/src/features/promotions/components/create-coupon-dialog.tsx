@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useCreateCouponApiV1PromotionsCouponsPostMutation } from "@/generated/hooks/promotions";
+import { useModal } from "@/lib/stores/modal-store";
 
 // Simple date formatter
 const formatDate = (date: Date): string => {
@@ -69,17 +70,10 @@ const createCouponSchema = z.object({
 
 type CreateCouponFormValues = z.infer<typeof createCouponSchema>;
 
-interface CreateCouponDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSuccess?: () => void;
-}
-
-export function CreateCouponDialog({
-  open,
-  onOpenChange,
-  onSuccess,
-}: CreateCouponDialogProps) {
+export function CreateCouponDialog() {
+  const { isOpen, type, data, onClose } = useModal();
+  const isDialogOpen = isOpen && type === "createCoupon";
+  const onSuccess = data?.onSuccess as (() => void) | undefined;
   const form = useForm<CreateCouponFormValues>({
     resolver: zodResolver(createCouponSchema),
     defaultValues: {
@@ -105,6 +99,7 @@ export function CreateCouponDialog({
       toast.success("Coupon created successfully!");
       form.reset();
       onSuccess?.();
+      onClose();
     },
     onError: (error) => {
       toast.error(`Failed to create coupon: ${error.message}`);
@@ -134,7 +129,7 @@ export function CreateCouponDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={isDialogOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[18px]">
         <DialogHeader>
           <DialogTitle className="text-2xl font-light">Create New Coupon</DialogTitle>

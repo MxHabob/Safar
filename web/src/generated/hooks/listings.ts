@@ -93,12 +93,12 @@ export function useListListingsApiV1ListingsGet(skip?: number, limit?: number, c
         handleActionError(error)
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
-    gcTime: 10 * 60 * 1000, // 10 minutes - cache persists longer (React Query v5)
+    staleTime: 180000,
+    gcTime: 360000, // React Query v5: gcTime replaces cacheTime
     enabled: true && (options?.enabled ?? true),
-    refetchOnWindowFocus: false, // Don't refetch on window focus for better performance
+    refetchOnWindowFocus: true, // Refetch when window regains focus
     refetchOnReconnect: true, // Refetch when network reconnects
-    refetchOnMount: false, // Use cached data if available for faster loads
+    refetchOnMount: 'always', // Always refetch on mount for fresh data
     refetchInterval: options?.refetchInterval, // Optional polling interval
     // React Query v5: placeholderData replaces keepPreviousData
     placeholderData: (previousData: z.infer<typeof ListListingsApiV1ListingsGetResponseSchema> | undefined) => previousData,
@@ -511,7 +511,7 @@ export function useDeleteListingApiV1ListingsListingIdDeleteMutation(options?: {
     mutationFn: async (variables: z.infer<typeof DeleteListingApiV1ListingsListingIdDeleteParamsSchema>): Promise<z.infer<typeof DeleteListingApiV1ListingsListingIdDeleteResponseSchema>> => {
       try {
         const result = await resolveActionResult<z.infer<typeof DeleteListingApiV1ListingsListingIdDeleteResponseSchema>>(deleteListingApiV1ListingsListingIdDelete(variables))
-        return (result ?? ({} as unknown as z.infer<typeof DeleteListingApiV1ListingsListingIdDeleteResponseSchema>))
+        return (result ?? ({} as z.infer<typeof DeleteListingApiV1ListingsListingIdDeleteResponseSchema>))
       } catch (error) {
         handleActionError(error)
       }

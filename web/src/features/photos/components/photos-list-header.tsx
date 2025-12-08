@@ -6,7 +6,7 @@ import { usePhotosFilters } from "../hooks/use-photos-filters";
 import { DEFAULT_PAGE } from "@/constants";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { PhotosSearchFilter } from "./photos-search-filter";
-import { useModal } from "@/hooks/use-modal";
+import { useModal } from "@/lib/stores/modal-store";
 
 export const PhotosListHeader = () => {
   const modal = useModal();
@@ -44,7 +44,10 @@ export const PhotosListHeader = () => {
             </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
-          <Button variant="default" onClick={modal.onOpen}>
+          <Button
+            variant="default"
+            onClick={() => modal.onOpen("createPhoto")}
+          >
             Add Photo
           </Button>
         </div>

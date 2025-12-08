@@ -2,10 +2,8 @@
 Message and conversation models.
 Enhanced with the conversation model from the Prisma schema.
 """
-from datetime import datetime
-from typing import Optional
 from sqlalchemy import (
-    Column, String, Boolean, Integer, DateTime,
+    Column, String, Boolean, DateTime,
     Text, Index, ForeignKey, Table
 )
 from sqlalchemy.orm import relationship

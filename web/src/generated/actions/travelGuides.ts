@@ -69,29 +69,6 @@ class ActionExecutionError extends ActionError {
   }
 }
 
-// Helper to get current time after accessing request data (required by Next.js 16)
-// This ensures we access request data before using Date.now()
-// Note: During prerendering, headers() rejects, so we handle that gracefully
-async function getCurrentTime(): Promise<number> {
-  try {
-    // Access headers first to satisfy Next.js 16 requirement for non-prerendered requests
-    // This will reject during prerendering with HANGING_PROMISE_REJECTION
-    const headersList = await headers()
-    // If headers() succeeds, we've accessed request data, so Date.now() is safe
-    return Date.now()
-  } catch (error) {
-    // During prerendering, headers() rejects with HANGING_PROMISE_REJECTION
-    // In this case, we can safely use Date.now() because we're in a static/prerendered context
-    // where time-based functions are allowed
-    if (error && typeof error === 'object' && 'digest' in error && error.digest === 'HANGING_PROMISE_REJECTION') {
-      // This is prerendering - Date.now() is safe here
-      return Date.now()
-    }
-    // For other errors, still use Date.now() as fallback
-    return Date.now()
-  }
-}
-
 // Logging utility for server actions
 async function logActionExecution(
   action: string,
@@ -120,7 +97,7 @@ export const getGuidesApiV1TravelGuidesGet = cache(
     })
     .schema(GetGuidesApiV1TravelGuidesGetParamsSchema)
     .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof GetGuidesApiV1TravelGuidesGetParamsSchema>; ctx?: any }) => {
-      const startTime = await getCurrentTime()
+      const startTime = Date.now()
       
       try {
       // Validate and sanitize parameters
@@ -140,7 +117,7 @@ query: validatedParams.query,
         
 
         // Log successful execution
-        const duration = (await getCurrentTime()) - startTime
+        const duration = Date.now() - startTime
         await logActionExecution('getGuidesApiV1TravelGuidesGet', true, duration, {
           method: 'GET',
           path: '/api/v1/travel-guides'
@@ -149,7 +126,7 @@ query: validatedParams.query,
         return response.data
       } catch (error) {
 
-        const duration = (await getCurrentTime()) - startTime
+        const duration = Date.now() - startTime
 
         // Enhanced error logging
         await logActionExecution('getGuidesApiV1TravelGuidesGet', false, duration, {
@@ -164,7 +141,7 @@ query: validatedParams.query,
           {
             endpoint: '/api/v1/travel-guides',
             method: 'GET',
-            timestamp: await getCurrentTime()
+            timestamp: Date.now()
           },
           error
         )
@@ -184,7 +161,7 @@ export const createGuideApiV1TravelGuidesPost = authActionClient
   })
   .schema(CreateGuideApiV1TravelGuidesPostRequestSchema)
   .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof CreateGuideApiV1TravelGuidesPostRequestSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
-    const startTime = await getCurrentTime()
+    const startTime = Date.now()
     
     try {
       // Validate and sanitize request body
@@ -259,7 +236,7 @@ export const publishGuideApiV1TravelGuidesGuideIdPublishPost = authActionClient
   })
   .schema(PublishGuideApiV1TravelGuidesGuideIdPublishPostParamsSchema)
   .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof PublishGuideApiV1TravelGuidesGuideIdPublishPostParamsSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
-    const startTime = await getCurrentTime()
+    const startTime = Date.now()
     
     try {
       // Validate and sanitize parameters
@@ -339,7 +316,7 @@ export const getGuideApiV1TravelGuidesGuideIdGet = cache(
     })
     .schema(GetGuideApiV1TravelGuidesGuideIdGetParamsSchema)
     .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof GetGuideApiV1TravelGuidesGuideIdGetParamsSchema>; ctx?: any }) => {
-      const startTime = await getCurrentTime()
+      const startTime = Date.now()
       
       try {
       // Validate and sanitize parameters
@@ -361,7 +338,7 @@ path: {
         
 
         // Log successful execution
-        const duration = (await getCurrentTime()) - startTime
+        const duration = Date.now() - startTime
         await logActionExecution('getGuideApiV1TravelGuidesGuideIdGet', true, duration, {
           method: 'GET',
           path: '/api/v1/travel-guides/{guide_id}'
@@ -370,7 +347,7 @@ path: {
         return response.data
       } catch (error) {
 
-        const duration = (await getCurrentTime()) - startTime
+        const duration = Date.now() - startTime
 
         // Enhanced error logging
         await logActionExecution('getGuideApiV1TravelGuidesGuideIdGet', false, duration, {
@@ -385,7 +362,7 @@ path: {
           {
             endpoint: '/api/v1/travel-guides/{guide_id}',
             method: 'GET',
-            timestamp: await getCurrentTime()
+            timestamp: Date.now()
           },
           error
         )
@@ -405,7 +382,7 @@ export const bookmarkGuideApiV1TravelGuidesGuideIdBookmarkPost = authActionClien
   })
   .schema(BookmarkGuideApiV1TravelGuidesGuideIdBookmarkPostParamsSchema)
   .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof BookmarkGuideApiV1TravelGuidesGuideIdBookmarkPostParamsSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
-    const startTime = await getCurrentTime()
+    const startTime = Date.now()
     
     try {
       // Validate and sanitize parameters
@@ -484,7 +461,7 @@ export const likeGuideApiV1TravelGuidesGuideIdLikePost = authActionClient
   })
   .schema(LikeGuideApiV1TravelGuidesGuideIdLikePostParamsSchema)
   .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof LikeGuideApiV1TravelGuidesGuideIdLikePostParamsSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
-    const startTime = await getCurrentTime()
+    const startTime = Date.now()
     
     try {
       // Validate and sanitize parameters
@@ -564,7 +541,7 @@ export const getStoriesApiV1TravelGuidesStoriesGet = cache(
     })
     .schema(GetStoriesApiV1TravelGuidesStoriesGetParamsSchema)
     .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof GetStoriesApiV1TravelGuidesStoriesGetParamsSchema>; ctx?: any }) => {
-      const startTime = await getCurrentTime()
+      const startTime = Date.now()
       
       try {
       // Validate and sanitize parameters
@@ -584,7 +561,7 @@ query: validatedParams.query,
         
 
         // Log successful execution
-        const duration = (await getCurrentTime()) - startTime
+        const duration = Date.now() - startTime
         await logActionExecution('getStoriesApiV1TravelGuidesStoriesGet', true, duration, {
           method: 'GET',
           path: '/api/v1/travel-guides/stories'
@@ -593,7 +570,7 @@ query: validatedParams.query,
         return response.data
       } catch (error) {
 
-        const duration = (await getCurrentTime()) - startTime
+        const duration = Date.now() - startTime
 
         // Enhanced error logging
         await logActionExecution('getStoriesApiV1TravelGuidesStoriesGet', false, duration, {
@@ -608,7 +585,7 @@ query: validatedParams.query,
           {
             endpoint: '/api/v1/travel-guides/stories',
             method: 'GET',
-            timestamp: await getCurrentTime()
+            timestamp: Date.now()
           },
           error
         )
@@ -628,7 +605,7 @@ export const createStoryApiV1TravelGuidesStoriesPost = authActionClient
   })
   .schema(CreateStoryApiV1TravelGuidesStoriesPostRequestSchema)
   .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof CreateStoryApiV1TravelGuidesStoriesPostRequestSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
-    const startTime = await getCurrentTime()
+    const startTime = Date.now()
     
     try {
       // Validate and sanitize request body
@@ -703,7 +680,7 @@ export const publishStoryApiV1TravelGuidesStoriesStoryIdPublishPost = authAction
   })
   .schema(PublishStoryApiV1TravelGuidesStoriesStoryIdPublishPostParamsSchema)
   .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof PublishStoryApiV1TravelGuidesStoriesStoryIdPublishPostParamsSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
-    const startTime = await getCurrentTime()
+    const startTime = Date.now()
     
     try {
       // Validate and sanitize parameters
@@ -783,7 +760,7 @@ export const getStoryApiV1TravelGuidesStoriesStoryIdGet = cache(
     })
     .schema(GetStoryApiV1TravelGuidesStoriesStoryIdGetParamsSchema)
     .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof GetStoryApiV1TravelGuidesStoriesStoryIdGetParamsSchema>; ctx?: any }) => {
-      const startTime = await getCurrentTime()
+      const startTime = Date.now()
       
       try {
       // Validate and sanitize parameters
@@ -805,7 +782,7 @@ path: {
         
 
         // Log successful execution
-        const duration = (await getCurrentTime()) - startTime
+        const duration = Date.now() - startTime
         await logActionExecution('getStoryApiV1TravelGuidesStoriesStoryIdGet', true, duration, {
           method: 'GET',
           path: '/api/v1/travel-guides/stories/{story_id}'
@@ -814,7 +791,7 @@ path: {
         return response.data
       } catch (error) {
 
-        const duration = (await getCurrentTime()) - startTime
+        const duration = Date.now() - startTime
 
         // Enhanced error logging
         await logActionExecution('getStoryApiV1TravelGuidesStoriesStoryIdGet', false, duration, {
@@ -829,7 +806,7 @@ path: {
           {
             endpoint: '/api/v1/travel-guides/stories/{story_id}',
             method: 'GET',
-            timestamp: await getCurrentTime()
+            timestamp: Date.now()
           },
           error
         )

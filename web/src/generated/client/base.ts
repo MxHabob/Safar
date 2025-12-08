@@ -20,8 +20,8 @@ type NextReadonlyHeaders = Awaited<ReturnType<NextHeadersModule['headers']>>
 type NextReadonlyCookies = Awaited<ReturnType<NextHeadersModule['cookies']>>
 
 let serverOnlyModules: {
-  cookies?: () => Promise<NextReadonlyCookies>
-  headers?: () => Promise<Headers>
+  cookies?: () => NextReadonlyCookies
+  headers?: () => Headers
   after?: (fn: () => void | Promise<void>) => void
   updateTag?: (tag: string) => void
 } | null = null
@@ -51,11 +51,11 @@ async function getServerModules() {
       const serverModule = await import('next/server').catch(() => null)
       const cacheModule = await import('next/cache').catch(() => null)
       
-      const getReadonlyHeaders = headersModule?.headers as (() => Promise<NextReadonlyHeaders>) | undefined
-      const getReadonlyCookies = headersModule?.cookies as (() => Promise<NextReadonlyCookies>) | undefined
+      const getReadonlyHeaders = headersModule?.headers as (() => NextReadonlyHeaders) | undefined
+      const getReadonlyCookies = headersModule?.cookies as (() => NextReadonlyCookies) | undefined
       serverOnlyModules = {
         cookies: getReadonlyCookies,
-        headers: getReadonlyHeaders ? async () => toMutableHeaders(await getReadonlyHeaders()) : undefined,
+        headers: getReadonlyHeaders ? () => toMutableHeaders(getReadonlyHeaders()) : undefined,
         after: serverModule?.after,
         updateTag: cacheModule?.updateTag,
       }
@@ -315,10 +315,10 @@ export class BaseApiClient {
       // Get auth token from various sources (server-side only)
       if (serverModules?.cookies && serverModules.headers) {
         try {
-          const cookieStore = await serverModules.cookies()
-          const headersList = await serverModules.headers()
+          const cookieStore = serverModules.cookies()
+          const headersList = serverModules.headers()
           
-          // Try cookie first (using our auth system)
+          // Try cookie first
           const tokenFromCookie = cookieStore.get('auth-token')?.value
           if (tokenFromCookie) {
             getAuthHeaders.Authorization = `Bearer ${tokenFromCookie}`
@@ -333,21 +333,6 @@ export class BaseApiClient {
           }
         } catch (error) {
           // Server modules not available (client-side) or error accessing
-        }
-      }
-      
-      // Client-side: Try to get token from localStorage (fallback for client-side calls)
-      if (typeof window !== 'undefined') {
-        try {
-          // Note: Access tokens should ideally be in httpOnly cookies
-          // This is a fallback for client-side API calls
-          const tokenFromStorage = localStorage.getItem('auth-token')
-          if (tokenFromStorage) {
-            getAuthHeaders.Authorization = `Bearer ${tokenFromStorage}`
-            return getAuthHeaders
-          }
-        } catch (error) {
-          // localStorage not available
         }
       }
       
@@ -375,7 +360,7 @@ export class BaseApiClient {
       
       if (serverModules?.headers) {
         try {
-          const headersList = await serverModules.headers()
+          const headersList = serverModules.headers()
           
           // CSRF protection
           const csrfToken = headersList.get('x-csrf-token')
@@ -638,11 +623,7 @@ export class BaseApiClient {
         // Only include next options if we're on the server (Next.js App Router)
         const fetchInit: RequestInit & { next?: { tags?: string[]; revalidate?: number | false; connection?: string } } = {
           ...requestConfig,
-          signal: controller.signal,
-          // CORS: Include credentials for cross-origin requests
-          // This is required when CORS_ALLOW_CREDENTIALS=True on the backend
-          credentials: 'include' as RequestCredentials,
-          mode: 'cors' as RequestMode
+          signal: controller.signal
         }
         
         // Add Next.js-specific options only if we have cache tags, revalidate, or connection
@@ -701,10 +682,8 @@ export class BaseApiClient {
         // Handle HTTP errors
         if (!response.ok) {
           const errorData = await this.parseErrorResponse(response)
-          // FastAPI uses 'detail' field, prioritize it over 'message'
-          const errorMessage = errorData.detail || errorData.message || `HTTP ${response.status}: ${response.statusText}`
           const apiError = new ApiError(
-            errorMessage,
+            errorData.message || `HTTP ${response.status}: ${response.statusText}`,
             response.status,
             response.statusText,
             response,

@@ -12,13 +12,14 @@ from app.modules.listings.premium_service import PremiumListingService
 from app.modules.listings.models import Listing
 from app.modules.listings.schemas import ListingResponse
 from sqlalchemy import select
+from app.core.id import ID
 
 router = APIRouter(prefix="/listings/premium", tags=["Premium Listings"])
 
 
 @router.post("/{listing_id}/upgrade")
 async def upgrade_listing_to_premium(
-    listing_id: str,
+    listing_id: ID,
     tier: str = Query(..., description="Premium tier: basic, standard, premium"),
     duration_days: Optional[int] = Query(None, description="Custom duration in days"),
     current_user: User = Depends(require_host),
@@ -55,7 +56,7 @@ async def upgrade_listing_to_premium(
 
 @router.post("/{listing_id}/feature")
 async def feature_listing(
-    listing_id: str,
+    listing_id: ID,
     duration_days: int = Query(7, ge=1, le=365, description="Duration in days"),
     current_user: User = Depends(require_host),
     db: AsyncSession = Depends(get_db)

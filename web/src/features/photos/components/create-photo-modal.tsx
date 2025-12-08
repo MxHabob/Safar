@@ -2,15 +2,24 @@
 
 import { ResponsiveModal } from "@/components/shared/responsive-modal";
 import MultiStepForm from "./multi-step-form";
-import { useModal } from "@/hooks/use-modal";
+import { useModal } from "@/lib/stores/modal-store";
 
 const CreatePhotoModal = () => {
-  const { isOpen, onClose } = useModal();
+  const { isOpen, type, onOpen, onClose } = useModal();
+  const isDialogOpen = isOpen && type === "createPhoto";
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      onOpen("createPhoto");
+    } else {
+      onClose();
+    }
+  };
 
   return (
     <ResponsiveModal
-      open={isOpen}
-      onOpenChange={onClose}
+      open={isDialogOpen}
+      onOpenChange={handleOpenChange}
       title="Create Photo"
       className="sm:max-w-3xl"
     >

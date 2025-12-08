@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useErrorBoundary } from "react-error-boundary";
-import { useModal } from "@/hooks/use-modal";
+import { useModal } from "@/lib/stores/modal-store";
 
 export const DashboardPhotosView = () => {
   const [filters, setFilters] = usePhotosFilters();
@@ -65,7 +65,11 @@ const EmptyStatus = () => {
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
-        <Button variant="outline" size="sm" onClick={modal.onOpen}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => modal.onOpen("createPhoto")}
+        >
           Add Photos
         </Button>
       </EmptyContent>

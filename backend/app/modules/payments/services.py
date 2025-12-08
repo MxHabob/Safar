@@ -3,6 +3,7 @@ Payment services.
 Integrates with Stripe, PayPal, and coordinates booking payment workflows.
 """
 import stripe
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional, Dict, Any
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,7 @@ from app.infrastructure.payments.paypal import PayPalService
 from app.infrastructure.payments.mpesa import MPesaService
 from app.infrastructure.payments.fawry import FawryService
 from app.infrastructure.payments.klarna import KlarnaService
+from app.core.id import ID
 
 settings = get_settings()
 
@@ -30,8 +32,8 @@ class PaymentService:
     @staticmethod
     async def create_payment_intent(
         db: AsyncSession,
-        booking_id: int,
-        amount: float,
+        booking_id: ID,
+        amount: Decimal,
         currency: str = "USD",
         payment_method: Optional[PaymentMethodType] = PaymentMethodType.CREDIT_CARD
     ) -> Dict[str, Any]:
@@ -49,7 +51,7 @@ class PaymentService:
             
             try:
                 order = await PayPalService.create_order(
-                    amount=amount,
+                    amount=float(amount),
                     currency=currency,
                     booking_id=str(booking_id)
                 )
@@ -77,7 +79,7 @@ class PaymentService:
                 phone_number = f"254712345678"  # Placeholder - should be from request
                 stk_response = await MPesaService.stk_push(
                     phone_number=phone_number,
-                    amount=amount,
+                    amount=float(amount),
                     account_reference=f"BOOKING_{booking_id}",
                     transaction_desc=f"Payment for booking {booking_id}"
                 )
@@ -115,7 +117,7 @@ class PaymentService:
                 
                 charge_response = await FawryService.create_charge(
                     merchant_ref_num=f"BOOKING_{booking_id}",
-                    amount=amount,
+                    amount=float(amount),
                     customer_name=f"Guest {booking_id}",
                     customer_mobile="",  # Should come from user profile
                     customer_email="",  # Should come from user profile
@@ -169,8 +171,8 @@ class PaymentService:
                 order_lines = [{
                     "name": f"Booking {booking_id}",
                     "quantity": 1,
-                    "unit_price": int(amount * 100) if provider == "klarna" else amount,
-                    "total_amount": int(amount * 100) if provider == "klarna" else amount
+                    "unit_price": int((amount * Decimal("100")).quantize(Decimal("1"), rounding=ROUND_HALF_UP)) if provider == "klarna" else float(amount),
+                    "total_amount": int((amount * Decimal("100")).quantize(Decimal("1"), rounding=ROUND_HALF_UP)) if provider == "klarna" else float(amount)
                 }]
                 
                 session_response = await KlarnaService.create_session(
@@ -220,8 +222,9 @@ class PaymentService:
                 elif payment_method == PaymentMethodType.GOOGLE_PAY:
                     payment_method_types = ["card", "google_pay"]
                 
+                intent_amount = int((amount * Decimal("100")).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
                 intent = stripe.PaymentIntent.create(
-                    amount=int(amount * 100),  # Convert to cents
+                    amount=intent_amount,  # Convert to cents
                     currency=currency.lower(),
                     payment_method_types=payment_method_types,
                     metadata={
@@ -261,8 +264,9 @@ class PaymentService:
                 )
             
             try:
+                intent_amount = int((amount * Decimal("100")).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
                 intent = stripe.PaymentIntent.create(
-                    amount=int(amount * 100),  # Convert to cents
+                    amount=intent_amount,  # Convert to cents
                     currency=currency.lower(),
                     metadata={"booking_id": booking_id}
                 )
@@ -281,7 +285,7 @@ class PaymentService:
     @staticmethod
     async def process_payment(
         db: AsyncSession,
-        booking_id: int,
+        booking_id: ID,
         payment_intent_id: str,
         payment_method: PaymentMethodType
     ) -> Payment:
@@ -341,7 +345,6 @@ class PaymentService:
             )
         
         # Verify payment based on payment method
-        from decimal import Decimal, ROUND_HALF_UP
         
         processor_ref = None
         
@@ -600,7 +603,7 @@ class PaymentService:
     @staticmethod
     async def refund_payment(
         db: AsyncSession,
-        payment_id: int,
+        payment_id: ID,
         amount: Optional[float] = None
     ) -> Payment:
         """Refund a payment (fully or partially, depending on the amount)."""

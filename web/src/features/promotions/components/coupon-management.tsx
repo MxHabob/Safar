@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Plus, Tag, Calendar, Users, Percent, DollarSign, Trash2 } from "lucide-react";
 import { useListCouponsApiV1PromotionsCouponsGet } from "@/generated/hooks/promotions";
 import { Button } from "@/components/ui/button";
@@ -19,9 +18,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useModal } from "@/lib/stores/modal-store";
 
 export function CouponManagement() {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const { onOpen } = useModal();
   const { data: coupons, isLoading, refetch } = useListCouponsApiV1PromotionsCouponsGet(
     0,
     50,
@@ -44,7 +44,7 @@ export function CouponManagement() {
           </p>
         </div>
         <Button
-          onClick={() => setIsCreateDialogOpen(true)}
+          onClick={() => onOpen("createCoupon", { onSuccess: () => refetch() })}
           className="rounded-[18px] font-light"
         >
           <Plus className="size-4 mr-2" />
@@ -142,14 +142,7 @@ export function CouponManagement() {
         </div>
       )}
 
-      <CreateCouponDialog
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-        onSuccess={() => {
-          refetch();
-          setIsCreateDialogOpen(false);
-        }}
-      />
+      <CreateCouponDialog />
     </div>
   );
 }

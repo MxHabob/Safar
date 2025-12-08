@@ -12,11 +12,12 @@ from app.modules.users.models import User
 from app.modules.users.device_service import DeviceService
 from app.infrastructure.email.service import EmailService
 from app.infrastructure.notifications.push import PushNotificationService
+from app.core.id import ID
 
 settings = get_settings()
 
 
-async def _send_email_notification_async(notification_id: int):
+async def _send_email_notification_async(notification_id: ID):
     """Send an email notification asynchronously."""
     async with AsyncSessionLocal() as db:
         # Get notification
@@ -51,12 +52,12 @@ async def _send_email_notification_async(notification_id: int):
 
 
 @celery_app.task(name="send_email_notification")
-def send_email_notification(notification_id: int):
+def send_email_notification(notification_id: ID):
     """Send an email notification (Celery task)."""
     asyncio.run(_send_email_notification_async(notification_id))
 
 
-async def _send_push_notification_async(notification_id: int):
+async def _send_push_notification_async(notification_id: ID):
     """Send a push notification asynchronously."""
     async with AsyncSessionLocal() as db:
         # Get notification
@@ -97,12 +98,12 @@ async def _send_push_notification_async(notification_id: int):
 
 
 @celery_app.task(name="send_push_notification")
-def send_push_notification(notification_id: int):
+def send_push_notification(notification_id: ID):
     """Send a push notification (Celery task)."""
     asyncio.run(_send_push_notification_async(notification_id))
 
 
-async def _send_sms_notification_async(notification_id: int):
+async def _send_sms_notification_async(notification_id: ID):
     """Send an SMS notification asynchronously."""
     async with AsyncSessionLocal() as db:
         # Get notification
@@ -143,7 +144,7 @@ async def _send_sms_notification_async(notification_id: int):
 
 
 @celery_app.task(name="send_sms_notification")
-def send_sms_notification(notification_id: int):
+def send_sms_notification(notification_id: ID):
     """Send an SMS notification (Celery task)."""
     asyncio.run(_send_sms_notification_async(notification_id))
 

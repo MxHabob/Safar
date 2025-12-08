@@ -16,6 +16,7 @@ from app.modules.messages.schemas import (
     ConversationResponse, ConversationListResponse, ConversationCreate, ConversationSummaryResponse
 )
 from app.modules.messages.services import MessageService
+from backend.app.core.id import ID
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
 
@@ -89,7 +90,7 @@ async def create_conversation(
 
 @router.get("/conversations/{conversation_id}", response_model=ConversationResponse)
 async def get_conversation(
-    conversation_id: int,
+    conversation_id: ID,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     current_user: User = Depends(get_current_active_user),
@@ -125,7 +126,7 @@ async def get_conversation(
 
 @router.get("/conversations/{conversation_id}/messages", response_model=MessageListResponse)
 async def get_conversation_messages(
-    conversation_id: int,
+    conversation_id: ID,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     current_user: User = Depends(get_current_active_user),
@@ -146,7 +147,7 @@ async def get_conversation_messages(
 
 @router.post("/conversations/{conversation_id}/read", response_model=dict)
 async def mark_conversation_read(
-    conversation_id: int,
+    conversation_id: ID,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
@@ -157,7 +158,7 @@ async def mark_conversation_read(
 
 @router.post("/{message_id}/read", response_model=MessageResponse)
 async def mark_message_read(
-    message_id: int,
+    message_id: ID,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
@@ -167,7 +168,7 @@ async def mark_message_read(
 
 
 @router.websocket("/ws/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: int, token: str = None):
+async def websocket_endpoint(websocket: WebSocket, user_id: ID, token: str = None):
     """WebSocket endpoint for real-time chat messaging.
     
     Requires authentication token in query parameter.

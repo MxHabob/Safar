@@ -1,5 +1,5 @@
 'use client'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useOptimistic, useTransition } from 'react'
 import { toast } from 'sonner'
 import { sendPushNotificationApiV1NotificationsPushSendPost, sendBulkPushNotificationsApiV1NotificationsPushBulkPost } from '@/generated/actions/notifications'

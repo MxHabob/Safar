@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import { cache } from 'react'
 import { BaseApiClient } from './base'
-import { defaultMiddleware } from './middleware'
 import type { ClientResponse, RequestConfiguration } from './base'
 import {
   StripeWebhookApiV1WebhooksStripePostResponseSchema,
@@ -47,29 +46,11 @@ Only processes webhooks that are cryptographically verified.
 // Validate and extract parameters
 const validatedParams = await StripeWebhookApiV1WebhooksStripePostParamsSchema.parseAsync(options.params)
 
-    // Convert headers to plain objects
-    const rawConfigHeaders = options.config?.headers
-    const configHeaders: Record<string, string> = rawConfigHeaders
-      ? (rawConfigHeaders instanceof Headers
-          ? Object.fromEntries(rawConfigHeaders.entries())
-          : Array.isArray(rawConfigHeaders)
-          ? Object.fromEntries(rawConfigHeaders)
-          : rawConfigHeaders)
-      : {}
-    const rawValidatedHeaders = validatedParams.headers
-    const validatedHeaders: Record<string, string> = rawValidatedHeaders
-      ? (rawValidatedHeaders instanceof Headers
-          ? Object.fromEntries(rawValidatedHeaders.entries())
-          : Array.isArray(rawValidatedHeaders)
-          ? Object.fromEntries(rawValidatedHeaders)
-          : rawValidatedHeaders)
-      : {}
-
     return this.request<z.infer<typeof StripeWebhookApiV1WebhooksStripePostResponseSchema>>(
       'POST',
       '/api/v1/webhooks/stripe',
       {
-headers: { ...configHeaders, ...validatedHeaders },
+headers: { ...options.config?.headers, ...validatedParams.headers },
 config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
 responseSchema: StripeWebhookApiV1WebhooksStripePostResponseSchema
       }

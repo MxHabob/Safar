@@ -14,6 +14,7 @@ from app.modules.ai_trip_planner.schemas import (
     TravelPlanRequest, TravelPlanResponse
 )
 from app.modules.ai_trip_planner.services import AITravelPlannerService
+from app.core.id import ID
 
 router = APIRouter(prefix="/ai/travel-planner", tags=["AI Travel Planner"])
 settings = get_settings()
@@ -61,7 +62,7 @@ async def create_travel_plan(
 
 @router.get("/{plan_id}", response_model=TravelPlanResponse)
 async def get_travel_plan(
-    plan_id: int,
+    plan_id: ID,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:

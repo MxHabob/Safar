@@ -8,9 +8,10 @@ from app.core.celery_app import celery_app
 from app.core.database import AsyncSessionLocal
 from app.modules.bookings.models import Payment
 from app.modules.payments.services import PaymentService
+from app.core.id import ID
 
 
-async def _process_payment_async(payment_id: int):
+async def _process_payment_async(payment_id: ID):
     """Process a payment asynchronously."""
     async with AsyncSessionLocal() as db:
         result = await db.execute(
@@ -24,19 +25,19 @@ async def _process_payment_async(payment_id: int):
 
 
 @celery_app.task(name="process_payment")
-def process_payment(payment_id: int):
+def process_payment(payment_id: ID):
     """Process a payment (Celery task)."""
     asyncio.run(_process_payment_async(payment_id))
 
 
-async def _refund_payment_async(payment_id: int, amount: float = None):
+async def _refund_payment_async(payment_id: ID, amount: float = None):
     """Refund a payment asynchronously."""
     async with AsyncSessionLocal() as db:
         await PaymentService.refund_payment(db, payment_id, amount)
 
 
 @celery_app.task(name="refund_payment")
-def refund_payment(payment_id: int, amount: float = None):
+def refund_payment(payment_id: ID, amount: float = None):
     """Refund a payment (Celery task)."""
     asyncio.run(_refund_payment_async(payment_id, amount))
 

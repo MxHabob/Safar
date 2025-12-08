@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -27,6 +27,7 @@ import { useRedeemPointsApiV1LoyaltyRedeemPostMutation } from "@/generated/hooks
 import { useGetLoyaltyStatusApiV1LoyaltyStatusGet } from "@/generated/hooks/loyalty";
 import { toast } from "sonner";
 import { Gift, Coins } from "lucide-react";
+import { useModal } from "@/lib/stores/modal-store";
 
 const redeemSchema = z.object({
   points: z
@@ -47,14 +48,18 @@ interface RedeemPointsDialogProps {
 }
 
 export function RedeemPointsDialog({ bookingId, trigger }: RedeemPointsDialogProps) {
-  const [open, setOpen] = useState(false);
+  const { isOpen, type, data, onOpen, onClose } = useModal();
+  const isDialogOpen = isOpen && type === "redeemPoints";
+  const currentBookingId = isDialogOpen
+    ? ((data?.bookingId as string | undefined) ?? bookingId)
+    : bookingId;
   const { data: status } = useGetLoyaltyStatusApiV1LoyaltyStatusGet();
   const redeemMutation = useRedeemPointsApiV1LoyaltyRedeemPostMutation({
     onSuccess: (data) => {
       toast.success(
         `تم استبدال ${data.points_redeemed.toLocaleString()} نقطة بنجاح! خصم بقيمة $${data.discount_amount.toFixed(2)}`
       );
-      setOpen(false);
+      onClose();
       form.reset();
     },
     onError: (error) => {
@@ -87,8 +92,22 @@ export function RedeemPointsDialog({ bookingId, trigger }: RedeemPointsDialogPro
 
   const quickSelectPoints = [100, 500, 1000, 2500, 5000];
 
+  useEffect(() => {
+    if (isDialogOpen && currentBookingId) {
+      form.setValue("booking_id", currentBookingId);
+    }
+  }, [currentBookingId, form, isDialogOpen]);
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      onOpen("redeemPoints", { bookingId: currentBookingId });
+    } else {
+      onClose();
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" size="sm">
@@ -186,7 +205,7 @@ export function RedeemPointsDialog({ bookingId, trigger }: RedeemPointsDialogPro
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setOpen(false)}
+                onClick={onClose}
                 disabled={redeemMutation.isPending}
               >
                 إلغاء

@@ -12,7 +12,7 @@ from fastapi import HTTPException, status
 from app.modules.messages.models import Message, Conversation
 from app.modules.messages.schemas import MessageCreate, ConversationCreate
 from app.modules.users.models import User
-
+from app.core.id import ID
 
 class MessageService:
     """Service layer for working with messages and conversations."""
@@ -20,9 +20,9 @@ class MessageService:
     @staticmethod
     async def get_or_create_conversation(
         db: AsyncSession,
-        participant_ids: List[int],
-        listing_id: Optional[int] = None,
-        booking_id: Optional[int] = None
+        participant_ids: List[ID],
+        listing_id: Optional[ID] = None,
+        booking_id: Optional[ID] = None
     ) -> Conversation:
         """Get an existing conversation for the given participants or create a new one."""
         # Check if conversation exists
@@ -64,7 +64,7 @@ class MessageService:
     async def create_message(
         db: AsyncSession,
         message_data: MessageCreate,
-        sender_id: int
+        sender_id: ID
     ) -> Message:
         """Create a new message within a conversation or direct thread."""
         conversation_id = message_data.conversation_id
@@ -114,8 +114,8 @@ class MessageService:
     @staticmethod
     async def get_conversation(
         db: AsyncSession,
-        conversation_id: int,
-        user_id: int,
+        conversation_id: ID,
+        user_id: ID,
         skip: int = 0,
         limit: int = 50
     ) -> tuple[List[Message], int]:
@@ -156,7 +156,7 @@ class MessageService:
     @staticmethod
     async def get_user_conversations(
         db: AsyncSession,
-        user_id: int
+        user_id: ID
     ) -> List[Conversation]:
         """Get all conversations for the given user."""
         from app.modules.messages.models import conversation_participants
@@ -176,8 +176,8 @@ class MessageService:
     @staticmethod
     async def mark_as_read(
         db: AsyncSession,
-        message_id: int,
-        user_id: int
+        message_id: ID,
+        user_id: ID
     ) -> Message:
         """Mark a single message as read for the given user."""
         result = await db.execute(
@@ -209,8 +209,8 @@ class MessageService:
     @staticmethod
     async def mark_conversation_read(
         db: AsyncSession,
-        conversation_id: int,
-        user_id: int
+        conversation_id: ID,
+        user_id: ID,
     ) -> int:
         """Mark all messages in a conversation as read for the given user."""
         from app.modules.messages.models import conversation_participants

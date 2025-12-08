@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.modules.files.models import File, FileType, FileCategory
+from app.core.id import ID
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +142,7 @@ def generate_unique_filename(original_filename: str) -> str:
 async def save_file(
     file: UploadFile,
     category: FileCategory,
-    user_id: int,
+    user_id: ID,
     db: AsyncSession
 ) -> File:
     """Validate and persist an uploaded file to the configured storage backend."""

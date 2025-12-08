@@ -63,7 +63,7 @@ async function resolveActionResult<T>(actionPromise: Promise<any>): Promise<T> {
  * Features: Smart caching, error handling, type safety
  * @returns useQuery result with data of type z.infer<typeof GetSubscriptionPlansApiV1SubscriptionsPlansGetResponseSchema>
  */
-export function useGetSubscriptionPlansApiV1SubscriptionsPlansGet(plan_type: 'host' | 'guest', options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetSubscriptionPlansApiV1SubscriptionsPlansGetResponseSchema> }) {
+export function useGetSubscriptionPlansApiV1SubscriptionsPlansGet(plan_type: unknown, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetSubscriptionPlansApiV1SubscriptionsPlansGetResponseSchema> }) {
   const { initialData, ...restOptions } = options ?? {}
 
   return useQuery({
@@ -100,7 +100,7 @@ export function useGetSubscriptionPlansApiV1SubscriptionsPlansGet(plan_type: 'ho
  * Suspense version for /api/v1/subscriptions/plans
  * @returns useSuspenseQuery result with data of type z.infer<typeof GetSubscriptionPlansApiV1SubscriptionsPlansGetResponseSchema>
  */
-export function useSuspenseGetSubscriptionPlansApiV1SubscriptionsPlansGet(plan_type: 'host' | 'guest', options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetSubscriptionPlansApiV1SubscriptionsPlansGetResponseSchema> }) {
+export function useSuspenseGetSubscriptionPlansApiV1SubscriptionsPlansGet(plan_type: unknown, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetSubscriptionPlansApiV1SubscriptionsPlansGetResponseSchema> }) {
   const { initialData, ...restOptions } = options ?? {}
 
   return useSuspenseQuery({

@@ -27,7 +27,7 @@ async def create_payment_intent(
     result = await PaymentService.create_payment_intent(
         db,
         booking_id=payment_data.booking_id,
-        amount=float(payment_data.amount),
+        amount=payment_data.amount,
         currency=payment_data.currency
     )
     

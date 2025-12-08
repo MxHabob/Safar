@@ -7,8 +7,7 @@ import {
   SearchListingsApiV1SearchListingsGetResponseSchema,
   SearchListingsApiV1SearchListingsGetParamsSchema,
   GetSearchSuggestionsApiV1SearchSuggestionsGetResponseSchema,
-  GetSearchSuggestionsApiV1SearchSuggestionsGetParamsSchema,
-  ListingType
+  GetSearchSuggestionsApiV1SearchSuggestionsGetParamsSchema
 } from '@/generated/schemas'
 import type { z } from 'zod'
 
@@ -57,7 +56,7 @@ async function resolveActionResult<T>(actionPromise: Promise<any>): Promise<T> {
  * Features: URL state sync, infinite loading, optimistic updates
  * @returns useQuery result with data of type z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema>
  */
-export function useSearchListingsApiV1SearchListingsGet(query?: string, city?: string, country?: string, listing_type?: ListingType, min_price?: number, max_price?: number, min_guests?: number, min_bedrooms?: number, min_bathrooms?: number, latitude?: number, longitude?: number, radius_km?: number, skip?: number, limit?: number, sort_by?: string, enable_personalization?: boolean, enable_popularity_boost?: boolean, enable_location_boost?: boolean, ab_test_variant?: string, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema> }) {
+export function useSearchListingsApiV1SearchListingsGet(query?: string, city?: string, country?: string, listing_type?: unknown, min_price?: number, max_price?: number, min_guests?: number, min_bedrooms?: number, min_bathrooms?: number, latitude?: number, longitude?: number, radius_km?: number, skip?: number, limit?: number, sort_by?: string, enable_personalization?: boolean, enable_popularity_boost?: boolean, enable_location_boost?: boolean, ab_test_variant?: string, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema> }) {
   const [searchParams] = useQueryStates(searchParamsParser)
   const { initialData, ...restOptions } = options ?? {}
   
@@ -66,7 +65,7 @@ export function useSearchListingsApiV1SearchListingsGet(query?: string, city?: s
     queryFn: async ({ signal }: { signal?: AbortSignal }) => {
       try {
         // Build query params object with only the parameters the endpoint expects
-        const queryParams: { query?: string; city?: string; country?: string; listing_type?: ListingType; min_price?: number; max_price?: number; min_guests?: number; min_bedrooms?: number; min_bathrooms?: number; latitude?: number; longitude?: number; radius_km?: number; skip?: number; limit?: number; sort_by?: string; enable_personalization?: boolean; enable_popularity_boost?: boolean; enable_location_boost?: boolean; ab_test_variant?: string } = {
+        const queryParams: { query?: string; city?: string; country?: string; listing_type?: unknown; min_price?: number; max_price?: number; min_guests?: number; min_bedrooms?: number; min_bathrooms?: number; latitude?: number; longitude?: number; radius_km?: number; skip?: number; limit?: number; sort_by?: string; enable_personalization?: boolean; enable_popularity_boost?: boolean; enable_location_boost?: boolean; ab_test_variant?: string } = {
           query: query || searchParams.search || '',
           city: city !== undefined ? city : undefined,
           country: country !== undefined ? country : undefined,
@@ -117,7 +116,7 @@ export function useSearchListingsApiV1SearchListingsGet(query?: string, city?: s
  * Infinite query version for paginated /api/v1/search/listings
  * @returns useInfiniteQuery result with data of type z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema>
  */
-export function useInfiniteSearchListingsApiV1SearchListingsGet(query?: string, city?: string, country?: string, listing_type?: ListingType, min_price?: number, max_price?: number, min_guests?: number, min_bedrooms?: number, min_bathrooms?: number, latitude?: number, longitude?: number, radius_km?: number, skip?: number, limit?: number, sort_by?: string, enable_personalization?: boolean, enable_popularity_boost?: boolean, enable_location_boost?: boolean, ab_test_variant?: string, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema> }) {
+export function useInfiniteSearchListingsApiV1SearchListingsGet(query?: string, city?: string, country?: string, listing_type?: unknown, min_price?: number, max_price?: number, min_guests?: number, min_bedrooms?: number, min_bathrooms?: number, latitude?: number, longitude?: number, radius_km?: number, skip?: number, limit?: number, sort_by?: string, enable_personalization?: boolean, enable_popularity_boost?: boolean, enable_location_boost?: boolean, ab_test_variant?: string, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema> }) {
   const [searchParams] = useQueryStates(searchParamsParser)
   const { initialData, ...restOptions } = options ?? {}
 
@@ -127,7 +126,7 @@ export function useInfiniteSearchListingsApiV1SearchListingsGet(query?: string, 
     queryFn: async ({ pageParam = 1, signal }: { pageParam?: number; signal?: AbortSignal }) => {
       try {
         // Build query params object with only the parameters the endpoint expects
-        const queryParams: { query?: string; city?: string; country?: string; listing_type?: ListingType; min_price?: number; max_price?: number; min_guests?: number; min_bedrooms?: number; min_bathrooms?: number; latitude?: number; longitude?: number; radius_km?: number; skip?: number; limit?: number; sort_by?: string; enable_personalization?: boolean; enable_popularity_boost?: boolean; enable_location_boost?: boolean; ab_test_variant?: string } = {
+        const queryParams: { query?: string; city?: string; country?: string; listing_type?: unknown; min_price?: number; max_price?: number; min_guests?: number; min_bedrooms?: number; min_bathrooms?: number; latitude?: number; longitude?: number; radius_km?: number; skip?: number; limit?: number; sort_by?: string; enable_personalization?: boolean; enable_popularity_boost?: boolean; enable_location_boost?: boolean; ab_test_variant?: string } = {
           query: query || searchParams.search || '',
           city: city !== undefined ? city : undefined,
           country: country !== undefined ? country : undefined,
@@ -192,7 +191,7 @@ export function useInfiniteSearchListingsApiV1SearchListingsGet(query?: string, 
  * Suspense version for /api/v1/search/listings - use in Server Components
  * @returns useSuspenseQuery result with data of type z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema>
  */
-export function useSuspenseSearchListingsApiV1SearchListingsGet(query?: string, city?: string, country?: string, listing_type?: ListingType, min_price?: number, max_price?: number, min_guests?: number, min_bedrooms?: number, min_bathrooms?: number, latitude?: number, longitude?: number, radius_km?: number, skip?: number, limit?: number, sort_by?: string, enable_personalization?: boolean, enable_popularity_boost?: boolean, enable_location_boost?: boolean, ab_test_variant?: string, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema> }) {
+export function useSuspenseSearchListingsApiV1SearchListingsGet(query?: string, city?: string, country?: string, listing_type?: unknown, min_price?: number, max_price?: number, min_guests?: number, min_bedrooms?: number, min_bathrooms?: number, latitude?: number, longitude?: number, radius_km?: number, skip?: number, limit?: number, sort_by?: string, enable_personalization?: boolean, enable_popularity_boost?: boolean, enable_location_boost?: boolean, ab_test_variant?: string, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof SearchListingsApiV1SearchListingsGetResponseSchema> }) {
   const { initialData, ...restOptions } = options ?? {}
 
   return useSuspenseQuery({

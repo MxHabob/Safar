@@ -10,7 +10,6 @@ from app.core.dependencies import get_current_active_user
 from app.modules.users.models import User
 from app.modules.users.device_service import DeviceService
 from app.infrastructure.notifications.push import PushNotificationService
-from app.core.id import ID
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
