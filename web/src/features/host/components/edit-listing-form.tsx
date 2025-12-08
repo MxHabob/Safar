@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -50,13 +51,16 @@ const listingTypes = [
   { value: "apartment", label: "Apartment" },
   { value: "house", label: "House" },
   { value: "villa", label: "Villa" },
-  { value: "hotel", label: "Hotel" },
-  { value: "hostel", label: "Hostel" },
-  { value: "resort", label: "Resort" },
   { value: "cabin", label: "Cabin" },
-  { value: "cottage", label: "Cottage" },
-  { value: "loft", label: "Loft" },
   { value: "studio", label: "Studio" },
+  { value: "room", label: "Room" },
+  { value: "condo", label: "Condo" },
+  { value: "townhouse", label: "Townhouse" },
+  { value: "castle", label: "Castle" },
+  { value: "treehouse", label: "Treehouse" },
+  { value: "boat", label: "Boat" },
+  { value: "camper", label: "Camper" },
+  { value: "experience", label: "Experience" },
 ];
 
 const bookingTypes = [
@@ -76,7 +80,23 @@ const updateListingSchema = z.object({
   title: z.string().min(5).max(500).optional(),
   summary: z.string().optional(),
   description: z.string().optional(),
-  listing_type: z.enum(["apartment", "house", "villa", "hotel", "hostel", "resort", "cabin", "cottage", "loft", "studio"]).optional(),
+  listing_type: z
+    .enum([
+      "apartment",
+      "house",
+      "villa",
+      "cabin",
+      "studio",
+      "room",
+      "condo",
+      "townhouse",
+      "castle",
+      "treehouse",
+      "boat",
+      "camper",
+      "experience",
+    ])
+    .optional(),
   address_line1: z.string().min(5).optional(),
   address_line2: z.string().optional(),
   city: z.string().min(2).optional(),
@@ -112,7 +132,7 @@ interface EditListingFormProps {
 
 export function EditListingForm({ listing, onSuccess }: EditListingFormProps) {
   const router = useRouter();
-  const [images, setImages] = useState<string[]>(listing.images || []);
+  const [images, setImages] = useState<string[]>(listing.images?.map((img) => img.url) || []);
   const [newImages, setNewImages] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [currentLocation, setCurrentLocation] = useState({
@@ -141,7 +161,7 @@ export function EditListingForm({ listing, onSuccess }: EditListingFormProps) {
       bathrooms: listing.bathrooms ? parseFloat(listing.bathrooms.toString()) : undefined,
       max_guests: listing.max_guests,
       square_meters: listing.square_meters,
-      base_price: listing.base_price || listing.price_per_night?.toString(),
+      base_price: listing.base_price?.toString(),
       currency: listing.currency || "USD",
       cleaning_fee: listing.cleaning_fee?.toString(),
       service_fee: listing.service_fee?.toString(),
@@ -164,12 +184,20 @@ export function EditListingForm({ listing, onSuccess }: EditListingFormProps) {
       }
     },
     onError: ({ error }) => {
-      toast.error(error.message || "Failed to update listing");
+      toast.error(error.serverError || "Failed to update listing");
     },
   });
 
   const handleImageUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+
+    const fileToBase64 = (file: File) =>
+      new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string) || "");
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
 
     const newFiles = Array.from(files);
     setNewImages((prev) => [...prev, ...newFiles]);
@@ -177,10 +205,12 @@ export function EditListingForm({ listing, onSuccess }: EditListingFormProps) {
     setUploading(true);
     try {
       const uploadPromises = newFiles.map(async (file) => {
-        const formData = new FormData();
-        formData.append("file", file);
-        const result = await uploadFileApiV1FilesUploadPost({ body: formData });
-        return result?.data?.url || "";
+        const fileAsBase64 = await fileToBase64(file);
+        const result = await uploadFileApiV1FilesUploadPost({
+          body: { file: fileAsBase64 },
+          params: { query: {} },
+        });
+        return result?.data?.file?.file_url || "";
       });
 
       const urls = await Promise.all(uploadPromises);
@@ -414,9 +444,17 @@ export function EditListingForm({ listing, onSuccess }: EditListingFormProps) {
             <div className="h-[300px] w-full rounded-[18px] overflow-hidden border">
               <MapboxComponent
                 draggableMarker
-                markers={currentLocation.lat && currentLocation.lng ? [
-                  { id: "listing", lat: currentLocation.lat, lng: currentLocation.lng }
-                ] : []}
+                  markers={
+                    currentLocation.lat && currentLocation.lng
+                      ? [
+                          {
+                            id: "listing",
+                            latitude: currentLocation.lat,
+                            longitude: currentLocation.lng,
+                          },
+                        ]
+                      : []
+                  }
                 onMarkerDragEnd={(markerId, lngLat) => {
                   setCurrentLocation({ lat: lngLat.lat, lng: lngLat.lng });
                   form.setValue("latitude", lngLat.lat);

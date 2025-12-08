@@ -453,7 +453,7 @@ export function CreateCouponDialog() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => onOpenChange(false)}
+                onClick={() => onClose()}
                 className="rounded-[18px] font-light"
               >
                 Cancel

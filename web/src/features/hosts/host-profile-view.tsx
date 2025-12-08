@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Star, Calendar } from "lucide-react";
+import { MapPin, Star } from "lucide-react";
 import Graphic from "@/components/shared/graphic";
 import { useListListingsApiV1ListingsGet } from "@/generated/hooks/listings";
 

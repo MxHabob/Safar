@@ -315,7 +315,7 @@ export const getConversationApiV1MessagesConversationsConversationIdGet = cache(
         // Execute API call with enhanced error handling
         const response = await apiClient.messages.getConversationApiV1MessagesConversationsConversationIdGet({params: {
 path: {
-        conversation_id: Number(validatedParams.path.conversation_id)
+        conversation_id: validatedParams.path.conversation_id
       },
 query: validatedParams.query,
     },
@@ -383,7 +383,7 @@ export const getConversationMessagesApiV1MessagesConversationsConversationIdMess
         // Execute API call with enhanced error handling
         const response = await apiClient.messages.getConversationMessagesApiV1MessagesConversationsConversationIdMessagesGet({params: {
 path: {
-        conversation_id: Number(validatedParams.path.conversation_id)
+        conversation_id: validatedParams.path.conversation_id
       },
 query: validatedParams.query,
     },
@@ -450,7 +450,7 @@ export const markConversationReadApiV1MessagesConversationsConversationIdReadPos
       // Execute API call with enhanced configuration
       const response = await apiClient.messages.markConversationReadApiV1MessagesConversationsConversationIdReadPost({params: {
 path: {
-        conversation_id: Number(validatedParams.path.conversation_id)
+        conversation_id: validatedParams.path.conversation_id
       }
     },
         config: {
@@ -529,7 +529,7 @@ export const markMessageReadApiV1MessagesMessageIdReadPost = authActionClient
       // Execute API call with enhanced configuration
       const response = await apiClient.messages.markMessageReadApiV1MessagesMessageIdReadPost({params: {
 path: {
-        message_id: Number(validatedParams.path.message_id)
+        message_id: validatedParams.path.message_id
       }
     },
         config: {

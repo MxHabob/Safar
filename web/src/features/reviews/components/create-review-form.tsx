@@ -16,7 +16,7 @@ import { createReviewApiV1ReviewsPost } from "@/generated/actions/reviews";
 import { useRouter } from "next/navigation";
 
 const createReviewSchema = z.object({
-  listing_id: z.number(),
+  listing_id: z.string(),
   rating: z.number().min(1).max(5),
   title: z.string().min(1, "Title is required").max(100),
   comment: z.string().min(10, "Comment must be at least 10 characters").max(1000),
@@ -25,8 +25,8 @@ const createReviewSchema = z.object({
 type CreateReviewFormData = z.infer<typeof createReviewSchema>;
 
 interface CreateReviewFormProps {
-  listingId: number;
-  bookingId?: number;
+  listingId: string;
+  bookingId?: string;
   onSuccess?: () => void;
 }
 
@@ -62,19 +62,17 @@ export function CreateReviewForm({ listingId, bookingId, onSuccess }: CreateRevi
       }
     },
     onError: ({ error }) => {
-      toast.error(error.message || "Failed to submit review");
+      toast.error(error.serverError || "Failed to submit review");
     },
   });
 
   const onSubmit = (data: CreateReviewFormData) => {
     createReview({
-      body: {
-        listing_id: listingId,
-        rating: data.rating,
-        title: data.title,
-        comment: data.comment,
-        booking_id: bookingId,
-      },
+      listing_id: listingId,
+      booking_id: bookingId,
+      overall_rating: data.rating,
+      title: data.title,
+      comment: data.comment,
     });
   };
 
@@ -164,4 +162,3 @@ export function CreateReviewForm({ listingId, bookingId, onSuccess }: CreateRevi
     </Card>
   );
 }
-

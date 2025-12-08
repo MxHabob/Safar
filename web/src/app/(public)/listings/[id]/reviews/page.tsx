@@ -28,24 +28,20 @@ export default async function ListingReviewsPage({ params }: { params: Params })
   const listingId = id;
 
   try {
-    const [reviewsResult, listingResult] = await Promise.all([
+    const [reviewsResult] = await Promise.all([
       getListingReviewsApiV1ReviewsListingsListingIdGet({
-        path: { listing_id: listingId },
-      }).catch(() => null),
-      getListingApiV1ListingsListingIdGet({
         path: { listing_id: listingId },
       }).catch(() => null),
     ]);
 
-    const reviews = reviewsResult?.data || { items: [] };
-    const listing = listingResult?.data;
+    const reviews = reviewsResult?.data || { items: [], total: 0, skip: 0, limit: 0 };
 
     return (
       <div className="min-h-screen w-full">
         <main className="w-full max-w-7xl mx-auto px-3 lg:px-6 py-8 lg:py-12">
           <Suspense fallback={<ReviewsListLoading />}>
             <ReviewsView
-              reviews={reviews.items || []}
+              reviews={reviews}
               listingId={listingId}
               canReview={false}
             />

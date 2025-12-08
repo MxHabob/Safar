@@ -15,9 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { useValidateCouponApiV1PromotionsCouponsCouponCodeValidateGet } from "@/generated/hooks/promotions";
-import { cn } from "@/lib/utils";
 
 interface CouponInputProps {
   listingId: string;

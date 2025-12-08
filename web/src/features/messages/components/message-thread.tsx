@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface MessageThreadProps {
-  conversationId: number;
+  conversationId: string;
 }
 
 export function MessageThread({ conversationId }: MessageThreadProps) {

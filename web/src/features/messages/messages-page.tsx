@@ -7,7 +7,7 @@ import { MessageThread } from "./components/message-thread";
 import { EmptyState } from "@/components/shared/empty-state";
 
 export function MessagesPage() {
-  const [selectedConversationId, setSelectedConversationId] = useState<number | undefined>();
+  const [selectedConversationId, setSelectedConversationId] = useState<string | undefined>();
 
   return (
     <div className="min-h-screen w-full">

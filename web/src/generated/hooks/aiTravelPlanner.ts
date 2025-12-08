@@ -116,7 +116,7 @@ export function useSuspenseListTravelPlansApiV1AiTravelPlannerGet(skip?: number,
  * Features: Smart caching, error handling, type safety
  * @returns useQuery result with data of type z.infer<typeof GetTravelPlanApiV1AiTravelPlannerPlanIdGetResponseSchema>
  */
-export function useGetTravelPlanApiV1AiTravelPlannerPlanIdGet(plan_id: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetTravelPlanApiV1AiTravelPlannerPlanIdGetResponseSchema> }) {
+export function useGetTravelPlanApiV1AiTravelPlannerPlanIdGet(plan_id: string, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetTravelPlanApiV1AiTravelPlannerPlanIdGetResponseSchema> }) {
   const { initialData, ...restOptions } = options ?? {}
 
   return useQuery({
@@ -153,7 +153,7 @@ export function useGetTravelPlanApiV1AiTravelPlannerPlanIdGet(plan_id: number, o
  * Suspense version for /api/v1/ai/travel-planner/{plan_id}
  * @returns useSuspenseQuery result with data of type z.infer<typeof GetTravelPlanApiV1AiTravelPlannerPlanIdGetResponseSchema>
  */
-export function useSuspenseGetTravelPlanApiV1AiTravelPlannerPlanIdGet(plan_id: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetTravelPlanApiV1AiTravelPlannerPlanIdGetResponseSchema> }) {
+export function useSuspenseGetTravelPlanApiV1AiTravelPlannerPlanIdGet(plan_id: string, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetTravelPlanApiV1AiTravelPlannerPlanIdGetResponseSchema> }) {
   const { initialData, ...restOptions } = options ?? {}
 
   return useSuspenseQuery({

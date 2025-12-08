@@ -47,7 +47,7 @@ export function CurrentSubscription({ subscription }: CurrentSubscriptionProps) 
         router.refresh();
       },
       onError: ({ error }) => {
-        toast.error(error.message || "Failed to cancel subscription");
+        toast.error(error.serverError || "Failed to cancel subscription");
       },
     }
   );

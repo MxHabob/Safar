@@ -173,7 +173,7 @@ export const getListingReviewsApiV1ReviewsListingsListingIdGet = cache(
         // Execute API call with enhanced error handling
         const response = await apiClient.reviews.getListingReviewsApiV1ReviewsListingsListingIdGet({params: {
 path: {
-        listing_id: Number(validatedParams.path.listing_id)
+        listing_id: validatedParams.path.listing_id
       },
 query: validatedParams.query,
     },
@@ -241,7 +241,7 @@ export const getReviewApiV1ReviewsReviewIdGet = cache(
         // Execute API call with enhanced error handling
         const response = await apiClient.reviews.getReviewApiV1ReviewsReviewIdGet({params: {
 path: {
-        review_id: Number(validatedParams.path.review_id)
+        review_id: validatedParams.path.review_id
       }
     },
           config: {
@@ -314,7 +314,7 @@ export const createReviewResponseApiV1ReviewsReviewIdResponsePost = authActionCl
       // Execute API call with enhanced configuration
       const response = await apiClient.reviews.createReviewResponseApiV1ReviewsReviewIdResponsePost({params: {
 path: {
-        review_id: Number(validatedParams.path.review_id)
+        review_id: validatedParams.path.review_id
       }
     },
 body: validatedBody,
@@ -401,7 +401,7 @@ export const markReviewHelpfulApiV1ReviewsReviewIdHelpfulPost = authActionClient
       // Execute API call with enhanced configuration
       const response = await apiClient.reviews.markReviewHelpfulApiV1ReviewsReviewIdHelpfulPost({params: {
 path: {
-        review_id: Number(validatedParams.path.review_id)
+        review_id: validatedParams.path.review_id
       }
     },
 body: validatedBody,

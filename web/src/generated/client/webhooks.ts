@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { cache } from 'react'
+import { defaultMiddleware } from '@/generated/client/middleware'
 import { BaseApiClient } from './base'
-import type { ClientResponse, RequestConfiguration } from './base'
+import type { RequestConfiguration } from './base'
 import {
   StripeWebhookApiV1WebhooksStripePostResponseSchema,
   StripeWebhookApiV1WebhooksStripePostParamsSchema
@@ -46,11 +46,16 @@ Only processes webhooks that are cryptographically verified.
 // Validate and extract parameters
 const validatedParams = await StripeWebhookApiV1WebhooksStripePostParamsSchema.parseAsync(options.params)
 
+    const mergedHeaders: Record<string, string> = {
+      ...(options.config?.headers as Record<string, string> | undefined),
+      ...(validatedParams.headers || {}),
+    }
+
     return this.request<z.infer<typeof StripeWebhookApiV1WebhooksStripePostResponseSchema>>(
       'POST',
       '/api/v1/webhooks/stripe',
       {
-headers: { ...options.config?.headers, ...validatedParams.headers },
+headers: mergedHeaders,
 config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
 responseSchema: StripeWebhookApiV1WebhooksStripePostResponseSchema
       }

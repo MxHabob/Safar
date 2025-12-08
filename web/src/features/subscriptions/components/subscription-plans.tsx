@@ -3,16 +3,25 @@
 import { Check, Crown, Sparkles, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { SubscriptionPlanResponse } from "@/generated/schemas";
 import { subscribeApiV1SubscriptionsSubscribePost } from "@/generated/actions/subscriptions";
 import { useAction } from "next-safe-action/hooks";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
+interface SubscriptionPlan {
+  id: string;
+  name?: string;
+  description?: string;
+  price?: number | string;
+  billing_period?: string;
+  currency?: string;
+  features?: string[];
+  limits?: Record<string, any>;
+}
+
 interface SubscriptionPlansProps {
-  plans: SubscriptionPlanResponse[];
+  plans: SubscriptionPlan[];
   currentSubscription?: any;
 }
 
@@ -31,7 +40,7 @@ export function SubscriptionPlans({ plans, currentSubscription }: SubscriptionPl
       router.refresh();
     },
     onError: ({ error }) => {
-      toast.error(error.message || "Failed to subscribe");
+      toast.error(error.serverError || "Failed to subscribe");
     },
   });
 
@@ -95,7 +104,7 @@ export function SubscriptionPlans({ plans, currentSubscription }: SubscriptionPl
             <CardContent className="space-y-6">
               {plan.features && plan.features.length > 0 && (
                 <ul className="space-y-3">
-                  {plan.features.map((feature, index) => (
+                  {plan.features.map((feature: string, index: number) => (
                     <li key={index} className="flex items-start gap-2">
                       <Check className="size-5 text-primary mt-0.5 shrink-0" />
                       <span className="text-sm font-light">{feature}</span>
@@ -111,7 +120,7 @@ export function SubscriptionPlans({ plans, currentSubscription }: SubscriptionPl
                       <span className="text-muted-foreground font-light capitalize">
                         {key.replace(/_/g, " ")}
                       </span>
-                      <span className="font-medium">{value || "Unlimited"}</span>
+                      <span className="font-medium">{value as string || "Unlimited"}</span>
                     </div>
                   ))}
                 </div>

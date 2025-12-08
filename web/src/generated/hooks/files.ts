@@ -1,7 +1,7 @@
 'use client'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useOptimistic, useTransition } from 'react'
-import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs'
+import { parseAsInteger, parseAsString } from 'nuqs'
 import { toast } from 'sonner'
 import { uploadFileApiV1FilesUploadPost, uploadMultipleFilesApiV1FilesUploadMultiplePost } from '@/generated/actions/files'
 import {

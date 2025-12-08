@@ -85,6 +85,7 @@ export const stripeWebhookApiV1WebhooksStripePost = actionClientWithMeta
 
       // Execute API call with enhanced configuration
       const response = await apiClient.webhooks.stripeWebhookApiV1WebhooksStripePost({
+        params: validatedParams,
         config: {
           timeout: 30000,
           retries: 3,
@@ -92,7 +93,7 @@ export const stripeWebhookApiV1WebhooksStripePost = actionClientWithMeta
           responseSchema: StripeWebhookApiV1WebhooksStripePostResponseSchema
         }
       })
-        // Handle streaming responses
+
         if (response.headers.get('content-type')?.includes('text/stream')) {
           // Process streaming response
           return response.data

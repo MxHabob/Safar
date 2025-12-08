@@ -1,11 +1,10 @@
 "use client";
 
-import { Tag, Percent, DollarSign, Calendar, Users } from "lucide-react";
+import { Tag, Percent, DollarSign, Calendar } from "lucide-react";
 import { useGetApplicablePromotionsApiV1PromotionsApplicableGet } from "@/generated/hooks/promotions";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/shared/empty-state";
 import { cn } from "@/lib/utils";
 
 interface AvailablePromotionsProps {

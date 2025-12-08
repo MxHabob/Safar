@@ -124,7 +124,7 @@ export function useSuspenseGetConversationsApiV1MessagesConversationsGet(skip?: 
  * Features: Smart caching, error handling, type safety
  * @returns useQuery result with data of type z.infer<typeof GetConversationApiV1MessagesConversationsConversationIdGetResponseSchema>
  */
-export function useGetConversationApiV1MessagesConversationsConversationIdGet(conversation_id: number, skip?: number, limit?: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetConversationApiV1MessagesConversationsConversationIdGetResponseSchema> }) {
+export function useGetConversationApiV1MessagesConversationsConversationIdGet(conversation_id: string, skip?: number, limit?: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetConversationApiV1MessagesConversationsConversationIdGetResponseSchema> }) {
   const { initialData, ...restOptions } = options ?? {}
 
   return useQuery({
@@ -161,7 +161,7 @@ export function useGetConversationApiV1MessagesConversationsConversationIdGet(co
  * Suspense version for /api/v1/messages/conversations/{conversation_id}
  * @returns useSuspenseQuery result with data of type z.infer<typeof GetConversationApiV1MessagesConversationsConversationIdGetResponseSchema>
  */
-export function useSuspenseGetConversationApiV1MessagesConversationsConversationIdGet(conversation_id: number, skip?: number, limit?: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetConversationApiV1MessagesConversationsConversationIdGetResponseSchema> }) {
+export function useSuspenseGetConversationApiV1MessagesConversationsConversationIdGet(conversation_id: string, skip?: number, limit?: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetConversationApiV1MessagesConversationsConversationIdGetResponseSchema> }) {
   const { initialData, ...restOptions } = options ?? {}
 
   return useSuspenseQuery({
@@ -181,7 +181,7 @@ export function useSuspenseGetConversationApiV1MessagesConversationsConversation
  * Features: Smart caching, error handling, type safety
  * @returns useQuery result with data of type z.infer<typeof GetConversationMessagesApiV1MessagesConversationsConversationIdMessagesGetResponseSchema>
  */
-export function useGetConversationMessagesApiV1MessagesConversationsConversationIdMessagesGet(conversation_id: number, skip?: number, limit?: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetConversationMessagesApiV1MessagesConversationsConversationIdMessagesGetResponseSchema> }) {
+export function useGetConversationMessagesApiV1MessagesConversationsConversationIdMessagesGet(conversation_id: string, skip?: number, limit?: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetConversationMessagesApiV1MessagesConversationsConversationIdMessagesGetResponseSchema> }) {
   const { initialData, ...restOptions } = options ?? {}
 
   return useQuery({
@@ -218,7 +218,7 @@ export function useGetConversationMessagesApiV1MessagesConversationsConversation
  * Suspense version for /api/v1/messages/conversations/{conversation_id}/messages
  * @returns useSuspenseQuery result with data of type z.infer<typeof GetConversationMessagesApiV1MessagesConversationsConversationIdMessagesGetResponseSchema>
  */
-export function useSuspenseGetConversationMessagesApiV1MessagesConversationsConversationIdMessagesGet(conversation_id: number, skip?: number, limit?: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetConversationMessagesApiV1MessagesConversationsConversationIdMessagesGetResponseSchema> }) {
+export function useSuspenseGetConversationMessagesApiV1MessagesConversationsConversationIdMessagesGet(conversation_id: string, skip?: number, limit?: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetConversationMessagesApiV1MessagesConversationsConversationIdMessagesGetResponseSchema> }) {
   const { initialData, ...restOptions } = options ?? {}
 
   return useSuspenseQuery({

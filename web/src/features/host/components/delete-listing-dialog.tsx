@@ -33,7 +33,7 @@ export function DeleteListingDialog({ listingId, listingTitle }: DeleteListingDi
       router.refresh();
     },
     onError: ({ error }) => {
-      toast.error(error.message || "Failed to delete listing");
+      toast.error(error.serverError || "Failed to delete listing");
     },
   });
 

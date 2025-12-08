@@ -38,7 +38,7 @@ export function BookingActions({ booking }: BookingActionsProps) {
         router.refresh();
       },
       onError: ({ error }) => {
-        toast.error(error.message || "Failed to confirm booking");
+        toast.error(error.serverError || "Failed to confirm booking");
       },
     }
   );
@@ -51,7 +51,7 @@ export function BookingActions({ booking }: BookingActionsProps) {
         router.refresh();
       },
       onError: ({ error }) => {
-        toast.error(error.message || "Failed to cancel booking");
+        toast.error(error.serverError || "Failed to cancel booking");
       },
     }
   );
@@ -64,7 +64,7 @@ export function BookingActions({ booking }: BookingActionsProps) {
         router.refresh();
       },
       onError: ({ error }) => {
-        toast.error(error.message || "Failed to complete booking");
+        toast.error(error.serverError || "Failed to complete booking");
       },
     }
   );
@@ -79,8 +79,10 @@ export function BookingActions({ booking }: BookingActionsProps) {
 
   const handleCancel = () => {
     cancelBooking({
-      path: {
-        booking_id: booking.id!,
+      params: {
+        path: {
+          booking_id: booking.id!,
+        },
       },
       body: {},
     });

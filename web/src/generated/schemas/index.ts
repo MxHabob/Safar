@@ -141,15 +141,15 @@ export const BookingCreateSchema = z.object({
 })
 export type BookingCreate = z.infer<typeof BookingCreateSchema>
 /**
- * Booking list response schema.
+ * Timeline event response schema.
  */
-export const BookingListResponseSchema = z.object({
-  items: z.array(BookingResponseSchema),
-  total: z.number().int(),
-  skip: z.number().int(),
-  limit: z.number().int()
+export const BookingTimelineEventResponseSchema = z.object({
+  id: z.string().max(40, "Maximum length is 40"),
+  status: z.string(),
+  payload: z.any().optional(),
+  created_at: z.string()
 })
-export type BookingListResponse = z.infer<typeof BookingListResponseSchema>
+export type BookingTimelineEventResponse = z.infer<typeof BookingTimelineEventResponseSchema>
 /**
  * Booking response schema.
  */
@@ -183,15 +183,17 @@ export const BookingResponseSchema = z.object({
 })
 export type BookingResponse = z.infer<typeof BookingResponseSchema>
 /**
- * Timeline event response schema.
+ * Booking list response schema.
  */
-export const BookingTimelineEventResponseSchema = z.object({
-  id: z.string().max(40, "Maximum length is 40"),
-  status: z.string(),
-  payload: z.any().optional(),
-  created_at: z.string()
+export const BookingListResponseSchema = z.object({
+  items: z.array(BookingResponseSchema),
+  total: z.number().int(),
+  skip: z.number().int(),
+  limit: z.number().int()
 })
-export type BookingTimelineEventResponse = z.infer<typeof BookingTimelineEventResponseSchema>
+export type BookingListResponse = z.infer<typeof BookingListResponseSchema>
+
+
 /**
  * Schema for creating a conversation.
  */
@@ -202,15 +204,22 @@ export const ConversationCreateSchema = z.object({
 })
 export type ConversationCreate = z.infer<typeof ConversationCreateSchema>
 /**
- * Schema for a paginated list of conversations.
+ * Schema returned in message responses.
  */
-export const ConversationListResponseSchema = z.object({
-  items: z.array(ConversationResponseSchema),
-  total: z.number().int(),
-  skip: z.number().int(),
-  limit: z.number().int()
+export const MessageResponseSchema = z.object({
+  id: z.string().max(40, "Maximum length is 40"),
+  conversation_id: z.any().optional(),
+  sender_id: z.any().optional(),
+  receiver_id: z.any().optional(),
+  source: z.string(),
+  body: z.string(),
+  content: z.any().optional(),
+  is_read: z.boolean(),
+  read_at: z.any().optional(),
+  attachments: z.any().optional(),
+  created_at: z.string()
 })
-export type ConversationListResponse = z.infer<typeof ConversationListResponseSchema>
+export type MessageResponse = z.infer<typeof MessageResponseSchema>
 /**
  * Schema returned in conversation responses.
  */
@@ -224,6 +233,17 @@ export const ConversationResponseSchema = z.object({
   updated_at: z.string()
 })
 export type ConversationResponse = z.infer<typeof ConversationResponseSchema>
+/**
+ * Schema for a paginated list of conversations.
+ */
+export const ConversationListResponseSchema = z.object({
+  items: z.array(ConversationResponseSchema),
+  total: z.number().int(),
+  skip: z.number().int(),
+  limit: z.number().int()
+})
+export type ConversationListResponse = z.infer<typeof ConversationListResponseSchema>
+
 /**
  * Schema for GDPR data export response.
  */
@@ -244,7 +264,7 @@ export type EmailVerificationRequest = z.infer<typeof EmailVerificationRequestSc
  * File response schema.
  */
 export const FileResponseSchema = z.object({
-  id: z.number().int(),
+  id: z.string().max(40, "Maximum length is 40"),
   filename: z.string(),
   original_filename: z.string(),
   file_url: z.string(),
@@ -252,7 +272,7 @@ export const FileResponseSchema = z.object({
   file_category: FileCategorySchema,
   mime_type: z.string(),
   file_size: z.number().int(),
-  uploaded_by: z.number().int(),
+  uploaded_by: z.string().max(40, "Maximum length is 40"),
   description: z.any().optional(),
   created_at: z.string()
 })
@@ -265,6 +285,12 @@ export const FileUploadResponseSchema = z.object({
   file: FileResponseSchema
 })
 export type FileUploadResponse = z.infer<typeof FileUploadResponseSchema>
+export const ValidationErrorSchema = z.object({
+  loc: z.array(z.any()),
+  msg: z.string(),
+  type: z.string()
+})
+export type ValidationError = z.infer<typeof ValidationErrorSchema>
 export const HTTPValidationErrorSchema = z.object({
   detail: z.array(ValidationErrorSchema).optional()
 })
@@ -313,35 +339,6 @@ export const ListingImageResponseSchema = z.object({
   position: z.number().int()
 })
 export type ListingImageResponse = z.infer<typeof ListingImageResponseSchema>
-/**
- * Listing list response schema.
- */
-export const ListingListResponseSchema = z.object({
-  items: z.array(ListingResponseSchema),
-  total: z.number().int(),
-  skip: z.number().int(),
-  limit: z.number().int()
-})
-export type ListingListResponse = z.infer<typeof ListingListResponseSchema>
-/**
- * Schema for creating a listing location.
- */
-export const ListingLocationCreateSchema = z.object({
-  timezone: z.string().optional(),
-  neighborhood: z.any().optional(),
-  latitude: z.any(),
-  longitude: z.any()
-})
-export type ListingLocationCreate = z.infer<typeof ListingLocationCreateSchema>
-/**
- * Listing location response schema.
- */
-export const ListingLocationResponseSchema = z.object({
-  id: z.string().max(40, "Maximum length is 40"),
-  timezone: z.string(),
-  neighborhood: z.any().optional()
-})
-export type ListingLocationResponse = z.infer<typeof ListingLocationResponseSchema>
 /**
  * Listing photo response schema.
  */
@@ -403,6 +400,37 @@ export const ListingResponseSchema = z.object({
   viewed_recently: z.any().optional()
 })
 export type ListingResponse = z.infer<typeof ListingResponseSchema>
+/**
+ * Listing list response schema.
+ */
+export const ListingListResponseSchema = z.object({
+  items: z.array(ListingResponseSchema),
+  total: z.number().int(),
+  skip: z.number().int(),
+  limit: z.number().int()
+})
+export type ListingListResponse = z.infer<typeof ListingListResponseSchema>
+/**
+ * Schema for creating a listing location.
+ */
+export const ListingLocationCreateSchema = z.object({
+  timezone: z.string().optional(),
+  neighborhood: z.any().optional(),
+  latitude: z.any(),
+  longitude: z.any()
+})
+export type ListingLocationCreate = z.infer<typeof ListingLocationCreateSchema>
+/**
+ * Listing location response schema.
+ */
+export const ListingLocationResponseSchema = z.object({
+  id: z.string().max(40, "Maximum length is 40"),
+  timezone: z.string(),
+  neighborhood: z.any().optional()
+})
+export type ListingLocationResponse = z.infer<typeof ListingLocationResponseSchema>
+
+
 /**
  * Schema for updating a listing.
  */
@@ -475,23 +503,7 @@ export const MessageListResponseSchema = z.object({
   limit: z.number().int()
 })
 export type MessageListResponse = z.infer<typeof MessageListResponseSchema>
-/**
- * Schema returned in message responses.
- */
-export const MessageResponseSchema = z.object({
-  id: z.string().max(40, "Maximum length is 40"),
-  conversation_id: z.any().optional(),
-  sender_id: z.any().optional(),
-  receiver_id: z.any().optional(),
-  source: z.string(),
-  body: z.string(),
-  content: z.any().optional(),
-  is_read: z.boolean(),
-  read_at: z.any().optional(),
-  attachments: z.any().optional(),
-  created_at: z.string()
-})
-export type MessageResponse = z.infer<typeof MessageResponseSchema>
+
 /**
  * Schema for OAuth-based login requests.
  */
@@ -700,16 +712,6 @@ export const ReviewHelpfulRequestSchema = z.object({
 })
 export type ReviewHelpfulRequest = z.infer<typeof ReviewHelpfulRequestSchema>
 /**
- * Schema for a paginated list of reviews.
- */
-export const ReviewListResponseSchema = z.object({
-  items: z.array(ReviewResponseSchema),
-  total: z.number().int(),
-  skip: z.number().int(),
-  limit: z.number().int()
-})
-export type ReviewListResponse = z.infer<typeof ReviewListResponseSchema>
-/**
  * Schema returned for a review, including aggregates and host response.
  */
 export const ReviewResponseSchema = z.object({
@@ -736,6 +738,17 @@ export const ReviewResponseSchema = z.object({
   created_at: z.string()
 })
 export type ReviewResponse = z.infer<typeof ReviewResponseSchema>
+/**
+ * Schema for a paginated list of reviews.
+ */
+export const ReviewListResponseSchema = z.object({
+  items: z.array(ReviewResponseSchema),
+  total: z.number().int(),
+  skip: z.number().int(),
+  limit: z.number().int()
+})
+export type ReviewListResponse = z.infer<typeof ReviewListResponseSchema>
+
 /**
  * Schema for creating a host response to a review.
  */
@@ -1036,12 +1049,6 @@ export const UserUpdateSchema = z.object({
   date_of_birth: z.any().optional()
 })
 export type UserUpdate = z.infer<typeof UserUpdateSchema>
-export const ValidationErrorSchema = z.object({
-  loc: z.array(z.any()),
-  msg: z.string(),
-  type: z.string()
-})
-export type ValidationError = z.infer<typeof ValidationErrorSchema>
 /**
  * Success response schema for GET /health
  * Status: 200
@@ -1804,7 +1811,7 @@ export type GetTravelPlanApiV1AiTravelPlannerPlanIdGetError = z.infer<typeof Get
  */
 export const GetTravelPlanApiV1AiTravelPlannerPlanIdGetParamsSchema = z.object({
   path: z.object({
-    plan_id: z.number().int()
+    plan_id: z.string().max(40, "Maximum length is 40")
   })
 })
 
@@ -2126,7 +2133,7 @@ export type GetListingReviewsApiV1ReviewsListingsListingIdGetError = z.infer<typ
  */
 export const GetListingReviewsApiV1ReviewsListingsListingIdGetParamsSchema = z.object({
   path: z.object({
-    listing_id: z.number().int()
+    listing_id: z.string().max(40, "Maximum length is 40")
   }),
   query: z.object({
     skip: z.number().int().min(0, "Minimum value is 0").optional(),
@@ -2159,7 +2166,7 @@ export type GetReviewApiV1ReviewsReviewIdGetError = z.infer<typeof GetReviewApiV
  */
 export const GetReviewApiV1ReviewsReviewIdGetParamsSchema = z.object({
   path: z.object({
-    review_id: z.number().int()
+    review_id: z.string().max(40, "Maximum length is 40")
   })
 })
 
@@ -2193,7 +2200,7 @@ export type CreateReviewResponseApiV1ReviewsReviewIdResponsePostError = z.infer<
  */
 export const CreateReviewResponseApiV1ReviewsReviewIdResponsePostParamsSchema = z.object({
   path: z.object({
-    review_id: z.number().int()
+    review_id: z.string().max(40, "Maximum length is 40")
   })
 })
 
@@ -2227,7 +2234,7 @@ export type MarkReviewHelpfulApiV1ReviewsReviewIdHelpfulPostError = z.infer<type
  */
 export const MarkReviewHelpfulApiV1ReviewsReviewIdHelpfulPostParamsSchema = z.object({
   path: z.object({
-    review_id: z.number().int()
+    review_id: z.string().max(40, "Maximum length is 40")
   })
 })
 
@@ -2405,7 +2412,7 @@ export type GetConversationApiV1MessagesConversationsConversationIdGetError = z.
  */
 export const GetConversationApiV1MessagesConversationsConversationIdGetParamsSchema = z.object({
   path: z.object({
-    conversation_id: z.number().int()
+    conversation_id: z.string().max(40, "Maximum length is 40")
   }),
   query: z.object({
     skip: z.number().int().min(0, "Minimum value is 0").optional(),
@@ -2438,7 +2445,7 @@ export type GetConversationMessagesApiV1MessagesConversationsConversationIdMessa
  */
 export const GetConversationMessagesApiV1MessagesConversationsConversationIdMessagesGetParamsSchema = z.object({
   path: z.object({
-    conversation_id: z.number().int()
+    conversation_id: z.string().max(40, "Maximum length is 40")
   }),
   query: z.object({
     skip: z.number().int().min(0, "Minimum value is 0").optional(),
@@ -2471,7 +2478,7 @@ export type MarkConversationReadApiV1MessagesConversationsConversationIdReadPost
  */
 export const MarkConversationReadApiV1MessagesConversationsConversationIdReadPostParamsSchema = z.object({
   path: z.object({
-    conversation_id: z.number().int()
+    conversation_id: z.string().max(40, "Maximum length is 40")
   })
 })
 
@@ -2500,7 +2507,7 @@ export type MarkMessageReadApiV1MessagesMessageIdReadPostError = z.infer<typeof 
  */
 export const MarkMessageReadApiV1MessagesMessageIdReadPostParamsSchema = z.object({
   path: z.object({
-    message_id: z.number().int()
+    message_id: z.string().max(40, "Maximum length is 40")
   })
 })
 
@@ -3102,7 +3109,7 @@ export type UpgradeListingToPremiumApiV1ListingsPremiumListingIdUpgradePostError
  */
 export const UpgradeListingToPremiumApiV1ListingsPremiumListingIdUpgradePostParamsSchema = z.object({
   path: z.object({
-    listing_id: z.string()
+    listing_id: z.string().max(40, "Maximum length is 40")
   }),
   query: z.object({
     tier: z.string(),
@@ -3135,7 +3142,7 @@ export type FeatureListingApiV1ListingsPremiumListingIdFeaturePostError = z.infe
  */
 export const FeatureListingApiV1ListingsPremiumListingIdFeaturePostParamsSchema = z.object({
   path: z.object({
-    listing_id: z.string()
+    listing_id: z.string().max(40, "Maximum length is 40")
   }),
   query: z.object({
     duration_days: z.number().int().min(1, "Minimum value is 1").max(365, "Maximum value is 365").optional()

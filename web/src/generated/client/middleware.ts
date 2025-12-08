@@ -166,7 +166,7 @@ export const authErrorMiddleware: RequestMiddleware = {
       })
 
       try {
-        const { handleAuthError } = await import('@/lib/auth-error-handler')
+        const { handleAuthError } = await import('@/generated/lib/auth-error-handler')
         await handleAuthError(error)
         throw error
       } catch (handlerError) {

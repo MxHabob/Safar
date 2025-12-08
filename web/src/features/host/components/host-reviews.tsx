@@ -47,7 +47,7 @@ export function HostReviews({ listings }: HostReviewsProps) {
     }
   );
 
-  const loadReviews = useCallback(async (listingId: number) => {
+  const loadReviews = useCallback(async (listingId: string) => {
     setLoading(true);
     try {
       const result = await getListingReviewsApiV1ReviewsListingsListingIdGet({
@@ -63,7 +63,7 @@ export function HostReviews({ listings }: HostReviewsProps) {
     }
   }, []);
 
-  const handleRespond = useCallback((reviewId: number) => {
+  const handleRespond = useCallback((reviewId: string) => {
     if (responseText.trim()) {
       createResponse({
         params: { path: { review_id: reviewId } },
@@ -207,7 +207,7 @@ export function HostReviews({ listings }: HostReviewsProps) {
                             />
                             <div className="flex gap-2">
                               <Button
-                                onClick={() => handleRespond(getReviewId(review))}
+                                onClick={() => handleRespond(review.id)}
                                 className="rounded-[18px]"
                                 size="sm"
                               >

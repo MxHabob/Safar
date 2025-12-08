@@ -13,8 +13,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/client";
 
 interface ConversationListProps {
-  selectedConversationId?: number;
-  onSelectConversation?: (conversationId: number) => void;
+  selectedConversationId?: string;
+  onSelectConversation?: (conversationId: string) => void;
 }
 
 export function ConversationList({
@@ -23,8 +23,8 @@ export function ConversationList({
 }: ConversationListProps) {
   const { user } = useAuth();
   const { data, isLoading, error } = useGetConversationsApiV1MessagesConversationsGet(
+    50,
     0,
-    50
   );
 
   if (isLoading) {
@@ -66,7 +66,7 @@ export function ConversationList({
         const unreadCount = conversation.messages?.filter(
           (msg) => msg.sender_id !== user?.id && !msg.is_read
         ).length || 0;
-        const isSelected = selectedConversationId === Number(conversation.id);
+        const isSelected = selectedConversationId === conversation.id;
 
         return (
           <Card
@@ -75,7 +75,7 @@ export function ConversationList({
               "rounded-[18px] border cursor-pointer transition-all hover:border-foreground/20",
               isSelected && "border-foreground/40 bg-muted/50"
             )}
-            onClick={() => onSelectConversation?.(Number(conversation.id))}
+            onClick={() => onSelectConversation?.(conversation.id)}
           >
             <CardContent className="p-4">
               <div className="flex gap-3">

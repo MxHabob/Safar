@@ -232,7 +232,7 @@ export const getTravelPlanApiV1AiTravelPlannerPlanIdGet = cache(
         // Execute API call with enhanced error handling
         const response = await apiClient.aITravelPlanner.getTravelPlanApiV1AiTravelPlannerPlanIdGet({params: {
 path: {
-        plan_id: Number(validatedParams.path.plan_id)
+        plan_id: validatedParams.path.plan_id
       }
     },
           config: {

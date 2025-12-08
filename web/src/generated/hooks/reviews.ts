@@ -65,7 +65,7 @@ async function resolveActionResult<T>(actionPromise: Promise<any>): Promise<T> {
  * Features: URL state sync, infinite loading, optimistic updates
  * @returns useQuery result with data of type z.infer<typeof GetListingReviewsApiV1ReviewsListingsListingIdGetResponseSchema>
  */
-export function useGetListingReviewsApiV1ReviewsListingsListingIdGet(listing_id: number, skip?: number, limit?: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetListingReviewsApiV1ReviewsListingsListingIdGetResponseSchema> }) {
+export function useGetListingReviewsApiV1ReviewsListingsListingIdGet(listing_id: string, skip?: number, limit?: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetListingReviewsApiV1ReviewsListingsListingIdGetResponseSchema> }) {
   const [searchParams] = useQueryStates(searchParamsParser)
   const { initialData, ...restOptions } = options ?? {}
   
@@ -108,7 +108,7 @@ export function useGetListingReviewsApiV1ReviewsListingsListingIdGet(listing_id:
  * Infinite query version for paginated /api/v1/reviews/listings/{listing_id}
  * @returns useInfiniteQuery result with data of type z.infer<typeof GetListingReviewsApiV1ReviewsListingsListingIdGetResponseSchema>
  */
-export function useInfiniteGetListingReviewsApiV1ReviewsListingsListingIdGet(listing_id: number, skip?: number, limit?: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetListingReviewsApiV1ReviewsListingsListingIdGetResponseSchema> }) {
+export function useInfiniteGetListingReviewsApiV1ReviewsListingsListingIdGet(listing_id: string, skip?: number, limit?: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetListingReviewsApiV1ReviewsListingsListingIdGetResponseSchema> }) {
   const [searchParams] = useQueryStates(searchParamsParser)
   const { initialData, ...restOptions } = options ?? {}
 
@@ -166,7 +166,7 @@ export function useInfiniteGetListingReviewsApiV1ReviewsListingsListingIdGet(lis
  * Suspense version for /api/v1/reviews/listings/{listing_id} - use in Server Components
  * @returns useSuspenseQuery result with data of type z.infer<typeof GetListingReviewsApiV1ReviewsListingsListingIdGetResponseSchema>
  */
-export function useSuspenseGetListingReviewsApiV1ReviewsListingsListingIdGet(listing_id: number, skip?: number, limit?: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetListingReviewsApiV1ReviewsListingsListingIdGetResponseSchema> }) {
+export function useSuspenseGetListingReviewsApiV1ReviewsListingsListingIdGet(listing_id: string, skip?: number, limit?: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetListingReviewsApiV1ReviewsListingsListingIdGetResponseSchema> }) {
   const { initialData, ...restOptions } = options ?? {}
 
   return useSuspenseQuery({
@@ -186,7 +186,7 @@ export function useSuspenseGetListingReviewsApiV1ReviewsListingsListingIdGet(lis
  * Features: Smart caching, error handling, type safety
  * @returns useQuery result with data of type z.infer<typeof GetReviewApiV1ReviewsReviewIdGetResponseSchema>
  */
-export function useGetReviewApiV1ReviewsReviewIdGet(review_id: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetReviewApiV1ReviewsReviewIdGetResponseSchema> }) {
+export function useGetReviewApiV1ReviewsReviewIdGet(review_id: string, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetReviewApiV1ReviewsReviewIdGetResponseSchema> }) {
   const { initialData, ...restOptions } = options ?? {}
 
   return useQuery({
@@ -223,7 +223,7 @@ export function useGetReviewApiV1ReviewsReviewIdGet(review_id: number, options?:
  * Suspense version for /api/v1/reviews/{review_id}
  * @returns useSuspenseQuery result with data of type z.infer<typeof GetReviewApiV1ReviewsReviewIdGetResponseSchema>
  */
-export function useSuspenseGetReviewApiV1ReviewsReviewIdGet(review_id: number, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetReviewApiV1ReviewsReviewIdGetResponseSchema> }) {
+export function useSuspenseGetReviewApiV1ReviewsReviewIdGet(review_id: string, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetReviewApiV1ReviewsReviewIdGetResponseSchema> }) {
   const { initialData, ...restOptions } = options ?? {}
 
   return useSuspenseQuery({

@@ -3,21 +3,11 @@
 import { Plus, Tag, Calendar, Users, Percent, DollarSign, Trash2 } from "lucide-react";
 import { useListCouponsApiV1PromotionsCouponsGet } from "@/generated/hooks/promotions";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
 import { CreateCouponDialog } from "./create-coupon-dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { useModal } from "@/lib/stores/modal-store";
 
 export function CouponManagement() {

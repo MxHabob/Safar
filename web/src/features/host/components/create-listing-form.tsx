@@ -50,13 +50,16 @@ const listingTypes = [
   { value: "apartment", label: "Apartment" },
   { value: "house", label: "House" },
   { value: "villa", label: "Villa" },
-  { value: "hotel", label: "Hotel" },
-  { value: "hostel", label: "Hostel" },
-  { value: "resort", label: "Resort" },
   { value: "cabin", label: "Cabin" },
-  { value: "cottage", label: "Cottage" },
-  { value: "loft", label: "Loft" },
   { value: "studio", label: "Studio" },
+  { value: "room", label: "Room" },
+  { value: "condo", label: "Condo" },
+  { value: "townhouse", label: "Townhouse" },
+  { value: "castle", label: "Castle" },
+  { value: "treehouse", label: "Treehouse" },
+  { value: "boat", label: "Boat" },
+  { value: "camper", label: "Camper" },
+  { value: "experience", label: "Experience" },
 ];
 
 const bookingTypes = [
@@ -76,7 +79,21 @@ const createListingSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters").max(500),
   summary: z.string().optional(),
   description: z.string().optional(),
-  listing_type: z.enum(["apartment", "house", "villa", "hotel", "hostel", "resort", "cabin", "cottage", "loft", "studio"]),
+  listing_type: z.enum([
+    "apartment",
+    "house",
+    "villa",
+    "cabin",
+    "studio",
+    "room",
+    "condo",
+    "townhouse",
+    "castle",
+    "treehouse",
+    "boat",
+    "camper",
+    "experience",
+  ]),
   address_line1: z.string().min(5, "Address is required"),
   address_line2: z.string().optional(),
   city: z.string().min(2, "City is required"),
@@ -129,18 +146,26 @@ export function CreateListingForm({ onSuccess }: CreateListingFormProps) {
     onSuccess: (data) => {
       toast.success("Listing created successfully!");
       if (onSuccess) {
-        onSuccess(data.id || "");
+        onSuccess(data?.data.id || "");
       } else {
         router.push(`/dashboard`);
       }
     },
     onError: ({ error }) => {
-      toast.error(error.message || "Failed to create listing");
+      toast.error(error.serverError || "Failed to create listing");
     },
   });
 
   const handleImageUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+
+    const fileToBase64 = (file: File) =>
+      new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string) || "");
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
 
     const newFiles = Array.from(files);
     setImages((prev) => [...prev, ...newFiles]);
@@ -149,10 +174,12 @@ export function CreateListingForm({ onSuccess }: CreateListingFormProps) {
     setUploading(true);
     try {
       const uploadPromises = newFiles.map(async (file) => {
-        const formData = new FormData();
-        formData.append("file", file);
-        const result = await uploadFileApiV1FilesUploadPost({ body: formData });
-        return result?.data?.url || "";
+        const fileAsBase64 = await fileToBase64(file);
+        const result = await uploadFileApiV1FilesUploadPost({
+          body: { file: fileAsBase64 },
+          params: { query: {} },
+        });
+        return result?.data?.file?.file_url || "";
       });
 
       const urls = await Promise.all(uploadPromises);
@@ -171,12 +198,10 @@ export function CreateListingForm({ onSuccess }: CreateListingFormProps) {
 
   const onSubmit = (data: CreateListingFormData) => {
     createListing({
-      body: {
-        ...data,
-        base_price: data.base_price.toString(),
-        latitude: currentLocation.lat || data.latitude,
-        longitude: currentLocation.lng || data.longitude,
-      },
+      ...data,
+      base_price: data.base_price.toString(),
+      latitude: currentLocation.lat || data.latitude,
+      longitude: currentLocation.lng || data.longitude,
     });
   };
 
@@ -432,9 +457,17 @@ export function CreateListingForm({ onSuccess }: CreateListingFormProps) {
               <div className="h-[300px] w-full rounded-[18px] overflow-hidden border">
                 <MapboxComponent
                   draggableMarker
-                  markers={currentLocation.lat && currentLocation.lng ? [
-                    { id: "listing", lat: currentLocation.lat, lng: currentLocation.lng }
-                  ] : []}
+                  markers={
+                    currentLocation.lat && currentLocation.lng
+                      ? [
+                          {
+                            id: "listing",
+                            latitude: currentLocation.lat,
+                            longitude: currentLocation.lng,
+                          },
+                        ]
+                      : []
+                  }
                   onMarkerDragEnd={(markerId, lngLat) => {
                     setCurrentLocation({ lat: lngLat.lat, lng: lngLat.lng });
                     form.setValue("latitude", lngLat.lat);

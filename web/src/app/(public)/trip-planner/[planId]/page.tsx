@@ -25,24 +25,11 @@ function TravelPlanDetailLoading() {
 
 export default async function Page({ params }: PageProps) {
   const { planId } = await params;
-  const planIdNumber = parseInt(planId, 10);
-
-  if (isNaN(planIdNumber)) {
-    return (
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground">معرف خطة السفر غير صحيح</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <Suspense fallback={<TravelPlanDetailLoading />}>
-        <TravelPlanDetail planId={planIdNumber} />
+        <TravelPlanDetail planId={planId} />
       </Suspense>
     </div>
   );

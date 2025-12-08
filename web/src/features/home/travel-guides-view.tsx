@@ -71,7 +71,7 @@ export const TravelGuidesView = () => {
         const coverPhoto: FileUploadResponse = {
           message: "Travel guide cover image",
           file: {
-            id: 0,
+            id: "0",
             filename: coverImageUrl || "/images/image1.jpg",
             original_filename: `${city} - Travel Guide`,
             file_url: coverImageUrl || "/images/image1.jpg",
@@ -79,7 +79,7 @@ export const TravelGuidesView = () => {
             file_category: "other",
             mime_type: "image/jpeg",
             file_size: 0,
-            uploaded_by: 0,
+            uploaded_by: "0",
             created_at: new Date().toISOString(),
             description: undefined,
           },

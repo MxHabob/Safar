@@ -29,7 +29,7 @@ const formatDate = (dateString: string): string => {
 };
 
 interface TravelPlanDetailProps {
-  planId: number;
+  planId: string;
 }
 
 export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {

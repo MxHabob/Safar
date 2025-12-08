@@ -65,34 +65,42 @@ export function ReviewsList({ reviews, listingId }: ReviewsListProps) {
             {/* Header */}
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3 flex-1">
+                {/*
+                  API response does not include user details; display generic guest info
+                  using guest_id for a lightweight identifier when available.
+                */}
+                {(() => {
+                  const guestLabel = review.guest_id
+                    ? `Guest ${review.guest_id.slice(0, 6)}`
+                    : "Guest";
+                  return (
+                    <>
                 <Avatar className="size-10 rounded-full">
-                  <AvatarImage
-                    src={review.user?.avatar_url || review.user?.profile_picture}
-                    alt={review.user?.first_name || "User"}
-                  />
+                  <AvatarImage src={undefined} alt={guestLabel} />
                   <AvatarFallback>
-                    {(review.user?.first_name?.[0] || review.user?.email?.[0] || "U").toUpperCase()}
+                    {(guestLabel?.[0] || "G").toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">
-                    {review.user?.first_name && review.user?.last_name
-                      ? `${review.user.first_name} ${review.user.last_name}`
-                      : review.user?.email || "Anonymous"}
+                    {guestLabel}
                   </div>
                   <div className="text-sm text-muted-foreground font-light">
                     {review.created_at
-                      ? formatDistanceToNow(new Date(review.created_at), { addSuffix: true })
+                      ? formatDistanceToNow(new Date(review.created_at))
                       : "Recently"}
                   </div>
                 </div>
+                    </>
+                  );
+                })()}
               </div>
               <div className="flex items-center gap-1">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star
                     key={i}
                     className={`size-4 ${
-                      i < (review.rating || 0)
+                      i < (review.overall_rating || 0)
                         ? "fill-foreground text-foreground"
                         : "fill-foreground/10 text-foreground/20"
                     }`}
@@ -107,25 +115,20 @@ export function ReviewsList({ reviews, listingId }: ReviewsListProps) {
                 <h3 className="font-medium text-lg">{review.title}</h3>
               )}
               <p className="text-muted-foreground font-light leading-relaxed whitespace-pre-line">
-                {review.comment || review.content || "No comment provided."}
+                {review.comment || "No comment provided."}
               </p>
             </div>
 
             {/* Host Response */}
-            {review.host_response && (
+            {review.response && (
               <div className="pl-4 border-l-2 border-border space-y-2">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <MessageCircle className="size-4" />
                   Host Response
                 </div>
                 <p className="text-muted-foreground font-light text-sm leading-relaxed">
-                  {review.host_response}
+                  {review.response}
                 </p>
-                {review.host_response_date && (
-                  <div className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(review.host_response_date), { addSuffix: true })}
-                  </div>
-                )}
               </div>
             )}
 

@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { cache } from 'react'
+import { defaultMiddleware } from '@/generated/client/middleware'
 import { BaseApiClient } from './base'
-import type { ClientResponse, RequestConfiguration } from './base'
+import type { RequestConfiguration } from './base'
 import {
   SendPushNotificationApiV1NotificationsPushSendPostRequestSchema,
   SendPushNotificationApiV1NotificationsPushSendPostResponseSchema,
