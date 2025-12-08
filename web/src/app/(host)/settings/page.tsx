@@ -23,7 +23,7 @@ async function SettingsData() {
   }
 
   try {
-    const userResult = await getCurrentUserInfoApiV1UsersMeGet({}).catch(() => null);
+    const userResult = await getCurrentUserInfoApiV1UsersMeGet().catch(() => null);
     const user = userResult?.data || session.user;
 
     return <HostSettings user={user} />;

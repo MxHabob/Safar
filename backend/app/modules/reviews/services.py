@@ -11,6 +11,7 @@ from app.modules.reviews.models import Review, ReviewHelpful, ReviewResponse
 from app.modules.reviews.schemas import ReviewCreate
 from app.modules.bookings.models import Booking, BookingStatus
 from app.modules.listings.models import Listing
+from app.core.id import ID
 
 
 class ReviewService:
@@ -20,7 +21,7 @@ class ReviewService:
     async def create_review(
         db: AsyncSession,
         review_data: ReviewCreate,
-        guest_id: int
+        guest_id: ID
     ) -> Review:
         """Create a new review for a listing and optional booking."""
         # Check if listing exists
@@ -132,8 +133,8 @@ class ReviewService:
     @staticmethod
     async def create_host_response(
         db: AsyncSession,
-        review_id: int,
-        host_profile_id: int,
+        review_id: ID,
+        host_profile_id: ID,
         comment: str
     ) -> ReviewResponse:
         """Create a host response for a given review."""
@@ -175,8 +176,8 @@ class ReviewService:
     @staticmethod
     async def mark_helpful(
         db: AsyncSession,
-        review_id: int,
-        user_id: int,
+        review_id: ID,
+        user_id: ID,
         is_helpful: bool = True
     ) -> ReviewHelpful:
         """Mark or update whether a review is helpful for a given user."""

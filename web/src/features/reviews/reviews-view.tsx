@@ -9,8 +9,8 @@ import type { ReviewListResponse } from "@/generated/schemas";
 
 interface ReviewsViewProps {
   reviews: ReviewListResponse;
-  listingId: number;
-  bookingId?: number;
+  listingId: string;
+  bookingId?: string;
   canReview?: boolean;
 }
 

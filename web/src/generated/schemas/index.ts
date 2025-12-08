@@ -2132,7 +2132,7 @@ export type GetListingReviewsApiV1ReviewsListingsListingIdGetError = z.infer<typ
  */
 export const GetListingReviewsApiV1ReviewsListingsListingIdGetParamsSchema = z.object({
   path: z.object({
-    listing_id: z.number().int()
+    listing_id: z.string()
   }),
   query: z.object({
     skip: z.number().int().min(0, "Minimum value is 0").optional(),

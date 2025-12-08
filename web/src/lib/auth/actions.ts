@@ -33,10 +33,30 @@ export async function loginAction(credentials: LoginApiV1UsersLoginPostRequest) 
       throw new ActionError('Invalid login response', 'INVALID_RESPONSE')
     }
     
-    // Set tokens first
-    await setAuthTokens(result as TokenResponse)
+    // Fetch user data FIRST before setting tokens
+    // This ensures we have user data to store in session
+    let user: GetCurrentUserInfoApiV1UsersMeGetResponse | null = null
+    try {
+      const { apiClient } = await import('@/generated/client')
+      const userResponse = await apiClient.users.getCurrentUserInfoApiV1UsersMeGet({
+        config: {
+          headers: {
+            Authorization: `Bearer ${(result as TokenResponse).access_token}`,
+          },
+        },
+      })
+      user = userResponse.data as GetCurrentUserInfoApiV1UsersMeGetResponse | null
+    } catch (error) {
+      // If fetching user fails, we'll still set tokens and fetch user on next request
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[Auth] Could not fetch user data during login, will fetch on next request')
+      }
+    }
     
-    // Fetch user data and create session with cookie
+    // Set tokens with user data (if available) to create session immediately
+    await setAuthTokens(result as TokenResponse, user || undefined)
+    
+    // Create session and set cookie
     // This is safe here because we're in a Server Action
     try {
       const { getServerSession, setSessionTokenCookie } = await import('./server')
@@ -106,8 +126,41 @@ export async function verify2FAAction(data: Verify2faLoginApiV1UsersLogin2faVeri
       throw new ActionError('Invalid 2FA response', 'INVALID_RESPONSE')
     }
     
-    // Set tokens after successful 2FA verification
-    await setAuthTokens(result as TokenResponse)
+    // Fetch user data FIRST before setting tokens
+    let user: GetCurrentUserInfoApiV1UsersMeGetResponse | null = null
+    try {
+      const { apiClient } = await import('@/generated/client')
+      const userResponse = await apiClient.users.getCurrentUserInfoApiV1UsersMeGet({
+        config: {
+          headers: {
+            Authorization: `Bearer ${(result as TokenResponse).access_token}`,
+          },
+        },
+      })
+      user = userResponse.data as GetCurrentUserInfoApiV1UsersMeGetResponse | null
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[Auth] Could not fetch user data during 2FA verification')
+      }
+    }
+    
+    // Set tokens with user data (if available) to create session immediately
+    await setAuthTokens(result as TokenResponse, user || undefined)
+    
+    // Set session cookie
+    try {
+      const { getServerSession, setSessionTokenCookie } = await import('./server')
+      const session = await getServerSession()
+      if (session?.sessionToken) {
+        const expiresAt = session.expiresAt
+        const maxAge = Math.floor((expiresAt - Date.now()) / 1000)
+        if (maxAge > 0) {
+          await setSessionTokenCookie(session.sessionToken, maxAge)
+        }
+      }
+    } catch (error) {
+      // Session will be created on next request
+    }
     
     return {
       success: true,
@@ -139,8 +192,32 @@ export async function refreshTokenAction() {
       throw new ActionError('Invalid refresh response', 'INVALID_RESPONSE')
     }
     
-    // Update tokens (session will be refreshed automatically on next getServerSession call)
-    await setAuthTokens(result as TokenResponse)
+    // Get current session to preserve user data
+    const currentSession = await getServerSession()
+    
+    // Update tokens with existing user data (if available) to avoid API call
+    // If no session exists, fetch user data
+    let user: GetCurrentUserInfoApiV1UsersMeGetResponse | null = currentSession?.user || null
+    
+    if (!user) {
+      // No session, fetch user data
+      try {
+        const { apiClient } = await import('@/generated/client')
+        const userResponse = await apiClient.users.getCurrentUserInfoApiV1UsersMeGet({
+          config: {
+            headers: {
+              Authorization: `Bearer ${(result as TokenResponse).access_token}`,
+            },
+          },
+        })
+        user = userResponse.data as GetCurrentUserInfoApiV1UsersMeGetResponse | null
+      } catch (error) {
+        // User will be fetched on next request
+      }
+    }
+    
+    // Update tokens with user data (if available)
+    await setAuthTokens(result as TokenResponse, user || undefined)
     
     return {
       success: true,
@@ -178,6 +255,32 @@ export async function logoutAction() {
   } catch (error) {
     // Clear tokens even if there's an error
     await clearAuthTokens()
+    throw error
+  }
+}
+
+/**
+ * Update current user action
+ * Updates user data and refreshes session cache
+ */
+export async function updateCurrentUserAction(
+  userData: Parameters<typeof import('@/generated/actions/users').updateCurrentUserApiV1UsersMePut>[0]
+) {
+  try {
+    const { updateCurrentUserApiV1UsersMePut } = await import('@/generated/actions/users')
+    const updatedUser = await updateCurrentUserApiV1UsersMePut(userData)
+    
+    // Update session store with new user data
+    const { updateSession } = await import('./server')
+    if (updatedUser) {
+      await updateSession(updatedUser as any)
+    }
+    
+    return {
+      success: true,
+      data: updatedUser,
+    }
+  } catch (error) {
     throw error
   }
 }

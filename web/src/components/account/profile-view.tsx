@@ -11,11 +11,12 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import { updateCurrentUserApiV1UsersMePut } from '@/generated/actions/users'
+import { updateCurrentUserAction } from '@/lib/auth'
 import { uploadFileApiV1FilesUploadPost } from '@/generated/actions/files'
 import { useAction } from 'next-safe-action/hooks'
 import { Camera, Save } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/auth'
 
 const profileSchema = z.object({
   first_name: z.string().min(1, 'First name is required').optional(),
@@ -38,6 +39,7 @@ interface ProfileViewProps {
 
 export function ProfileView({ user }: ProfileViewProps) {
   const router = useRouter()
+  const { updateUser } = useAuth() // Get updateUser function from auth context
   const [isLoading, setIsLoading] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState(user.avatar_url || user.avatar || '')
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -65,10 +67,14 @@ export function ProfileView({ user }: ProfileViewProps) {
       if (fileUrl) {
         // Update user profile with new avatar URL
         try {
-          await updateCurrentUserApiV1UsersMePut({ avatar_url: fileUrl })
-          setAvatarUrl(fileUrl)
-          toast.success('Profile picture updated successfully')
-          router.refresh()
+          const result = await updateCurrentUserAction({ avatar_url: fileUrl })
+          if (result.success && result.data) {
+            setAvatarUrl(fileUrl)
+            // Update client-side cache
+            updateUser(result.data as any)
+            toast.success('Profile picture updated successfully')
+            router.refresh()
+          }
         } catch (error) {
           toast.error('Failed to update profile picture')
         }
@@ -119,9 +125,13 @@ export function ProfileView({ user }: ProfileViewProps) {
   const onSubmit = async (data: ProfileFormData) => {
     setIsLoading(true)
     try {
-      await updateCurrentUserApiV1UsersMePut(data)
-      toast.success('Profile updated successfully')
-      router.refresh()
+      const result = await updateCurrentUserAction(data)
+      if (result.success && result.data) {
+        // Update client-side cache immediately
+        updateUser(result.data as any)
+        toast.success('Profile updated successfully')
+        router.refresh()
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update profile')
     } finally {

@@ -42,13 +42,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // - Long staleTime to reduce API calls
   // - No refetch on mount if data exists (prevents unnecessary calls)
   // - Only refetch on window focus if data is stale
+  // - Use browser cache for better performance
   const { data: user, isLoading, refetch } = useQuery({
     queryKey: ['auth', 'session'],
     queryFn: async () => {
       try {
+        // Use fetch with cache: 'default' to allow browser caching
+        // The server-side session store will handle caching, so we don't need no-store
         const response = await fetch('/api/auth/session', {
           credentials: 'include',
-          cache: 'no-store', // Always fetch fresh data from server
+          cache: 'default', // Allow browser caching - server handles freshness
         })
         
         if (!response.ok) {
@@ -62,11 +65,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     },
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh
-    gcTime: 10 * 60 * 1000, // 10 minutes - cache persists
+    staleTime: 30 * 60 * 1000, // 30 minutes - data stays fresh (increased from 5 minutes)
+    gcTime: 60 * 60 * 1000, // 60 minutes - cache persists longer (increased from 10 minutes)
     refetchOnWindowFocus: false, // Don't refetch on window focus (reduces API calls)
     refetchOnMount: false, // Don't refetch on mount if data exists (prevents duplicate calls)
-    refetchOnReconnect: true, // Only refetch on reconnect
+    refetchOnReconnect: false, // Don't refetch on reconnect - session is already cached
   })
 
   // Login mutation

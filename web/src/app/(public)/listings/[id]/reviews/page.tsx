@@ -25,11 +25,7 @@ export const revalidate = 60;
 
 export default async function ListingReviewsPage({ params }: { params: Params }) {
   const { id } = await params;
-  const listingId = parseInt(id, 10);
-
-  if (isNaN(listingId)) {
-    notFound();
-  }
+  const listingId = id;
 
   try {
     const [reviewsResult, listingResult] = await Promise.all([
@@ -49,7 +45,7 @@ export default async function ListingReviewsPage({ params }: { params: Params })
         <main className="w-full max-w-7xl mx-auto px-3 lg:px-6 py-8 lg:py-12">
           <Suspense fallback={<ReviewsListLoading />}>
             <ReviewsView
-              reviews={reviews}
+              reviews={reviews.items || []}
               listingId={listingId}
               canReview={false}
             />

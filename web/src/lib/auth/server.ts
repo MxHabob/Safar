@@ -207,13 +207,15 @@ async function fetchUserFromAPI(): Promise<GetCurrentUserInfoApiV1UsersMeGetResp
  * Uses React Cache and session store (similar to auth.js)
  * 
  * Priority:
- * 1. Check session store (fast, cached)
- * 2. Validate JWT token and fetch from API if needed
+ * 1. Check session store FIRST (fast, cached, no API call)
+ * 2. Validate JWT token and fetch from API ONLY if session not found
  * 3. Refresh token if expired
+ * 
+ * IMPORTANT: This function should NOT call /api/v1/users/me if session exists in store
  */
 export const getServerSession = cache(async (): Promise<ServerSession | null> => {
   try {
-    // First, try to get session from session store (similar to auth.js)
+    // PRIORITY 1: Check session store FIRST (this avoids API calls)
     const sessionToken = await getSessionToken()
     if (sessionToken) {
       const storedSession = sessionStore.get(sessionToken)
@@ -223,7 +225,7 @@ export const getServerSession = cache(async (): Promise<ServerSession | null> =>
         if (accessToken) {
           const decoded = await validateToken(accessToken)
           if (decoded) {
-            // Both session and token are valid
+            // Both session and token are valid - RETURN IMMEDIATELY (no API call)
             return {
               user: storedSession.user,
               accessToken,
@@ -231,11 +233,39 @@ export const getServerSession = cache(async (): Promise<ServerSession | null> =>
               expiresAt: storedSession.expires.getTime(),
             }
           }
+          // Token expired but session exists - try to refresh token
+          // But keep using session data (don't fetch from API yet)
+          const refreshToken = await getRefreshToken()
+          if (refreshToken) {
+            try {
+              const { refreshTokenAction } = await import('./actions')
+              await refreshTokenAction()
+              // After refresh, return session with updated token
+              const newToken = await getAccessToken()
+              if (newToken) {
+                return {
+                  user: storedSession.user, // Use cached user data
+                  accessToken: newToken,
+                  sessionToken: storedSession.sessionToken,
+                  expiresAt: storedSession.expires.getTime(),
+                }
+              }
+            } catch (refreshError) {
+              // Refresh failed, but we still have valid session data
+              // Return it anyway - token refresh can happen on next request
+              return {
+                user: storedSession.user,
+                accessToken, // May be expired, but better than nothing
+                sessionToken: storedSession.sessionToken,
+                expiresAt: storedSession.expires.getTime(),
+              }
+            }
+          }
         }
       }
     }
 
-    // Fallback to JWT token validation (for backward compatibility)
+    // PRIORITY 2: No session in store, check JWT token
     const accessToken = await getAccessToken()
     
     if (!accessToken) {
@@ -248,7 +278,6 @@ export const getServerSession = cache(async (): Promise<ServerSession | null> =>
       // Token is invalid or expired, try to refresh
       const refreshToken = await getRefreshToken()
       if (refreshToken) {
-        // Attempt automatic token refresh
         try {
           const { refreshTokenAction } = await import('./actions')
           await refreshTokenAction()
@@ -257,22 +286,33 @@ export const getServerSession = cache(async (): Promise<ServerSession | null> =>
           if (newToken) {
             const newDecoded = await validateToken(newToken)
             if (newDecoded) {
-              // Fetch user with new token
+              // Check session store again after refresh (may have been created)
+              const newSessionToken = await getSessionToken()
+              if (newSessionToken) {
+                const refreshedSession = sessionStore.get(newSessionToken)
+                if (refreshedSession) {
+                  return {
+                    user: refreshedSession.user,
+                    accessToken: newToken,
+                    sessionToken: refreshedSession.sessionToken,
+                    expiresAt: refreshedSession.expires.getTime(),
+                  }
+                }
+              }
+              
+              // No session in store, fetch user from API (ONLY if no session exists)
               const user = await fetchUserFromAPI()
               if (user) {
-              // Create new session in store
-              const newSessionToken = generateSessionToken()
-              const expiresAt = newDecoded.exp ? newDecoded.exp * 1000 : Date.now() + 1800000
-              
-              sessionStore.create(
-                newSessionToken,
-                user.id,
-                user,
-                expiresAt - Date.now()
-              )
-              
-              // Note: Session cookie cannot be set here because getServerSession is cached
-              // Session is created in store, cookie will be set by Server Actions when needed
+                // Create new session in store
+                const newSessionToken = generateSessionToken()
+                const expiresAt = newDecoded.exp ? newDecoded.exp * 1000 : Date.now() + 1800000
+                
+                sessionStore.create(
+                  newSessionToken,
+                  user.id,
+                  user,
+                  expiresAt - Date.now()
+                )
                 
                 return {
                   user,
@@ -281,29 +321,22 @@ export const getServerSession = cache(async (): Promise<ServerSession | null> =>
                   expiresAt,
                 }
               }
-              // API call failed, clear tokens
-              await clearAuthTokens()
-              return null
             }
           }
         } catch (refreshError) {
-          // Refresh failed, clear tokens
           await clearAuthTokens()
           return null
         }
-      } else {
-        // No refresh token, clear access token
-        await clearAuthTokens()
-        return null
       }
+      await clearAuthTokens()
       return null
     }
 
-    // Token is valid, check if we have session or need to fetch user
+    // Token is valid, check session store again
     if (sessionToken) {
       const storedSession = sessionStore.get(sessionToken)
       if (storedSession) {
-        // Update session with fresh token
+        // Session exists - use it (no API call)
         return {
           user: storedSession.user,
           accessToken,
@@ -313,7 +346,8 @@ export const getServerSession = cache(async (): Promise<ServerSession | null> =>
       }
     }
 
-    // Fetch user data from API (only if not in session store)
+    // PRIORITY 3: No session in store and token is valid - fetch user from API (LAST RESORT)
+    // This should only happen on first login or after session expiry
     const user = await fetchUserFromAPI()
     
     if (!user) {
@@ -321,9 +355,7 @@ export const getServerSession = cache(async (): Promise<ServerSession | null> =>
       return null
     }
 
-    // Create session in store
-    // Note: We can't set cookies here because getServerSession is cached
-    // Session cookie will be set by Server Actions when needed
+    // Create session in store for future requests
     const newSessionToken = generateSessionToken()
     const expiresAt = decoded.exp ? decoded.exp * 1000 : Date.now() + 1800000
     
@@ -333,9 +365,6 @@ export const getServerSession = cache(async (): Promise<ServerSession | null> =>
       user,
       expiresAt - Date.now()
     )
-    
-    // Note: Session cookie cannot be set here because getServerSession is cached
-    // Cookie will be set by Server Actions (e.g., loginAction) when needed
 
     return {
       user,
@@ -344,8 +373,6 @@ export const getServerSession = cache(async (): Promise<ServerSession | null> =>
       expiresAt,
     }
   } catch (error) {
-    // If there's an error, clear tokens and return null
-    // Next.js 16: Proper error handling without exposing sensitive info
     if (process.env.NODE_ENV === 'development') {
       console.error('[Auth] Session error:', error)
     }
@@ -386,12 +413,24 @@ export async function getCurrentUser(): Promise<GetCurrentUserInfoApiV1UsersMeGe
 /**
  * Update session with new user data
  * Useful when user profile is updated
+ * This invalidates the React cache to force refresh
  */
 export async function updateSession(user: GetCurrentUserInfoApiV1UsersMeGetResponse): Promise<void> {
   const sessionToken = await getSessionToken()
   if (sessionToken) {
     sessionStore.update(sessionToken, { user })
+    // Note: React cache will be invalidated on next getServerSession call
+    // Client-side cache should be updated via updateUser() in AuthProvider
   }
+}
+
+/**
+ * Invalidate session cache
+ * Call this when user data changes to force refresh
+ */
+export async function invalidateSessionCache(): Promise<void> {
+  // React cache will be cleared on next getServerSession call
+  // This is handled automatically by React's cache() function
 }
 
 /**

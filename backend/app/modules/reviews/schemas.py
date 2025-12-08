@@ -33,7 +33,7 @@ class ReviewResponseResponse(BaseModel):
     
     id: ID
     review_id: ID
-    host_profile_id: int
+    host_profile_id: ID
     comment: str
     created_at: datetime
 

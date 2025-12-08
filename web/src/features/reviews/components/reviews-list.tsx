@@ -25,7 +25,7 @@ import { toast } from "sonner";
 
 interface ReviewsListProps {
   reviews: ReviewResponse[];
-  listingId?: number;
+  listingId?: string;
 }
 
 export function ReviewsList({ reviews, listingId }: ReviewsListProps) {
@@ -34,11 +34,11 @@ export function ReviewsList({ reviews, listingId }: ReviewsListProps) {
       toast.success("Review marked as helpful");
     },
     onError: ({ error }) => {
-      toast.error(error.message || "Failed to mark review as helpful");
+      toast.error(error.serverError || "Failed to mark review as helpful");
     },
   });
 
-  const handleMarkHelpful = (reviewId: number) => {
+  const handleMarkHelpful = (reviewId: string) => {
     markHelpful({
       params: {
         path: {

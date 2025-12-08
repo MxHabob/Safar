@@ -43,6 +43,7 @@ export {
   logoutAction,
   refreshTokenAction,
   verify2FAAction,
+  updateCurrentUserAction,
 } from './actions'
 
 // OAuth exports

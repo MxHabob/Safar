@@ -180,7 +180,7 @@ class PayoutResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     
     id: ID
-    host_profile_id: int
+    host_profile_id: ID
     booking_id: Optional[ID] = None
     status: str
     amount: float

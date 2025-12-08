@@ -173,7 +173,7 @@ export const getListingReviewsApiV1ReviewsListingsListingIdGet = cache(
         // Execute API call with enhanced error handling
         const response = await apiClient.reviews.getListingReviewsApiV1ReviewsListingsListingIdGet({params: {
 path: {
-        listing_id: Number(validatedParams.path.listing_id)
+        listing_id: validatedParams.path.listing_id
       },
 query: validatedParams.query,
     },
