@@ -16,7 +16,7 @@ from app.modules.messages.schemas import (
     ConversationResponse, ConversationListResponse, ConversationCreate, ConversationSummaryResponse
 )
 from app.modules.messages.services import MessageService
-from backend.app.core.id import ID
+from app.core.id import ID
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
 
