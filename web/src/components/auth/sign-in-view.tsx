@@ -54,7 +54,7 @@ export function SignInView() {
         const params = new URLSearchParams({
           email: values.email,
         });
-        router.push(`/auth/verify-2fa?${params.toString()}`);
+        router.push(`/verify-2fa?${params.toString()}`);
         return;
       }
       
@@ -143,7 +143,7 @@ export function SignInView() {
                       <div className="flex items-center justify-between">
                         <FormLabel className="text-sm font-light">Password</FormLabel>
                         <Link
-                          href="/auth/forgot-password"
+                          href="/forgot-password"
                           className="text-xs text-muted-foreground hover:text-foreground transition-colors font-light"
                         >
                           Forgot password?
@@ -206,7 +206,7 @@ export function SignInView() {
             <div className="text-center text-sm font-light">
               <span className="text-muted-foreground">Don't have an account? </span>
               <Link
-                href="/auth/register"
+                href="/register"
                 className="text-foreground hover:underline transition-colors"
               >
                 Sign up

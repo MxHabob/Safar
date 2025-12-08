@@ -16,7 +16,7 @@ export function LoginButton() {
       size="icon"
       className="rounded-[18px]"
       onClick={() => {
-        router.push("/auth/login");
+        router.push("/login");
       }}
       aria-label="Login"
     >

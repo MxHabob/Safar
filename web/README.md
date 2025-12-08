@@ -1,36 +1,181 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🧳 Safar - Travel Platform
 
-## Getting Started
+The smartest, most distinctive, and seamless travel platform in the world.
 
-First, run the development server:
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js 20+ 
+- npm or yarn or pnpm
+- Environment variables configured (see `.env.example`)
+
+### Installation
 
 ```bash
+# Install dependencies
+npm install
+
+# Copy environment variables
+cp .env.example .env.local
+
+# Update .env.local with your configuration
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📁 Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+web/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── (auth)/            # Authentication pages
+│   │   ├── (protected)/       # Protected user pages
+│   │   ├── (host)/            # Host management pages
+│   │   ├── (public)/          # Public pages
+│   │   └── api/               # API routes
+│   ├── components/            # Reusable components
+│   ├── features/              # Feature modules
+│   ├── generated/             # Auto-generated API client
+│   └── lib/                   # Utilities and helpers
+├── public/                    # Static assets
+└── package.json
+```
 
-## Learn More
+## 🛠️ Development
 
-To learn more about Next.js, take a look at the following resources:
+### Available Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+# Development
+npm run dev          # Start dev server
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Production
+npm run build        # Build for production
+npm run start        # Start production server
 
-## Deploy on Vercel
+# Quality
+npm run lint         # Run ESLint
+npm test            # Run tests
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🔐 Authentication
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The app uses JWT-based authentication with:
+- Access tokens (short-lived)
+- Refresh tokens (long-lived)
+- Secure cookie storage
+- Automatic token refresh
+
+## 🎨 Design System
+
+- **Framework**: Tailwind CSS 4
+- **Components**: Shadcn/ui (Radix UI)
+- **Icons**: Lucide React
+- **Theme**: Dark-first with light mode support
+- **Corners**: 18px rounded corners throughout
+
+## 📦 Key Features
+
+### For Guests
+- Browse listings and destinations
+- Search and filter
+- Book accommodations
+- Manage bookings
+- Reviews and ratings
+- Wishlist
+- Messages
+
+### For Hosts
+- Create and manage listings
+- Manage bookings
+- Analytics and insights
+- Reviews management
+- Earnings tracking
+- Settings
+
+## 🔒 Security
+
+- CSRF protection
+- XSS prevention
+- Rate limiting
+- Input validation
+- Secure headers
+- Authentication middleware
+
+## 📈 Performance
+
+- ISR (Incremental Static Regeneration)
+- Image optimization
+- Code splitting
+- Suspense boundaries
+- React Server Components
+
+## 🌐 SEO
+
+- Metadata optimization
+- Structured data (JSON-LD)
+- Sitemap generation
+- robots.txt
+- Open Graph tags
+
+## 🚢 Deployment
+
+### Vercel (Recommended)
+
+1. Push to GitHub
+2. Import project in Vercel
+3. Configure environment variables
+4. Deploy
+
+### Other Platforms
+
+```bash
+# Build
+npm run build
+
+# Start
+npm run start
+```
+
+## 📝 Environment Variables
+
+See `.env.example` for all required environment variables.
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Build errors**: Check TypeScript and ESLint errors
+```bash
+npm run lint
+```
+
+**API errors**: Verify `NEXT_PUBLIC_API_URL` is set correctly
+
+**Authentication issues**: Check token expiration and refresh logic
+
+## 📚 Documentation
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Tailwind CSS](https://tailwindcss.com/docs)
+- [Shadcn/ui](https://ui.shadcn.com)
+
+## 🤝 Contributing
+
+1. Create a feature branch
+2. Make your changes
+3. Test thoroughly
+4. Submit a pull request
+
+## 📄 License
+
+Proprietary - All rights reserved
+
+## 🆘 Support
+
+For issues and questions, contact the development team.

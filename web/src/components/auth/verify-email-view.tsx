@@ -22,7 +22,7 @@ export function VerifyEmailView() {
     onSuccess: () => {
       setStatus("success");
       setTimeout(() => {
-        router.push("/auth/login");
+        router.push("/login");
       }, 3000);
     },
     onError: (error) => {
@@ -98,7 +98,7 @@ export function VerifyEmailView() {
                     Your email has been successfully verified. Redirecting to sign in...
                   </p>
                 </div>
-                <Link href="/auth/login">
+                <Link href="/login">
                   <Button className="w-full h-11 rounded-[18px] font-light">
                     Go to sign in
                     <ArrowRight className="size-4" />
@@ -130,7 +130,7 @@ export function VerifyEmailView() {
                     Resend verification email
                   </Button>
                 )}
-                <Link href="/auth/login">
+                <Link href="/login">
                   <Button variant="ghost" className="w-full h-11 rounded-[18px] font-light">
                     Back to sign in
                   </Button>
@@ -158,7 +158,7 @@ export function VerifyEmailView() {
                     Resend verification email
                   </Button>
                 )}
-                <Link href="/auth/login">
+                <Link href="/login">
                   <Button variant="ghost" className="w-full h-11 rounded-[18px] font-light">
                     Back to sign in
                   </Button>

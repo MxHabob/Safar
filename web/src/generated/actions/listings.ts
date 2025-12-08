@@ -224,10 +224,10 @@ export const createListingApiV1ListingsPost = authActionClient
  * Features: React cache, input validation, error handling
  */
 export const getListingApiV1ListingsListingIdGet = cache(
-  authActionClient
+  actionClientWithMeta
     .metadata({
       name: "get-listing-api-v1-listings-listing-id-get",
-      requiresAuth: true
+      requiresAuth: false
     })
     .schema(GetListingApiV1ListingsListingIdGetParamsSchema)
     .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof GetListingApiV1ListingsListingIdGetParamsSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {

@@ -38,8 +38,8 @@ const hostNavItems = [
   { href: '/account/profile', label: 'Profile', icon: User },
   { href: '/account/bookings', label: 'My Bookings', icon: Calendar },
   { href: '/account/wishlist', label: 'Wishlist', icon: Heart },
-  { href: '/host', label: 'Host Dashboard', icon: Building2 },
-  { href: '/host/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/dashboard', label: 'Host Dashboard', icon: Building2 },
+  { href: '/dashboard', label: 'Analytics', icon: BarChart3 },
   { href: '/account/security', label: 'Security', icon: Shield },
   { href: '/account/settings', label: 'Settings', icon: Settings },
 ]

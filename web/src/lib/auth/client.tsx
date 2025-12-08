@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     mutationFn: logoutAction,
     onSuccess: () => {
       queryClient.clear()
-      router.push('/auth/login')
+      router.push('/login')
     },
   })
 
@@ -205,7 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       // Even if logout fails, clear local state
       queryClient.clear()
-      router.push('/auth/login')
+      router.push('/login')
     }
   }, [logoutMutation, queryClient, router])
 

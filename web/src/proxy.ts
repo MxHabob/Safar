@@ -1,63 +1,72 @@
-/**
- * Next.js 16 Proxy
- * 
- * Main entry point for Next.js middleware.
- * Combines authentication, CSRF protection, and rate limiting.
- * 
- * @security This is the first line of defense - validates all requests
- * 
- * Next.js 16 Best Practices:
- * - Lightweight token validation (no database calls)
- * - Route protection based on path patterns
- * - Rate limiting for API protection
- * - CSRF protection for state-changing operations
- */
-
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { authMiddleware, rateLimitMiddleware, csrfMiddleware } from '@/lib/auth/middleware'
 
 /**
- * Main proxy function
- * Executes in order: CSRF -> Rate Limit -> Auth
+ * Next.js Proxy
+ * Runs on every request before the page is rendered
+ * 
+ * Features:
+ * - Authentication checks
+ * - Rate limiting
+ * - CSRF protection
+ * - Security headers
  */
 export async function proxy(request: NextRequest) {
-  // 1. CSRF protection (first line of defense)
+  // 1. CSRF Protection (first, before any state changes)
   const csrfResponse = csrfMiddleware(request)
   if (csrfResponse) {
     return csrfResponse
   }
 
-  // 2. Rate limiting (protect against abuse)
-  const rateLimitResponse = rateLimitMiddleware(request, 100, 60000) // 100 requests per minute
+  // 2. Rate Limiting
+  const rateLimitResponse = rateLimitMiddleware(request, 100, 60000)
   if (rateLimitResponse) {
     return rateLimitResponse
   }
 
-  // 3. Authentication (route protection)
+  // 3. Authentication & Authorization
   const authResponse = await authMiddleware(request)
   if (authResponse) {
     return authResponse
   }
 
-  // All checks passed, continue with request
-  return NextResponse.next()
+  // 4. Add security headers
+  const response = NextResponse.next()
+  
+  // Security headers
+  response.headers.set('X-DNS-Prefetch-Control', 'on')
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN')
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('X-XSS-Protection', '1; mode=block')
+  response.headers.set('Referrer-Policy', 'origin-when-cross-origin')
+  
+  // HSTS (only in production)
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set(
+      'Strict-Transport-Security',
+      'max-age=63072000; includeSubDomains; preload'
+    )
+  }
+
+  return response
 }
 
 /**
- * Middleware configuration
- * Next.js 16: Matcher patterns for route filtering
+ * Proxy matcher
+ * Configure which routes should be processed by proxy
  */
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
+     * Match all request paths except:
+     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder
-     * - static assets (images, fonts, etc.)
+     * - public files (public folder)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|eot)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
+

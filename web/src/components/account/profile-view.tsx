@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +12,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { updateCurrentUserApiV1UsersMePut } from '@/generated/actions/users'
+import { uploadFileApiV1FilesUploadPost } from '@/generated/actions/files'
+import { useAction } from 'next-safe-action/hooks'
 import { Camera, Save } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -37,6 +39,9 @@ interface ProfileViewProps {
 export function ProfileView({ user }: ProfileViewProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState(user.avatar_url || user.avatar || '')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isUploading, setIsUploading] = useState(false)
   
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -53,6 +58,63 @@ export function ProfileView({ user }: ProfileViewProps) {
       currency: user.currency || 'USD',
     },
   })
+
+  const { execute: uploadFile } = useAction(uploadFileApiV1FilesUploadPost, {
+    onSuccess: async (result) => {
+      const fileUrl = result?.data?.file?.file_url
+      if (fileUrl) {
+        // Update user profile with new avatar URL
+        try {
+          await updateCurrentUserApiV1UsersMePut({ avatar_url: fileUrl })
+          setAvatarUrl(fileUrl)
+          toast.success('Profile picture updated successfully')
+          router.refresh()
+        } catch (error) {
+          toast.error('Failed to update profile picture')
+        }
+      }
+      setIsUploading(false)
+    },
+    onError: () => {
+      toast.error('Failed to upload image')
+      setIsUploading(false)
+    },
+  })
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('File size must be less than 2MB')
+      return
+    }
+
+    // Validate file type
+    if (!file.type.match(/^image\/(jpeg|png|gif)$/)) {
+      toast.error('Only JPG, PNG, and GIF images are allowed')
+      return
+    }
+
+    setIsUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      uploadFile({
+        body: formData as any,
+        params: {
+          query: {
+            category: 'avatar',
+          },
+        },
+      })
+    } catch (error) {
+      toast.error('Failed to upload image')
+      setIsUploading(false)
+    }
+  }
 
   const onSubmit = async (data: ProfileFormData) => {
     setIsLoading(true)
@@ -82,23 +144,28 @@ export function ProfileView({ user }: ProfileViewProps) {
         <CardContent>
           <div className="flex items-center gap-6">
             <Avatar className="h-24 w-24 rounded-[18px]">
-              <AvatarImage src={user.avatar_url || user.avatar} alt={user.full_name || user.email} />
+              <AvatarImage src={avatarUrl || user.avatar_url || user.avatar} alt={user.full_name || user.email} />
               <AvatarFallback className="rounded-[18px] text-2xl">
                 {initials}
               </AvatarFallback>
             </Avatar>
             <div className="space-y-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
               <Button
                 type="button"
                 variant="outline"
                 className="rounded-[18px]"
-                onClick={() => {
-                  // TODO: Implement image upload
-                  toast.info('Image upload coming soon')
-                }}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
               >
                 <Camera className="h-4 w-4 mr-2" />
-                Change Photo
+                {isUploading ? "Uploading..." : "Change Photo"}
               </Button>
               <p className="text-sm text-muted-foreground">
                 JPG, PNG or GIF. Max size 2MB

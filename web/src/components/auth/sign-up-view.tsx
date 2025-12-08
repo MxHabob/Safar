@@ -64,7 +64,7 @@ export function SignUpView() {
       if (result.success) {
         setSuccess(true);
         setTimeout(() => {
-          router.push("/auth/verify-email?email=" + encodeURIComponent(values.email));
+          router.push("/verify-email?email=" + encodeURIComponent(values.email));
         }, 2000);
       } else if (result.error) {
         setError(result.error);
@@ -271,7 +271,7 @@ export function SignUpView() {
             <div className="text-center text-sm font-light">
               <span className="text-muted-foreground">Already have an account? </span>
               <Link
-                href="/auth/login"
+                href="/login"
                 className="text-foreground hover:underline transition-colors"
               >
                 Sign in

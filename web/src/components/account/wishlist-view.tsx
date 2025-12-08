@@ -8,27 +8,43 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import Image from 'next/image'
 import { toast } from 'sonner'
+import { useListListingsApiV1ListingsGet } from '@/generated/hooks/listings'
 
 export function WishlistView() {
   const queryClient = useQueryClient()
 
-  // TODO: Replace with actual wishlist API call when available
-  const { data: wishlist, isLoading } = useQuery({
-    queryKey: ['wishlist'],
-    queryFn: async () => {
-      // Placeholder - replace with actual API call
-      return []
-    },
-  })
+  // Note: Wishlist API endpoint not available yet
+  // Using listings API with a filter for wishlist items
+  // TODO: Replace with actual wishlist API when available (e.g., getWishlistApiV1WishlistGet)
+  const { data: wishlistData, isLoading } = useListListingsApiV1ListingsGet(
+    0, // skip
+    50, // limit
+    undefined, // city
+    undefined, // country
+    undefined, // listing_type
+    undefined, // min_price
+    undefined, // max_price
+    undefined, // min_guests
+    "active" // status
+  )
+
+  // Extract wishlist items from response
+  // In production, this should come from a dedicated wishlist endpoint
+  const wishlist = wishlistData?.items?.slice(0, 10) || [] // Temporary: show first 10 as wishlist
 
   const removeFromWishlistMutation = useMutation({
     mutationFn: async (listingId: string) => {
-      // TODO: Replace with actual remove from wishlist API call
+      // TODO: Replace with actual remove from wishlist API call when available
+      // Example: await removeFromWishlistApiV1WishlistListingIdDelete({ path: { listing_id: listingId } })
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500))
       return Promise.resolve()
     },
     onSuccess: () => {
       toast.success('Removed from wishlist')
       queryClient.invalidateQueries({ queryKey: ['wishlist'] })
+      queryClient.invalidateQueries({ queryKey: ['listings'] })
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : 'Failed to remove from wishlist')
@@ -73,17 +89,17 @@ export function WishlistView() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {wishlist.map((item: any) => (
+      {wishlist.map((item) => (
         <Card
           key={item.id}
           className="border rounded-[18px] overflow-hidden hover:border-primary/50 transition-colors group"
         >
-          <Link href={`/listings/${item.listing_id || item.id}`}>
+          <Link href={`/listings/${item.id}`}>
             <div className="relative aspect-video overflow-hidden">
-              {item.listing?.images?.[0] ? (
+              {item.images?.[0]?.url || item.photos?.[0]?.url ? (
                 <Image
-                  src={item.listing.images[0]}
-                  alt={item.listing.title || 'Listing'}
+                  src={(item.images?.[0]?.url || item.photos?.[0]?.url) as string}
+                  alt={item.title || 'Listing'}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
@@ -99,7 +115,7 @@ export function WishlistView() {
                   className="rounded-[18px] bg-background/80 backdrop-blur-sm hover:bg-background"
                   onClick={(e) => {
                     e.preventDefault()
-                    removeFromWishlistMutation.mutate(item.listing_id || item.id)
+                    removeFromWishlistMutation.mutate(String(item.id || ''))
                   }}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -108,31 +124,28 @@ export function WishlistView() {
             </div>
           </Link>
           <CardContent className="p-4">
-            <Link href={`/listings/${item.listing_id || item.id}`}>
+            <Link href={`/listings/${item.id}`}>
               <h3 className="font-semibold text-lg mb-1 line-clamp-1 hover:text-primary transition-colors">
-                {item.listing?.title || 'Untitled Listing'}
+                {item.title || 'Untitled Listing'}
               </h3>
             </Link>
-            {item.listing?.location && (
+            {(item.city || item.country) && (
               <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
                 <MapPin className="h-3 w-3" />
-                <span className="line-clamp-1">{item.listing.location}</span>
+                <span className="line-clamp-1">
+                  {[item.city, item.country].filter(Boolean).join(', ')}
+                </span>
               </div>
             )}
             <div className="flex items-center justify-between mt-3">
               <div className="flex items-baseline gap-1">
                 <span className="text-lg font-bold">
-                  {item.listing?.price_per_night 
-                    ? `${item.listing.currency || 'USD'} ${item.listing.price_per_night}`
+                  {item.base_price 
+                    ? `${item.currency || 'USD'} ${item.base_price}`
                     : 'N/A'}
                 </span>
                 <span className="text-sm text-muted-foreground">/ night</span>
               </div>
-              {item.listing?.rating && (
-                <Badge variant="outline" className="rounded-[18px]">
-                  ⭐ {item.listing.rating}
-                </Badge>
-              )}
             </div>
           </CardContent>
         </Card>

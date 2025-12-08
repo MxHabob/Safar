@@ -38,7 +38,7 @@ export function SettingsView() {
         confirm: true,
       })
       toast.success('Account deleted successfully')
-      router.push('/auth/login')
+      router.push('/login')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to delete account')
     }

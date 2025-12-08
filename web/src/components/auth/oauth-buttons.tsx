@@ -22,7 +22,7 @@ export function OAuthButtons({ onError }: OAuthButtonsProps) {
 
     try {
       // Get current path for redirect after OAuth
-      const redirectTo = window.location.pathname === '/auth/login' 
+      const redirectTo = window.location.pathname === '/login' 
         ? '/' 
         : window.location.pathname
 

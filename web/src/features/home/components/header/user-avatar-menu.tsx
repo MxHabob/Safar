@@ -26,7 +26,7 @@ export function UserAvatarMenu({ user }: { user: ServerSession }) {
         await logoutAction();
       } catch (error) {
         console.error("Logout failed:", error);
-        router.push("/auth/login");
+        router.push("/login");
       }
     });
   };

@@ -59,7 +59,7 @@ export function ForgotPasswordView() {
         <div className="w-full max-w-md">
           <div className="relative bg-background rounded-br-[18px] mb-8">
             <div className="pt-3 px-4 pb-3">
-              <Link href="/auth/login" className="text-sm font-light flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/login" className="text-sm font-light flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
                 <ArrowRight className="rotate-180 size-4" />
                 <span>Back to sign in</span>
               </Link>
@@ -78,7 +78,7 @@ export function ForgotPasswordView() {
             <p className="text-muted-foreground text-sm font-light">
               We've sent a password reset link to {form.getValues("email")}
             </p>
-            <Link href="/auth/login">
+            <Link href="/login">
               <Button variant="outline" className="w-full h-11 rounded-[18px] font-light">
                 Back to sign in
               </Button>
@@ -95,7 +95,7 @@ export function ForgotPasswordView() {
         {/* Header with Safar design */}
         <div className="relative bg-background rounded-br-[18px] mb-8">
           <div className="pt-3 px-4 pb-3">
-            <Link href="/auth/login" className="text-sm font-light flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+            <Link href="/login" className="text-sm font-light flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
               <ArrowRight className="rotate-180 size-4" />
               <span>Back to sign in</span>
             </Link>
@@ -171,7 +171,7 @@ export function ForgotPasswordView() {
 
             <div className="text-center text-sm font-light">
               <Link
-                href="/auth/login"
+                href="/login"
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 Remember your password? Sign in

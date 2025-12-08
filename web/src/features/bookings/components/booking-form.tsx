@@ -96,7 +96,7 @@ export function BookingForm({ listing, checkIn, checkOut, guests: initialGuests 
 
   const onSubmit = async (values: BookingFormValues) => {
     if (!isAuthenticated) {
-      router.push(`/auth/login?redirect=/listings/${listing.id}`);
+      router.push(`/login?redirect=/listings/${listing.id}`);
       return;
     }
 

@@ -1,64 +1,88 @@
 import type { NextConfig } from "next";
-import path from "path";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
-  reactCompiler: true,
+  /* config options here */
+  reactStrictMode: true,
+  
+  // Image optimization
   images: {
     remotePatterns: [
       {
-        protocol: "https",
-        hostname: "safar.mulverse.com",
-      },
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-      },
-      {
-        protocol: "https",
-        hostname: "lh3.googleusercontent.com",
+        protocol: 'https',
+        hostname: '**',
       },
     ],
-    formats: ["image/avif", "image/webp"],
+    formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    minimumCacheTTL: 31536000,
-    dangerouslyAllowSVG: true,
-    contentDispositionType: 'attachment',
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    qualities: [75, 85],
   },
 
-  // Security headers - allow Google OAuth to work
+  // Security headers
   async headers() {
     return [
       {
-        source: "/:path*",
+        source: '/:path*',
         headers: [
           {
-            key: "X-Frame-Options",
-            value: "SAMEORIGIN",
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on'
           },
           {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload'
           },
           {
-            key: "Referrer-Policy",
-            value: "strict-origin-when-cross-origin",
-          },
-          // Allow Google OAuth to work - don't block cross-origin messages
-          {
-            key: "Cross-Origin-Opener-Policy",
-            value: "same-origin-allow-popups",
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN'
           },
           {
-            key: "Cross-Origin-Embedder-Policy",
-            value: "unsafe-none",
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
           },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block'
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'origin-when-cross-origin'
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()'
+          }
         ],
       },
     ];
+  },
+
+  // Compiler options
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
+  },
+
+  // Experimental features
+  experimental: {
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+  },
+
+  // Output configuration
+  output: 'standalone',
+
+  // Turbopack configuration (Next.js 16 default)
+  turbopack: {
+    // Turbopack-specific configurations can be added here
+  },
+
+  // TypeScript configuration
+  typescript: {
+    // !! WARN !!
+    // Dangerously allow production builds to successfully complete even if
+    // your project has type errors.
+    // !! WARN !!
+    ignoreBuildErrors: false,
   },
 };
 

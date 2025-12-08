@@ -123,6 +123,16 @@ export const ListingDetailView = ({ listing }: ListingDetailViewProps) => {
         <div className="w-full max-w-2xl mx-auto lg:max-w-full">
           <BookingForm listing={listing} />
         </div>
+
+        {/* Reviews Section */}
+        <div className="w-full max-w-2xl mx-auto lg:max-w-full pt-8 border-t">
+          <a
+            href={`/listings/${listing.id}/reviews`}
+            className="text-primary hover:underline font-light"
+          >
+            View all reviews ({listing.review_count || 0})
+          </a>
+        </div>
       </div>
     </div>
   );

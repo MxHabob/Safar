@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -21,6 +21,15 @@ export const metadata: Metadata = {
   description: "Discover amazing travel destinations, stories, and guides. Share your travel experiences and explore the world with Safar.",
   keywords: ["travel", "accommodation", "bookings", "travel guides", "travel stories", "destinations", "photography"],
   authors: [{ name: "Safar" }],
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Safar",
+  },
+  icons: {
+    apple: "/logo.png",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -44,6 +53,10 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#000000",
 };
 
 export default function RootLayout({

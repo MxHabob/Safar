@@ -6,6 +6,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { ThemeProvider } from "@/lib/providers/theme-provider";
 import { AuthProvider } from "@/lib/auth/client";
 import { Toaster } from "@/components/ui/sonner";
+import { PWAProvider } from "@/components/pwa";
 
 export const Providers = ({ children }: { children: React.ReactNode }) => {
   const [queryClient] = useState(
@@ -35,8 +36,10 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
       <NuqsAdapter>
         <ThemeProvider attribute="class">
           <AuthProvider>
-            <Toaster />
-            {children}
+            <PWAProvider>
+              <Toaster />
+              {children}
+            </PWAProvider>
           </AuthProvider>
         </ThemeProvider>
       </NuqsAdapter>

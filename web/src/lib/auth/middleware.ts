@@ -57,12 +57,12 @@ function isProtectedPath(pathname: string): boolean {
  */
 function isAuthPath(pathname: string): boolean {
   const authPaths = [
-    '/auth/login',
-    '/auth/register',
-    '/auth/forgot-password',
-    '/auth/reset-password',
-    '/auth/verify-email',
-    '/auth/verify-2fa',
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/verify-email',
+    '/verify-2fa',
   ]
   
   return authPaths.some(path => pathname.startsWith(path))
@@ -118,7 +118,7 @@ export async function authMiddleware(request: NextRequest): Promise<NextResponse
   if (isProtectedPath(pathname)) {
     if (!isAuthenticated) {
       // Redirect to login with return URL
-      const loginUrl = new URL('/auth/login', request.url)
+      const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('redirect', pathname)
       return NextResponse.redirect(loginUrl)
     }

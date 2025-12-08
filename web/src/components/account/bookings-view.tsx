@@ -157,7 +157,7 @@ export function BookingsView() {
             )}
 
             <div className="flex gap-2">
-              <Link href={`/account/bookings/${booking.id}`}>
+              <Link href={`/bookings/${booking.id}`}>
                 <Button variant="outline" className="rounded-[18px]">
                   <Eye className="h-4 w-4 mr-2" />
                   View Details

@@ -166,7 +166,7 @@ export function AccountOverview({ user, role }: AccountOverviewProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Link href="/host">
+              <Link href="/dashboard">
                 <Button className="w-full rounded-[18px]" variant="outline">
                   Go to Dashboard
                 </Button>
@@ -187,7 +187,7 @@ export function AccountOverview({ user, role }: AccountOverviewProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Link href="/host/analytics">
+              <Link href="/dashboard">
                 <Button className="w-full rounded-[18px]" variant="outline">
                   View Analytics
                 </Button>

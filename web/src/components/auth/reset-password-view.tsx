@@ -57,7 +57,7 @@ export function ResetPasswordView() {
     onSuccess: () => {
       setSuccess(true);
       setTimeout(() => {
-        router.push("/auth/login");
+        router.push("/login");
       }, 2000);
     },
     onError: (error) => {
@@ -101,7 +101,7 @@ export function ResetPasswordView() {
         {/* Header with Safar design */}
         <div className="relative bg-background rounded-br-[18px] mb-8">
           <div className="pt-3 px-4 pb-3">
-            <Link href="/auth/login" className="text-sm font-light flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+            <Link href="/login" className="text-sm font-light flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
               <ArrowRight className="rotate-180 size-4" />
               <span>Back to sign in</span>
             </Link>
@@ -199,7 +199,7 @@ export function ResetPasswordView() {
 
             <div className="text-center text-sm font-light">
               <Link
-                href="/auth/forgot-password"
+                href="/forgot-password"
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 Need a new reset link?
