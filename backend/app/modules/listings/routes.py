@@ -146,10 +146,27 @@ async def get_listing(
         # Create public response with limited data
         approximate_location = None
         if listing_model.location:
+            lat = None
+            lng = None
+            # Preferred: extract from PostGIS geography point
+            try:
+                if listing_model.location.coordinates:
+                    from geoalchemy2.shape import to_shape
+                    point = to_shape(listing_model.location.coordinates)
+                    lat = float(point.y)
+                    lng = float(point.x)
+            except Exception:
+                # Best-effort fallback handled below
+                lat = None
+                lng = None
+
+            # Fallback: legacy latitude/longitude fields on Listing
+            if lat is None:
+                lat = float(listing_model.latitude) if listing_model.latitude is not None else None
+            if lng is None:
+                lng = float(listing_model.longitude) if listing_model.longitude is not None else None
+
             # Round coordinates to 1 decimal place (approximate)
-            lat = float(listing_model.location.latitude) if listing_model.location.latitude else None
-            lng = float(listing_model.location.longitude) if listing_model.location.longitude else None
-            
             if lat is not None and lng is not None:
                 approximate_location = PublicListingLocationResponse(
                     city=listing_model.city,
