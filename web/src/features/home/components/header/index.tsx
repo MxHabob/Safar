@@ -3,7 +3,7 @@ import { MobileMenuButton } from "./mobile-menu-button";
 import { LeftSideNavbar } from "./left-side-navbar";
 import { RightSideNavbar } from "./right-side-navbar";
 
-const Header = () => {
+export const Header = () => {
   return (
     <header className="fixed top-3 left-3 z-50 bg-background rounded-br-[18px]">
       <div className="relative">
@@ -24,5 +24,3 @@ const Header = () => {
     </header>
   );
 };
-
-export default Header;

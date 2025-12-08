@@ -1,4 +1,4 @@
-import Header from "@/features/home/components/header";
+import { Header } from "@/features/home/components/header";
 
 /**
  * Public Layout
