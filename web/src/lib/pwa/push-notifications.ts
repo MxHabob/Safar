@@ -41,11 +41,14 @@ export async function subscribeToPushNotifications(): Promise<PushSubscription |
 
   try {
     const registration = await navigator.serviceWorker.ready;
+    const vapidKey = urlBase64ToUint8Array(
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
+    );
+    // Ensure we pass a concrete ArrayBuffer (BufferSource) to subscribe
+    const applicationServerKey = vapidKey.buffer as ArrayBuffer;
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(
-        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
-      ),
+      applicationServerKey,
     });
 
     return subscription;

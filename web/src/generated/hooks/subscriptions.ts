@@ -14,7 +14,8 @@ import {
   SubscribeApiV1SubscriptionsSubscribePostResponseSchema,
   SubscribeApiV1SubscriptionsSubscribePostParamsSchema,
   CancelSubscriptionApiV1SubscriptionsSubscriptionIdCancelPostResponseSchema,
-  CancelSubscriptionApiV1SubscriptionsSubscriptionIdCancelPostParamsSchema
+  CancelSubscriptionApiV1SubscriptionsSubscriptionIdCancelPostParamsSchema,
+  SubscriptionPlanType
 } from '@/generated/schemas'
 import type { z } from 'zod'
 
@@ -63,7 +64,7 @@ async function resolveActionResult<T>(actionPromise: Promise<any>): Promise<T> {
  * Features: Smart caching, error handling, type safety
  * @returns useQuery result with data of type z.infer<typeof GetSubscriptionPlansApiV1SubscriptionsPlansGetResponseSchema>
  */
-export function useGetSubscriptionPlansApiV1SubscriptionsPlansGet(plan_type: unknown, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetSubscriptionPlansApiV1SubscriptionsPlansGetResponseSchema> }) {
+export function useGetSubscriptionPlansApiV1SubscriptionsPlansGet(plan_type: SubscriptionPlanType, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetSubscriptionPlansApiV1SubscriptionsPlansGetResponseSchema> }) {
   const { initialData, ...restOptions } = options ?? {}
 
   return useQuery({
@@ -100,7 +101,7 @@ export function useGetSubscriptionPlansApiV1SubscriptionsPlansGet(plan_type: unk
  * Suspense version for /api/v1/subscriptions/plans
  * @returns useSuspenseQuery result with data of type z.infer<typeof GetSubscriptionPlansApiV1SubscriptionsPlansGetResponseSchema>
  */
-export function useSuspenseGetSubscriptionPlansApiV1SubscriptionsPlansGet(plan_type: unknown, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetSubscriptionPlansApiV1SubscriptionsPlansGetResponseSchema> }) {
+export function useSuspenseGetSubscriptionPlansApiV1SubscriptionsPlansGet(plan_type: SubscriptionPlanType, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetSubscriptionPlansApiV1SubscriptionsPlansGetResponseSchema> }) {
   const { initialData, ...restOptions } = options ?? {}
 
   return useSuspenseQuery({
@@ -120,7 +121,7 @@ export function useSuspenseGetSubscriptionPlansApiV1SubscriptionsPlansGet(plan_t
  * Features: Smart caching, error handling, type safety
  * @returns useQuery result with data of type z.infer<typeof GetMySubscriptionApiV1SubscriptionsMySubscriptionGetResponseSchema>
  */
-export function useGetMySubscriptionApiV1SubscriptionsMySubscriptionGet(plan_type?: unknown, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetMySubscriptionApiV1SubscriptionsMySubscriptionGetResponseSchema> }) {
+export function useGetMySubscriptionApiV1SubscriptionsMySubscriptionGet(plan_type?: SubscriptionPlanType, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetMySubscriptionApiV1SubscriptionsMySubscriptionGetResponseSchema> }) {
   const { initialData, ...restOptions } = options ?? {}
 
   return useQuery({
@@ -157,7 +158,7 @@ export function useGetMySubscriptionApiV1SubscriptionsMySubscriptionGet(plan_typ
  * Suspense version for /api/v1/subscriptions/my-subscription
  * @returns useSuspenseQuery result with data of type z.infer<typeof GetMySubscriptionApiV1SubscriptionsMySubscriptionGetResponseSchema>
  */
-export function useSuspenseGetMySubscriptionApiV1SubscriptionsMySubscriptionGet(plan_type?: unknown, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetMySubscriptionApiV1SubscriptionsMySubscriptionGetResponseSchema> }) {
+export function useSuspenseGetMySubscriptionApiV1SubscriptionsMySubscriptionGet(plan_type?: SubscriptionPlanType, options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetMySubscriptionApiV1SubscriptionsMySubscriptionGetResponseSchema> }) {
   const { initialData, ...restOptions } = options ?? {}
 
   return useSuspenseQuery({

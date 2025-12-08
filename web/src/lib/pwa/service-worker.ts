@@ -1,7 +1,19 @@
+/// <reference lib="webworker" />
+
 /**
  * Service Worker for PWA
  * Handles offline caching and push notifications
  */
+
+// Provide proper typings for the service worker global scope
+declare const self: ServiceWorkerGlobalScope;
+
+// SyncEvent is not available in some TS lib versions; define minimal shape
+interface SyncEvent extends ExtendableEvent {
+  tag: string;
+}
+
+export {};
 
 const CACHE_NAME = 'safar-v1';
 const STATIC_CACHE_NAME = 'safar-static-v1';
@@ -63,37 +75,48 @@ self.addEventListener('fetch', (event: FetchEvent) => {
 
   // Strategy: Cache First for static assets, Network First for pages
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
+    (async () => {
       // Return cached version if available
+      const cachedResponse = await caches.match(request);
       if (cachedResponse) {
         return cachedResponse;
       }
 
-      // Fetch from network
-      return fetch(request)
-        .then((response) => {
-          // Don't cache non-successful responses
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-
-          // Clone the response
-          const responseToCache = response.clone();
-
-          // Cache dynamic content
-          caches.open(DYNAMIC_CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
-          });
-
+      try {
+        const response = await fetch(request);
+        // Don't cache non-successful responses
+        if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
-        })
-        .catch(() => {
-          // If offline and page request, return offline page
-          if (request.headers.get('accept')?.includes('text/html')) {
-            return caches.match('/offline');
-          }
+        }
+
+        // Clone the response
+        const responseToCache = response.clone();
+
+        // Cache dynamic content
+        caches.open(DYNAMIC_CACHE_NAME).then((cache) => {
+          cache.put(request, responseToCache);
         });
-    })
+
+        return response;
+      } catch {
+        // If offline and page request, return offline page
+        if (request.headers.get('accept')?.includes('text/html')) {
+          const offlineResponse = await caches.match('/offline');
+          return (
+            offlineResponse ||
+            new Response('', {
+              status: 503,
+              statusText: 'Offline',
+            })
+          );
+        }
+
+        return new Response('', {
+          status: 503,
+          statusText: 'Offline',
+        });
+      }
+    })()
   );
 });
 
@@ -122,25 +145,26 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
   const urlToOpen = event.notification.data || '/';
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList: readonly Client[]) => {
       // If a window is already open, focus it
       for (const client of clientList) {
-        if (client.url === urlToOpen && 'focus' in client) {
-          return client.focus();
+        if (client.url === urlToOpen && 'focus' in client && typeof (client as WindowClient).focus === 'function') {
+          return (client as WindowClient).focus();
         }
       }
       // Otherwise, open a new window
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(urlToOpen);
       }
     })
   );
 });
 
 // Background sync (for offline actions)
-self.addEventListener('sync', (event: SyncEvent) => {
-  if (event.tag === 'sync-bookings') {
-    event.waitUntil(
+self.addEventListener('sync', (event) => {
+  const syncEvent = event as SyncEvent;
+  if (syncEvent.tag === 'sync-bookings') {
+    syncEvent.waitUntil(
       // Sync bookings when online
       fetch('/api/sync/bookings')
         .then((response) => response.json())

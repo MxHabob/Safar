@@ -13,6 +13,7 @@ import type {
   Verify2faLoginApiV1UsersLogin2faVerifyPostRequest,
   RegisterApiV1UsersRegisterPostRequest,
   TokenResponse,
+  GetCurrentUserInfoApiV1UsersMeGetResponse,
 } from '@/generated/schemas'
 import { ActionError } from '@/generated/lib/safe-action'
 import { redirect } from 'next/navigation'

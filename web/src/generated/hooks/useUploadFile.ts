@@ -45,7 +45,7 @@ export function useUploadFile(options?: {
           body: formData as any,
           params: { query: {} }
         })
-        return response?.data?.url || response?.data?.file_url || response?.data?.url || ''
+        return response?.data?.file?.file_url || ''
       } catch (error) {
         console.warn('[Mulink] Upload endpoint not found in generated client, using fallback')
         throw new Error('Upload endpoint not found. Please add a file upload endpoint to your OpenAPI schema.')
