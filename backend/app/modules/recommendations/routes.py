@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db, get_read_db
-from app.core.dependencies import get_current_active_user, get_optional_user
+from app.core.dependencies import get_current_active_user, get_optional_user, require_admin
 from app.modules.users.models import User
 from app.modules.listings.schemas import ListingResponse
 from app.modules.recommendations.service import RecommendationService
@@ -119,14 +119,13 @@ async def explain_recommendation(
 @router.post("/ml/train")
 async def train_recommendation_model(
     algorithm: str = Query("hybrid", regex="^(hybrid|collaborative|content|neural)$"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
     Train recommendation model (admin only).
     In production, this would be a scheduled task.
     """
-    # TODO: Add admin check
     result = await ml_engine.train_model(db=db, algorithm=algorithm)
     return result
 

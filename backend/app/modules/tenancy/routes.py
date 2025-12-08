@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_active_user
+from app.core.dependencies import get_current_active_user, require_admin
 from app.modules.users.models import User
 from app.modules.tenancy.service import TenancyService
 from app.modules.tenancy.models import Tenant, TenantDomain, TenantConfig
@@ -48,13 +48,12 @@ async def create_tenant(
     slug: str,
     domain: Optional[str] = None,
     contact_email: Optional[str] = None,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
     Create a new tenant (admin only).
     """
-    # TODO: Add admin check
     tenant = await TenancyService.create_tenant(
         db=db,
         name=name,
@@ -72,13 +71,12 @@ async def update_branding(
     primary_color: Optional[str] = None,
     secondary_color: Optional[str] = None,
     custom_css: Optional[str] = None,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
-    Update tenant branding.
+    Update tenant branding (admin only).
     """
-    # TODO: Add tenant admin check
     tenant = await TenancyService.update_tenant_branding(
         db=db,
         tenant_id=tenant_id,
@@ -94,11 +92,11 @@ async def update_branding(
 async def add_custom_domain(
     tenant_id: ID,
     domain: str,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
-    Add a custom domain for a tenant.
+    Add a custom domain for a tenant (admin only).
     """
     tenant_domain = await TenancyService.add_custom_domain(
         db=db,
@@ -146,11 +144,11 @@ async def get_config(
 async def update_config(
     tenant_id: ID,
     config_updates: Dict[str, Any],
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
-    Update tenant configuration.
+    Update tenant configuration (admin only).
     """
     config = await TenancyService.update_tenant_config(
         db=db,

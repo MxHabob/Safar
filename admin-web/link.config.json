@@ -1,0 +1,145 @@
+{
+  "schema": "https://safar.mulverse.com/openapi.json",
+  "outputDir": "src/generated",
+  "framework": {
+    "type": "nextjs",
+    "version": "16.0.7",
+    "router": "app",
+    "features": {
+      "serverActions": true,
+      "middleware": false,
+      "streaming": true,
+      "revalidation": true
+    },
+    "streaming": {
+      "enabled": true,
+      "sse": {
+        "enabled": true,
+        "autoReconnect": true,
+        "reconnectDelay": 3000,
+        "maxReconnectAttempts": 5
+      }
+    }
+  },
+  "api": {
+    "baseUrl": "https://safar.mulverse.com",
+    "timeout": 30000,
+    "retries": 3,
+    "headers": {
+      "User-Agent": "Safar-admin-web/1.0.0",
+      "Accept": "application/json",
+      "Content-Type": "application/json"
+    },
+    "interceptors": {
+      "request": ["auth", "logging"],
+      "response": ["error-handling", "caching"]
+    },
+    "errorHandling": {
+      "enableAuthErrorHandling": true,
+      "authErrorHandlerPath": "@/lib/auth-error-handler",
+      "generateAuthErrorHandler": false
+    }
+  },
+  "auth": {
+    "enabled": false,
+    "provider": "next-auth",
+    "middleware": true,
+    "publicPaths": ["/", "/auth/signin", "/auth/signup", "/api/health"],
+    "protectedPaths": ["/api/admin", "/api/user"],
+    "authPath": "@/lib/auth",
+    "tokenGetter": "auth",
+    "oauth": {
+      "enabled": false,
+      "providers": ["google", "github"],
+      "callbackUrl": "/api/auth/callback"
+    },
+    "mfa": {
+      "enabled": false,
+      "totp": true,
+      "backupCodes": true
+    },
+    "passkeys": {
+      "enabled": false,
+      "requireUserVerification": false,
+      "timeout": 60000
+    },
+    "session": {
+      "strategy": "jwt",
+      "maxAge": 604800,
+      "jwtMaxAge": 604800
+    },
+    "tokenRefresh": {
+      "enabled": false,
+      "refreshBeforeExpiry": 300
+    },
+    "accountStatus": {
+      "checkOnRefresh": false,
+      "autoLogoutOnSuspension": false
+    }
+  },
+  "cache": {
+    "strategy": "memory",
+    "ttl": 300,
+    "tags": true,
+    "revalidation": "on-demand",
+    "compression": true,
+    "maxSize": "100MB",
+    "cacheTags": true,
+    "persistentConnections": true
+  },
+  "uploads": {
+    "enabled": true,
+    "strategy": "presigned",
+    "provider": "minio",
+    "compression": {
+      "enabled": false
+    },
+    "security": {
+      "maxSize": "100MB",
+      "allowedTypes": ["image/*", "video/*", "audio/*"],
+      "scan": "none"
+    },
+    "presignedUploads": {
+      "enabled": true,
+      "presignEndpoint": "/api/v1/files/presign-upload",
+      "fallbackToBackend": true
+    },
+    "progressTracking": {
+      "enabled": true,
+      "useXHR": true
+    }
+  },
+  "dev": {
+    "logging": true,
+    "validation": true,
+    "mocking": false,
+    "watch": false,
+    "hotReload": true
+  },
+  "generation": {
+    "typescript": true,
+    "strict": true,
+    "comments": true,
+    "examples": true,
+    "tests": true,
+    "documentation": true
+  },
+  "plugins": [
+    {
+      "name": "custom-types",
+      "options": {
+        "customTypes": {
+          "DateTime": "Date",
+          "UUID": "string",
+          "Money": "number"
+        }
+      }
+    }
+  ],
+  "typeMappings": {
+    "DateTime": "Date",
+    "UUID": "string",
+    "Money": "number",
+    "Email": "string"
+  }
+}

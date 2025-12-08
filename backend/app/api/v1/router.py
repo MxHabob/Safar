@@ -25,6 +25,7 @@ from app.modules.listings.premium_routes import router as premium_listings_route
 from app.modules.travel_guides.routes import router as travel_guides_router
 from app.modules.subscriptions.routes import router as subscriptions_router
 from app.modules.tenancy.routes import router as tenancy_router
+from app.modules.admin.routes import router as admin_router
 
 api_router = APIRouter()
 
@@ -48,4 +49,5 @@ api_router.include_router(premium_listings_router)
 api_router.include_router(travel_guides_router)
 api_router.include_router(subscriptions_router)
 api_router.include_router(tenancy_router)
+api_router.include_router(admin_router)
 

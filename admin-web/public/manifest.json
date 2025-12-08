@@ -1,0 +1,53 @@
+{
+  "name": "Safar - Travel Guides & Stories",
+  "short_name": "Safar",
+  "description": "Discover amazing travel destinations, stories, and guides. Share your travel experiences and explore the world with Safar.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/images/logo-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/logo-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "lifestyle", "photography"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Browse Listings",
+      "short_name": "Listings",
+      "description": "Browse available accommodations",
+      "url": "/listings",
+      "icons": [{ "src": "/logo.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Discover",
+      "short_name": "Discover",
+      "description": "Discover new destinations",
+      "url": "/discover",
+      "icons": [{ "src": "/logo.png", "sizes": "96x96" }]
+    }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}
+

@@ -1,0 +1,26 @@
+import Graphic from "@/components/shared/graphic";
+import { MobileMenuButton } from "./mobile-menu-button";
+import { LeftSideNavbar } from "./left-side-navbar";
+import { RightSideNavbar } from "./right-side-navbar";
+
+export const Header = () => {
+  return (
+    <header className="fixed top-3 left-3 z-50 bg-background rounded-br-[18px]">
+      <div className="relative">
+        <LeftSideNavbar />
+        <div className="border-t-12 fixed top-0 left-0 w-full border-background block lg:hidden"></div>
+
+        <div className="absolute left-0 -bottom-[18px] size-[18px]">
+          <Graphic />
+        </div>
+
+        <div className="absolute top-0 -right-[18px] size-[18px]">
+          <Graphic />
+        </div>
+      </div>
+
+      <MobileMenuButton />
+      <RightSideNavbar />
+    </header>
+  );
+};
