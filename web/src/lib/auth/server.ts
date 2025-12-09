@@ -94,11 +94,13 @@ async function clearSessionToken(): Promise<void> {
  * - Secure flag in production
  * - SameSite=lax for CSRF protection
  * - Proper expiration handling
+ * 
+ * @returns Session token if user data was provided, null otherwise
  */
 export async function setAuthTokens(
   tokens: TokenResponse,
   user?: GetCurrentUserInfoApiV1UsersMeGetResponse
-): Promise<void> {
+): Promise<string | null> {
   const cookieStore = await cookies()
   const expiresIn = tokens.expires_in || 1800 // Default 30 minutes
   const isProduction = process.env.NODE_ENV === 'production'
@@ -126,8 +128,7 @@ export async function setAuthTokens(
   })
 
   // Create and store session in store (similar to auth.js)
-  // Note: Session cookie will be set by Server Actions, not here
-  // This function can be called from cached functions, so we can't modify cookies
+  // Note: Session cookie will be set by Server Actions or Route Handlers when needed
   if (user) {
     const sessionToken = generateSessionToken()
     const decoded = await validateToken(tokens.access_token)
@@ -140,9 +141,11 @@ export async function setAuthTokens(
       expiresAt - Date.now()
     )
     
-    // Note: Session cookie cannot be set here because setAuthTokens may be called from cached functions
-    // Session is created in store, cookie will be set by Server Actions when needed
+    // Return session token so caller can set the cookie if needed
+    return sessionToken
   }
+  
+  return null
 }
 
 /**
@@ -182,24 +185,22 @@ async function validateToken(token: string): Promise<DecodedToken | null> {
 }
 
 /**
- * Fetch user data from API (uncached)
- * This is called only when needed (token refresh or cache miss)
+ * Fetch user data from API - DISABLED
+ * 
+ * This function is NO LONGER USED to prevent unnecessary API calls.
+ * User data should always be available from:
+ * - Login/OAuth/2FA responses (always include user data)
+ * - Session store (caches user data after login)
+ * 
+ * If no session exists, we return null instead of fetching from API.
  */
 async function fetchUserFromAPI(): Promise<GetCurrentUserInfoApiV1UsersMeGetResponse | null> {
-  try {
-    const response = await apiClient.users.getCurrentUserInfoApiV1UsersMeGet({
-      config: {
-        timeout: 10000,
-        retries: 1,
-      }
-    })
-    return response.data as GetCurrentUserInfoApiV1UsersMeGetResponse | null
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[Auth] Failed to fetch user data:', error)
-    }
-    return null
+  // DISABLED: Never fetch from API to prevent /api/v1/users/me calls
+  // User data should always be available from session store or login responses
+  if (process.env.NODE_ENV === 'development') {
+    console.warn('[Auth] fetchUserFromAPI called but disabled - session should exist in store')
   }
+  return null
 }
 
 /**
@@ -226,6 +227,9 @@ export const getServerSession = cache(async (): Promise<ServerSession | null> =>
           const decoded = await validateToken(accessToken)
           if (decoded) {
             // Both session and token are valid - RETURN IMMEDIATELY (no API call)
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[Auth] Session found in store, using cached user data (no API call)')
+            }
             return {
               user: storedSession.user,
               accessToken,
@@ -300,35 +304,22 @@ export const getServerSession = cache(async (): Promise<ServerSession | null> =>
                 }
               }
               
-              // No session in store, fetch user from API (ONLY if no session exists)
-              const user = await fetchUserFromAPI()
-              if (user) {
-                // Create new session in store
-                const newSessionToken = generateSessionToken()
-                const expiresAt = newDecoded.exp ? newDecoded.exp * 1000 : Date.now() + 1800000
-                
-                sessionStore.create(
-                  newSessionToken,
-                  user.id,
-                  user,
-                  expiresAt - Date.now()
-                )
-                
-                return {
-                  user,
-                  accessToken: newToken,
-                  sessionToken: newSessionToken,
-                  expiresAt,
-                }
+              // No session in store after refresh
+              // refreshTokenAction should preserve user data from session, so this shouldn't happen
+              // If it does, we can't fetch from API - return null and let caller handle it
+              if (process.env.NODE_ENV === 'development') {
+                console.warn('[Auth] No session after token refresh - session should have been preserved')
               }
+              return null
             }
           }
         } catch (refreshError) {
-          await clearAuthTokens()
+          // Don't call clearAuthTokens here - it can only be called from Server Actions
+          // Just return null and let the caller handle it
           return null
         }
       }
-      await clearAuthTokens()
+      // Don't call clearAuthTokens here - it can only be called from Server Actions
       return null
     }
 
@@ -346,37 +337,35 @@ export const getServerSession = cache(async (): Promise<ServerSession | null> =>
       }
     }
 
-    // PRIORITY 3: No session in store and token is valid - fetch user from API (LAST RESORT)
-    // This should only happen on first login or after session expiry
-    const user = await fetchUserFromAPI()
-    
-    if (!user) {
-      await clearAuthTokens()
-      return null
+    // PRIORITY 3: No session in store and token is valid
+    // This should only happen in these rare cases:
+    // 1. First request after login (before session cookie is set) - SHOULD NOT HAPPEN if session cookie is set correctly
+    // 2. After session expiry but token is still valid
+    // 3. Server restart (session store cleared but tokens still in cookies)
+    // 
+    // IMPORTANT: If session cookie was set correctly after OAuth/login, this should NOT happen
+    // The session should be found in PRIORITY 1 above
+    // 
+    // If we reach here, it means:
+    // - Session cookie is missing (not set or expired)
+    // - Session store doesn't have the session (in-memory store cleared or different server instance)
+    // 
+    // We CANNOT fetch user data from API - return null instead
+    // The session should have been created during login/OAuth, so this indicates a problem
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[Auth] No session found in store - session should have been created during login/OAuth. Returning null to prevent API call.')
     }
-
-    // Create session in store for future requests
-    const newSessionToken = generateSessionToken()
-    const expiresAt = decoded.exp ? decoded.exp * 1000 : Date.now() + 1800000
     
-    sessionStore.create(
-      newSessionToken,
-      user.id,
-      user,
-      expiresAt - Date.now()
-    )
-
-    return {
-      user,
-      accessToken,
-      sessionToken: newSessionToken,
-      expiresAt,
-    }
+    // Return null instead of fetching from API
+    // This prevents unnecessary /api/v1/users/me calls
+    // The session should exist if login/OAuth was successful
+    return null
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
       console.error('[Auth] Session error:', error)
     }
-    await clearAuthTokens()
+    // Don't call clearAuthTokens here - it can only be called from Server Actions
+    // Just return null and let the caller handle it
     return null
   }
 })

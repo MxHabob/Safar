@@ -230,13 +230,15 @@ class UserService:
     @staticmethod
     async def create_access_token_for_user(
         user: UserEntity,
-        mfa_verified: bool = False
+        mfa_verified: bool = False,
+        session_id: str | None = None
     ) -> dict:
         """Create access and refresh tokens for the given user.
         
         Args:
             user: User entity
             mfa_verified: Whether 2FA was verified (default: False)
+            session_id: Optional session ID to include in token
         """
         from app.core.id import ID
         
@@ -253,6 +255,10 @@ class UserService:
             "role": user.role,
             "mfa_verified": mfa_verified  # Include 2FA verification status in JWT
         }
+        
+        # Include session_id in token if provided
+        if session_id:
+            token_data["session_id"] = session_id
         
         access_token = create_access_token(data=token_data)
         refresh_token = create_refresh_token(data=token_data)

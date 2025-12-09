@@ -9,6 +9,12 @@ import { z } from "zod"
 export const AccountProviderSchema = z.enum(["password", "google", "apple", "facebook", "github"])
 export type AccountProvider = z.infer<typeof AccountProviderSchema>
 /**
+ * Booking statuses.
+ */
+export const BookingStatusSchema = z.enum(["pending", "confirmed", "cancelled", "checked_in", "checked_out", "completed", "rejected", "refunded"])
+export type BookingStatus = z.infer<typeof BookingStatusSchema>
+
+/**
  * Booking type.
  */
 export const BookingTypeSchema = z.enum(["instant", "request"])
@@ -64,6 +70,33 @@ export type UserRole = z.infer<typeof UserRoleSchema>
 export const UserStatusSchema = z.enum(["active", "inactive", "suspended", "pending_verification"])
 export type UserStatus = z.infer<typeof UserStatusSchema>
 /**
+ * Schema returned in user responses.
+ */
+export const UserResponseSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  phone_number: z.any().optional(),
+  first_name: z.any().optional(),
+  last_name: z.any().optional(),
+  username: z.any().optional(),
+  full_name: z.any().optional(),
+  id: z.string().max(40, "Maximum length is 40"),
+  is_email_verified: z.boolean(),
+  is_phone_verified: z.boolean(),
+  avatar_url: z.any().optional(),
+  bio: z.any().optional(),
+  role: UserRoleSchema,
+  roles: z.array(z.string()).optional(),
+  status: UserStatusSchema,
+  is_active: z.boolean(),
+  locale: z.string(),
+  language: z.string(),
+  currency: z.string(),
+  created_at: z.string(),
+  country: z.any().optional(),
+  city: z.any().optional()
+})
+export type UserResponse = z.infer<typeof UserResponseSchema>
+/**
  * Schema for account deletion request.
  */
 export const AccountDeletionRequestSchema = z.object({
@@ -71,6 +104,17 @@ export const AccountDeletionRequestSchema = z.object({
   confirm: z.boolean()
 })
 export type AccountDeletionRequest = z.infer<typeof AccountDeletionRequestSchema>
+/**
+ * Schema returned when logging in - includes tokens and user data.
+ */
+export const AuthResponseSchema = z.object({
+  access_token: z.string(),
+  refresh_token: z.string(),
+  token_type: z.string().optional(),
+  expires_in: z.number().int(),
+  user: UserResponseSchema
+})
+export type AuthResponse = z.infer<typeof AuthResponseSchema>
 export const BodyCreateCouponApiV1PromotionsCouponsPostSchema = z.object({
   code: z.string(),
   name: z.string(),
@@ -182,6 +226,7 @@ export const BookingResponseSchema = z.object({
   updated_at: z.string()
 })
 export type BookingResponse = z.infer<typeof BookingResponseSchema>
+
 /**
  * Booking list response schema.
  */
@@ -193,7 +238,24 @@ export const BookingListResponseSchema = z.object({
 })
 export type BookingListResponse = z.infer<typeof BookingListResponseSchema>
 
-
+/**
+ * Single data point for booking trends.
+ */
+export const BookingTrendDataPointSchema = z.object({
+  date: z.string(),
+  bookings: z.number().int(),
+  revenue: z.number(),
+  completed: z.number().int()
+})
+export type BookingTrendDataPoint = z.infer<typeof BookingTrendDataPointSchema>
+/**
+ * Booking trends over time.
+ */
+export const BookingTrendsResponseSchema = z.object({
+  trends: z.array(BookingTrendDataPointSchema),
+  period_days: z.number().int()
+})
+export type BookingTrendsResponse = z.infer<typeof BookingTrendsResponseSchema>
 /**
  * Schema for creating a conversation.
  */
@@ -244,6 +306,17 @@ export const ConversationListResponseSchema = z.object({
 })
 export type ConversationListResponse = z.infer<typeof ConversationListResponseSchema>
 
+/**
+ * Admin dashboard metrics.
+ */
+export const DashboardMetricsResponseSchema = z.object({
+  period: z.record(z.string(), z.any()),
+  bookings: z.record(z.string(), z.any()),
+  revenue: z.record(z.string(), z.any()),
+  users: z.record(z.string(), z.any()),
+  listings: z.record(z.string(), z.any())
+})
+export type DashboardMetricsResponse = z.infer<typeof DashboardMetricsResponseSchema>
 /**
  * Schema for GDPR data export response.
  */
@@ -340,6 +413,15 @@ export const ListingImageResponseSchema = z.object({
 })
 export type ListingImageResponse = z.infer<typeof ListingImageResponseSchema>
 /**
+ * Listing location response schema.
+ */
+export const ListingLocationResponseSchema = z.object({
+  id: z.string().max(40, "Maximum length is 40"),
+  timezone: z.string(),
+  neighborhood: z.any().optional()
+})
+export type ListingLocationResponse = z.infer<typeof ListingLocationResponseSchema>
+/**
  * Listing photo response schema.
  */
 export const ListingPhotoResponseSchema = z.object({
@@ -401,16 +483,6 @@ export const ListingResponseSchema = z.object({
 })
 export type ListingResponse = z.infer<typeof ListingResponseSchema>
 /**
- * Listing list response schema.
- */
-export const ListingListResponseSchema = z.object({
-  items: z.array(ListingResponseSchema),
-  total: z.number().int(),
-  skip: z.number().int(),
-  limit: z.number().int()
-})
-export type ListingListResponse = z.infer<typeof ListingListResponseSchema>
-/**
  * Schema for creating a listing location.
  */
 export const ListingLocationCreateSchema = z.object({
@@ -420,16 +492,6 @@ export const ListingLocationCreateSchema = z.object({
   longitude: z.any()
 })
 export type ListingLocationCreate = z.infer<typeof ListingLocationCreateSchema>
-/**
- * Listing location response schema.
- */
-export const ListingLocationResponseSchema = z.object({
-  id: z.string().max(40, "Maximum length is 40"),
-  timezone: z.string(),
-  neighborhood: z.any().optional()
-})
-export type ListingLocationResponse = z.infer<typeof ListingLocationResponseSchema>
-
 
 /**
  * Schema for updating a listing.
@@ -463,6 +525,16 @@ export const ListingUpdateSchema = z.object({
 })
 export type ListingUpdate = z.infer<typeof ListingUpdateSchema>
 /**
+ * Listing list response schema.
+ */
+export const ListingListResponseSchema = z.object({
+  items: z.array(ListingResponseSchema),
+  total: z.number().int(),
+  skip: z.number().int(),
+  limit: z.number().int()
+})
+export type ListingListResponse = z.infer<typeof ListingListResponseSchema>
+/**
  * Loyalty status response.
  */
 export const LoyaltyStatusResponseSchema = z.object({
@@ -493,6 +565,7 @@ export const MessageCreateSchema = z.object({
   attachments: z.any().optional()
 })
 export type MessageCreate = z.infer<typeof MessageCreateSchema>
+
 /**
  * Schema for a paginated list of messages.
  */
@@ -610,6 +683,24 @@ export const PointsRedemptionResponseSchema = z.object({
   transaction_id: z.string()
 })
 export type PointsRedemptionResponse = z.infer<typeof PointsRedemptionResponseSchema>
+/**
+ * Popular destination data.
+ */
+export const PopularDestinationResponseSchema = z.object({
+  city: z.string(),
+  country: z.string(),
+  bookings: z.number().int(),
+  avg_revenue: z.number()
+})
+export type PopularDestinationResponse = z.infer<typeof PopularDestinationResponseSchema>
+/**
+ * List of popular destinations.
+ */
+export const PopularDestinationsResponseSchema = z.object({
+  destinations: z.array(PopularDestinationResponseSchema),
+  period_days: z.number().int()
+})
+export type PopularDestinationsResponse = z.infer<typeof PopularDestinationsResponseSchema>
 /**
  * Public location response - limited data for unauthenticated users
  */
@@ -954,33 +1045,7 @@ export const UserLoginSchema = z.object({
   password: z.string()
 })
 export type UserLogin = z.infer<typeof UserLoginSchema>
-/**
- * Schema returned in user responses.
- */
-export const UserResponseSchema = z.object({
-  email: z.string().email("Invalid email format"),
-  phone_number: z.any().optional(),
-  first_name: z.any().optional(),
-  last_name: z.any().optional(),
-  username: z.any().optional(),
-  full_name: z.any().optional(),
-  id: z.string().max(40, "Maximum length is 40"),
-  is_email_verified: z.boolean(),
-  is_phone_verified: z.boolean(),
-  avatar_url: z.any().optional(),
-  bio: z.any().optional(),
-  role: UserRoleSchema,
-  roles: z.array(z.string()).optional(),
-  status: UserStatusSchema,
-  is_active: z.boolean(),
-  locale: z.string(),
-  language: z.string(),
-  currency: z.string(),
-  created_at: z.string(),
-  country: z.any().optional(),
-  city: z.any().optional()
-})
-export type UserResponse = z.infer<typeof UserResponseSchema>
+
 /**
  * Schema for creating a user story.
  */
@@ -1204,7 +1269,7 @@ export type LoginApiV1UsersLoginPostRequest = z.infer<typeof LoginApiV1UsersLogi
  * Status: 200
  * Successful Response
  */
-export const LoginApiV1UsersLoginPostResponseSchema = TokenResponseSchema
+export const LoginApiV1UsersLoginPostResponseSchema = AuthResponseSchema
 
 export type LoginApiV1UsersLoginPostResponse = z.infer<typeof LoginApiV1UsersLoginPostResponseSchema>
 /**
@@ -1333,7 +1398,7 @@ export type OauthLoginApiV1UsersOauthLoginPostRequest = z.infer<typeof OauthLogi
  * Status: 200
  * Successful Response
  */
-export const OauthLoginApiV1UsersOauthLoginPostResponseSchema = TokenResponseSchema
+export const OauthLoginApiV1UsersOauthLoginPostResponseSchema = AuthResponseSchema
 
 export type OauthLoginApiV1UsersOauthLoginPostResponse = z.infer<typeof OauthLoginApiV1UsersOauthLoginPostResponseSchema>
 /**
@@ -1446,7 +1511,7 @@ export type Verify2faLoginApiV1UsersLogin2faVerifyPostRequest = z.infer<typeof V
  * Status: 200
  * Successful Response
  */
-export const Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema = TokenResponseSchema
+export const Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema = AuthResponseSchema
 
 export type Verify2faLoginApiV1UsersLogin2faVerifyPostResponse = z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema>
 /**
@@ -3863,11 +3928,7 @@ export const UpdateConfigApiV1TenancyTenantTenantIdConfigPutParamsSchema = z.obj
 })
 
 export type UpdateConfigApiV1TenancyTenantTenantIdConfigPutParams = z.infer<typeof UpdateConfigApiV1TenancyTenantTenantIdConfigPutParamsSchema>
-/**
- * Success response schema for GET /
- * Status: 200
- * Successful Response
- */
+
 export const RootGetResponseSchema = z.any()
 
 export type RootGetResponse = z.infer<typeof RootGetResponseSchema>

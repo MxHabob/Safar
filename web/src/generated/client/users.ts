@@ -239,6 +239,11 @@ responseSchema: LoginApiV1UsersLoginPostResponseSchema
   /**
    * Refresh Token
    * Refresh an access token using a valid refresh token.
+
+Security improvements:
+- Implements refresh token rotation (old token is blacklisted)
+- Checks user revocation timestamp
+- Prevents token reuse attacks
    * @param options - Request options
    * @returns Promise<ClientResponse<z.infer<typeof RefreshTokenApiV1UsersRefreshPostResponseSchema>>>
    * @example

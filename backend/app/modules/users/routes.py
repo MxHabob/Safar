@@ -3,7 +3,7 @@ User routes.
 All authentication, profile, OTP, OAuth, and session-related endpoints.
 """
 from datetime import timedelta, datetime
-from typing import Any, Dict
+from typing import Any, Dict, List
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,6 +27,8 @@ from app.modules.users.schemas import (
 from app.modules.users.services import UserService
 from app.modules.users.two_factor_service import TwoFactorService
 from app.modules.users.gdpr_service import GDPRService
+from app.modules.users.auth_helper import AuthHelper
+from app.modules.users.session_service import SessionService
 
 router = APIRouter(prefix="/users", tags=["Users"])
 security = HTTPBearer()
@@ -89,14 +91,10 @@ async def login(
 ) -> Any:
     """
     Login with email and password.
+    Enhanced with IP blocking, session management, and 2FA support.
     """
-    # Check if account is locked
-    is_locked = await UserService.is_account_locked(credentials.email)
-    if is_locked:
-        raise HTTPException(
-            status_code=status.HTTP_423_LOCKED,
-            detail="Account temporarily locked due to too many failed login attempts. Please try again in 15 minutes."
-        )
+    # Validate login request (IP blocking check)
+    client_ip, _ = await AuthHelper.validate_login_request(request, credentials.email, uow.db)
     
     # Authenticate user
     user_entity = await UserService.authenticate_user(
@@ -104,47 +102,35 @@ async def login(
     )
     
     if not user_entity:
-        # Track failed login attempt
-        client_ip = request.client.host if request.client else None
-        is_locked, remaining = await UserService.track_failed_login(
-            uow, credentials.email, client_ip
+        # Handle failed login
+        is_locked, lockout_reason = await AuthHelper.handle_failed_login(
+            uow.db, credentials.email, client_ip
         )
         
         if is_locked:
             raise HTTPException(
                 status_code=status.HTTP_423_LOCKED,
-                detail="Account temporarily locked due to too many failed login attempts. Please try again in 15 minutes."
+                detail=lockout_reason or "Account temporarily locked due to too many failed login attempts. Please try again in 15 minutes."
             )
         
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Incorrect email or password. {remaining} attempts remaining." if remaining else "Incorrect email or password"
+            detail="Invalid credentials"
         )
     
-    # Use domain logic
-    if not user_entity.is_active:
+    # Get user model
+    user_model = await AuthHelper.get_user_by_id(uow.db, user_entity.id)
+    if not user_model:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is inactive"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
         )
     
-    # Clear failed login attempts on successful login
-    await UserService.clear_failed_login_attempts(credentials.email)
+    # Validate user for login (locked, active, etc.)
+    await AuthHelper.validate_user_for_login(uow.db, user_model, client_ip)
     
-    # Update last login info
-    from sqlalchemy import select
-    result = await uow.db.execute(
-        select(User).where(User.id == user_entity.id)
-    )
-    user_model = result.scalar_one_or_none()
-    if user_model:
-        from datetime import datetime
-        user_model.last_login_at = datetime.utcnow()
-        user_model.last_login_ip = request.client.host if request.client else None
-        await uow.commit()
-    
-    # Check if 2FA is required and enabled
-    requires_2fa, is_2fa_enabled = await TwoFactorService.check_2fa_requirement(
+    # Check 2FA requirement
+    requires_2fa, is_2fa_enabled = await AuthHelper.check_2fa_requirement(
         uow.db, user_entity.id
     )
     
@@ -156,65 +142,48 @@ async def login(
         )
     
     # If 2FA is enabled, require verification before issuing tokens
-    # Store user_id temporarily for 2FA verification (in production, use secure session)
     if is_2fa_enabled:
-        # In production, store this in Redis with short TTL instead of raising exception
-        from app.infrastructure.cache.redis import get_redis
-        try:
-            redis = await get_redis()
-            # Store user_id for 2FA verification (5 minute TTL)
-            await redis.setex(f"2fa_pending:{user_entity.id}", 300, user_entity.id)
-        except Exception:
-            pass  # If Redis fails, continue (shouldn't happen in production)
-        
+        await AuthHelper.prepare_2fa_verification(user_entity.id)
         raise HTTPException(
             status_code=status.HTTP_202_ACCEPTED,
             detail="2FA verification required. Please verify with your authenticator app.",
             headers={"X-Requires-2FA": "true", "X-User-ID": str(user_entity.id)}
         )
     
-    # Create tokens using service (mfa_verified=False for regular login without 2FA)
-    tokens = await UserService.create_access_token_for_user(user_entity, mfa_verified=False)
-    
-    # Get the user model for response (refresh after commit)
-    result = await uow.db.execute(
-        select(User).where(User.id == user_entity.id)
+    # Complete authentication (create session, tokens, update user)
+    remember_me = getattr(credentials, 'remember_me', False)
+    return await AuthHelper.complete_authentication(
+        db=uow.db,
+        user_entity=user_entity,
+        user_model=user_model,
+        request=request,
+        remember_me=remember_me,
+        mfa_verified=False,
+        client_ip=client_ip
     )
-    user_model = result.scalar_one_or_none()
-    
-    if not user_model:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="User not found"
-        )
-    
-    # Convert user model to UserResponse
-    user_response = UserResponse.model_validate(user_model)
-    
-    return {
-        **tokens,
-        "expires_in": settings.access_token_expire_minutes * 60,
-        "user": user_response
-    }
 
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(
     token_data: RefreshTokenRequest,
+    request: Request,
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
     Refresh an access token using a valid refresh token.
+    Enhanced with session validation and activity update.
     
     Security improvements:
     - Implements refresh token rotation (old token is blacklisted)
     - Checks user revocation timestamp
     - Prevents token reuse attacks
+    - Validates and updates session activity
     """
     try:
         payload = decode_token(token_data.refresh_token, token_type="refresh")
         user_id = payload.get("sub")
         token_iat = payload.get("iat")  # Issued at timestamp
+        session_id = payload.get("session_id")  # Session ID from token
         
         if not user_id:
             raise HTTPException(
@@ -228,6 +197,17 @@ async def refresh_token(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has been revoked"
             )
+        
+        # Validate session if session_id exists
+        if session_id:
+            session = await SessionService.validate_session(uow.db, session_id)
+            if not session:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Session has been revoked or expired"
+                )
+            # Update session activity
+            await SessionService.update_session_activity(uow.db, session_id)
         
         # Check user revocation timestamp (for logout-all or password change)
         revocation_time = await get_user_revocation_time(user_id)
@@ -254,13 +234,27 @@ async def refresh_token(
             expires_in=refresh_token_expire_seconds
         )
         
+        # Get mfa_verified from token payload
+        mfa_verified = payload.get("mfa_verified", False)
+        
         # Create new tokens
         access_token = create_access_token(
-            data={"sub": str(user_entity.id), "email": user_entity.email, "role": user_entity.role},
+            data={
+                "sub": str(user_entity.id),
+                "email": user_entity.email,
+                "role": user_entity.role,
+                "mfa_verified": mfa_verified,
+                "session_id": session_id  # Include session_id in new token
+            },
             expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
         )
         refresh_token = create_refresh_token(
-            data={"sub": str(user_entity.id), "email": user_entity.email}
+            data={
+                "sub": str(user_entity.id),
+                "email": user_entity.email,
+                "mfa_verified": mfa_verified,
+                "session_id": session_id  # Include session_id in refresh token
+            }
         )
         
         return {
@@ -420,32 +414,102 @@ async def verify_otp(
 @router.post("/logout")
 async def logout(
     current_user: User = Depends(get_current_active_user),
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
-    Logout the current user and revoke the current token.
+    Logout the current user and revoke the current token and session.
+    Enhanced with session management.
     """
     token = credentials.credentials
+    
+    # Revoke token
     await add_token_to_blacklist(token)
+    
+    # Try to revoke session if session_id is in token payload
+    try:
+        payload = decode_token(token, token_type="access")
+        session_id = payload.get("session_id")
+        if session_id:
+            await SessionService.revoke_session(db, session_id, current_user.id)
+    except Exception:
+        # If session revocation fails, continue (token is already revoked)
+        pass
     
     return {"message": "Successfully logged out"}
 
 
-@router.post("/logout-all")
-async def logout_all(
-    current_user: User = Depends(get_current_active_user)
+@router.get("/sessions", response_model=List[Dict[str, Any]])
+async def get_sessions(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
-    Logout the current user from all devices (revoke all tokens).
+    Get all active sessions for the current user.
     """
+    sessions = await SessionService.get_active_sessions(db, current_user.id)
+    
+    return [
+        {
+            "session_id": session.session_id,
+            "device_info": session.device_info,
+            "ip_address": str(session.ip_address) if session.ip_address else None,
+            "user_agent": session.user_agent,
+            "is_secure": session.is_secure,
+            "is_remember_me": session.is_remember_me,
+            "mfa_verified": session.mfa_verified,
+            "created_at": session.created_at.isoformat(),
+            "last_activity": session.last_activity.isoformat(),
+            "expires_at": session.expires_at.isoformat(),
+        }
+        for session in sessions
+    ]
+
+
+@router.delete("/sessions/{session_id}")
+async def revoke_session(
+    session_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """
+    Revoke a specific session.
+    """
+    success = await SessionService.revoke_session(db, session_id, current_user.id)
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found"
+        )
+    
+    return {"message": "Session revoked successfully"}
+
+
+@router.post("/logout-all")
+async def logout_all(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """
+    Logout the current user from all devices (revoke all tokens and sessions).
+    """
+    # Revoke all sessions
+    count = await SessionService.revoke_all_sessions(db, current_user.id)
+    
+    # Revoke all tokens for the user
     await revoke_user_tokens(current_user.id)
     
-    return {"message": "Successfully logged out from all devices"}
+    return {
+        "message": "Successfully logged out from all devices",
+        "sessions_revoked": count
+    }
 
 
 @router.post("/oauth/login", response_model=AuthResponse)
 async def oauth_login(
     oauth_data: OAuthLogin,
+    request: Request,
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
@@ -596,18 +660,25 @@ async def oauth_login(
             detail="User not found after creation"
         )
     
-    # Create tokens (OAuth login - check if 2FA is enabled, if so mfa_verified=False)
-    # User will need to verify 2FA separately if enabled
-    tokens = await UserService.create_access_token_for_user(user_entity, mfa_verified=False)
+    # Validate user for login (OAuth users skip IP blocking and account lockout)
+    # But still check if account is active
+    from app.modules.users.models import UserStatus
+    if not user_model.is_active or user_model.status not in {UserStatus.ACTIVE, UserStatus.PENDING_VERIFICATION}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is not active"
+        )
     
-    # Convert user model to UserResponse
-    user_response = UserResponse.model_validate(user_model)
-    
-    return {
-        **tokens,
-        "expires_in": settings.access_token_expire_minutes * 60,
-        "user": user_response
-    }
+    # Complete authentication (OAuth login - mfa_verified=False, user will need to verify 2FA separately if enabled)
+    return await AuthHelper.complete_authentication(
+        db=uow.db,
+        user_entity=user_entity,
+        user_model=user_model,
+        request=request,
+        remember_me=False,
+        mfa_verified=False,
+        client_ip=SessionService.get_client_ip(request)
+    )
 
 
 @router.post("/password/reset/request")
@@ -646,10 +717,12 @@ async def request_password_reset(
 @router.post("/password/reset")
 async def reset_password(
     reset_data: PasswordReset,
+    request: Request,
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
     Reset password using verification code.
+    Enhanced with session management - revokes all existing sessions for security.
     """
     success = await UserService.reset_password(
         uow, reset_data.email, reset_data.code, reset_data.new_password
@@ -661,6 +734,20 @@ async def reset_password(
             detail="Failed to reset password"
         )
     
+    # Get user and revoke all sessions for security
+    user = await AuthHelper.get_user_by_email(uow.db, reset_data.email)
+    if user:
+        # Revoke all sessions (password reset is a security event)
+        revoked_count = await SessionService.revoke_all_sessions(uow.db, user.id)
+        
+        # Revoke all tokens
+        await revoke_user_tokens(user.id)
+        
+        return {
+            "message": "Password reset successfully. All sessions have been logged out for security.",
+            "sessions_revoked": revoked_count
+        }
+    
     return {"message": "Password reset successfully"}
 
 
@@ -668,10 +755,13 @@ async def reset_password(
 async def change_password(
     password_data: PasswordChange,
     current_user: User = Depends(get_current_active_user),
-    uow: IUnitOfWork = Depends(get_unit_of_work)
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    uow: IUnitOfWork = Depends(get_unit_of_work),
+    db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
     Change password for authenticated user.
+    Enhanced with session management - revokes all sessions except current.
     """
     success = await UserService.change_password(
         uow, current_user.id, password_data.current_password, password_data.new_password
@@ -683,10 +773,27 @@ async def change_password(
             detail="Failed to change password"
         )
     
-    # Revoke all other sessions (optional - can be made configurable)
+    # Get current session_id from token to preserve it
+    current_session_id = None
+    try:
+        token = credentials.credentials
+        payload = decode_token(token, token_type="access")
+        current_session_id = payload.get("session_id")
+    except Exception:
+        pass
+    
+    # Revoke all sessions except current
+    revoked_count = await SessionService.revoke_all_sessions(
+        db, current_user.id, exclude_session_id=current_session_id
+    )
+    
+    # Revoke all tokens (will be recreated on next request)
     await revoke_user_tokens(current_user.id)
     
-    return {"message": "Password changed successfully. All other sessions have been logged out."}
+    return {
+        "message": "Password changed successfully. All other sessions have been logged out.",
+        "sessions_revoked": revoked_count
+    }
 
 
 @router.post("/email/verify")
@@ -751,19 +858,20 @@ async def verify_2fa_login(
 ) -> Any:
     """
     Verify 2FA code during login and complete authentication.
+    Enhanced with session management and IP blocking.
     """
     # Get user
-    from sqlalchemy import select
-    result = await db.execute(
-        select(User).where(User.email == verify_data.email)
-    )
-    user = result.scalar_one_or_none()
-    
+    user = await AuthHelper.get_user_by_email(db, verify_data.email)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
+    
+    # Validate user for login
+    from app.modules.users.session_service import SessionService
+    client_ip = SessionService.get_client_ip(request)
+    await AuthHelper.validate_user_for_login(db, user, client_ip)
     
     # Check if 2FA verification is pending (from login)
     from app.infrastructure.cache.redis import get_redis
@@ -775,6 +883,8 @@ async def verify_2fa_login(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="No pending 2FA verification. Please login first."
             )
+    except HTTPException:
+        raise
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -798,32 +908,21 @@ async def verify_2fa_login(
     except Exception:
         pass
     
-    # Update last login
-    from datetime import datetime
-    user.last_login_at = datetime.utcnow()
-    user.last_login_ip = request.client.host if request.client else None
-    await db.commit()
-    
-    # Create tokens with mfa_verified=True (2FA was just verified)
+    # Get user entity
     from app.domain.entities.user import UserEntity
-    user_entity = UserEntity(
-        id=user.id,
-        email=user.email,
-        role=user.role.value,
-        is_active=user.is_active,
-        is_email_verified=user.is_email_verified,
-        is_phone_verified=user.is_phone_verified
+    user_entity = UserEntity.from_model(user)
+    
+    # Complete authentication with MFA verified
+    remember_me = getattr(verify_data, 'remember_me', False)
+    return await AuthHelper.complete_authentication(
+        db=db,
+        user_entity=user_entity,
+        user_model=user,
+        request=request,
+        remember_me=remember_me,
+        mfa_verified=True,
+        client_ip=client_ip
     )
-    tokens = await UserService.create_access_token_for_user(user_entity, mfa_verified=True)
-    
-    # Convert user model to UserResponse
-    user_response = UserResponse.model_validate(user)
-    
-    return {
-        **tokens,
-        "expires_in": settings.access_token_expire_minutes * 60,
-        "user": user_response
-    }
 
 
 @router.post("/2fa/setup", response_model=TwoFactorSetupResponse)
@@ -881,10 +980,12 @@ async def get_2fa_status(
 async def disable_2fa(
     password_data: PasswordChange,
     current_user: User = Depends(get_current_active_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
     Disable 2FA for current user (requires password verification).
+    Enhanced with session management - preserves current session.
     """
     from app.core.security import verify_password
     if not current_user.hashed_password or not verify_password(password_data.current_password, current_user.hashed_password):
@@ -894,7 +995,28 @@ async def disable_2fa(
         )
     
     await TwoFactorService.disable_2fa(db, current_user.id, password_data.current_password)
-    return {"message": "2FA disabled successfully"}
+    
+    # Get current session_id to preserve it
+    current_session_id = None
+    try:
+        token = credentials.credentials
+        payload = decode_token(token, token_type="access")
+        current_session_id = payload.get("session_id")
+    except Exception:
+        pass
+    
+    # Revoke all sessions except current (security measure when disabling 2FA)
+    revoked_count = await SessionService.revoke_all_sessions(
+        db, current_user.id, exclude_session_id=current_session_id
+    )
+    
+    # Revoke all tokens (user will need to re-authenticate)
+    await revoke_user_tokens(current_user.id)
+    
+    return {
+        "message": "2FA disabled successfully. All other sessions have been logged out for security.",
+        "sessions_revoked": revoked_count
+    }
 
 
 @router.post("/2fa/backup-codes/regenerate", status_code=status.HTTP_200_OK)

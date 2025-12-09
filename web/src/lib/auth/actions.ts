@@ -43,52 +43,40 @@ export async function loginAction(credentials: LoginApiV1UsersLoginPostRequest) 
       expires_in: (result as any).expires_in as number
     }
     
-    // Extract user data if available (new AuthResponse format)
-    // If not available, we'll fetch it (backward compatibility)
+    // Extract user data from response (AuthResponse always includes user data)
+    // Backend always returns user data with tokens in login response
     let user: GetCurrentUserInfoApiV1UsersMeGetResponse | null = null
     if ('user' in result && result.user) {
       user = result.user as GetCurrentUserInfoApiV1UsersMeGetResponse
     } else {
-      // Fallback: fetch user data if not in response (backward compatibility)
-      try {
-        const { apiClient } = await import('@/generated/client')
-        const userResponse = await apiClient.users.getCurrentUserInfoApiV1UsersMeGet({
-          config: {
-            headers: {
-              Authorization: `Bearer ${tokens.access_token}`,
-            },
-          },
-        })
-        user = userResponse.data as GetCurrentUserInfoApiV1UsersMeGetResponse | null
-      } catch (error) {
-        // If fetching user fails, we'll still set tokens and fetch user on next request
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('[Auth] Could not fetch user data during login, will fetch on next request')
-        }
+      // This should never happen as backend always returns user data
+      // But if it does, we'll log a warning and continue without user data
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[Auth] User data missing from login response - this should not happen')
       }
     }
     
     // Set tokens with user data (if available) to create session immediately
-    await setAuthTokens(tokens, user || undefined)
+    const sessionToken = await setAuthTokens(tokens, user || undefined)
     
-    // Create session and set cookie
-    // This is safe here because we're in a Server Action
-    try {
-      const { getServerSession, setSessionTokenCookie } = await import('./server')
-      const session = await getServerSession()
-      
-      // If session was created, set the cookie now (we're in a Server Action, so it's safe)
-      if (session?.sessionToken) {
-        const expiresAt = session.expiresAt
+    // Set session cookie immediately after login
+    // This ensures the session is available on the next request
+    if (sessionToken && user) {
+      try {
+        const { setSessionTokenCookie } = await import('./server')
+        const expiresAt = tokens.expires_in 
+          ? Date.now() + tokens.expires_in * 1000 
+          : Date.now() + 1800000 // Default 30 minutes
         const maxAge = Math.floor((expiresAt - Date.now()) / 1000)
+        
         if (maxAge > 0) {
-          await setSessionTokenCookie(session.sessionToken, maxAge)
+          await setSessionTokenCookie(sessionToken, maxAge)
         }
-      }
-    } catch (error) {
-      // If fetching fails, tokens are still set and session will be created on next request
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('[Auth] Could not set session cookie after login, session will be created on next request')
+      } catch (error) {
+        // If setting session cookie fails, session will be created on next request
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[Auth] Could not set session cookie after login, session will be created on next request')
+        }
       }
     }
     
@@ -150,46 +138,41 @@ export async function verify2FAAction(data: Verify2faLoginApiV1UsersLogin2faVeri
       expires_in: (result as any).expires_in as number
     }
     
-    // Extract user data if available (new AuthResponse format)
-    // If not available, we'll fetch it (backward compatibility)
+    // Extract user data from response (AuthResponse always includes user data)
+    // Backend always returns user data with tokens in 2FA verification response
     let user: GetCurrentUserInfoApiV1UsersMeGetResponse | null = null
     if ('user' in result && result.user) {
       user = result.user as GetCurrentUserInfoApiV1UsersMeGetResponse
     } else {
-      // Fallback: fetch user data if not in response (backward compatibility)
-      try {
-        const { apiClient } = await import('@/generated/client')
-        const userResponse = await apiClient.users.getCurrentUserInfoApiV1UsersMeGet({
-          config: {
-            headers: {
-              Authorization: `Bearer ${tokens.access_token}`,
-            },
-          },
-        })
-        user = userResponse.data as GetCurrentUserInfoApiV1UsersMeGetResponse | null
-      } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('[Auth] Could not fetch user data during 2FA verification')
-        }
+      // This should never happen as backend always returns user data
+      // But if it does, we'll log a warning and continue without user data
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[Auth] User data missing from 2FA response - this should not happen')
       }
     }
     
     // Set tokens with user data (if available) to create session immediately
-    await setAuthTokens(tokens, user || undefined)
+    const sessionToken = await setAuthTokens(tokens, user || undefined)
     
-    // Set session cookie
-    try {
-      const { getServerSession, setSessionTokenCookie } = await import('./server')
-      const session = await getServerSession()
-      if (session?.sessionToken) {
-        const expiresAt = session.expiresAt
+    // Set session cookie immediately after 2FA verification
+    // This ensures the session is available on the next request
+    if (sessionToken && user) {
+      try {
+        const { setSessionTokenCookie } = await import('./server')
+        const expiresAt = tokens.expires_in 
+          ? Date.now() + tokens.expires_in * 1000 
+          : Date.now() + 1800000 // Default 30 minutes
         const maxAge = Math.floor((expiresAt - Date.now()) / 1000)
+        
         if (maxAge > 0) {
-          await setSessionTokenCookie(session.sessionToken, maxAge)
+          await setSessionTokenCookie(sessionToken, maxAge)
+        }
+      } catch (error) {
+        // If setting session cookie fails, session will be created on next request
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[Auth] Could not set session cookie after 2FA, session will be created on next request')
         }
       }
-    } catch (error) {
-      // Session will be created on next request
     }
     
     return {
@@ -223,31 +206,43 @@ export async function refreshTokenAction() {
     }
     
     // Get current session to preserve user data
+    // Note: /refresh endpoint returns TokenResponse (no user data), so we preserve from session
     const currentSession = await getServerSession()
     
-    // Update tokens with existing user data (if available) to avoid API call
-    // If no session exists, fetch user data
-    let user: GetCurrentUserInfoApiV1UsersMeGetResponse | null = currentSession?.user || null
+    // Use user data from current session to avoid unnecessary API call
+    // If no session exists, we'll create one on next request when needed
+    const user: GetCurrentUserInfoApiV1UsersMeGetResponse | null = currentSession?.user || null
     
-    if (!user) {
-      // No session, fetch user data
-      try {
-        const { apiClient } = await import('@/generated/client')
-        const userResponse = await apiClient.users.getCurrentUserInfoApiV1UsersMeGet({
-          config: {
-            headers: {
-              Authorization: `Bearer ${(result as TokenResponse).access_token}`,
-            },
-          },
-        })
-        user = userResponse.data as GetCurrentUserInfoApiV1UsersMeGetResponse | null
-      } catch (error) {
-        // User will be fetched on next request
-      }
-    }
+    // Note: We don't fetch user data here because:
+    // 1. If session exists, we have user data
+    // 2. If session doesn't exist, it will be created on next getServerSession() call
+    // 3. This avoids unnecessary API call since refresh only returns tokens
+    
+    // Cast result to TokenResponse for type safety
+    const tokenResponse = result as TokenResponse
     
     // Update tokens with user data (if available)
-    await setAuthTokens(result as TokenResponse, user || undefined)
+    // Note: We preserve user data from current session to avoid API call
+    const sessionToken = await setAuthTokens(tokenResponse, user || undefined)
+    
+    // Update session cookie if we have a session token
+    // This ensures the session persists after token refresh
+    if (sessionToken && user) {
+      try {
+        const { setSessionTokenCookie } = await import('./server')
+        const expiresAt = tokenResponse.expires_in 
+          ? Date.now() + tokenResponse.expires_in * 1000 
+          : Date.now() + 1800000 // Default 30 minutes
+        const maxAge = Math.floor((expiresAt - Date.now()) / 1000)
+        
+        if (maxAge > 0) {
+          await setSessionTokenCookie(sessionToken, maxAge)
+        }
+      } catch (error) {
+        // If setting session cookie fails, it's not critical
+        // Session will be created on next request if needed
+      }
+    }
     
     return {
       success: true,

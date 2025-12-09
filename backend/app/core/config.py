@@ -166,6 +166,13 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = Field(default=30, env="ACCESS_TOKEN_EXPIRE_MINUTES")
     refresh_token_expire_days: int = Field(default=3, env="REFRESH_TOKEN_EXPIRE_DAYS", description="Refresh token expiry in days (reduced from 7 to 3 for better security)")
     
+    # Encryption key for MFA secrets (Fernet)
+    encryption_key: Optional[str] = Field(
+        default=None,
+        env="ENCRYPTION_KEY",
+        description="Fernet encryption key for MFA secrets. Generate using: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
+    )
+    
     @validator("secret_key")
     def validate_secret_key(cls, v: str) -> str:
         """Validate SECRET_KEY strength - CRITICAL: Fail hard in production"""

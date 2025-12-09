@@ -21,6 +21,7 @@ from app.core.middleware import (
     RequestMonitoringMiddleware,
     CORSPreflightMiddleware
 )
+from app.core.session_middleware import SessionValidationMiddleware
 from app.api.v1.router import api_router
 
 from app.core.logging_config import setup_logging, get_uvicorn_log_config
@@ -116,6 +117,9 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(BotDetectionMiddleware)
 
 app.add_middleware(CORSPreflightMiddleware)
+
+# Session validation middleware (after CORS, before rate limiting)
+app.add_middleware(SessionValidationMiddleware)
 
 if settings.rate_limit_enabled:
     app.add_middleware(EnhancedRateLimitMiddleware)

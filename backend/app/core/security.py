@@ -205,3 +205,126 @@ def validate_password_strength(password: str) -> tuple[bool, Optional[str]]:
     
     return True, None
 
+
+# ============================================================================
+# MFA Encryption (Fernet)
+# ============================================================================
+
+_fernet_instance: Optional[Any] = None
+
+
+def _get_fernet() -> Any:
+    """
+    Get Fernet encryption instance with lazy initialization.
+    
+    Uses PBKDF2 to derive key from SECRET_KEY if ENCRYPTION_KEY is not set.
+    """
+    global _fernet_instance
+    if _fernet_instance is not None:
+        return _fernet_instance
+    
+    try:
+        from cryptography.fernet import Fernet
+        from cryptography.hazmat.primitives import hashes
+        from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+        import base64
+        
+        encryption_key = settings.encryption_key
+        
+        if encryption_key:
+            # Use provided encryption key
+            try:
+                _fernet_instance = Fernet(encryption_key.encode())
+                return _fernet_instance
+            except Exception:
+                # If key is invalid, fall back to derived key
+                pass
+        
+        # Derive key from SECRET_KEY using PBKDF2
+        # This ensures we always have a valid key even if ENCRYPTION_KEY is not set
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=b'safar_mfa_encryption_salt',  # Fixed salt for consistency
+            iterations=100000,
+        )
+        key = base64.urlsafe_b64encode(kdf.derive(settings.secret_key.encode()))
+        _fernet_instance = Fernet(key)
+        return _fernet_instance
+    except ImportError:
+        raise ImportError(
+            "cryptography package is required for MFA encryption. "
+            "Install it with: pip install cryptography"
+        )
+
+
+def encrypt_secret(secret: str) -> str:
+    """
+    Encrypt a secret value (e.g., TOTP secret, backup codes) using Fernet.
+    
+    Args:
+        secret: Plain text secret to encrypt
+        
+    Returns:
+        Encrypted secret as base64-encoded string
+    """
+    fernet = _get_fernet()
+    encrypted = fernet.encrypt(secret.encode())
+    return encrypted.decode()
+
+
+def decrypt_secret(encrypted_secret: str) -> str:
+    """
+    Decrypt an encrypted secret value.
+    
+    Args:
+        encrypted_secret: Encrypted secret as base64-encoded string
+        
+    Returns:
+        Decrypted plain text secret
+    """
+    fernet = _get_fernet()
+    try:
+        decrypted = fernet.decrypt(encrypted_secret.encode())
+        return decrypted.decode()
+    except Exception:
+        # If decryption fails, return original (for backward compatibility)
+        # This allows migration from unencrypted to encrypted secrets
+        return encrypted_secret
+
+
+def encrypt_backup_codes(codes: list[str]) -> str:
+    """
+    Encrypt a list of backup codes.
+    
+    Args:
+        codes: List of backup code strings
+        
+    Returns:
+        Encrypted JSON string
+    """
+    import json
+    codes_json = json.dumps(codes)
+    return encrypt_secret(codes_json)
+
+
+def decrypt_backup_codes(encrypted_codes: str) -> list[str]:
+    """
+    Decrypt a list of backup codes.
+    
+    Args:
+        encrypted_codes: Encrypted JSON string
+        
+    Returns:
+        List of backup code strings
+    """
+    import json
+    try:
+        decrypted_json = decrypt_secret(encrypted_codes)
+        return json.loads(decrypted_json)
+    except (json.JSONDecodeError, ValueError):
+        # If decryption/parsing fails, try to parse as plain JSON (backward compatibility)
+        try:
+            return json.loads(encrypted_codes)
+        except json.JSONDecodeError:
+            return []

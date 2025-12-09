@@ -110,6 +110,7 @@ class User(BaseModel):
     devices = relationship("UserDevice", back_populates="user", cascade="all, delete-orphan", lazy="selectin")
     passkeys = relationship("UserPasskey", back_populates="user", cascade="all, delete-orphan", lazy="selectin")
     two_factor_challenges = relationship("TwoFactorChallenge", back_populates="user", cascade="all, delete-orphan", lazy="selectin")
+    sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan", lazy="selectin")
     host_profile = relationship("HostProfile", back_populates="user", uselist=False, cascade="all, delete-orphan", lazy="selectin")
     conversations = relationship("Conversation", secondary=conversation_participants, back_populates="participants", lazy="selectin")
     loyalty_ledgers = relationship("LoyaltyLedger", back_populates="user", lazy="selectin")
@@ -267,6 +268,52 @@ class TwoFactorChallenge(BaseModel):
     
     __table_args__ = (
         Index("idx_2fa_user_expires", "user_id", "expires_at", "consumed_at"),
+    )
+
+
+class SessionStatus(str, enum.Enum):
+    """Session status enumeration."""
+    ACTIVE = "active"
+    EXPIRED = "expired"
+    REVOKED = "revoked"
+    SUSPENDED = "suspended"
+
+
+class UserSession(BaseModel):
+    """
+    User sessions table for advanced session management.
+    Tracks all active sessions with device info, location, and security metadata.
+    """
+    __tablename__ = "user_sessions"
+    
+    session_id = Column(String(255), unique=True, primary_key=True, nullable=False, index=True)
+    user_id = Column(String(40), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Device Information
+    device_info = Column(JSONB, default=dict, nullable=True)  # Browser, OS, device type
+    user_agent = Column(String(500), nullable=True)
+    ip_address = Column(INET, nullable=True, index=True)
+    location = Column(JSONB, default=dict, nullable=True)  # Country, city, coordinates
+    
+    # Security & Status
+    is_secure = Column(Boolean, default=False, nullable=False)  # HTTPS connection
+    is_remember_me = Column(Boolean, default=False, nullable=False)
+    mfa_verified = Column(Boolean, default=False, nullable=False)
+    status = Column(SQLEnum(SessionStatus), default=SessionStatus.ACTIVE, nullable=False, index=True)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default="now()", nullable=False)
+    last_activity = Column(DateTime(timezone=True), server_default="now()", nullable=False, index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Relationships
+    user = relationship("User", back_populates="sessions", lazy="selectin")
+    
+    __table_args__ = (
+        Index("idx_session_user_status", "user_id", "status"),
+        Index("idx_session_expires", "expires_at"),
+        Index("idx_session_user_active", "user_id", "status", "expires_at"),
     )
 
 

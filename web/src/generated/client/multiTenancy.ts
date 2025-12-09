@@ -90,7 +90,7 @@ responseSchema: CreateTenantApiV1TenancyTenantPostResponseSchema
 
   /**
    * Update Branding
-   * Update tenant branding.
+   * Update tenant branding (admin only).
    * @param options - Request options
    * @returns Promise<ClientResponse<z.infer<typeof UpdateBrandingApiV1TenancyTenantTenantIdBrandingPutResponseSchema>>>
    * @example
@@ -119,7 +119,7 @@ responseSchema: UpdateBrandingApiV1TenancyTenantTenantIdBrandingPutResponseSchem
 
   /**
    * Add Custom Domain
-   * Add a custom domain for a tenant.
+   * Add a custom domain for a tenant (admin only).
    * @param options - Request options
    * @returns Promise<ClientResponse<z.infer<typeof AddCustomDomainApiV1TenancyTenantTenantIdDomainPostResponseSchema>>>
    * @example
@@ -204,7 +204,7 @@ responseSchema: GetConfigApiV1TenancyTenantTenantIdConfigGetResponseSchema
 
   /**
    * Update Config
-   * Update tenant configuration.
+   * Update tenant configuration (admin only).
    * @param options - Request options
    * @returns Promise<ClientResponse<z.infer<typeof UpdateConfigApiV1TenancyTenantTenantIdConfigPutResponseSchema>>>
    * @example

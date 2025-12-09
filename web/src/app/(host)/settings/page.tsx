@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
 import { HostSettings, HostSettingsLoading } from "@/features/host/components/host-settings";
-import { getCurrentUserInfoApiV1UsersMeGet } from "@/generated/actions/users";
 import { getSession } from "@/lib/auth/session-provider";
 
 export const metadata: Metadata = {
@@ -22,14 +21,9 @@ async function SettingsData() {
     return null;
   }
 
-  try {
-    const userResult = await getCurrentUserInfoApiV1UsersMeGet().catch(() => null);
-    const user = userResult?.data || session.user;
-
-    return <HostSettings user={user} />;
-  } catch (error) {
-    return <HostSettings user={session.user} />;
-  }
+  // Use session user directly - no need to call /api/v1/users/me
+  // Session already contains user data from login/OAuth
+  return <HostSettings user={session.user} />;
 }
 
 export default function SettingsPage() {

@@ -20,17 +20,21 @@ type NextReadonlyHeaders = Awaited<ReturnType<NextHeadersModule['headers']>>
 type NextReadonlyCookies = Awaited<ReturnType<NextHeadersModule['cookies']>>
 
 let serverOnlyModules: {
-  cookies?: () => NextReadonlyCookies
-  headers?: () => Headers
+  cookies?: () => Promise<NextReadonlyCookies>
+  headers?: () => Promise<Headers>
   after?: (fn: () => void | Promise<void>) => void
   updateTag?: (tag: string) => void
 } | null = null
 
-function toMutableHeaders(source: NextReadonlyHeaders) {
+async function toMutableHeaders(source: NextReadonlyHeaders) {
   const mutableHeaders = new Headers()
-  source.forEach((value, key) => {
-    mutableHeaders.append(key, value)
-  })
+  // In Next.js 16, headers() returns a Promise, so we need to await it
+  const headers = await source
+  if (headers && typeof headers.forEach === 'function') {
+    headers.forEach((value, key) => {
+      mutableHeaders.append(key, value)
+    })
+  }
   return mutableHeaders
 }
 
@@ -51,11 +55,14 @@ async function getServerModules() {
       const serverModule = await import('next/server').catch(() => null)
       const cacheModule = await import('next/cache').catch(() => null)
       
-      const getReadonlyHeaders = headersModule?.headers as (() => NextReadonlyHeaders) | undefined
-      const getReadonlyCookies = headersModule?.cookies as (() => NextReadonlyCookies) | undefined
+      const getReadonlyHeaders = headersModule?.headers as (() => Promise<NextReadonlyHeaders>) | undefined
+      const getReadonlyCookies = headersModule?.cookies as (() => Promise<NextReadonlyCookies>) | undefined
       serverOnlyModules = {
         cookies: getReadonlyCookies,
-        headers: getReadonlyHeaders ? () => toMutableHeaders(getReadonlyHeaders()) : undefined,
+        headers: getReadonlyHeaders ? async () => {
+          const headers = await getReadonlyHeaders()
+          return toMutableHeaders(headers)
+        } : undefined,
         after: serverModule?.after,
         updateTag: cacheModule?.updateTag,
       }
@@ -315,8 +322,8 @@ export class BaseApiClient {
       // Get auth token from various sources (server-side only)
       if (serverModules?.cookies && serverModules.headers) {
         try {
-          const cookieStore = serverModules.cookies()
-          const headersList = serverModules.headers()
+          const cookieStore = await serverModules.cookies()
+          const headersList = await serverModules.headers()
           
           // Try cookie first
           const tokenFromCookie = cookieStore.get('auth-token')?.value
@@ -336,29 +343,9 @@ export class BaseApiClient {
         }
       }
       
-      // Client-side: fetch token from API route
-      // This allows client-side requests to get the token from httpOnly cookies
-      if (typeof window !== 'undefined') {
-        try {
-          const response = await fetch('/api/auth/token', {
-            credentials: 'include',
-            cache: 'no-store'
-          })
-          
-          if (response.ok) {
-            const data = await response.json()
-            if (data?.token) {
-              getAuthHeaders.Authorization = `Bearer ${data.token}`
-              return getAuthHeaders
-            }
-          }
-        } catch (error) {
-          // Silently fail - token might not be available
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('[API Client] Failed to fetch token from API route:', error)
-          }
-        }
-      }
+      // Client-side: cookies are sent automatically with credentials: 'include'
+      // No need to manually get token - the browser will send httpOnly cookies
+      // The backend will extract the token from the Cookie header
       
       // Try external auth service
       // No external auth configured
@@ -384,7 +371,7 @@ export class BaseApiClient {
       
       if (serverModules?.headers) {
         try {
-          const headersList = serverModules.headers()
+          const headersList = await serverModules.headers()
           
           // CSRF protection
           const csrfToken = headersList.get('x-csrf-token')
@@ -717,6 +704,85 @@ export class BaseApiClient {
             errorData,
             requestId
           )
+
+          // Special handling for 401 errors: try token refresh before throwing
+          // Use server action directly instead of API route
+          if (response.status === 401 && !skipAuth) {
+            // Skip refresh for auth endpoints
+            if (!url.includes('/login') && !url.includes('/refresh') && !url.includes('/oauth')) {
+              try {
+                // Use server action to refresh token (works on both client and server)
+                const { refreshTokenAction } = await import('@/lib/auth/actions')
+                const refreshResult = await refreshTokenAction()
+                
+                if (refreshResult?.success && refreshResult?.data?.access_token) {
+                  // Token was refreshed, retry the request with new token
+                  const newToken = refreshResult.data.access_token
+                  
+                  // Build headers properly
+                  const existingHeaders = requestConfig.headers || {}
+                  const headersObj = existingHeaders instanceof Headers 
+                    ? Object.fromEntries(existingHeaders.entries())
+                    : typeof existingHeaders === 'object' 
+                      ? existingHeaders 
+                      : {}
+                  
+                  const retryConfig: RequestInit = {
+                    ...requestConfig,
+                    headers: {
+                      ...headersObj,
+                      Authorization: `Bearer ${newToken}`
+                    } as HeadersInit
+                  }
+                  
+                  // Apply request middleware again
+                  let finalConfig: RequestConfiguration = retryConfig as RequestConfiguration
+                  for (const mw of middleware) {
+                    if (mw.onRequest) {
+                      finalConfig = await mw.onRequest(finalConfig)
+                    }
+                  }
+                  
+                  // Retry the request
+                  const retryResponse = await fetch(url, {
+                    ...finalConfig,
+                    signal: controller.signal,
+                    credentials: 'include'
+                  } as RequestInit)
+                  
+                  if (retryResponse.ok) {
+                    // Retry succeeded, parse and return response
+                    const retryData = await this.parseResponse<TData>(retryResponse, responseSchema, validateResponse)
+                    const retryClientResponse: ClientResponse<TData> = {
+                      data: retryData,
+                      status: retryResponse.status,
+                      statusText: retryResponse.statusText,
+                      headers: retryResponse.headers,
+                      retryCount: retryCount + 1,
+                      responseTime: Date.now() - startTime,
+                      requestId
+                    }
+                    
+                    // Apply response middleware
+                    let finalResponse = retryClientResponse
+                    for (const mw of middleware) {
+                      if (mw.onResponse) {
+                        finalResponse = await mw.onResponse(finalResponse)
+                      }
+                    }
+                    
+                    await metricsCollector.endRequest(requestId!, retryResponse.status, false, retryCount + 1)
+                    return finalResponse
+                  }
+                }
+              } catch (refreshError) {
+                // Refresh failed, continue to error handling
+                if (process.env.NODE_ENV === 'development') {
+                  console.warn('[API Client] Token refresh failed:', refreshError)
+                }
+              }
+            }
+          }
 
           // Apply error middleware
           for (const mw of middleware) {

@@ -251,7 +251,32 @@ export async function handleOAuthCallback(
           : undefined
       
       // Set tokens in cookies with user data
-      await setAuthTokens(tokens, user)
+      // Returns session token so we can set session cookie immediately
+      const sessionToken = await setAuthTokens(tokens, user)
+      
+      // Set session cookie immediately after OAuth login
+      // This ensures the session is available on the next request after redirect
+      // Without this, the session store (in-memory) won't be accessible on the next request
+      if (sessionToken && user) {
+        try {
+          const { setSessionTokenCookie } = await import('./server')
+          // Calculate expiration from token expires_in
+          const expiresAt = tokens.expires_in 
+            ? Date.now() + tokens.expires_in * 1000 
+            : Date.now() + 1800000 // Default 30 minutes
+          const maxAge = Math.floor((expiresAt - Date.now()) / 1000)
+          
+          if (maxAge > 0) {
+            await setSessionTokenCookie(sessionToken, maxAge)
+          }
+        } catch (error) {
+          // If setting session cookie fails, session will be created on next request
+          // This is not critical as tokens are already set
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[OAuth] Could not set session cookie, session will be created on next request:', error)
+          }
+        }
+      }
     } catch (error) {
       // Handle API errors
       if (error && typeof error === 'object' && 'message' in error) {

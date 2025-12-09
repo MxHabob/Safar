@@ -5,8 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, MapPin } from "lucide-react";
 import Graphic from "@/components/shared/graphic";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useQuery } from "@tanstack/react-query";
-import { getCurrentUserInfoApiV1UsersMeGet } from "@/generated/actions/users";
+import { useAuth } from "@/lib/auth/client";
 import { formatDate } from "@/lib/utils/date";
 
 interface UserProfileViewProps {
@@ -16,36 +15,32 @@ interface UserProfileViewProps {
 /**
  * User profile view
  * Shows public user profile information
+ * 
+ * NOTE: Currently only shows current user profile as there's no getUserById endpoint
+ * TODO: Replace with getUserById API when available
  */
 export const UserProfileView = ({ userId }: UserProfileViewProps) => {
-  // Note: Currently using current user API as there's no getUserById endpoint
-  // In production, this should use a proper getUserById API
-  const { data: user, isLoading, error } = useQuery({
-    queryKey: ["user", userId],
-    queryFn: async () => {
-      // For now, use current user API
-      // TODO: Replace with getUserById API when available
-      const result = await getCurrentUserInfoApiV1UsersMeGet();
-      // Handle SafeActionResult type
-      if (result && typeof result === 'object' && 'data' in result) {
-        return result.data;
-      }
-      return result as any;
-    },
-    enabled: !!userId,
-  });
+  // Use auth context instead of calling /api/v1/users/me
+  // This prevents unnecessary API calls since user data is already in session
+  const { user, isLoading } = useAuth();
+  
+  // For now, only show profile if it's the current user
+  // TODO: When getUserById endpoint is available, fetch user by userId
+  const isCurrentUser = user?.id === userId;
 
   if (isLoading) {
     return <UserProfileLoading />;
   }
 
-  if (error || !user) {
+  if (!user || !isCurrentUser) {
     return (
       <div className="min-h-screen w-full">
         <div className="w-full max-w-4xl mx-auto px-3 lg:px-6 py-8 lg:py-12">
           <Card className="rounded-[18px] border border-border">
             <CardContent className="p-12 text-center">
-              <p className="text-muted-foreground">Failed to load user profile</p>
+              <p className="text-muted-foreground">
+                {!user ? "Please log in to view profile" : "User profile not available"}
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -69,7 +64,7 @@ export const UserProfileView = ({ userId }: UserProfileViewProps) => {
           <CardContent className="p-8 space-y-6">
             <div className="flex items-center gap-6">
               <Avatar className="size-24 rounded-[18px]">
-                <AvatarImage src={user.avatar_url || user.avatar} alt={fullName} />
+                <AvatarImage src={user.avatar_url || undefined} alt={fullName} />
                 <AvatarFallback className="rounded-[18px] text-2xl">{initials}</AvatarFallback>
               </Avatar>
               <div className="space-y-2">

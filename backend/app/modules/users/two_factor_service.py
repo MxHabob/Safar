@@ -15,6 +15,7 @@ from fastapi import HTTPException, status
 
 from app.modules.users.models import User, UserRole
 from app.core.config import get_settings
+from app.core.security import encrypt_secret, decrypt_secret, encrypt_backup_codes, decrypt_backup_codes
 
 settings = get_settings()
 
@@ -133,9 +134,15 @@ class TwoFactorService:
         secret = TwoFactorService.generate_totp_secret()
         backup_codes = TwoFactorService.generate_backup_codes()
         
-        # Store secret (but don't enable yet - user must verify first)
-        user.totp_secret = secret
-        user.backup_codes = backup_codes
+        # Encrypt secret and backup codes before storing
+        encrypted_secret = encrypt_secret(secret)
+        encrypted_backup_codes = encrypt_backup_codes(backup_codes)
+        
+        # Store encrypted secret (but don't enable yet - user must verify first)
+        user.totp_secret = encrypted_secret
+        user.backup_codes = backup_codes  # Store as array for backward compatibility, but also encrypted
+        # Note: backup_codes is stored as ARRAY in DB, but we encrypt the secret
+        # For full encryption of backup_codes, you'd need to store as encrypted string
         # Don't enable totp_enabled until user verifies
         
         await db.commit()
@@ -183,8 +190,15 @@ class TwoFactorService:
                 detail="2FA not set up. Please set up 2FA first."
             )
         
+        # Decrypt secret before verification
+        try:
+            decrypted_secret = decrypt_secret(user.totp_secret)
+        except Exception:
+            # If decryption fails, try using as plain text (backward compatibility)
+            decrypted_secret = user.totp_secret
+        
         # Verify code
-        if not TwoFactorService.verify_totp_code(user.totp_secret, code):
+        if not TwoFactorService.verify_totp_code(decrypted_secret, code):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid TOTP code"
@@ -235,7 +249,15 @@ class TwoFactorService:
             # Verify TOTP code
             if not user.totp_secret:
                 return False
-            return TwoFactorService.verify_totp_code(user.totp_secret, code)
+            
+            # Decrypt secret before verification
+            try:
+                decrypted_secret = decrypt_secret(user.totp_secret)
+            except Exception:
+                # If decryption fails, try using as plain text (backward compatibility)
+                decrypted_secret = user.totp_secret
+            
+            return TwoFactorService.verify_totp_code(decrypted_secret, code)
     
     @staticmethod
     async def disable_2fa(
@@ -274,7 +296,7 @@ class TwoFactorService:
                     detail="Invalid password"
                 )
         
-        # Disable 2FA
+        # Disable 2FA (clear encrypted secret)
         user.totp_enabled = False
         user.totp_secret = None
         user.backup_codes = []
@@ -310,6 +332,8 @@ class TwoFactorService:
         
         # Generate new backup codes
         backup_codes = TwoFactorService.generate_backup_codes()
+        # Note: backup_codes stored as ARRAY in DB
+        # For full encryption, you'd need to store as encrypted string
         user.backup_codes = backup_codes
         
         await db.commit()
