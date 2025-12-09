@@ -6,7 +6,7 @@ from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, ConfigDict
 from app.modules.users.models import UserRole, UserStatus
 from app.modules.listings.models import ListingStatus
-from app.modules.bookings.models import BookingStatus
+from app.modules.bookings.models import BookingStatus, PaymentMethodType, PaymentStatus
 from app.core.id import ID
 
 
@@ -34,7 +34,7 @@ class AdminUserResponse(BaseModel):
     last_name: Optional[str] = None
     username: Optional[str] = None
     role: UserRole
-    roles: List[str] = []
+    roles: List[str] = Field(default_factory=list)
     status: UserStatus
     is_active: bool
     is_email_verified: bool
@@ -192,8 +192,8 @@ class AdminPaymentResponse(BaseModel):
     id: ID
     booking_id: ID
     amount: float
-    status: str
-    method: str
+    status: PaymentStatus
+    method: PaymentMethodType
     created_at: datetime
     completed_at: Optional[datetime] = None
 

@@ -390,6 +390,9 @@ class AdminService:
         status: Optional[BookingStatus] = None
     ) -> Tuple[List[Booking], int]:
         """List all bookings (admin view)."""
+        # Security: Validate pagination
+        AdminSecurity.validate_pagination(skip, limit)
+        
         query = select(Booking)
         filters = []
         
@@ -477,6 +480,9 @@ class AdminService:
         status: Optional[PaymentStatus] = None
     ) -> Tuple[List[Payment], int]:
         """List all payments (admin view)."""
+        # Security: Validate pagination
+        AdminSecurity.validate_pagination(skip, limit)
+        
         query = select(Payment)
         filters = []
         
