@@ -219,34 +219,100 @@ export function rateLimitMiddleware(
 }
 
 /**
- * CSRF protection middleware
+ * Enhanced CSRF protection middleware
  * Validates CSRF tokens for state-changing operations
+ * 
+ * Security improvements:
+ * - Validates Origin header (primary CSRF protection)
+ * - Validates Referer header (secondary check)
+ * - Strict host matching in production
+ * - Additional validation for sensitive operations
  */
 export function csrfMiddleware(request: NextRequest): NextResponse | null {
-  // Only check POST, PUT, PATCH, DELETE methods
+  // Only check POST, PUT, PATCH, DELETE methods (state-changing operations)
   const method = request.method
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
     return null
   }
   
-  // Skip API routes that handle their own CSRF
+  // Skip API routes that handle their own CSRF (OAuth callbacks, etc.)
   if (request.nextUrl.pathname.startsWith('/api/auth/')) {
     return null
   }
   
-  // For server actions, Next.js handles CSRF automatically
-  // This is just an additional layer for API routes
+  // Get headers for validation
   const origin = request.headers.get('origin')
   const referer = request.headers.get('referer')
   const host = request.headers.get('host')
+  const allowedOrigin = process.env.NEXT_PUBLIC_APP_URL || `https://${host}`
   
-  // In production, validate origin/referer matches host
+  // Enhanced CSRF protection for production
   if (process.env.NODE_ENV === 'production') {
-    if (origin && !origin.includes(host || '')) {
+    // Primary check: Origin header (most reliable)
+    if (origin) {
+      // Allow same-origin requests
+      if (origin === allowedOrigin || origin === `https://${host}` || origin === `http://${host}`) {
+        return null // Valid same-origin request
+      }
+      
+      // Reject cross-origin requests without proper CORS
       return new NextResponse(
-        JSON.stringify({ error: 'Invalid origin' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: 'CSRF protection: Invalid origin',
+          detail: 'Request origin does not match allowed origin'
+        }),
+        { 
+          status: 403, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-CSRF-Error': 'origin-mismatch'
+          } 
+        }
       )
+    }
+    
+    // Secondary check: Referer header (if Origin is missing)
+    if (referer && host) {
+      const refererUrl = new URL(referer)
+      if (refererUrl.host !== host) {
+        return new NextResponse(
+          JSON.stringify({ 
+            error: 'CSRF protection: Invalid referer',
+            detail: 'Request referer does not match host'
+          }),
+          { 
+            status: 403, 
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-CSRF-Error': 'referer-mismatch'
+            } 
+          }
+        )
+      }
+    }
+    
+    // If both Origin and Referer are missing, reject (suspicious)
+    if (!origin && !referer) {
+      return new NextResponse(
+        JSON.stringify({ 
+          error: 'CSRF protection: Missing origin/referer',
+          detail: 'State-changing operations require origin validation'
+        }),
+        { 
+          status: 403, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-CSRF-Error': 'missing-headers'
+          } 
+        }
+      )
+    }
+  }
+  
+  // Development mode: Log warnings but allow (for testing)
+  if (process.env.NODE_ENV === 'development') {
+    if (origin && !origin.includes(host || '')) {
+      console.warn('[CSRF] Origin mismatch in development:', { origin, host })
     }
   }
   

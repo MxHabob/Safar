@@ -3,7 +3,10 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { randomBytes, createHash } from 'crypto'
-import type { OauthLoginApiV1UsersOauthLoginPostRequest } from '@/generated/schemas'
+import type { 
+  OauthLoginApiV1UsersOauthLoginPostRequest,
+  GetCurrentUserInfoApiV1UsersMeGetResponse 
+} from '@/generated/schemas'
 import { apiClient } from '@/generated/client'
 import { setAuthTokens } from './server'
 
@@ -232,8 +235,23 @@ export async function handleOAuthCallback(
         throw new Error(`Invalid OAuth response: Missing access_token in response. Got keys: ${Object.keys(data || {}).join(', ')}`)
       }
       
-      // Set tokens in cookies
-      await setAuthTokens(data as any)
+      // Extract tokens and user data from response
+      // New format includes user data, old format only has tokens
+      const tokens = {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        token_type: data.token_type || 'bearer',
+        expires_in: data.expires_in
+      }
+      
+      // Extract user data if available (new AuthResponse format)
+      const user: GetCurrentUserInfoApiV1UsersMeGetResponse | undefined = 
+        'user' in data && data.user 
+          ? (data.user as GetCurrentUserInfoApiV1UsersMeGetResponse)
+          : undefined
+      
+      // Set tokens in cookies with user data
+      await setAuthTokens(tokens, user)
     } catch (error) {
       // Handle API errors
       if (error && typeof error === 'object' && 'message' in error) {

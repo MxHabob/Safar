@@ -243,6 +243,19 @@ def get_rate_limit_for_request(request: Request, is_authenticated: bool) -> int:
     """Get appropriate rate limit based on route and authentication status"""
     path = request.url.path
     
+    # Stricter rate limits for authentication endpoints (security critical)
+    if "/users/login" in path or "/users/register" in path:
+        return 5  # 5 login/register attempts per minute (prevents brute force)
+    
+    if "/users/refresh" in path:
+        return 10  # 10 refresh attempts per minute (prevents token abuse)
+    
+    if "/users/password/reset" in path or "/users/password/change" in path:
+        return 3  # 3 password operations per minute (very sensitive)
+    
+    if "/users/otp" in path:
+        return 5  # 5 OTP requests per minute (prevents SMS spam)
+    
     if is_authenticated:
         # Authenticated users get higher limits
         if is_public_route(path):

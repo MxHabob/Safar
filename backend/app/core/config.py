@@ -164,7 +164,7 @@ class Settings(BaseSettings):
     )
     algorithm: str = Field(default="HS256", env="ALGORITHM")
     access_token_expire_minutes: int = Field(default=30, env="ACCESS_TOKEN_EXPIRE_MINUTES")
-    refresh_token_expire_days: int = Field(default=7, env="REFRESH_TOKEN_EXPIRE_DAYS")
+    refresh_token_expire_days: int = Field(default=3, env="REFRESH_TOKEN_EXPIRE_DAYS", description="Refresh token expiry in days (reduced from 7 to 3 for better security)")
     
     @validator("secret_key")
     def validate_secret_key(cls, v: str) -> str:

@@ -34,28 +34,42 @@ export async function loginAction(credentials: LoginApiV1UsersLoginPostRequest) 
       throw new ActionError('Invalid login response', 'INVALID_RESPONSE')
     }
     
-    // Fetch user data FIRST before setting tokens
-    // This ensures we have user data to store in session
+    // Extract tokens and user data from response
+    // New format (AuthResponse) includes user data, old format (TokenResponse) only has tokens
+    const tokens = {
+      access_token: (result as any).access_token as string,
+      refresh_token: (result as any).refresh_token as string,
+      token_type: ((result as any).token_type || 'bearer') as string,
+      expires_in: (result as any).expires_in as number
+    }
+    
+    // Extract user data if available (new AuthResponse format)
+    // If not available, we'll fetch it (backward compatibility)
     let user: GetCurrentUserInfoApiV1UsersMeGetResponse | null = null
-    try {
-      const { apiClient } = await import('@/generated/client')
-      const userResponse = await apiClient.users.getCurrentUserInfoApiV1UsersMeGet({
-        config: {
-          headers: {
-            Authorization: `Bearer ${(result as TokenResponse).access_token}`,
+    if ('user' in result && result.user) {
+      user = result.user as GetCurrentUserInfoApiV1UsersMeGetResponse
+    } else {
+      // Fallback: fetch user data if not in response (backward compatibility)
+      try {
+        const { apiClient } = await import('@/generated/client')
+        const userResponse = await apiClient.users.getCurrentUserInfoApiV1UsersMeGet({
+          config: {
+            headers: {
+              Authorization: `Bearer ${tokens.access_token}`,
+            },
           },
-        },
-      })
-      user = userResponse.data as GetCurrentUserInfoApiV1UsersMeGetResponse | null
-    } catch (error) {
-      // If fetching user fails, we'll still set tokens and fetch user on next request
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('[Auth] Could not fetch user data during login, will fetch on next request')
+        })
+        user = userResponse.data as GetCurrentUserInfoApiV1UsersMeGetResponse | null
+      } catch (error) {
+        // If fetching user fails, we'll still set tokens and fetch user on next request
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[Auth] Could not fetch user data during login, will fetch on next request')
+        }
       }
     }
     
     // Set tokens with user data (if available) to create session immediately
-    await setAuthTokens(result as TokenResponse, user || undefined)
+    await setAuthTokens(tokens, user || undefined)
     
     // Create session and set cookie
     // This is safe here because we're in a Server Action
@@ -127,26 +141,41 @@ export async function verify2FAAction(data: Verify2faLoginApiV1UsersLogin2faVeri
       throw new ActionError('Invalid 2FA response', 'INVALID_RESPONSE')
     }
     
-    // Fetch user data FIRST before setting tokens
+    // Extract tokens and user data from response
+    // New format (AuthResponse) includes user data, old format (TokenResponse) only has tokens
+    const tokens = {
+      access_token: (result as any).access_token as string,
+      refresh_token: (result as any).refresh_token as string,
+      token_type: ((result as any).token_type || 'bearer') as string,
+      expires_in: (result as any).expires_in as number
+    }
+    
+    // Extract user data if available (new AuthResponse format)
+    // If not available, we'll fetch it (backward compatibility)
     let user: GetCurrentUserInfoApiV1UsersMeGetResponse | null = null
-    try {
-      const { apiClient } = await import('@/generated/client')
-      const userResponse = await apiClient.users.getCurrentUserInfoApiV1UsersMeGet({
-        config: {
-          headers: {
-            Authorization: `Bearer ${(result as TokenResponse).access_token}`,
+    if ('user' in result && result.user) {
+      user = result.user as GetCurrentUserInfoApiV1UsersMeGetResponse
+    } else {
+      // Fallback: fetch user data if not in response (backward compatibility)
+      try {
+        const { apiClient } = await import('@/generated/client')
+        const userResponse = await apiClient.users.getCurrentUserInfoApiV1UsersMeGet({
+          config: {
+            headers: {
+              Authorization: `Bearer ${tokens.access_token}`,
+            },
           },
-        },
-      })
-      user = userResponse.data as GetCurrentUserInfoApiV1UsersMeGetResponse | null
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('[Auth] Could not fetch user data during 2FA verification')
+        })
+        user = userResponse.data as GetCurrentUserInfoApiV1UsersMeGetResponse | null
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[Auth] Could not fetch user data during 2FA verification')
+        }
       }
     }
     
     // Set tokens with user data (if available) to create session immediately
-    await setAuthTokens(result as TokenResponse, user || undefined)
+    await setAuthTokens(tokens, user || undefined)
     
     // Set session cookie
     try {

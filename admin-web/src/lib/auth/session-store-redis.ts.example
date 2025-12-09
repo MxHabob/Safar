@@ -1,0 +1,248 @@
+/**
+ * Redis Session Store - Example Implementation
+ * 
+ * هذا ملف مثال يوضح كيفية ترقية Session Store إلى Redis
+ * للاستخدام في الإنتاج مع multiple servers
+ * 
+ * خطوات التطبيق:
+ * 1. npm install ioredis
+ * 2. نسخ هذا الملف إلى session-store-redis.ts
+ * 3. استبدال session-store.ts بـ session-store-redis.ts
+ */
+
+import Redis from 'ioredis'
+import type { GetCurrentUserInfoApiV1UsersMeGetResponse } from '@/generated/schemas'
+import type { SessionData } from './session-store'
+
+/**
+ * Redis Session Store
+ * Production-ready session storage using Redis
+ */
+class RedisSessionStore {
+  private redis: Redis
+  private prefix = 'session:'
+  private userPrefix = 'user_sessions:'
+
+  constructor() {
+    this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+      retryStrategy: (times) => {
+        const delay = Math.min(times * 50, 2000)
+        return delay
+      },
+      maxRetriesPerRequest: 3,
+    })
+
+    // Handle connection errors
+    this.redis.on('error', (err) => {
+      console.error('[Redis Session Store] Connection error:', err)
+    })
+
+    this.redis.on('connect', () => {
+      console.log('[Redis Session Store] Connected to Redis')
+    })
+  }
+
+  /**
+   * Create a new session
+   */
+  async create(
+    sessionToken: string,
+    userId: string,
+    user: GetCurrentUserInfoApiV1UsersMeGetResponse,
+    maxAge: number = 30 * 24 * 60 * 60 * 1000 // 30 days default
+  ): Promise<SessionData> {
+    const now = new Date()
+    const expires = new Date(now.getTime() + maxAge)
+
+    const session: SessionData = {
+      sessionToken,
+      userId,
+      user,
+      expires,
+      createdAt: now,
+      updatedAt: now,
+    }
+
+    const key = `${this.prefix}${sessionToken}`
+    const ttl = Math.floor(maxAge / 1000) // Convert to seconds
+
+    // Store session in Redis
+    await this.redis.setex(key, ttl, JSON.stringify(session))
+
+    // Track session for user
+    const userKey = `${this.userPrefix}${userId}`
+    await this.redis.sadd(userKey, sessionToken)
+    await this.redis.expire(userKey, ttl)
+
+    return session
+  }
+
+  /**
+   * Get session by token
+   */
+  async get(sessionToken: string): Promise<SessionData | null> {
+    const key = `${this.prefix}${sessionToken}`
+    const data = await this.redis.get(key)
+
+    if (!data) {
+      return null
+    }
+
+    const session: SessionData = JSON.parse(data)
+
+    // Check if session is expired (double check)
+    if (new Date(session.expires) < new Date()) {
+      await this.delete(sessionToken)
+      return null
+    }
+
+    // Update last accessed time
+    session.updatedAt = new Date()
+    await this.redis.setex(key, await this.redis.ttl(key) || 0, JSON.stringify(session))
+
+    return session
+  }
+
+  /**
+   * Update session data
+   */
+  async update(
+    sessionToken: string,
+    updates: Partial<Pick<SessionData, 'user' | 'expires'>>
+  ): Promise<SessionData | null> {
+    const session = await this.get(sessionToken)
+
+    if (!session) {
+      return null
+    }
+
+    // Update session
+    if (updates.user) {
+      session.user = updates.user
+    }
+    if (updates.expires) {
+      session.expires = updates.expires
+    }
+    session.updatedAt = new Date()
+
+    const key = `${this.prefix}${sessionToken}`
+    const ttl = await this.redis.ttl(key) || 0
+    await this.redis.setex(key, ttl, JSON.stringify(session))
+
+    return session
+  }
+
+  /**
+   * Delete session
+   */
+  async delete(sessionToken: string): Promise<boolean> {
+    const key = `${this.prefix}${sessionToken}`
+    const data = await this.redis.get(key)
+
+    if (!data) {
+      return false
+    }
+
+    const session: SessionData = JSON.parse(data)
+
+    // Delete session
+    await this.redis.del(key)
+
+    // Remove from user sessions
+    const userKey = `${this.userPrefix}${session.userId}`
+    await this.redis.srem(userKey, sessionToken)
+
+    return true
+  }
+
+  /**
+   * Delete all sessions for a user
+   */
+  async deleteAllForUser(userId: string): Promise<number> {
+    const userKey = `${this.userPrefix}${userId}`
+    const sessionTokens = await this.redis.smembers(userKey)
+
+    if (sessionTokens.length === 0) {
+      return 0
+    }
+
+    // Delete all sessions
+    const keys = sessionTokens.map(token => `${this.prefix}${token}`)
+    if (keys.length > 0) {
+      await this.redis.del(...keys)
+    }
+
+    // Delete user sessions set
+    await this.redis.del(userKey)
+
+    return sessionTokens.length
+  }
+
+  /**
+   * Get all sessions for a user
+   */
+  async getSessionsForUser(userId: string): Promise<SessionData[]> {
+    const userKey = `${this.userPrefix}${userId}`
+    const sessionTokens = await this.redis.smembers(userKey)
+
+    const sessions: SessionData[] = []
+    for (const token of sessionTokens) {
+      const session = await this.get(token)
+      if (session) {
+        sessions.push(session)
+      }
+    }
+
+    return sessions
+  }
+
+  /**
+   * Get session count (for monitoring)
+   */
+  async getCount(): Promise<number> {
+    const keys = await this.redis.keys(`${this.prefix}*`)
+    return keys.length
+  }
+
+  /**
+   * Clear all sessions (for testing)
+   */
+  async clear(): Promise<void> {
+    const keys = await this.redis.keys(`${this.prefix}*`)
+    const userKeys = await this.redis.keys(`${this.userPrefix}*`)
+    
+    if (keys.length > 0) {
+      await this.redis.del(...keys)
+    }
+    if (userKeys.length > 0) {
+      await this.redis.del(...userKeys)
+    }
+  }
+
+  /**
+   * Close Redis connection
+   */
+  async close(): Promise<void> {
+    await this.redis.quit()
+  }
+}
+
+// Singleton instance
+export const sessionStore = new RedisSessionStore()
+
+/**
+ * Generate a secure session token
+ */
+export function generateSessionToken(): string {
+  const array = new Uint8Array(32)
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(array)
+  } else {
+    for (let i = 0; i < array.length; i++) {
+      array[i] = Math.floor(Math.random() * 256)
+    }
+  }
+  
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
+}
+

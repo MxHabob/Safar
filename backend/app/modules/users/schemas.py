@@ -129,6 +129,15 @@ class TokenResponse(BaseModel):
     expires_in: int
 
 
+class AuthResponse(BaseModel):
+    """Schema returned when logging in - includes tokens and user data."""
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    user: UserResponse
+
+
 class RefreshTokenRequest(BaseModel):
     """Schema for refresh-token requests."""
     refresh_token: str

@@ -23,8 +23,32 @@ export interface SessionData {
 }
 
 /**
- * In-memory session store
- * In production, this should be replaced with Redis or database storage
+ * Session Store Implementation
+ * 
+ * CURRENT: In-memory session store (works for single server)
+ * 
+ * PRODUCTION UPGRADE REQUIRED:
+ * For production with multiple servers or load balancing, you MUST upgrade to Redis:
+ * 
+ * 1. Install Redis client: npm install ioredis
+ * 2. Create Redis session store adapter
+ * 3. Replace this class with Redis-backed implementation
+ * 
+ * Example Redis implementation:
+ * ```typescript
+ * import Redis from 'ioredis'
+ * const redis = new Redis(process.env.REDIS_URL)
+ * 
+ * async create(sessionToken, userId, user, maxAge) {
+ *   const key = `session:${sessionToken}`
+ *   await redis.setex(key, maxAge / 1000, JSON.stringify({...}))
+ * }
+ * ```
+ * 
+ * SECURITY NOTE:
+ * - Current implementation loses sessions on server restart
+ * - Not suitable for multi-server deployments
+ * - Upgrade to Redis before production deployment
  */
 class SessionStore {
   private sessions: Map<string, SessionData> = new Map()

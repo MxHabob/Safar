@@ -12,13 +12,13 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_user, get_current_active_user, get_unit_of_work
 from app.repositories.unit_of_work import IUnitOfWork
 from app.core.security import create_access_token, create_refresh_token, decode_token
-from app.core.token_blacklist import add_token_to_blacklist, revoke_user_tokens
+from app.core.token_blacklist import add_token_to_blacklist, revoke_user_tokens, is_token_blacklisted, get_user_revocation_time
 from app.core.config import get_settings
 from app.modules.users.models import User, UserRole, UserStatus
 from app.domain.entities.user import UserEntity
 from app.modules.users.schemas import (
     UserCreate, UserResponse, UserUpdate, UserLogin,
-    TokenResponse, RefreshTokenRequest, OAuthLogin, OTPRequest, OTPVerify,
+    TokenResponse, AuthResponse, RefreshTokenRequest, OAuthLogin, OTPRequest, OTPVerify,
     HostProfileResponse, HostProfileCreate, HostProfileUpdate,
     PasswordResetRequest, PasswordReset, PasswordChange, EmailVerificationRequest,
     TwoFactorLoginVerify, TwoFactorSetupResponse, TwoFactorStatusResponse,
@@ -81,7 +81,7 @@ async def register(
     return user
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=AuthResponse)
 async def login(
     credentials: UserLogin,
     request: Request,
@@ -176,9 +176,25 @@ async def login(
     # Create tokens using service (mfa_verified=False for regular login without 2FA)
     tokens = await UserService.create_access_token_for_user(user_entity, mfa_verified=False)
     
+    # Get the user model for response (refresh after commit)
+    result = await uow.db.execute(
+        select(User).where(User.id == user_entity.id)
+    )
+    user_model = result.scalar_one_or_none()
+    
+    if not user_model:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="User not found"
+        )
+    
+    # Convert user model to UserResponse
+    user_response = UserResponse.model_validate(user_model)
+    
     return {
         **tokens,
-        "expires_in": settings.access_token_expire_minutes * 60
+        "expires_in": settings.access_token_expire_minutes * 60,
+        "user": user_response
     }
 
 
@@ -189,10 +205,16 @@ async def refresh_token(
 ) -> Any:
     """
     Refresh an access token using a valid refresh token.
+    
+    Security improvements:
+    - Implements refresh token rotation (old token is blacklisted)
+    - Checks user revocation timestamp
+    - Prevents token reuse attacks
     """
     try:
         payload = decode_token(token_data.refresh_token, token_type="refresh")
         user_id = payload.get("sub")
+        token_iat = payload.get("iat")  # Issued at timestamp
         
         if not user_id:
             raise HTTPException(
@@ -200,12 +222,37 @@ async def refresh_token(
                 detail="Invalid token"
             )
         
+        # Check if refresh token is blacklisted
+        if await is_token_blacklisted(token_data.refresh_token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked"
+            )
+        
+        # Check user revocation timestamp (for logout-all or password change)
+        revocation_time = await get_user_revocation_time(user_id)
+        if revocation_time and token_iat:
+            token_issued_at = datetime.utcfromtimestamp(token_iat)
+            if token_issued_at < revocation_time:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Token has been revoked"
+                )
+        
         user_entity = await UserService.get_user_by_id(uow, user_id)
         if not user_entity or not user_entity.is_active:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="User not found or inactive"
             )
+        
+        # SECURITY: Blacklist the old refresh token (token rotation)
+        # This prevents token reuse if the old token was stolen
+        refresh_token_expire_seconds = settings.refresh_token_expire_days * 24 * 60 * 60
+        await add_token_to_blacklist(
+            token_data.refresh_token,
+            expires_in=refresh_token_expire_seconds
+        )
         
         # Create new tokens
         access_token = create_access_token(
@@ -396,7 +443,7 @@ async def logout_all(
     return {"message": "Successfully logged out from all devices"}
 
 
-@router.post("/oauth/login", response_model=TokenResponse)
+@router.post("/oauth/login", response_model=AuthResponse)
 async def oauth_login(
     oauth_data: OAuthLogin,
     uow: IUnitOfWork = Depends(get_unit_of_work)
@@ -536,13 +583,30 @@ async def oauth_login(
         
         await uow.commit()
     
+    # Get the user model for response
+    from sqlalchemy import select
+    result = await uow.db.execute(
+        select(User).where(User.id == user_entity.id)
+    )
+    user_model = result.scalar_one_or_none()
+    
+    if not user_model:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="User not found after creation"
+        )
+    
     # Create tokens (OAuth login - check if 2FA is enabled, if so mfa_verified=False)
     # User will need to verify 2FA separately if enabled
     tokens = await UserService.create_access_token_for_user(user_entity, mfa_verified=False)
     
+    # Convert user model to UserResponse
+    user_response = UserResponse.model_validate(user_model)
+    
     return {
         **tokens,
-        "expires_in": settings.access_token_expire_minutes * 60
+        "expires_in": settings.access_token_expire_minutes * 60,
+        "user": user_response
     }
 
 
@@ -679,7 +743,7 @@ async def resend_email_verification(
 # Two-Factor Authentication (2FA) Routes
 # ============================================================================
 
-@router.post("/login/2fa/verify", response_model=TokenResponse)
+@router.post("/login/2fa/verify", response_model=AuthResponse)
 async def verify_2fa_login(
     verify_data: TwoFactorLoginVerify,
     request: Request,
@@ -752,9 +816,13 @@ async def verify_2fa_login(
     )
     tokens = await UserService.create_access_token_for_user(user_entity, mfa_verified=True)
     
+    # Convert user model to UserResponse
+    user_response = UserResponse.model_validate(user)
+    
     return {
         **tokens,
-        "expires_in": settings.access_token_expire_minutes * 60
+        "expires_in": settings.access_token_expire_minutes * 60,
+        "user": user_response
     }
 
 

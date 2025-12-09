@@ -336,6 +336,30 @@ export class BaseApiClient {
         }
       }
       
+      // Client-side: fetch token from API route
+      // This allows client-side requests to get the token from httpOnly cookies
+      if (typeof window !== 'undefined') {
+        try {
+          const response = await fetch('/api/auth/token', {
+            credentials: 'include',
+            cache: 'no-store'
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            if (data?.token) {
+              getAuthHeaders.Authorization = `Bearer ${data.token}`
+              return getAuthHeaders
+            }
+          }
+        } catch (error) {
+          // Silently fail - token might not be available
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[API Client] Failed to fetch token from API route:', error)
+          }
+        }
+      }
+      
       // Try external auth service
       // No external auth configured
     } catch (error) {
@@ -623,7 +647,10 @@ export class BaseApiClient {
         // Only include next options if we're on the server (Next.js App Router)
         const fetchInit: RequestInit & { next?: { tags?: string[]; revalidate?: number | false; connection?: string } } = {
           ...requestConfig,
-          signal: controller.signal
+          signal: controller.signal,
+          // Include credentials to send cookies with requests
+          // This is necessary for cross-origin requests when CORS allows credentials
+          credentials: 'include'
         }
         
         // Add Next.js-specific options only if we have cache tags, revalidate, or connection
