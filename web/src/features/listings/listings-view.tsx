@@ -18,12 +18,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import type { ListingListResponse } from "@/generated/schemas";
 
 /**
  * Listings browse view - Grid layout with filters
  * Beautiful, minimal design following Safar's aesthetic
  */
-export const ListingsView = () => {
+export const ListingsView = ({ initialData }: { initialData?: ListingListResponse }) => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [filters, setFilters] = useState({
     city: "",
@@ -43,7 +44,10 @@ export const ListingsView = () => {
     filters.min_price ? parseFloat(filters.min_price) : undefined,
     filters.max_price ? parseFloat(filters.max_price) : undefined,
     filters.min_guests ? parseInt(filters.min_guests) : undefined,
-    "active"
+    "active",
+    {
+      initialData: filters.city === "" && filters.country === "" && filters.listing_type === "" ? initialData : undefined
+    }
   );
 
   if (isLoading) {
@@ -177,6 +181,8 @@ export const ListingsView = () => {
                     src={photoUrl}
                     alt={listingAlt}
                     fill
+                    loading={index < 6 ? "eager" : "lazy"}
+                    priority={index < 3}
                     quality={75}
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"

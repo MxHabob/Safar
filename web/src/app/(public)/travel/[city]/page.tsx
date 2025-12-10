@@ -11,6 +11,8 @@ type Props = {
   }>;
 };
 
+export const revalidate = 300; // ISR: Revalidate every 5 minutes
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const city = (await params).city;
   const decodedCity = decodeURIComponent(city);

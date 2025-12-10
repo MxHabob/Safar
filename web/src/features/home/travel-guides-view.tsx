@@ -6,13 +6,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
 import { MapPin } from "lucide-react";
 import { useGetGuidesApiV1TravelGuidesGet } from "@/generated/hooks/travelGuides";
-import type { FileUploadResponse } from "@/generated/schemas";
+import type { FileUploadResponse, GetGuidesApiV1TravelGuidesGetResponse } from "@/generated/schemas";
 
 /**
  * Travel guides view component - Displays travel guides grouped by city
  * Shows the most viewed published guides in a grid layout
  */
-export const TravelGuidesView = () => {
+export const TravelGuidesView = ({ initialData }: { initialData?: GetGuidesApiV1TravelGuidesGetResponse }) => {
   const { data: guides, isLoading, error } = useGetGuidesApiV1TravelGuidesGet(
     undefined, // destination
     undefined, // country
@@ -23,7 +23,10 @@ export const TravelGuidesView = () => {
     "published", // status - only published guides
     undefined, // skip
     9, // limit - get 9 guides
-    "view_count" // sort_by - most viewed
+    "view_count", // sort_by - most viewed
+    {
+      initialData
+    }
   );
 
   if (isLoading) {

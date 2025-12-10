@@ -6,8 +6,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { HeroSliderLoading } from "@/features/home/hero-slider";
 import Graphic from "@/components/shared/graphic";
+import { ListingListResponse } from "@/generated/schemas";
 
-// Defer heavy carousel bundle to the client to keep first paint light
 const HeroSlider = dynamic(
   () =>
     import("@/features/home/hero-slider").then((mod) => mod.HeroSlider),
@@ -17,20 +17,14 @@ const HeroSlider = dynamic(
   }
 );
 
-/**
- * Minimal hero section - Editorial style with subtle elegance
- * Uses Safar's unique graphic elements and 18px corners
- */
-export const MinimalHero = () => {
+export const MinimalHero = ( {initialsData }: { initialsData?: ListingListResponse } ) => {
+
   return (
     <section className="relative min-h-screen flex items-center justify-center p-3 lg:p-6">
-      {/* Background with graphic corners */}
       <div className="absolute inset-0 rounded-[18px] overflow-hidden bg-muted/30">
-        <HeroSlider />
+        <HeroSlider initialsData={initialsData} />
         <div className="absolute inset-0 bg-background/40" />
       </div>
-
-      {/* Graphic corner elements */}
       <div className="absolute top-0 left-0 size-[18px]">
         <Graphic />
       </div>
@@ -44,7 +38,6 @@ export const MinimalHero = () => {
         <Graphic />
       </div>
 
-      {/* Content */}
       <div className="relative z-10 max-w-4xl mx-auto text-center px-4">
         <div className="mb-12 space-y-6">
           <h1 className="text-5xl lg:text-7xl font-light tracking-tight leading-none">

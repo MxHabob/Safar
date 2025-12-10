@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
 import { ListingsView, ListingsViewLoading } from "@/features/listings/listings-view";
+import { listListingsApiV1ListingsGet } from "@/generated/actions/listings";
 
 export const metadata: Metadata = {
   title: "Browse Listings",
@@ -28,12 +29,19 @@ export const metadata: Metadata = {
  */
 export const revalidate = 30; // ISR: Revalidate every 30 seconds
 
-export default function ListingsPage() {
+export default async function ListingsPage() {
+  // Fetch initial data for faster initial load
+  const listingsResult = await listListingsApiV1ListingsGet({ 
+    query: { skip: 0, limit: 24, status: "active" } 
+  }).catch(() => null);
+  
+  const initialData = listingsResult?.data || undefined;
+
   return (
     <div className="min-h-screen w-full">
       <main className="w-full max-w-7xl mx-auto px-3 lg:px-6 py-8 lg:py-12">
         <Suspense fallback={<ListingsViewLoading />}>
-          <ListingsView />
+          <ListingsView initialData={initialData} />
         </Suspense>
       </main>
     </div>

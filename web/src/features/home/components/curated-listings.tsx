@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import BlurImage from "@/components/shared/blur-image";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import Graphic from "@/components/shared/graphic";
+import type { ListingListResponse } from "@/generated/schemas";
 
 /**
  * Curated listing card component - Displays a single listing
@@ -60,6 +61,7 @@ const CuratedListingCard = ({
           sizes="(max-width: 767px) 100vw, (max-width: 1535px) 50vw, 33vw"
           className="object-cover transition-transform duration-700 group-hover:scale-105"
           blurhash=""
+          loading="lazy"
         />
         
         {/* Overlay gradient for bottom text */}
@@ -131,7 +133,7 @@ const CuratedListingCard = ({
  * Focus on beauty and simplicity
  * Inspired by TravelGuideCard design
  */
-export const CuratedListings = () => {
+export const CuratedListings = ({ initialData }: { initialData?: ListingListResponse }) => {
   const { data, isLoading } = useListListingsApiV1ListingsGet(
     undefined,
     6,
@@ -141,7 +143,10 @@ export const CuratedListings = () => {
     undefined,
     undefined,
     undefined,
-    "active"
+    "active",
+    {
+      initialData
+    }
   );
 
   if (isLoading) {

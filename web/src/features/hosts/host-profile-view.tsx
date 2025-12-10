@@ -7,17 +7,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, Star } from "lucide-react";
 import Graphic from "@/components/shared/graphic";
 import { useListListingsApiV1ListingsGet } from "@/generated/hooks/listings";
+import type { ListingListResponse } from "@/generated/schemas";
 
 interface HostProfileViewProps {
   hostId: string;
+  initialData?: ListingListResponse;
 }
 
 /**
  * Host profile view
  * Shows host information and their listings
  */
-export const HostProfileView = ({ hostId }: HostProfileViewProps) => {
+export const HostProfileView = ({ hostId, initialData }: HostProfileViewProps) => {
   // Fetch host's listings
+  // Note: Currently fetches all active listings, should filter by host_id when API supports it
   const { data, isLoading } = useListListingsApiV1ListingsGet(
     0,
     12,
@@ -27,7 +30,10 @@ export const HostProfileView = ({ hostId }: HostProfileViewProps) => {
     undefined,
     undefined,
     undefined,
-    "active"
+    "active",
+    {
+      initialData
+    }
   );
 
   const listings = data?.items || [];

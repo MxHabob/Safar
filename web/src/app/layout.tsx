@@ -1,8 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-
-import { SpeedInsights } from "@vercel/speed-insights/next";
-import { Analytics } from "@vercel/analytics/next";
 // import { Readex_Pro } from "next/font/google";
 import { Providers } from "@/lib/providers";
 
@@ -16,7 +13,7 @@ import { Providers } from "@/lib/providers";
 export const metadata: Metadata = {
   title: {
     template: "%s - Safar",
-    default: "Safar - Travel Guides & Stories",
+    default: "Safar",
   },
   description: "Discover amazing travel destinations, stories, and guides. Share your travel experiences and explore the world with Safar.",
   keywords: ["travel", "accommodation", "bookings", "travel guides", "travel stories", "destinations", "photography"],
@@ -64,14 +61,38 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Preconnect to external domains for faster resource loading */}
+        <link rel="preconnect" href="https://safar.mulverse.com" />
+        <link rel="dns-prefetch" href="https://safar.mulverse.com" />
+      </head>
       <body className={` antialiased`}>
         <Providers>
           {children}
         </Providers>
-        <SpeedInsights />
-        <Analytics />
+        {/* <SpeedInsights />
+        <Analytics /> */}
+        {/* Service Worker registration script */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator && typeof window !== 'undefined') {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                      console.log('SW registered:', registration);
+                    })
+                    .catch((error) => {
+                      console.log('SW registration failed:', error);
+                    });
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );

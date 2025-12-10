@@ -1,25 +1,18 @@
-/**
- * Service Worker for PWA
- * This file is served from /public and registered by the client
- */
+// Service Worker for caching static assets
+// Improves performance by caching resources offline
 
 const CACHE_NAME = 'safar-v1';
-const STATIC_CACHE_NAME = 'safar-static-v1';
-const DYNAMIC_CACHE_NAME = 'safar-dynamic-v1';
-
-// Assets to cache on install
 const STATIC_ASSETS = [
   '/',
   '/listings',
   '/discover',
-  '/offline',
-  '/logo.png',
+  '/travel',
 ];
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE_NAME).then((cache) => {
+    caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(STATIC_ASSETS);
     })
   );
@@ -32,122 +25,50 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter((name) => {
-            return (
-              name !== STATIC_CACHE_NAME &&
-              name !== DYNAMIC_CACHE_NAME &&
-              name !== CACHE_NAME
-            );
-          })
+          .filter((name) => name !== CACHE_NAME)
           .map((name) => caches.delete(name))
       );
     })
   );
-  return self.clients.claim();
+  self.clients.claim();
 });
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
-
-  // Skip non-GET requests
-  if (request.method !== 'GET') {
+  // Only cache GET requests
+  if (event.request.method !== 'GET') {
     return;
   }
 
-  // Skip API requests (they should always go to network)
-  if (url.pathname.startsWith('/api/')) {
+  // Skip non-GET requests and external resources
+  if (
+    !event.request.url.startsWith(self.location.origin) ||
+    event.request.url.includes('/api/') ||
+    event.request.url.includes('/_next/')
+  ) {
     return;
   }
 
-  // Strategy: Cache First for static assets, Network First for pages
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      // Return cached version if available
+    caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
 
-      // Fetch from network
-      return fetch(request)
-        .then((response) => {
-          // Don't cache non-successful responses
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-
-          // Clone the response
-          const responseToCache = response.clone();
-
-          // Cache dynamic content
-          caches.open(DYNAMIC_CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
-          });
-
+      return fetch(event.request).then((response) => {
+        // Don't cache if not a valid response
+        if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
-        })
-        .catch(() => {
-          // If offline and page request, return offline page
-          if (request.headers.get('accept')?.includes('text/html')) {
-            return caches.match('/offline');
-          }
-        });
-    })
-  );
-});
-
-// Push notification event
-self.addEventListener('push', (event) => {
-  const data = event.data?.json() || {};
-  const title = data.title || 'Safar';
-  const options = {
-    body: data.body || 'You have a new notification',
-    icon: '/logo.png',
-    badge: '/logo.png',
-    data: data.url || '/',
-    tag: data.tag || 'default',
-    requireInteraction: data.requireInteraction || false,
-  };
-
-  event.waitUntil(
-    self.registration.showNotification(title, options)
-  );
-});
-
-// Notification click event
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-
-  const urlToOpen = event.notification.data || '/';
-
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // If a window is already open, focus it
-      for (const client of clientList) {
-        if (client.url === urlToOpen && 'focus' in client) {
-          return client.focus();
         }
-      }
-      // Otherwise, open a new window
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
-      }
+
+        const responseToCache = response.clone();
+
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseToCache);
+        });
+
+        return response;
+      });
     })
   );
 });
-
-// Background sync (for offline actions)
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-bookings') {
-    event.waitUntil(
-      // Sync bookings when online
-      fetch('/api/sync/bookings')
-        .then((response) => response.json())
-        .catch((error) => {
-          console.error('Sync failed:', error);
-        })
-    );
-  }
-});
-

@@ -7,23 +7,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ImageOff } from "lucide-react";
 import { useListListingsApiV1ListingsGet } from "@/generated/hooks/listings";
-
-/**
- * Hero slider component - Displays featured listings in a carousel
- * Used in the hero section of the home page
- */
-export const HeroSlider = () => {
-  // Explicitly set skip=0 so the hook always queries and we don't accidentally skip
+import { ListingListResponse } from "@/generated/schemas";
+  
+export const HeroSlider = ( {initialsData }: { initialsData?: ListingListResponse } ) => {
   const { data, isLoading, error } = useListListingsApiV1ListingsGet(
-    0, // skip
-    10, // limit - get 10 featured listings
+    undefined,
+    10,
     undefined, // city
     undefined, // country
     undefined, // listing_type
     undefined, // min_price
     undefined, // max_price
     undefined, // min_guests
-    "active" // status - only show active listings
+    "active", // status - only show active listings
+    { 
+      initialData: initialsData
+    }
   );
 
   if (isLoading) {
@@ -46,21 +45,61 @@ export const HeroSlider = () => {
   }
 
   const listings = data?.items || [];
-
-  // Get all photos from listings (flatten photos/photos arrays)
+  
   const allPhotos = listings
-    .flatMap((listing) =>
-      (listing.photos || listing.images || []).map((photo) => ({
-        url: photo.url,
-        thumbnail_url: photo.url,
-        alt: listing.title || "Travel destination",
-        listingId: listing.id,
-        listingSlug: listing.slug,
-      }))
-    )
-    .filter((photo) => photo.url && photo.url.trim() !== "");
+    .flatMap((listing) => {
+      if (!listing) return [];
+      
+      const photosArray = listing.images || [];
+      console.log("listing", listing);
+      console.log("photosArray", photosArray);
 
-  // If no photos are available, show an empty state so the hero isn't blank
+      
+      if (!Array.isArray(photosArray) || photosArray.length === 0) {
+        return [];
+      }
+      return photosArray
+        .map((photo: any) => {
+          if (!photo) return null;
+          
+          const photoUrl = photo?.url 
+          
+          console.log("photoUrl", photoUrl);
+          if (!photoUrl || typeof photoUrl !== 'string' || photoUrl.trim() === '') {
+            return null;
+          }
+          
+          const trimmedUrl = photoUrl.trim();
+          
+          if (
+            trimmedUrl === "/images/image1.jpg" ||
+            trimmedUrl === "placeholder" ||
+            trimmedUrl.startsWith("data:") ||
+            trimmedUrl.length < 10
+          ) {
+            return null;
+          }
+          
+          return {
+            url: trimmedUrl,
+            thumbnail_url: photo?.thumbnail_url || photo?.url || trimmedUrl,
+            alt: listing.title || listing.city || listing.country || "Travel destination",
+            listingId: listing.id,
+            listingSlug: listing.slug || listing.id?.toString() || "",
+          };
+        })
+        .filter((photo): photo is NonNullable<typeof photo> => photo !== null);
+    })
+    .filter((photo) => {
+      return (
+        photo && 
+        photo.url && 
+        photo.url.trim() !== "" && 
+        photo.listingId &&
+        photo.listingSlug
+      );
+    });
+
   if (allPhotos.length === 0) {
     return (
       <div className="absolute inset-0 w-full h-full rounded-[18px] overflow-hidden">
@@ -80,16 +119,18 @@ export const HeroSlider = () => {
       containerClassName="h-full"
     >
       {allPhotos.map((photo, index) => {
-        const shouldPreload = index < 2; // Preload first 2 images
-        const imageUrl = photo.url?.trim() || "/images/image1.jpg";
+        const shouldPreload = index < 2;
+        const imageUrl = photo.url?.trim();
         const imageAlt = photo.alt?.trim() || "Travel destination";
 
-        if (!imageUrl || imageUrl === "") return null;
+        if (!imageUrl || imageUrl === "" || imageUrl === "/images/image1.jpg") {
+          return null;
+        }
 
         return (
           <Link
             key={`${photo.listingId}-${index}`}
-            href={`/listings/${photo.listingSlug}`}
+            href={`/listings/${photo.listingSlug || photo.listingId}`}
             className="flex-[0_0_100%] h-full relative block"
           >
             <BlurImage

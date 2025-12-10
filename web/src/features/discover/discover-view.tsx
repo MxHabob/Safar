@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
 import { MapPin } from "lucide-react";
 import { keyToImage } from "@/lib/keyToImage";
+import type { ListingListResponse } from "@/generated/schemas";
 
 /**
  * Convert Listing to PhotoPoint for map display
@@ -58,7 +59,7 @@ function convertListingToPhotoPoint(listing: any): PhotoPoint | null {
   };
 }
 
-export const DiscoverView = () => {
+export const DiscoverView = ({ initialData }: { initialData?: ListingListResponse }) => {
   const isMobile = useIsMobile();
   
   // Fetch listings from API (listings have latitude/longitude)
@@ -72,7 +73,10 @@ export const DiscoverView = () => {
     undefined, // min_price
     undefined, // max_price
     undefined, // min_guests
-    "active" // status - only active listings
+    "active", // status - only active listings
+    {
+      initialData
+    }
   );
 
   // Convert listings to photo points

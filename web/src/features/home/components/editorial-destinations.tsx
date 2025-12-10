@@ -6,12 +6,13 @@ import { ArrowUpRight } from "lucide-react";
 import { useGetGuidesApiV1TravelGuidesGet } from "@/generated/hooks/travelGuides";
 import { Skeleton } from "@/components/ui/skeleton";
 import Graphic from "@/components/shared/graphic";
+import type { GetGuidesApiV1TravelGuidesGetResponse } from "@/generated/schemas";
 
 /**
  * Editorial destinations section - Asymmetric, magazine-style layout
  * Beautiful, minimal design with creative use of space
  */
-export const EditorialDestinations = () => {
+export const EditorialDestinations = ({ initialData }: { initialData?: GetGuidesApiV1TravelGuidesGetResponse }) => {
   const { data: guides, isLoading } = useGetGuidesApiV1TravelGuidesGet(
     undefined,
     undefined,
@@ -22,7 +23,10 @@ export const EditorialDestinations = () => {
     "published",
     undefined,
     6,
-    "view_count"
+    "view_count",
+    {
+      initialData
+    }
   );
 
   if (isLoading) {
@@ -108,6 +112,8 @@ export const EditorialDestinations = () => {
                   quality={75}
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  loading={index < 3 ? "eager" : "lazy"}
+                  priority={index < 3}
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
 
