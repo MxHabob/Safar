@@ -3,7 +3,6 @@ import type { Metadata as MetadataType } from "next";
 import Footer from "@/components/footer";
 import { MinimalHero } from "@/features/home/components/minimal-hero";
 import { TravelGuidesViewLoading } from "@/features/home/travel-guides-view";
-import { listListingsApiV1ListingsGet } from "@/generated/actions/listings";
 import { CuratedListings } from "@/features/home/components/curated-listings";
 import { TravelGuidesView } from "@/features/home/travel-guides-view";
 import { EditorialDestinations } from "@/features/home/components/editorial-destinations";
@@ -41,11 +40,11 @@ export const metadata: MetadataType = {
 
 
 const page = async () => {
-  const listingsResult = await listListingsApiV1ListingsGet({ 
-    query: { skip: 0, limit: 10, status: "active" } 
-  }).catch(() => null);
+  // const listingsResult = await listListingsApiV1ListingsGet({ 
+  //   query: { skip: 0, limit: 10, status: "active" } 
+  // }).catch(() => null);
 
-  const listings = listingsResult?.data || undefined;
+  // const listings = listingsResult?.data || undefined;
 
   return (
     <>
@@ -55,7 +54,7 @@ const page = async () => {
       /> */}
       
       <div className="min-h-screen w-full">
-        <MinimalHero initialsData={listings} />
+        <MinimalHero />
         <main className="w-full max-w-7xl mx-auto px-3 lg:px-6 py-16 lg:py-24 space-y-24 lg:space-y-32">
           <Suspense fallback={
             <div className="space-y-6">
