@@ -253,7 +253,18 @@ class UserService:
             "sub": str(user.id),
             "email": user.email,
             "role": user.role,
-            "mfa_verified": mfa_verified  # Include 2FA verification status in JWT
+            "mfa_verified": mfa_verified,  # Include 2FA verification status in JWT
+            # Enrich claims so frontend can hydrate session without extra fetches
+            "first_name": getattr(user, "first_name", None),
+            "last_name": getattr(user, "last_name", None),
+            "avatar_url": getattr(user, "avatar_url", None),
+            "is_email_verified": getattr(user, "is_email_verified", None),
+            "is_phone_verified": getattr(user, "is_phone_verified", None),
+            "is_active": getattr(user, "is_active", None),
+            "status": getattr(user, "status", None),
+            "locale": getattr(user, "locale", None),
+            "language": getattr(user, "language", None),
+            "currency": getattr(user, "currency", None),
         }
         
         # Include session_id in token if provided

@@ -136,7 +136,7 @@ class AuthResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int
     user: UserResponse
-    session_id: str  # Session IDs may exceed ID max length; allow string
+    session_id: str
 
 
 class RefreshTokenRequest(BaseModel):

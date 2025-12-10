@@ -32,9 +32,9 @@ export interface ServerSession {
 export const getServerSession = cache(async (): Promise<ServerSession | null> => {
   try {
     // Priority 1: Check session store
-    const sessionId = await getSessionId()
-    if (sessionId) {
-      const storedSession = sessionStore.get(sessionId)
+    const cookieSessionId = await getSessionId()
+    if (cookieSessionId) {
+      const storedSession = sessionStore.get(cookieSessionId)
       if (storedSession) {
         const accessToken = await getAccessToken()
         if (accessToken) {
@@ -66,10 +66,47 @@ export const getServerSession = cache(async (): Promise<ServerSession | null> =>
       return null
     }
 
-    // Token is valid but no session in store
-    // This shouldn't happen if login was successful
-    // Return null to force re-authentication
-    return null
+    // Token is valid but no session in store.
+    // Fallback: hydrate a minimal session from JWT claims (stateless strategy).
+    // Treat JWT payload as loose claims to allow optional profile fields
+    const claims = (validation.payload ?? {}) as Record<string, any>
+    const sessionIdFromCookie = await getSessionId()
+    const fallbackSessionId = sessionIdFromCookie || claims.session_id || crypto.randomUUID()
+    const expMs = claims.exp ? claims.exp * 1000 : Date.now() + 15 * 60 * 1000
+
+    const user = {
+      id: claims.sub ?? '',
+      first_name: claims.first_name ?? '',
+      last_name: claims.last_name ?? '',
+      avatar_url: claims.avatar_url ?? '',
+      email: claims.email ?? '',
+      role: claims.role ?? 'guest',
+      is_email_verified: claims.mfa_verified ?? false,
+      is_phone_verified: false,
+      is_active: true,
+      status: 'active',
+      locale: 'en',
+      language: 'en',
+      currency: 'USD',
+      created_at: new Date().toISOString(),
+    } as any
+
+    const session = sessionStore.create({
+      sessionId: fallbackSessionId,
+      userId: user.id,
+      user,
+      accessToken,
+      refreshToken,
+      expiresAt: expMs,
+    })
+
+    return {
+      user: session.user,
+      sessionId: session.sessionId,
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+      expiresAt: session.expiresAt,
+    }
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
       console.error('[Auth] Session error:', error)
@@ -102,6 +139,7 @@ export async function requireAuth(): Promise<ServerSession> {
   if (!session) {
     const { redirect } = await import('next/navigation')
     redirect('/login')
+    throw new Error('Unauthorized')
   }
   return session
 }
