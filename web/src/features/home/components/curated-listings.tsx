@@ -134,7 +134,7 @@ const CuratedListingCard = ({
  * Inspired by TravelGuideCard design
  */
 export const CuratedListings = ({ initialData }: { initialData?: ListingListResponse }) => {
-  const { data, isLoading } = useListListingsApiV1ListingsGet(
+  const { data, isLoading, error } = useListListingsApiV1ListingsGet(
     undefined,
     6,
     undefined,
@@ -160,6 +160,11 @@ export const CuratedListings = ({ initialData }: { initialData?: ListingListResp
         </div>
       </div>
     );
+  }
+
+  // Handle errors gracefully - return null to hide the section on error
+  if (error) {
+    return null;
   }
 
   const listings = data?.items || [];

@@ -316,8 +316,7 @@ export function useGetPricingOptionsApiV1ListingsPremiumPricingGet(options?: { e
     queryKey: [...['getPricingOptionsApiV1ListingsPremiumPricingGet'], searchParams],
     queryFn: async ({ signal }: { signal?: AbortSignal }) => {
       try {
-        
-        const result = await resolveActionResult<z.infer<typeof GetPricingOptionsApiV1ListingsPremiumPricingGetResponseSchema>>(getPricingOptionsApiV1ListingsPremiumPricingGet(queryParams))
+        const result = await resolveActionResult<z.infer<typeof GetPricingOptionsApiV1ListingsPremiumPricingGetResponseSchema>>(getPricingOptionsApiV1ListingsPremiumPricingGet())
         return result
       } catch (error) {
         handleActionError(error)
@@ -357,10 +356,8 @@ export function useInfiniteGetPricingOptionsApiV1ListingsPremiumPricingGet(optio
     queryFn: async ({ pageParam = 1, signal }: { pageParam?: number; signal?: AbortSignal }) => {
       try {
         // Build query params object with only the parameters the endpoint expects
-        const queryParams: {  } = {
-          
-        }
-        const result = await resolveActionResult<z.infer<typeof GetPricingOptionsApiV1ListingsPremiumPricingGetResponseSchema>>(getPricingOptionsApiV1ListingsPremiumPricingGet(queryParams))
+        
+        const result = await resolveActionResult<z.infer<typeof GetPricingOptionsApiV1ListingsPremiumPricingGetResponseSchema>>(getPricingOptionsApiV1ListingsPremiumPricingGet())
         return result
       } catch (error) {
         handleActionError(error)
@@ -410,7 +407,7 @@ export function useSuspenseGetPricingOptionsApiV1ListingsPremiumPricingGet(optio
   return useSuspenseQuery({
     queryKey: ['getPricingOptionsApiV1ListingsPremiumPricingGet'],
     queryFn: async () => {
-      const result = await resolveActionResult<z.infer<typeof GetPricingOptionsApiV1ListingsPremiumPricingGetResponseSchema>>(getPricingOptionsApiV1ListingsPremiumPricingGet({}))
+      const result = await resolveActionResult<z.infer<typeof GetPricingOptionsApiV1ListingsPremiumPricingGetResponseSchema>>(getPricingOptionsApiV1ListingsPremiumPricingGet())
       return result
     },
     staleTime: 180000,

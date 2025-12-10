@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { authMiddleware, rateLimitMiddleware, csrfMiddleware } from '@/lib/auth/middleware'
+import { authMiddleware } from '@/lib/auth/middleware'
 
 /**
  * Next.js Proxy
@@ -13,17 +13,6 @@ import { authMiddleware, rateLimitMiddleware, csrfMiddleware } from '@/lib/auth/
  * - Security headers
  */
 export async function proxy(request: NextRequest) {
-  // 1. CSRF Protection (first, before any state changes)
-  const csrfResponse = csrfMiddleware(request)
-  if (csrfResponse) {
-    return csrfResponse
-  }
-
-  // 2. Rate Limiting
-  const rateLimitResponse = rateLimitMiddleware(request, 100, 60000)
-  if (rateLimitResponse) {
-    return rateLimitResponse
-  }
 
   // 3. Authentication & Authorization
   const authResponse = await authMiddleware(request)

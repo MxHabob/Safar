@@ -1,10 +1,9 @@
 'use client'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { uploadFileApiV1FilesUploadPost } from '@/generated/actions'
 import { validateFile, compressFile, createUploadFormData, type UploadConfig } from '@/generated/services/uploadUtils'
 import type { z } from 'zod'
-import type { UploadFileApiV1FilesUploadPostRequestSchema, UploadFileApiV1FilesUploadPostResponseSchema, UploadFileApiV1FilesUploadPostParamsSchema } from '@/generated/schemas'
+import type { UploadFileApiV1FilesUploadPostResponseSchema } from '@/generated/schemas'
 
 
 /**

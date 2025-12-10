@@ -3,11 +3,11 @@
 import { create } from "zustand"
 
 export type ModalType =
-  | "redeemPoints"
-  | "createCoupon"
-  | "mapboxToolbar"
-  | "youtubeToolbar"
-  | "createPhoto"
+  | "signOutConfirm"
+  | "adminConfirmSuspendUser"
+  | "adminConfirmActivateUser"
+  | "adminConfirmDeleteUser"
+  | "deleteAccountConfirm"
   | "confirm"
 
 export interface ShareResultModalPayload {

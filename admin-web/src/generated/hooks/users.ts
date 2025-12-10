@@ -2,10 +2,11 @@
 import { useQuery, useQueryClient, useSuspenseQuery, useMutation } from '@tanstack/react-query'
 import { useOptimistic, useTransition } from 'react'
 import { toast } from 'sonner'
-import { listDevicesApiV1UsersUsersDevicesGet, getCurrentUserInfoApiV1UsersMeGet, get2faStatusApiV1Users2faStatusGet, exportUserDataApiV1UsersDataExportGet, registerDeviceApiV1UsersUsersDevicesRegisterPost, removeDeviceApiV1UsersUsersDevicesDeviceIdDelete, markDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatch, registerApiV1UsersRegisterPost, loginApiV1UsersLoginPost, refreshTokenApiV1UsersRefreshPost, updateCurrentUserApiV1UsersMePut, requestOtpApiV1UsersOtpRequestPost, verifyOtpApiV1UsersOtpVerifyPost, logoutApiV1UsersLogoutPost, logoutAllApiV1UsersLogoutAllPost, oauthLoginApiV1UsersOauthLoginPost, requestPasswordResetApiV1UsersPasswordResetRequestPost, resetPasswordApiV1UsersPasswordResetPost, changePasswordApiV1UsersPasswordChangePost, verifyEmailApiV1UsersEmailVerifyPost, resendEmailVerificationApiV1UsersEmailResendVerificationPost, verify2faLoginApiV1UsersLogin2faVerifyPost, setup2faApiV1Users2faSetupPost, verify2faSetupApiV1Users2faVerifyPost, disable2faApiV1Users2faDisablePost, regenerateBackupCodesApiV1Users2faBackupCodesRegeneratePost, deleteAccountApiV1UsersAccountDeletePost } from '@/generated/actions/users'
+import { listDevicesApiV1UsersUsersDevicesGet, getCurrentUserInfoApiV1UsersMeGet, getSessionsApiV1UsersSessionsGet, get2faStatusApiV1Users2faStatusGet, exportUserDataApiV1UsersDataExportGet, registerDeviceApiV1UsersUsersDevicesRegisterPost, removeDeviceApiV1UsersUsersDevicesDeviceIdDelete, markDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatch, registerApiV1UsersRegisterPost, loginApiV1UsersLoginPost, refreshTokenApiV1UsersRefreshPost, updateCurrentUserApiV1UsersMePut, requestOtpApiV1UsersOtpRequestPost, verifyOtpApiV1UsersOtpVerifyPost, logoutApiV1UsersLogoutPost, revokeSessionApiV1UsersSessionsSessionIdDelete, logoutAllApiV1UsersLogoutAllPost, oauthLoginApiV1UsersOauthLoginPost, requestPasswordResetApiV1UsersPasswordResetRequestPost, resetPasswordApiV1UsersPasswordResetPost, changePasswordApiV1UsersPasswordChangePost, verifyEmailApiV1UsersEmailVerifyPost, resendEmailVerificationApiV1UsersEmailResendVerificationPost, verify2faLoginApiV1UsersLogin2faVerifyPost, setup2faApiV1Users2faSetupPost, verify2faSetupApiV1Users2faVerifyPost, disable2faApiV1Users2faDisablePost, regenerateBackupCodesApiV1Users2faBackupCodesRegeneratePost, deleteAccountApiV1UsersAccountDeletePost } from '@/generated/actions/users'
 import {
   ListDevicesApiV1UsersUsersDevicesGetResponseSchema,
   GetCurrentUserInfoApiV1UsersMeGetResponseSchema,
+  GetSessionsApiV1UsersSessionsGetResponseSchema,
   Get2faStatusApiV1Users2faStatusGetResponseSchema,
   ExportUserDataApiV1UsersDataExportGetResponseSchema,
   RegisterDeviceApiV1UsersUsersDevicesRegisterPostResponseSchema,
@@ -28,6 +29,8 @@ import {
   VerifyOtpApiV1UsersOtpVerifyPostResponseSchema,
   VerifyOtpApiV1UsersOtpVerifyPostRequestSchema,
   LogoutApiV1UsersLogoutPostResponseSchema,
+  RevokeSessionApiV1UsersSessionsSessionIdDeleteResponseSchema,
+  RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema,
   LogoutAllApiV1UsersLogoutAllPostResponseSchema,
   OauthLoginApiV1UsersOauthLoginPostResponseSchema,
   OauthLoginApiV1UsersOauthLoginPostRequestSchema,
@@ -39,6 +42,7 @@ import {
   ChangePasswordApiV1UsersPasswordChangePostRequestSchema,
   VerifyEmailApiV1UsersEmailVerifyPostResponseSchema,
   VerifyEmailApiV1UsersEmailVerifyPostRequestSchema,
+  ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema,
   ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema,
   Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema,
   Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema,
@@ -201,6 +205,63 @@ export function useSuspenseGetCurrentUserInfoApiV1UsersMeGet(options?: { enabled
 }
 
 /**
+ * Optimized query hook for GET /api/v1/users/sessions
+ * Features: Smart caching, error handling, type safety
+ * @returns useQuery result with data of type z.infer<typeof GetSessionsApiV1UsersSessionsGetResponseSchema>
+ */
+export function useGetSessionsApiV1UsersSessionsGet(options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetSessionsApiV1UsersSessionsGetResponseSchema> }) {
+  const { initialData, ...restOptions } = options ?? {}
+
+  return useQuery({
+    queryKey: ['getSessionsApiV1UsersSessionsGet'],
+    queryFn: async ({ signal }: { signal?: AbortSignal }) => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof GetSessionsApiV1UsersSessionsGetResponseSchema>>(getSessionsApiV1UsersSessionsGet())
+        return result
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    staleTime: 300000,
+    gcTime: 600000, // React Query v5: gcTime replaces cacheTime
+    enabled: true && (options?.enabled ?? true),
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnReconnect: true, // Refetch when network reconnects
+    refetchOnMount: 'always', // Always refetch on mount for fresh data
+    refetchInterval: options?.refetchInterval, // Optional polling interval
+    // React Query v5: placeholderData replaces keepPreviousData
+    placeholderData: (previousData: z.infer<typeof GetSessionsApiV1UsersSessionsGetResponseSchema> | undefined) => previousData,
+    retry: (failureCount: number, error: Error) => {
+      // Don't retry on 4xx errors (client errors)
+      if (error instanceof Error && error.message.includes('4')) return false
+      // Retry up to 3 times for network/server errors
+      return failureCount < 3
+    },
+    initialData: initialData as z.infer<typeof GetSessionsApiV1UsersSessionsGetResponseSchema> | undefined,
+    ...restOptions
+  })
+}
+
+/**
+ * Suspense version for /api/v1/users/sessions
+ * @returns useSuspenseQuery result with data of type z.infer<typeof GetSessionsApiV1UsersSessionsGetResponseSchema>
+ */
+export function useSuspenseGetSessionsApiV1UsersSessionsGet(options?: { enabled?: boolean; suspense?: boolean; refetchInterval?: number; initialData?: z.infer<typeof GetSessionsApiV1UsersSessionsGetResponseSchema> }) {
+  const { initialData, ...restOptions } = options ?? {}
+
+  return useSuspenseQuery({
+    queryKey: ['getSessionsApiV1UsersSessionsGet'],
+    queryFn: async () => {
+      const result = await resolveActionResult<z.infer<typeof GetSessionsApiV1UsersSessionsGetResponseSchema>>(getSessionsApiV1UsersSessionsGet())
+      return result
+    },
+    staleTime: 300000,
+    initialData: initialData as z.infer<typeof GetSessionsApiV1UsersSessionsGetResponseSchema> | undefined,
+    ...restOptions
+  })
+}
+
+/**
  * Optimized query hook for GET /api/v1/users/2fa/status
  * Features: Smart caching, error handling, type safety
  * @returns useQuery result with data of type z.infer<typeof Get2faStatusApiV1Users2faStatusGetResponseSchema>
@@ -344,6 +405,7 @@ export function useRegisterDeviceApiV1UsersUsersDevicesRegisterPostMutation(opti
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -382,6 +444,7 @@ export function useRegisterDeviceApiV1UsersUsersDevicesRegisterPostMutation(opti
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] }),
@@ -432,6 +495,7 @@ export function useRemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteMutation(opti
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -470,6 +534,7 @@ export function useRemoveDeviceApiV1UsersUsersDevicesDeviceIdDeleteMutation(opti
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] }),
@@ -520,6 +585,7 @@ export function useMarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchMuta
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -558,6 +624,7 @@ export function useMarkDeviceTrustedApiV1UsersUsersDevicesDeviceIdTrustPatchMuta
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] }),
@@ -608,6 +675,7 @@ export function useRegisterApiV1UsersRegisterPostMutation(options?: {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -646,6 +714,7 @@ export function useRegisterApiV1UsersRegisterPostMutation(options?: {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -695,6 +764,7 @@ export function useLoginApiV1UsersLoginPostMutation(options?: {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -733,6 +803,7 @@ export function useLoginApiV1UsersLoginPostMutation(options?: {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -782,6 +853,7 @@ export function useRefreshTokenApiV1UsersRefreshPostMutation(options?: {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -820,6 +892,7 @@ export function useRefreshTokenApiV1UsersRefreshPostMutation(options?: {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -869,6 +942,7 @@ export function useUpdateCurrentUserApiV1UsersMePutMutation(options?: {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -907,6 +981,7 @@ export function useUpdateCurrentUserApiV1UsersMePutMutation(options?: {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -956,6 +1031,7 @@ export function useRequestOtpApiV1UsersOtpRequestPostMutation(options?: {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -994,6 +1070,7 @@ export function useRequestOtpApiV1UsersOtpRequestPostMutation(options?: {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -1043,6 +1120,7 @@ export function useVerifyOtpApiV1UsersOtpVerifyPostMutation(options?: {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -1081,6 +1159,7 @@ export function useVerifyOtpApiV1UsersOtpVerifyPostMutation(options?: {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -1130,6 +1209,7 @@ export function useLogoutApiV1UsersLogoutPostMutation(options?: {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -1153,7 +1233,7 @@ export function useLogoutApiV1UsersLogoutPostMutation(options?: {
       options?.onSuccess?.(data, variables)
     },
     
-    onError: (error: Error, variables: void) => {
+    onError: (error, variables) => {
       // Show error toast
       if (options?.showToast !== false) {
         toast.error(error.message || 'Failed to create')
@@ -1168,6 +1248,7 @@ export function useLogoutApiV1UsersLogoutPostMutation(options?: {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -1178,6 +1259,95 @@ export function useLogoutApiV1UsersLogoutPostMutation(options?: {
   return {
     ...mutation,
     mutateWithTransition: (variables: void) => {
+      startTransition(() => {
+        mutation.mutate(variables)
+      })
+    },
+    isPending: isPending || mutation.isPending,
+    optimisticData
+  }
+}
+
+/**
+ * Optimized mutation hook for DELETE /api/v1/users/sessions/{session_id}
+ * Features: Optimistic updates, smart invalidation, error handling
+ * @param options - Mutation options
+ * @returns Mutation result with enhanced features
+ */
+export function useRevokeSessionApiV1UsersSessionsSessionIdDeleteMutation(options?: {
+  onSuccess?: (data: z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteResponseSchema>, variables: z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema>) => void
+  onError?: (error: Error, variables: z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema>) => void
+  optimisticUpdate?: (variables: z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema>) => unknown
+  showToast?: boolean
+}) {
+  const queryClient = useQueryClient()
+  const [isPending, startTransition] = useTransition()
+  const [optimisticData, setOptimisticData] = useOptimistic<unknown, z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema>>(null, (_, newData) => newData)
+
+  const mutation = useMutation({
+    mutationFn: async (variables: z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema>): Promise<z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteResponseSchema>> => {
+      try {
+        const result = await resolveActionResult<z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteResponseSchema>>(revokeSessionApiV1UsersSessionsSessionIdDelete(variables))
+        return (result ?? ({} as z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteResponseSchema>))
+      } catch (error) {
+        handleActionError(error)
+      }
+    },
+    
+    onMutate: async (variables: z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema>) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
+        queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
+      ])
+
+      // Optimistic update (if provided)
+      if (options?.optimisticUpdate) {
+        const optimisticValue = options.optimisticUpdate(variables)
+        setOptimisticData(optimisticValue as z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema>)
+      }
+      
+      return {}
+    },
+    
+    onSuccess: (data, variables) => {
+      // Show success toast
+      if (options?.showToast !== false) {
+        toast.success('Deleted successfully')
+      }
+      
+      // Custom success handler
+      options?.onSuccess?.(data, variables)
+    },
+    
+    onError: (error: Error, variables: z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema>) => {
+      // Show error toast
+      if (options?.showToast !== false) {
+        toast.error(error.message || 'Failed to delete')
+      }
+      
+      // Custom error handler
+      options?.onError?.(error as Error, variables)
+    },
+    
+    onSettled: async () => {
+      // Always refetch after error or success
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['Users'] })
+      ])
+    }
+  })
+
+  return {
+    ...mutation,
+    mutateWithTransition: (variables: z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema>) => {
       startTransition(() => {
         mutation.mutate(variables)
       })
@@ -1217,6 +1387,7 @@ export function useLogoutAllApiV1UsersLogoutAllPostMutation(options?: {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -1255,6 +1426,7 @@ export function useLogoutAllApiV1UsersLogoutAllPostMutation(options?: {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -1304,6 +1476,7 @@ export function useOauthLoginApiV1UsersOauthLoginPostMutation(options?: {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -1342,6 +1515,7 @@ export function useOauthLoginApiV1UsersOauthLoginPostMutation(options?: {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -1391,6 +1565,7 @@ export function useRequestPasswordResetApiV1UsersPasswordResetRequestPostMutatio
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -1429,6 +1604,7 @@ export function useRequestPasswordResetApiV1UsersPasswordResetRequestPostMutatio
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -1478,6 +1654,7 @@ export function useResetPasswordApiV1UsersPasswordResetPostMutation(options?: {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -1516,6 +1693,7 @@ export function useResetPasswordApiV1UsersPasswordResetPostMutation(options?: {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -1565,6 +1743,7 @@ export function useChangePasswordApiV1UsersPasswordChangePostMutation(options?: 
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -1603,6 +1782,7 @@ export function useChangePasswordApiV1UsersPasswordChangePostMutation(options?: 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -1652,6 +1832,7 @@ export function useVerifyEmailApiV1UsersEmailVerifyPostMutation(options?: {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -1690,6 +1871,7 @@ export function useVerifyEmailApiV1UsersEmailVerifyPostMutation(options?: {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -1716,29 +1898,34 @@ export function useVerifyEmailApiV1UsersEmailVerifyPostMutation(options?: {
  * @returns Mutation result with enhanced features
  */
 export function useResendEmailVerificationApiV1UsersEmailResendVerificationPostMutation(options?: {
-  onSuccess?: (data: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>, variables: void) => void
-  onError?: (error: Error, variables: void) => void
-  optimisticUpdate?: (variables: void) => unknown
+  onSuccess?: (data: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>, variables: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>) => void
+  onError?: (error: Error, variables: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>) => void
+  optimisticUpdate?: (variables: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>) => unknown
   showToast?: boolean
 }) {
   const queryClient = useQueryClient()
   const [isPending, startTransition] = useTransition()
-  const [optimisticData, setOptimisticData] = useOptimistic<unknown, void>(null, (_, newData) => newData)
+  const [optimisticData, setOptimisticData] = useOptimistic<unknown, z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>>(null, (_, newData) => newData)
 
-  const mutation = useMutation({
-    mutationFn: async (variables: void): Promise<z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>> => {
+  const mutation = useMutation<
+    z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>,
+    Error,
+    z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>
+  >({
+    mutationFn: async (variables): Promise<z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>> => {
       try {
-        const result = await resolveActionResult<z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>>(resendEmailVerificationApiV1UsersEmailResendVerificationPost())
+        const result = await resolveActionResult<z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>>(resendEmailVerificationApiV1UsersEmailResendVerificationPost(variables))
         return (result ?? ({} as z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>))
       } catch (error) {
         handleActionError(error)
       }
     },
     
-    onMutate: async (variables: void) => {
+    onMutate: async (variables) => {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -1746,7 +1933,7 @@ export function useResendEmailVerificationApiV1UsersEmailResendVerificationPostM
       // Optimistic update (if provided)
       if (options?.optimisticUpdate) {
         const optimisticValue = options.optimisticUpdate(variables)
-        setOptimisticData(optimisticValue as void)
+        setOptimisticData(optimisticValue as z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>)
       }
       
       return {}
@@ -1762,7 +1949,7 @@ export function useResendEmailVerificationApiV1UsersEmailResendVerificationPostM
       options?.onSuccess?.(data, variables)
     },
     
-    onError: (error: Error, variables: void) => {
+    onError: (error, variables) => {
       // Show error toast
       if (options?.showToast !== false) {
         toast.error(error.message || 'Failed to create')
@@ -1777,6 +1964,7 @@ export function useResendEmailVerificationApiV1UsersEmailResendVerificationPostM
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -1786,7 +1974,7 @@ export function useResendEmailVerificationApiV1UsersEmailResendVerificationPostM
 
   return {
     ...mutation,
-    mutateWithTransition: (variables: void) => {
+    mutateWithTransition: (variables: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>) => {
       startTransition(() => {
         mutation.mutate(variables)
       })
@@ -1826,6 +2014,7 @@ export function useVerify2faLoginApiV1UsersLogin2faVerifyPostMutation(options?: 
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -1864,6 +2053,7 @@ export function useVerify2faLoginApiV1UsersLogin2faVerifyPostMutation(options?: 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -1913,6 +2103,7 @@ export function useSetup2faApiV1Users2faSetupPostMutation(options?: {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -1951,6 +2142,7 @@ export function useSetup2faApiV1Users2faSetupPostMutation(options?: {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -2000,6 +2192,7 @@ export function useVerify2faSetupApiV1Users2faVerifyPostMutation(options?: {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -2038,6 +2231,7 @@ export function useVerify2faSetupApiV1Users2faVerifyPostMutation(options?: {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -2087,6 +2281,7 @@ export function useDisable2faApiV1Users2faDisablePostMutation(options?: {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -2125,6 +2320,7 @@ export function useDisable2faApiV1Users2faDisablePostMutation(options?: {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -2174,6 +2370,7 @@ export function useRegenerateBackupCodesApiV1Users2faBackupCodesRegeneratePostMu
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -2212,6 +2409,7 @@ export function useRegenerateBackupCodesApiV1Users2faBackupCodesRegeneratePostMu
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })
@@ -2261,6 +2459,7 @@ export function useDeleteAccountApiV1UsersAccountDeletePostMutation(options?: {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.cancelQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.cancelQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.cancelQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] })
       ])
@@ -2299,6 +2498,7 @@ export function useDeleteAccountApiV1UsersAccountDeletePostMutation(options?: {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.invalidateQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
+        queryClient.invalidateQueries({ queryKey: ['getSessionsApiV1UsersSessionsGet'] }),
         queryClient.invalidateQueries({ queryKey: ['get2faStatusApiV1Users2faStatusGet'] }),
         queryClient.invalidateQueries({ queryKey: ['exportUserDataApiV1UsersDataExportGet'] }),
         queryClient.invalidateQueries({ queryKey: ['Users'] })

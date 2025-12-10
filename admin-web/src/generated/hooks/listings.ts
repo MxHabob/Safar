@@ -511,7 +511,7 @@ export function useDeleteListingApiV1ListingsListingIdDeleteMutation(options?: {
     mutationFn: async (variables: z.infer<typeof DeleteListingApiV1ListingsListingIdDeleteParamsSchema>): Promise<z.infer<typeof DeleteListingApiV1ListingsListingIdDeleteResponseSchema>> => {
       try {
         const result = await resolveActionResult<z.infer<typeof DeleteListingApiV1ListingsListingIdDeleteResponseSchema>>(deleteListingApiV1ListingsListingIdDelete(variables))
-        return (result ?? ({} as z.infer<typeof DeleteListingApiV1ListingsListingIdDeleteResponseSchema>))
+        return (result ?? ({} as unknown as z.infer<typeof DeleteListingApiV1ListingsListingIdDeleteResponseSchema>))
       } catch (error) {
         handleActionError(error)
       }

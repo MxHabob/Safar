@@ -77,16 +77,6 @@ export const AccountDeletionRequestSchema = z.object({
 })
 export type AccountDeletionRequest = z.infer<typeof AccountDeletionRequestSchema>
 /**
- * Paginated list of bookings for admin.
- */
-export const AdminBookingListResponseSchema = z.object({
-  items: z.array(AdminBookingResponseSchema),
-  total: z.number().int(),
-  skip: z.number().int(),
-  limit: z.number().int()
-})
-export type AdminBookingListResponse = z.infer<typeof AdminBookingListResponseSchema>
-/**
  * Admin view of booking.
  */
 export const AdminBookingResponseSchema = z.object({
@@ -103,6 +93,17 @@ export const AdminBookingResponseSchema = z.object({
 })
 export type AdminBookingResponse = z.infer<typeof AdminBookingResponseSchema>
 /**
+ * Paginated list of bookings for admin.
+ */
+export const AdminBookingListResponseSchema = z.object({
+  items: z.array(AdminBookingResponseSchema),
+  total: z.number().int(),
+  skip: z.number().int(),
+  limit: z.number().int()
+})
+export type AdminBookingListResponse = z.infer<typeof AdminBookingListResponseSchema>
+
+/**
  * Booking statistics for admin.
  */
 export const AdminBookingStatsResponseSchema = z.object({
@@ -114,16 +115,6 @@ export const AdminBookingStatsResponseSchema = z.object({
   avg_booking_value: z.number()
 })
 export type AdminBookingStatsResponse = z.infer<typeof AdminBookingStatsResponseSchema>
-/**
- * Paginated list of listings for admin.
- */
-export const AdminListingListResponseSchema = z.object({
-  items: z.array(AdminListingResponseSchema),
-  total: z.number().int(),
-  skip: z.number().int(),
-  limit: z.number().int()
-})
-export type AdminListingListResponse = z.infer<typeof AdminListingListResponseSchema>
 /**
  * Admin view of listing.
  */
@@ -143,6 +134,17 @@ export const AdminListingResponseSchema = z.object({
 })
 export type AdminListingResponse = z.infer<typeof AdminListingResponseSchema>
 /**
+ * Paginated list of listings for admin.
+ */
+export const AdminListingListResponseSchema = z.object({
+  items: z.array(AdminListingResponseSchema),
+  total: z.number().int(),
+  skip: z.number().int(),
+  limit: z.number().int()
+})
+export type AdminListingListResponse = z.infer<typeof AdminListingListResponseSchema>
+
+/**
  * Listing statistics for admin.
  */
 export const AdminListingStatsResponseSchema = z.object({
@@ -153,16 +155,6 @@ export const AdminListingStatsResponseSchema = z.object({
   by_status: z.record(z.string(), z.any())
 })
 export type AdminListingStatsResponse = z.infer<typeof AdminListingStatsResponseSchema>
-/**
- * Paginated list of payments for admin.
- */
-export const AdminPaymentListResponseSchema = z.object({
-  items: z.array(AdminPaymentResponseSchema),
-  total: z.number().int(),
-  skip: z.number().int(),
-  limit: z.number().int()
-})
-export type AdminPaymentListResponse = z.infer<typeof AdminPaymentListResponseSchema>
 /**
  * Admin view of payment.
  */
@@ -177,6 +169,17 @@ export const AdminPaymentResponseSchema = z.object({
 })
 export type AdminPaymentResponse = z.infer<typeof AdminPaymentResponseSchema>
 /**
+ * Paginated list of payments for admin.
+ */
+export const AdminPaymentListResponseSchema = z.object({
+  items: z.array(AdminPaymentResponseSchema),
+  total: z.number().int(),
+  skip: z.number().int(),
+  limit: z.number().int()
+})
+export type AdminPaymentListResponse = z.infer<typeof AdminPaymentListResponseSchema>
+
+/**
  * Payment statistics for admin.
  */
 export const AdminPaymentStatsResponseSchema = z.object({
@@ -188,16 +191,6 @@ export const AdminPaymentStatsResponseSchema = z.object({
   total_refunded: z.number()
 })
 export type AdminPaymentStatsResponse = z.infer<typeof AdminPaymentStatsResponseSchema>
-/**
- * Paginated list of users for admin.
- */
-export const AdminUserListResponseSchema = z.object({
-  items: z.array(AdminUserResponseSchema),
-  total: z.number().int(),
-  skip: z.number().int(),
-  limit: z.number().int()
-})
-export type AdminUserListResponse = z.infer<typeof AdminUserListResponseSchema>
 /**
  * Admin view of user with additional admin fields.
  */
@@ -219,6 +212,17 @@ export const AdminUserResponseSchema = z.object({
   listing_count: z.any().optional()
 })
 export type AdminUserResponse = z.infer<typeof AdminUserResponseSchema>
+/**
+ * Paginated list of users for admin.
+ */
+export const AdminUserListResponseSchema = z.object({
+  items: z.array(AdminUserResponseSchema),
+  total: z.number().int(),
+  skip: z.number().int(),
+  limit: z.number().int()
+})
+export type AdminUserListResponse = z.infer<typeof AdminUserListResponseSchema>
+
 /**
  * User statistics for admin dashboard.
  */
@@ -243,6 +247,45 @@ export const AdminUserUpdateSchema = z.object({
   email: z.any().optional()
 })
 export type AdminUserUpdate = z.infer<typeof AdminUserUpdateSchema>
+/**
+ * Schema returned in user responses.
+ */
+export const UserResponseSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  phone_number: z.any().optional(),
+  first_name: z.any().optional(),
+  last_name: z.any().optional(),
+  username: z.any().optional(),
+  full_name: z.any().optional(),
+  id: z.string().max(40, "Maximum length is 40"),
+  is_email_verified: z.boolean(),
+  is_phone_verified: z.boolean(),
+  avatar_url: z.any().optional(),
+  bio: z.any().optional(),
+  role: UserRoleSchema,
+  roles: z.array(z.string()).optional(),
+  status: UserStatusSchema,
+  is_active: z.boolean(),
+  locale: z.string(),
+  language: z.string(),
+  currency: z.string(),
+  created_at: z.string(),
+  country: z.any().optional(),
+  city: z.any().optional()
+})
+export type UserResponse = z.infer<typeof UserResponseSchema>
+/**
+ * Schema returned when logging in - includes tokens and user data.
+ */
+export const AuthResponseSchema = z.object({
+  access_token: z.string(),
+  refresh_token: z.string(),
+  token_type: z.string().optional(),
+  expires_in: z.number().int(),
+  user: UserResponseSchema,
+  session_id: z.string()
+})
+export type AuthResponse = z.infer<typeof AuthResponseSchema>
 export const BodyCreateCouponApiV1PromotionsCouponsPostSchema = z.object({
   code: z.string(),
   name: z.string(),
@@ -312,16 +355,17 @@ export const BookingCreateSchema = z.object({
   coupon_code: z.any().optional()
 })
 export type BookingCreate = z.infer<typeof BookingCreateSchema>
+
 /**
- * Booking list response schema.
+ * Timeline event response schema.
  */
-export const BookingListResponseSchema = z.object({
-  items: z.array(BookingResponseSchema),
-  total: z.number().int(),
-  skip: z.number().int(),
-  limit: z.number().int()
+export const BookingTimelineEventResponseSchema = z.object({
+  id: z.string().max(40, "Maximum length is 40"),
+  status: z.string(),
+  payload: z.any().optional(),
+  created_at: z.string()
 })
-export type BookingListResponse = z.infer<typeof BookingListResponseSchema>
+export type BookingTimelineEventResponse = z.infer<typeof BookingTimelineEventResponseSchema>
 /**
  * Booking response schema.
  */
@@ -355,15 +399,16 @@ export const BookingResponseSchema = z.object({
 })
 export type BookingResponse = z.infer<typeof BookingResponseSchema>
 /**
- * Timeline event response schema.
+ * Booking list response schema.
  */
-export const BookingTimelineEventResponseSchema = z.object({
-  id: z.string().max(40, "Maximum length is 40"),
-  status: z.string(),
-  payload: z.any().optional(),
-  created_at: z.string()
+export const BookingListResponseSchema = z.object({
+  items: z.array(BookingResponseSchema),
+  total: z.number().int(),
+  skip: z.number().int(),
+  limit: z.number().int()
 })
-export type BookingTimelineEventResponse = z.infer<typeof BookingTimelineEventResponseSchema>
+export type BookingListResponse = z.infer<typeof BookingListResponseSchema>
+
 /**
  * Single data point for booking trends.
  */
@@ -392,15 +437,22 @@ export const ConversationCreateSchema = z.object({
 })
 export type ConversationCreate = z.infer<typeof ConversationCreateSchema>
 /**
- * Schema for a paginated list of conversations.
+ * Schema returned in message responses.
  */
-export const ConversationListResponseSchema = z.object({
-  items: z.array(ConversationResponseSchema),
-  total: z.number().int(),
-  skip: z.number().int(),
-  limit: z.number().int()
+export const MessageResponseSchema = z.object({
+  id: z.string().max(40, "Maximum length is 40"),
+  conversation_id: z.any().optional(),
+  sender_id: z.any().optional(),
+  receiver_id: z.any().optional(),
+  source: z.string(),
+  body: z.string(),
+  content: z.any().optional(),
+  is_read: z.boolean(),
+  read_at: z.any().optional(),
+  attachments: z.any().optional(),
+  created_at: z.string()
 })
-export type ConversationListResponse = z.infer<typeof ConversationListResponseSchema>
+export type MessageResponse = z.infer<typeof MessageResponseSchema>
 /**
  * Schema returned in conversation responses.
  */
@@ -414,6 +466,17 @@ export const ConversationResponseSchema = z.object({
   updated_at: z.string()
 })
 export type ConversationResponse = z.infer<typeof ConversationResponseSchema>
+/**
+ * Schema for a paginated list of conversations.
+ */
+export const ConversationListResponseSchema = z.object({
+  items: z.array(ConversationResponseSchema),
+  total: z.number().int(),
+  skip: z.number().int(),
+  limit: z.number().int()
+})
+export type ConversationListResponse = z.infer<typeof ConversationListResponseSchema>
+
 /**
  * Admin dashboard metrics.
  */
@@ -466,6 +529,12 @@ export const FileUploadResponseSchema = z.object({
   file: FileResponseSchema
 })
 export type FileUploadResponse = z.infer<typeof FileUploadResponseSchema>
+export const ValidationErrorSchema = z.object({
+  loc: z.array(z.any()),
+  msg: z.string(),
+  type: z.string()
+})
+export type ValidationError = z.infer<typeof ValidationErrorSchema>
 export const HTTPValidationErrorSchema = z.object({
   detail: z.array(ValidationErrorSchema).optional()
 })
@@ -514,16 +583,6 @@ export const ListingImageResponseSchema = z.object({
   position: z.number().int()
 })
 export type ListingImageResponse = z.infer<typeof ListingImageResponseSchema>
-/**
- * Listing list response schema.
- */
-export const ListingListResponseSchema = z.object({
-  items: z.array(ListingResponseSchema),
-  total: z.number().int(),
-  skip: z.number().int(),
-  limit: z.number().int()
-})
-export type ListingListResponse = z.infer<typeof ListingListResponseSchema>
 /**
  * Schema for creating a listing location.
  */
@@ -605,6 +664,17 @@ export const ListingResponseSchema = z.object({
 })
 export type ListingResponse = z.infer<typeof ListingResponseSchema>
 /**
+ * Listing list response schema.
+ */
+export const ListingListResponseSchema = z.object({
+  items: z.array(ListingResponseSchema),
+  total: z.number().int(),
+  skip: z.number().int(),
+  limit: z.number().int()
+})
+export type ListingListResponse = z.infer<typeof ListingListResponseSchema>
+
+/**
  * Schema for updating a listing.
  */
 export const ListingUpdateSchema = z.object({
@@ -676,23 +746,7 @@ export const MessageListResponseSchema = z.object({
   limit: z.number().int()
 })
 export type MessageListResponse = z.infer<typeof MessageListResponseSchema>
-/**
- * Schema returned in message responses.
- */
-export const MessageResponseSchema = z.object({
-  id: z.string().max(40, "Maximum length is 40"),
-  conversation_id: z.any().optional(),
-  sender_id: z.any().optional(),
-  receiver_id: z.any().optional(),
-  source: z.string(),
-  body: z.string(),
-  content: z.any().optional(),
-  is_read: z.boolean(),
-  read_at: z.any().optional(),
-  attachments: z.any().optional(),
-  created_at: z.string()
-})
-export type MessageResponse = z.infer<typeof MessageResponseSchema>
+
 /**
  * Schema for OAuth-based login requests.
  */
@@ -919,16 +973,6 @@ export const ReviewHelpfulRequestSchema = z.object({
 })
 export type ReviewHelpfulRequest = z.infer<typeof ReviewHelpfulRequestSchema>
 /**
- * Schema for a paginated list of reviews.
- */
-export const ReviewListResponseSchema = z.object({
-  items: z.array(ReviewResponseSchema),
-  total: z.number().int(),
-  skip: z.number().int(),
-  limit: z.number().int()
-})
-export type ReviewListResponse = z.infer<typeof ReviewListResponseSchema>
-/**
  * Schema returned for a review, including aggregates and host response.
  */
 export const ReviewResponseSchema = z.object({
@@ -955,6 +999,16 @@ export const ReviewResponseSchema = z.object({
   created_at: z.string()
 })
 export type ReviewResponse = z.infer<typeof ReviewResponseSchema>
+/**
+ * Schema for a paginated list of reviews.
+ */
+export const ReviewListResponseSchema = z.object({
+  items: z.array(ReviewResponseSchema),
+  total: z.number().int(),
+  skip: z.number().int(),
+  limit: z.number().int()
+})
+export type ReviewListResponse = z.infer<typeof ReviewListResponseSchema>
 /**
  * Schema for creating a host response to a review.
  */
@@ -1160,33 +1214,7 @@ export const UserLoginSchema = z.object({
   password: z.string()
 })
 export type UserLogin = z.infer<typeof UserLoginSchema>
-/**
- * Schema returned in user responses.
- */
-export const UserResponseSchema = z.object({
-  email: z.string().email("Invalid email format"),
-  phone_number: z.any().optional(),
-  first_name: z.any().optional(),
-  last_name: z.any().optional(),
-  username: z.any().optional(),
-  full_name: z.any().optional(),
-  id: z.string().max(40, "Maximum length is 40"),
-  is_email_verified: z.boolean(),
-  is_phone_verified: z.boolean(),
-  avatar_url: z.any().optional(),
-  bio: z.any().optional(),
-  role: UserRoleSchema,
-  roles: z.array(z.string()).optional(),
-  status: UserStatusSchema,
-  is_active: z.boolean(),
-  locale: z.string(),
-  language: z.string(),
-  currency: z.string(),
-  created_at: z.string(),
-  country: z.any().optional(),
-  city: z.any().optional()
-})
-export type UserResponse = z.infer<typeof UserResponseSchema>
+
 /**
  * Schema for creating a user story.
  */
@@ -1255,12 +1283,6 @@ export const UserUpdateSchema = z.object({
   date_of_birth: z.any().optional()
 })
 export type UserUpdate = z.infer<typeof UserUpdateSchema>
-export const ValidationErrorSchema = z.object({
-  loc: z.array(z.any()),
-  msg: z.string(),
-  type: z.string()
-})
-export type ValidationError = z.infer<typeof ValidationErrorSchema>
 /**
  * Success response schema for GET /health
  * Status: 200
@@ -1416,7 +1438,7 @@ export type LoginApiV1UsersLoginPostRequest = z.infer<typeof LoginApiV1UsersLogi
  * Status: 200
  * Successful Response
  */
-export const LoginApiV1UsersLoginPostResponseSchema = TokenResponseSchema
+export const LoginApiV1UsersLoginPostResponseSchema = AuthResponseSchema
 
 export type LoginApiV1UsersLoginPostResponse = z.infer<typeof LoginApiV1UsersLoginPostResponseSchema>
 /**
@@ -1528,6 +1550,43 @@ export const LogoutApiV1UsersLogoutPostResponseSchema = z.any()
 
 export type LogoutApiV1UsersLogoutPostResponse = z.infer<typeof LogoutApiV1UsersLogoutPostResponseSchema>
 /**
+ * Success response schema for GET /api/v1/users/sessions
+ * Status: 200
+ * Successful Response
+ */
+export const GetSessionsApiV1UsersSessionsGetResponseSchema = z.array(z.record(z.string(), z.any()))
+
+export type GetSessionsApiV1UsersSessionsGetResponse = z.infer<typeof GetSessionsApiV1UsersSessionsGetResponseSchema>
+/**
+ * Success response schema for DELETE /api/v1/users/sessions/{session_id}
+ * Status: 200
+ * Successful Response
+ */
+export const RevokeSessionApiV1UsersSessionsSessionIdDeleteResponseSchema = z.any()
+
+export type RevokeSessionApiV1UsersSessionsSessionIdDeleteResponse = z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteResponseSchema>
+/**
+ * Error response schema for DELETE /api/v1/users/sessions/{session_id}
+ * Status: 422
+ * Validation Error
+ */
+export const RevokeSessionApiV1UsersSessionsSessionIdDeleteErrorSchema = HTTPValidationErrorSchema
+
+export type RevokeSessionApiV1UsersSessionsSessionIdDeleteError = z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteErrorSchema>
+/**
+ * Parameters schema for DELETE /api/v1/users/sessions/{session_id}
+ * Path params: session_id
+ * Query params: none
+ * Header params: none
+ */
+export const RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema = z.object({
+  path: z.object({
+    session_id: z.string()
+  })
+})
+
+export type RevokeSessionApiV1UsersSessionsSessionIdDeleteParams = z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema>
+/**
  * Success response schema for POST /api/v1/users/logout-all
  * Status: 200
  * Successful Response
@@ -1545,7 +1604,7 @@ export type OauthLoginApiV1UsersOauthLoginPostRequest = z.infer<typeof OauthLogi
  * Status: 200
  * Successful Response
  */
-export const OauthLoginApiV1UsersOauthLoginPostResponseSchema = TokenResponseSchema
+export const OauthLoginApiV1UsersOauthLoginPostResponseSchema = AuthResponseSchema
 
 export type OauthLoginApiV1UsersOauthLoginPostResponse = z.infer<typeof OauthLoginApiV1UsersOauthLoginPostResponseSchema>
 /**
@@ -1645,6 +1704,10 @@ export type VerifyEmailApiV1UsersEmailVerifyPostError = z.infer<typeof VerifyEma
  * Status: 200
  * Successful Response
  */
+export const ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema = z.object({ email: z.string().email() })
+
+export type ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequest = z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>
+
 export const ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema = z.any()
 
 export type ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponse = z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>
@@ -1658,7 +1721,7 @@ export type Verify2faLoginApiV1UsersLogin2faVerifyPostRequest = z.infer<typeof V
  * Status: 200
  * Successful Response
  */
-export const Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema = TokenResponseSchema
+export const Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema = AuthResponseSchema
 
 export type Verify2faLoginApiV1UsersLogin2faVerifyPostResponse = z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema>
 /**

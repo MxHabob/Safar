@@ -20,8 +20,8 @@ type NextReadonlyHeaders = Awaited<ReturnType<NextHeadersModule['headers']>>
 type NextReadonlyCookies = Awaited<ReturnType<NextHeadersModule['cookies']>>
 
 let serverOnlyModules: {
-  cookies?: () => NextReadonlyCookies
-  headers?: () => Headers
+  cookies?: () => Promise<NextReadonlyCookies>
+  headers?: () => Promise<Headers>
   after?: (fn: () => void | Promise<void>) => void
   updateTag?: (tag: string) => void
 } | null = null
@@ -51,11 +51,17 @@ async function getServerModules() {
       const serverModule = await import('next/server').catch(() => null)
       const cacheModule = await import('next/cache').catch(() => null)
       
-      const getReadonlyHeaders = headersModule?.headers as (() => NextReadonlyHeaders) | undefined
-      const getReadonlyCookies = headersModule?.cookies as (() => NextReadonlyCookies) | undefined
+      // Next.js 16: headers() and cookies() return Promises
+      const getReadonlyHeaders = headersModule?.headers as (() => Promise<NextReadonlyHeaders>) | undefined
+      const getReadonlyCookies = headersModule?.cookies as (() => Promise<NextReadonlyCookies>) | undefined
       serverOnlyModules = {
         cookies: getReadonlyCookies,
-        headers: getReadonlyHeaders ? () => toMutableHeaders(getReadonlyHeaders()) : undefined,
+        headers: getReadonlyHeaders 
+          ? async () => {
+              const headers = await getReadonlyHeaders()
+              return toMutableHeaders(headers)
+            }
+          : undefined,
         after: serverModule?.after,
         updateTag: cacheModule?.updateTag,
       }
@@ -274,7 +280,7 @@ export class BaseApiClient {
     this.defaultTimeout = 30000
     this.defaultRetries = 3
     this.defaultHeaders = {
-      "User-Agent": "Safar-admin-web/1.0.0",
+      "User-Agent": "Safar-web/1.0.0",
       "Accept": "application/json",
       "Content-Type": "application/json"
 }
@@ -315,8 +321,8 @@ export class BaseApiClient {
       // Get auth token from various sources (server-side only)
       if (serverModules?.cookies && serverModules.headers) {
         try {
-          const cookieStore = serverModules.cookies()
-          const headersList = serverModules.headers()
+          const cookieStore = await serverModules.cookies()
+          const headersList = await serverModules.headers()
           
           // Try cookie first
           const tokenFromCookie = cookieStore.get('auth-token')?.value
@@ -333,30 +339,6 @@ export class BaseApiClient {
           }
         } catch (error) {
           // Server modules not available (client-side) or error accessing
-        }
-      }
-      
-      // Client-side: fetch token from API route
-      // This allows client-side requests to get the token from httpOnly cookies
-      if (typeof window !== 'undefined') {
-        try {
-          const response = await fetch('/api/auth/token', {
-            credentials: 'include',
-            cache: 'no-store'
-          })
-          
-          if (response.ok) {
-            const data = await response.json()
-            if (data?.token) {
-              getAuthHeaders.Authorization = `Bearer ${data.token}`
-              return getAuthHeaders
-            }
-          }
-        } catch (error) {
-          // Silently fail - token might not be available
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('[API Client] Failed to fetch token from API route:', error)
-          }
         }
       }
       
@@ -384,7 +366,7 @@ export class BaseApiClient {
       
       if (serverModules?.headers) {
         try {
-          const headersList = serverModules.headers()
+          const headersList = await serverModules.headers()
           
           // CSRF protection
           const csrfToken = headersList.get('x-csrf-token')
@@ -647,10 +629,7 @@ export class BaseApiClient {
         // Only include next options if we're on the server (Next.js App Router)
         const fetchInit: RequestInit & { next?: { tags?: string[]; revalidate?: number | false; connection?: string } } = {
           ...requestConfig,
-          signal: controller.signal,
-          // Include credentials to send cookies with requests
-          // This is necessary for cross-origin requests when CORS allows credentials
-          credentials: 'include'
+          signal: controller.signal
         }
         
         // Add Next.js-specific options only if we have cache tags, revalidate, or connection

@@ -1,58 +1,50 @@
 /**
- * Authentication module exports
+ * Authentication Module Exports
  * 
- * Server-side:
- * - getServerSession() - Get current session
- * - requireAuth() - Require authentication (redirects if not)
- * - isAuthenticated() - Check auth status
- * - getCurrentUser() - Get current user
- * 
- * Client-side:
- * - useAuth() - React hook for auth state
- * - AuthProvider - React context provider
- * 
- * Actions:
- * - loginAction() - Login
- * - registerAction() - Register
- * - logoutAction() - Logout
- * - refreshTokenAction() - Refresh token
- * - verify2FAAction() - Verify 2FA
+ * Centralized exports for authentication functionality
  */
 
 // Server-side exports
 export {
   getServerSession,
-  requireAuth,
-  isAuthenticated,
   getCurrentUser,
-  getAccessToken,
-  setAuthTokens,
-  clearAuthTokens,
-} from './server'
+  isAuthenticated,
+  requireAuth,
+} from './server/session'
 
-// Session provider exports
-export { getSession, requireSession } from './session-provider'
-
-// Client-side exports
-export { useAuth, AuthProvider } from './client'
-
-// Action exports
 export {
   loginAction,
   registerAction,
-  logoutAction,
-  refreshTokenAction,
   verify2FAAction,
-  updateCurrentUserAction,
-} from './actions'
+  refreshTokenAction,
+  logoutAction,
+  logoutAllAction,
+} from './server/actions'
+
+// Client-side exports
+export { useAuth, AuthProvider } from './client/provider'
 
 // OAuth exports
 export {
   initiateOAuth,
   handleOAuthCallback,
   type OAuthProvider,
-} from './oauth'
+} from './oauth/handlers'
+
+// Token management
+export {
+  getAccessToken,
+  getRefreshToken,
+  getSessionId,
+  setTokens,
+  clearTokens,
+} from './core/token-manager'
+export {
+  validateToken,
+  isTokenExpiringSoon,
+} from './core/token-utils'
 
 // Types
-export type { ServerSession } from './server'
+export type { ServerSession } from './server/session'
+export type { SessionData } from './core/session-store'
 

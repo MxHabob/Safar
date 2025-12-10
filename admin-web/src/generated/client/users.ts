@@ -26,6 +26,9 @@ import {
   VerifyOtpApiV1UsersOtpVerifyPostRequestSchema,
   VerifyOtpApiV1UsersOtpVerifyPostResponseSchema,
   LogoutApiV1UsersLogoutPostResponseSchema,
+  GetSessionsApiV1UsersSessionsGetResponseSchema,
+  RevokeSessionApiV1UsersSessionsSessionIdDeleteResponseSchema,
+  RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema,
   LogoutAllApiV1UsersLogoutAllPostResponseSchema,
   OauthLoginApiV1UsersOauthLoginPostRequestSchema,
   OauthLoginApiV1UsersOauthLoginPostResponseSchema,
@@ -37,6 +40,7 @@ import {
   ChangePasswordApiV1UsersPasswordChangePostResponseSchema,
   VerifyEmailApiV1UsersEmailVerifyPostRequestSchema,
   VerifyEmailApiV1UsersEmailVerifyPostResponseSchema,
+  ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema,
   ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema,
   Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema,
   Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema,
@@ -211,6 +215,7 @@ responseSchema: RegisterApiV1UsersRegisterPostResponseSchema
   /**
    * Login
    * Login with email and password.
+Enhanced with IP blocking, session management, and 2FA support.
    * @param options - Request options
    * @returns Promise<ClientResponse<z.infer<typeof LoginApiV1UsersLoginPostResponseSchema>>>
    * @example
@@ -239,6 +244,13 @@ responseSchema: LoginApiV1UsersLoginPostResponseSchema
   /**
    * Refresh Token
    * Refresh an access token using a valid refresh token.
+Enhanced with session validation and activity update.
+
+Security improvements:
+- Implements refresh token rotation (old token is blacklisted)
+- Checks user revocation timestamp
+- Prevents token reuse attacks
+- Validates and updates session activity
    * @param options - Request options
    * @returns Promise<ClientResponse<z.infer<typeof RefreshTokenApiV1UsersRefreshPostResponseSchema>>>
    * @example
@@ -371,7 +383,8 @@ responseSchema: VerifyOtpApiV1UsersOtpVerifyPostResponseSchema
 
   /**
    * Logout
-   * Logout the current user and revoke the current token.
+   * Logout the current user and revoke the current token and session.
+Enhanced with session management.
    * @param options - Request options
    * @returns Promise<ClientResponse<z.infer<typeof LogoutApiV1UsersLogoutPostResponseSchema>>>
    * @example
@@ -391,8 +404,57 @@ responseSchema: LogoutApiV1UsersLogoutPostResponseSchema
   }
 
   /**
+   * Get Sessions
+   * Get all active sessions for the current user.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof GetSessionsApiV1UsersSessionsGetResponseSchema>>>
+   * @example
+   * const result = await client.getSessionsApiV1UsersSessionsGet({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  getSessionsApiV1UsersSessionsGet = cache(async (options?: { config?: RequestConfiguration }) => {
+    return this.request<z.infer<typeof GetSessionsApiV1UsersSessionsGetResponseSchema>>(
+      'GET',
+      '/api/v1/users/sessions',
+      {
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: GetSessionsApiV1UsersSessionsGetResponseSchema
+      }
+    )
+  })
+
+  /**
+   * Revoke Session
+   * Revoke a specific session.
+   * @param options - Request options
+   * @returns Promise<ClientResponse<z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteResponseSchema>>>
+   * @example
+   * const result = await client.revokeSessionApiV1UsersSessionsSessionIdDelete({
+   *   config: { timeout: 5000 }
+   * })
+   */
+  revokeSessionApiV1UsersSessionsSessionIdDelete = async (options: {
+    params: z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema>
+    config?: RequestConfiguration
+  }) => {
+// Validate and extract parameters
+const validatedParams = await RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema.parseAsync(options.params)
+
+    return this.request<z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteResponseSchema>>(
+      'DELETE',
+      '/api/v1/users/sessions/{session_id}',
+      {
+        pathParams: validatedParams.path,
+config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
+responseSchema: RevokeSessionApiV1UsersSessionsSessionIdDeleteResponseSchema
+      }
+    )
+  }
+
+  /**
    * Logout All
-   * Logout the current user from all devices (revoke all tokens).
+   * Logout the current user from all devices (revoke all tokens and sessions).
    * @param options - Request options
    * @returns Promise<ClientResponse<z.infer<typeof LogoutAllApiV1UsersLogoutAllPostResponseSchema>>>
    * @example
@@ -470,6 +532,7 @@ responseSchema: RequestPasswordResetApiV1UsersPasswordResetRequestPostResponseSc
   /**
    * Reset Password
    * Reset password using verification code.
+Enhanced with session management - revokes all existing sessions for security.
    * @param options - Request options
    * @returns Promise<ClientResponse<z.infer<typeof ResetPasswordApiV1UsersPasswordResetPostResponseSchema>>>
    * @example
@@ -498,6 +561,7 @@ responseSchema: ResetPasswordApiV1UsersPasswordResetPostResponseSchema
   /**
    * Change Password
    * Change password for authenticated user.
+Enhanced with session management - revokes all sessions except current.
    * @param options - Request options
    * @returns Promise<ClientResponse<z.infer<typeof ChangePasswordApiV1UsersPasswordChangePostResponseSchema>>>
    * @example
@@ -561,11 +625,18 @@ responseSchema: VerifyEmailApiV1UsersEmailVerifyPostResponseSchema
    *   config: { timeout: 5000 }
    * })
    */
-  resendEmailVerificationApiV1UsersEmailResendVerificationPost = async (options?: { config?: RequestConfiguration }) => {
+  resendEmailVerificationApiV1UsersEmailResendVerificationPost = async (options: {
+    body: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>
+    config?: RequestConfiguration
+  }) => {
+    // Validate request body
+    const validatedBody = await ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema.parseAsync(options.body)
+
     return this.request<z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>>(
       'POST',
       '/api/v1/users/email/resend-verification',
       {
+body: validatedBody,
 config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
 responseSchema: ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema
       }
@@ -575,6 +646,7 @@ responseSchema: ResendEmailVerificationApiV1UsersEmailResendVerificationPostResp
   /**
    * Verify 2Fa Login
    * Verify 2FA code during login and complete authentication.
+Enhanced with session management and IP blocking.
    * @param options - Request options
    * @returns Promise<ClientResponse<z.infer<typeof Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema>>>
    * @example
@@ -674,6 +746,7 @@ responseSchema: Get2faStatusApiV1Users2faStatusGetResponseSchema
   /**
    * Disable 2Fa
    * Disable 2FA for current user (requires password verification).
+Enhanced with session management - preserves current session.
    * @param options - Request options
    * @returns Promise<ClientResponse<z.infer<typeof Disable2faApiV1Users2faDisablePostResponseSchema>>>
    * @example

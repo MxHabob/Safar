@@ -13,7 +13,7 @@ import type { GetGuidesApiV1TravelGuidesGetResponse } from "@/generated/schemas"
  * Beautiful, minimal design with creative use of space
  */
 export const EditorialDestinations = ({ initialData }: { initialData?: GetGuidesApiV1TravelGuidesGetResponse }) => {
-  const { data: guides, isLoading } = useGetGuidesApiV1TravelGuidesGet(
+  const { data: guides, isLoading, error } = useGetGuidesApiV1TravelGuidesGet(
     undefined,
     undefined,
     undefined,
@@ -40,6 +40,11 @@ export const EditorialDestinations = ({ initialData }: { initialData?: GetGuides
         </div>
       </div>
     );
+  }
+
+  // Handle errors gracefully - return null to hide the section on error
+  if (error) {
+    return null;
   }
 
   if (!guides || guides.length === 0) return null;

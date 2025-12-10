@@ -677,6 +677,7 @@ export function useGetListingStatsApiV1AdminListingsStatsGet(options?: { enabled
     queryKey: [...['getListingStatsApiV1AdminListingsStatsGet'], searchParams],
     queryFn: async ({ signal }: { signal?: AbortSignal }) => {
       try {
+        
         const result = await resolveActionResult<z.infer<typeof GetListingStatsApiV1AdminListingsStatsGetResponseSchema>>(getListingStatsApiV1AdminListingsStatsGet())
         return result
       } catch (error) {
@@ -716,6 +717,10 @@ export function useInfiniteGetListingStatsApiV1AdminListingsStatsGet(options?: {
     initialPageParam: 1,
     queryFn: async ({ pageParam = 1, signal }: { pageParam?: number; signal?: AbortSignal }) => {
       try {
+        // Build query params object with only the parameters the endpoint expects
+        const queryParams: {  } = {
+          
+        }
         const result = await resolveActionResult<z.infer<typeof GetListingStatsApiV1AdminListingsStatsGetResponseSchema>>(getListingStatsApiV1AdminListingsStatsGet())
         return result
       } catch (error) {
