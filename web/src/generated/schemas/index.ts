@@ -1703,6 +1703,10 @@ export type VerifyEmailApiV1UsersEmailVerifyPostError = z.infer<typeof VerifyEma
  * Status: 200
  * Successful Response
  */
+export const ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema = z.object({ email: z.string().email() })
+
+export type ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequest = z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>
+
 export const ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema = z.any()
 
 export type ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponse = z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>

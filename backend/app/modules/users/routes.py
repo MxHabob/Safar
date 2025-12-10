@@ -58,9 +58,11 @@ async def register(
     # Send verification email
     from app.infrastructure.email.service import EmailService
     from app.core.config import get_settings
+    import logging
     settings = get_settings()
     
-    verify_url = f"{settings.app_name}/verify-email?code={verification.code}"
+    base_url = settings.frontend_url or settings.app_name
+    verify_url = f"{base_url}/verify-email?code={verification.code}"
     
     await EmailService.send_template_email(
         to_email=user_entity.email,
@@ -72,6 +74,7 @@ async def register(
             "verification_url": verify_url
         }
     )
+    logging.getLogger(__name__).info("Sent verification email to %s with code %s", user_entity.email, verification.code)
     
     # Get full user model for response
     from app.modules.users.models import User as UserModel
@@ -876,9 +879,23 @@ async def resend_email_verification(
     # Send email
     from app.infrastructure.email.service import EmailService
     from app.core.config import get_settings
+    import logging
     settings = get_settings()
     
-    verify_url = f"{settings.app_name}/verify-email?code={verification.code}"
+    base_url = settings.frontend_url or settings.app_name
+    verify_url = f"{base_url}/verify-email?code={verification.code}"
+    
+    await EmailService.send_template_email(
+        to_email=user.email,
+        subject="Verify Your Email",
+        template_name="verification",
+        template_data={
+            "name": user.first_name or user.email.split("@")[0],
+            "code": verification.code,
+            "verification_url": verify_url
+        }
+    )
+    logging.getLogger(__name__).info("Resent verification email to %s with code %s", user.email, verification.code)
 
 
 # ============================================================================

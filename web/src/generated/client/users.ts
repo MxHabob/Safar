@@ -40,6 +40,7 @@ import {
   ChangePasswordApiV1UsersPasswordChangePostResponseSchema,
   VerifyEmailApiV1UsersEmailVerifyPostRequestSchema,
   VerifyEmailApiV1UsersEmailVerifyPostResponseSchema,
+  ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema,
   ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema,
   Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema,
   Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema,
@@ -624,11 +625,18 @@ responseSchema: VerifyEmailApiV1UsersEmailVerifyPostResponseSchema
    *   config: { timeout: 5000 }
    * })
    */
-  resendEmailVerificationApiV1UsersEmailResendVerificationPost = async (options?: { config?: RequestConfiguration }) => {
+  resendEmailVerificationApiV1UsersEmailResendVerificationPost = async (options: {
+    body: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>
+    config?: RequestConfiguration
+  }) => {
+    // Validate request body
+    const validatedBody = await ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema.parseAsync(options.body)
+
     return this.request<z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>>(
       'POST',
       '/api/v1/users/email/resend-verification',
       {
+body: validatedBody,
 config: { ...options?.config, middleware: [...defaultMiddleware, ...(options?.config?.middleware || [])] },
 responseSchema: ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema
       }

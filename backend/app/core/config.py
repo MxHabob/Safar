@@ -75,6 +75,7 @@ class Settings(BaseSettings):
     # Application Settings
     # ============================================================================
     app_name: str = Field(default="Safar API", env="APP_NAME")
+    frontend_url: Optional[str] = Field(default=None, env="FRONTEND_URL")
     app_version: str = Field(default="1.0.0", env="APP_VERSION")
     api_v1_prefix: str = Field(default="/api/v1", env="API_V1_PREFIX")
     debug: bool = Field(default=False, env="DEBUG")

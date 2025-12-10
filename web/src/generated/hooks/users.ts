@@ -42,6 +42,7 @@ import {
   ChangePasswordApiV1UsersPasswordChangePostRequestSchema,
   VerifyEmailApiV1UsersEmailVerifyPostResponseSchema,
   VerifyEmailApiV1UsersEmailVerifyPostRequestSchema,
+  ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema,
   ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema,
   Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema,
   Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema,
@@ -1232,7 +1233,7 @@ export function useLogoutApiV1UsersLogoutPostMutation(options?: {
       options?.onSuccess?.(data, variables)
     },
     
-    onError: (error: Error, variables: void) => {
+    onError: (error, variables) => {
       // Show error toast
       if (options?.showToast !== false) {
         toast.error(error.message || 'Failed to create')
@@ -1897,26 +1898,30 @@ export function useVerifyEmailApiV1UsersEmailVerifyPostMutation(options?: {
  * @returns Mutation result with enhanced features
  */
 export function useResendEmailVerificationApiV1UsersEmailResendVerificationPostMutation(options?: {
-  onSuccess?: (data: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>, variables: void) => void
-  onError?: (error: Error, variables: void) => void
-  optimisticUpdate?: (variables: void) => unknown
+  onSuccess?: (data: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>, variables: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>) => void
+  onError?: (error: Error, variables: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>) => void
+  optimisticUpdate?: (variables: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>) => unknown
   showToast?: boolean
 }) {
   const queryClient = useQueryClient()
   const [isPending, startTransition] = useTransition()
-  const [optimisticData, setOptimisticData] = useOptimistic<unknown, void>(null, (_, newData) => newData)
+  const [optimisticData, setOptimisticData] = useOptimistic<unknown, z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>>(null, (_, newData) => newData)
 
-  const mutation = useMutation({
-    mutationFn: async (variables: void): Promise<z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>> => {
+  const mutation = useMutation<
+    z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>,
+    Error,
+    z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>
+  >({
+    mutationFn: async (variables): Promise<z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>> => {
       try {
-        const result = await resolveActionResult<z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>>(resendEmailVerificationApiV1UsersEmailResendVerificationPost())
+        const result = await resolveActionResult<z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>>(resendEmailVerificationApiV1UsersEmailResendVerificationPost(variables))
         return (result ?? ({} as z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>))
       } catch (error) {
         handleActionError(error)
       }
     },
     
-    onMutate: async (variables: void) => {
+    onMutate: async (variables) => {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
@@ -1928,7 +1933,7 @@ export function useResendEmailVerificationApiV1UsersEmailResendVerificationPostM
       // Optimistic update (if provided)
       if (options?.optimisticUpdate) {
         const optimisticValue = options.optimisticUpdate(variables)
-        setOptimisticData(optimisticValue as void)
+        setOptimisticData(optimisticValue as z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>)
       }
       
       return {}
@@ -1944,7 +1949,7 @@ export function useResendEmailVerificationApiV1UsersEmailResendVerificationPostM
       options?.onSuccess?.(data, variables)
     },
     
-    onError: (error: Error, variables: void) => {
+    onError: (error, variables) => {
       // Show error toast
       if (options?.showToast !== false) {
         toast.error(error.message || 'Failed to create')
@@ -1969,7 +1974,7 @@ export function useResendEmailVerificationApiV1UsersEmailResendVerificationPostM
 
   return {
     ...mutation,
-    mutateWithTransition: (variables: void) => {
+    mutateWithTransition: (variables: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>) => {
       startTransition(() => {
         mutation.mutate(variables)
       })

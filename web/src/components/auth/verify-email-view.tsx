@@ -39,8 +39,8 @@ export function VerifyEmailView() {
       setStatus("pending");
       setError(null);
     },
-    onError: () => {
-      setError("Failed to resend verification email. Please try again.");
+    onError: (error) => {
+      setError(error.message || "Failed to resend verification email. Please try again.");
     },
   });
 
@@ -62,7 +62,7 @@ export function VerifyEmailView() {
 
   const resendVerification = () => {
     if (!email) return;
-    resendVerificationMutation.mutate(undefined);
+    resendVerificationMutation.mutate({ email });
   };
 
   return (

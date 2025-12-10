@@ -43,6 +43,7 @@ import {
   ChangePasswordApiV1UsersPasswordChangePostResponseSchema,
   VerifyEmailApiV1UsersEmailVerifyPostRequestSchema,
   VerifyEmailApiV1UsersEmailVerifyPostResponseSchema,
+  ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema,
   ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema,
   Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema,
   Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema,
@@ -1603,14 +1604,15 @@ export const resendEmailVerificationApiV1UsersEmailResendVerificationPost = auth
     name: "resend-email-verification-api-v1-users-email-resend-verification-post",
     requiresAuth: false
   })
-  .schema(z.void())
-  .action(async ({ parsedInput, ctx }: { parsedInput: void; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
+  .schema(ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema)
+  .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
     const startTime = Date.now()
     
     try {
 
       // Execute API call with enhanced configuration
       const response = await apiClient.users.resendEmailVerificationApiV1UsersEmailResendVerificationPost({
+body: parsedInput,
         config: {
           timeout: 30000,
           retries: 3,
