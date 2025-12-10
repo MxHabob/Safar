@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PaymentPage, PaymentPageLoading } from "@/features/payments/payment-page";
-import { getSession } from "@/lib/auth/session-provider";
+import { getCurrentUser } from "@/lib/auth/server/session";
 
 type Params = Promise<{ bookingId: string }>;
 
@@ -23,9 +23,9 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function PaymentPageRoute({ params }: { params: Params }) {
   const { bookingId } = await params;
-  const session = await getSession().catch(() => null);
+  const user = await getCurrentUser().catch(() => null);
 
-  if (!session) {
+  if (!user) {
     notFound();
   }
 

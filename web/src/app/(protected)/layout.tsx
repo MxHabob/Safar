@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth/session-provider";
+import { getCurrentUser } from "@/lib/auth/server/session";
 
 export const metadata: Metadata = {
   title: "Account",
@@ -19,12 +19,11 @@ export default async function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession().catch(() => null);
+  const session = await getCurrentUser().catch(() => null);
 
   if (!session) {
-    redirect("/login");
+    redirect('/login')
   }
 
-  return <>{children}</>;
+  return <>{children}</>
 }
-

@@ -1,14 +1,12 @@
-import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth/session-provider'
 import { ProfileView } from '@/components/account/profile-view'
+import { getCurrentUser } from '@/lib/auth/server/session'
+import { redirect } from 'next/navigation'
 
 export default async function ProfilePage() {
-  const session = await getSession()
-  
-  if (!session) {
+  const user = await getCurrentUser()
+  if (!user) {
     redirect('/login')
   }
-
   return (
     <div className="space-y-6">
       <div>
@@ -18,7 +16,7 @@ export default async function ProfilePage() {
         </p>
       </div>
 
-      <ProfileView user={session.user} />
+      <ProfileView user={user} />
     </div>
   )
 }

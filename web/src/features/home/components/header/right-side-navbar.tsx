@@ -1,7 +1,7 @@
 import Graphic from "@/components/shared/graphic";
 import { UserAvatar } from "./user-avatar";
 import { LoginButton } from "./login-button";
-import { getServerSession } from "@/lib/auth/server/session";
+import { getCurrentUser } from "@/lib/auth/server/session";
 
 /**
  * Right Side Navbar Component (Server Component)
@@ -10,9 +10,7 @@ import { getServerSession } from "@/lib/auth/server/session";
  * - Conditionally renders user avatar or login button
  */
 export const RightSideNavbar = async () => {
-  const session = await getServerSession();
-
-  console.log("session", session);
+  const session = await getCurrentUser();
 
   return (
     <div className="fixed top-3 right-3 z-40 bg-background rounded-bl-[18px] cursor-pointer select-none">

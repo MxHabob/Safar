@@ -38,9 +38,11 @@ export {
   getSessionId,
   setTokens,
   clearTokens,
+} from './core/token-manager'
+export {
   validateToken,
   isTokenExpiringSoon,
-} from './core/token-manager'
+} from './core/token-utils'
 
 // Types
 export type { ServerSession } from './server/session'

@@ -1,12 +1,12 @@
 "use client";
 
 import { UserAvatarMenu } from "./user-avatar-menu";
-import { ServerSession } from "@/lib/auth/server";
+import { GetCurrentUserInfoApiV1UsersMeGetResponse } from "@/generated/schemas";
 import { cn } from "@/lib/utils";
 
 interface UserAvatarProps {
   className?: string;
-  user: ServerSession;
+  user: GetCurrentUserInfoApiV1UsersMeGetResponse;
 }
 
 /**

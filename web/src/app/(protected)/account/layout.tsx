@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth/session-provider'
+import { getCurrentUser } from '@/lib/auth/server/session'
 import { AccountSidebar } from '@/components/account/account-sidebar'
 import { MobileAccountNav } from '@/components/account/mobile-account-nav'
 
@@ -8,9 +8,9 @@ export default async function AccountLayout({
 }: {
   children: React.ReactNode
 }) {
-  const session = await getSession()
+  const user = await getCurrentUser()
   
-  if (!session?.user) {
+  if (!user) {
     redirect('/login')
   }
 
@@ -20,12 +20,12 @@ export default async function AccountLayout({
         <div className="flex flex-col md:flex-row gap-6">
           {/* Desktop Sidebar */}
           <aside className="hidden md:block w-64 shrink-0">
-            <AccountSidebar user={session.user} />
+            <AccountSidebar user={user} />
           </aside>
 
           {/* Mobile Navigation */}
           <div className="md:hidden w-full">
-            <MobileAccountNav user={session.user} />
+            <MobileAccountNav user={user} />
           </div>
 
           {/* Main Content */}

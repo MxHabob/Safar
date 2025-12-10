@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { EditListingForm } from "@/features/host/components/edit-listing-form";
 import { getListingApiV1ListingsListingIdGet } from "@/generated/actions/listings";
-import { getSession } from "@/lib/auth/session-provider";
+import { getCurrentUser } from "@/lib/auth/server/session";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type Params = Promise<{ id: string }>;
@@ -23,9 +23,9 @@ export const revalidate = 0;
 
 async function EditListingPageContent({ params }: { params: Params }) {
   const { id } = await params;
-  const session = await getSession().catch(() => null);
+  const user = await getCurrentUser().catch(() => null);
 
-  if (!session) {
+  if (!user) {
     redirect("/login");
   }
 
@@ -35,7 +35,7 @@ async function EditListingPageContent({ params }: { params: Params }) {
     });
 
     // Check if user owns this listing
-    if (listing?.data?.host_id !== session.user.id && listing?.data?.host?.id !== session.user.id) {
+    if (listing?.data?.host_id !== user.id && listing?.data?.host?.id !== user.id) {
       redirect("/dashboard");
     }
 

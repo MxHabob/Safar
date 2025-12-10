@@ -12,7 +12,7 @@
 
 import { createContext, useContext, useCallback, useTransition, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
 import type {
   GetCurrentUserInfoApiV1UsersMeGetResponse,
   LoginApiV1UsersLoginPostRequest,

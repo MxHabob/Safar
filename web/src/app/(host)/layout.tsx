@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth/session-provider";
+import { getCurrentUser } from "@/lib/auth/server/session";
 
 export const metadata: Metadata = {
   title: "Host Dashboard - Safar",
@@ -20,16 +20,16 @@ export default async function HostLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession().catch(() => null);
+  const user = await getCurrentUser().catch(() => null);
 
-  if (!session) {
+  if (!user) {
     redirect("/login");
   }
 
   // Check if user is a host
-  const isHost = session.user.role === "host" || 
-                 (session.user as any).is_host || 
-                 session.user.role === "admin";
+  const isHost = user.role === "host" || 
+                 (user as any).roles.includes("host") || 
+                 user.role === "admin";
 
   if (!isHost) {
     redirect("/");

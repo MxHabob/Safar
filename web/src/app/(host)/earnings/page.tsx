@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { Metadata } from "next";
 import { HostEarnings, HostEarningsLoading } from "@/features/host/components/host-earnings";
 import { listBookingsApiV1BookingsGet } from "@/generated/actions/bookings";
-import { getSession } from "@/lib/auth/session-provider";
+import { getCurrentUser } from "@/lib/auth/server/session";
 
 export const metadata: Metadata = {
   title: "Earnings - Host Dashboard",
@@ -16,9 +16,9 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 async function EarningsData() {
-  const session = await getSession().catch(() => null);
+  const user = await getCurrentUser().catch(() => null);
 
-  if (!session) {
+  if (!user) {
     return null;
   }
 
@@ -29,7 +29,7 @@ async function EarningsData() {
 
     const allBookings = bookingsResult?.data?.items || [];
     const bookings = allBookings.filter((booking: any) => 
-      booking.host_id === session.user.id || booking.listing?.host_id === session.user.id
+      booking.host_id === user.id || booking.listing?.host_id === user.id
     );
 
     return <HostEarnings bookings={bookings} />;

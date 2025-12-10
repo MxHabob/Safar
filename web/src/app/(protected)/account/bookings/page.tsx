@@ -1,14 +1,6 @@
-import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth/session-provider'
 import { BookingsView } from '@/components/account/bookings-view'
 
 export default async function BookingsPage() {
-  const session = await getSession()
-  
-  if (!session) {
-    redirect('/login')
-  }
-
   return (
     <div className="space-y-6">
       <div>

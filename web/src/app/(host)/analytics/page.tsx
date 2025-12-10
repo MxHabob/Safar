@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import { HostAnalytics, HostAnalyticsLoading } from "@/features/host/components/host-analytics";
 import { listListingsApiV1ListingsGet } from "@/generated/actions/listings";
 import { listBookingsApiV1BookingsGet } from "@/generated/actions/bookings";
-import { getSession } from "@/lib/auth/session-provider";
+import { getCurrentUser } from "@/lib/auth/server/session";
 
 export const metadata: Metadata = {
   title: "Analytics - Host Dashboard",
@@ -17,9 +17,9 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 async function AnalyticsData() {
-  const session = await getSession().catch(() => null);
+  const user = await getCurrentUser().catch(() => null);
 
-  if (!session) {
+  if (!user) {
     return null;
   }
 
@@ -37,10 +37,10 @@ async function AnalyticsData() {
     const allBookings = bookingsResult?.data?.items || [];
     
     const listings = allListings.filter((listing: any) => 
-      listing.host_id === session.user.id || listing.host?.id === session.user.id
+      listing.host_id === user.id || listing.host?.id === user.id
     );
     const bookings = allBookings.filter((booking: any) => 
-      booking.host_id === session.user.id || booking.listing?.host_id === session.user.id
+      booking.host_id === user.id || booking.listing?.host_id === user.id
     );
 
     return <HostAnalytics listings={listings} bookings={bookings} />;

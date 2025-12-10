@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
 import { HostSettings, HostSettingsLoading } from "@/features/host/components/host-settings";
-import { getSession } from "@/lib/auth/session-provider";
+import { getCurrentUser } from "@/lib/auth/server/session";
 
 export const metadata: Metadata = {
   title: "Settings - Host Dashboard",
@@ -15,15 +15,15 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 async function SettingsData() {
-  const session = await getSession().catch(() => null);
+  const user = await getCurrentUser().catch(() => null);
 
-  if (!session) {
+  if (!user) {
     return null;
   }
 
   // Use session user directly - no need to call /api/v1/users/me
   // Session already contains user data from login/OAuth
-  return <HostSettings user={session.user} />;
+  return <HostSettings user={user} />;
 }
 
 export default function SettingsPage() {

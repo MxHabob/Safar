@@ -1,13 +1,6 @@
-import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth/session-provider'
 import { WishlistView } from '@/components/account/wishlist-view'
 
 export default async function WishlistPage() {
-  const session = await getSession()
-  
-  if (!session) {
-    redirect('/login')
-  }
 
   return (
     <div className="space-y-6">

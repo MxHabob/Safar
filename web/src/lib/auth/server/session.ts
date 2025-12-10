@@ -8,7 +8,8 @@
 'use server'
 
 import { cache } from 'react'
-import { getAccessToken, getRefreshToken, getSessionId, validateToken } from '../core/token-manager'
+import { getAccessToken, getRefreshToken, getSessionId } from '../core/token-manager'
+import { validateToken } from '../core/token-utils'
 import { sessionStore } from '../core/session-store'
 import type { GetCurrentUserInfoApiV1UsersMeGetResponse } from '@/generated/schemas'
 

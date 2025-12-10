@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { Metadata } from "next";
 import { HostReviews, HostReviewsLoading } from "@/features/host/components/host-reviews";
 import { listListingsApiV1ListingsGet } from "@/generated/actions/listings";
-import { getSession } from "@/lib/auth/session-provider";
+import { getCurrentUser } from "@/lib/auth/server/session";
 
 export const metadata: Metadata = {
   title: "Reviews - Host Dashboard",
@@ -16,9 +16,9 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 async function ReviewsData() {
-  const session = await getSession().catch(() => null);
+  const user = await getCurrentUser().catch(() => null);
 
-  if (!session) {
+  if (!user) {
     return null;
   }
 
@@ -29,7 +29,7 @@ async function ReviewsData() {
 
     const allListings = listingsResult?.data?.items || [];
     const listings = allListings.filter((listing: any) => 
-      listing.host_id === session.user.id || listing.host?.id === session.user.id
+      listing.host_id === user.id || listing.host?.id === user.id
     );
 
     return <HostReviews listings={listings} />;

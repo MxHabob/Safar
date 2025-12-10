@@ -1,13 +1,6 @@
-import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth/session-provider'
 import { SecurityView } from '@/components/account/security-view'
 
 export default async function SecurityPage() {
-  const session = await getSession()
-  
-  if (!session) {
-    redirect('/login')
-  }
 
   return (
     <div className="space-y-6">

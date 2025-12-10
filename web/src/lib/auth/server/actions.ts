@@ -7,7 +7,8 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { setTokens, clearTokens, getRefreshToken, validateToken } from '../core/token-manager'
+import { setTokens, clearTokens, getRefreshToken } from '../core/token-manager'
+import { validateToken } from '../core/token-utils'
 import { sessionStore } from '../core/session-store'
 import type {
   LoginApiV1UsersLoginPostRequest,
