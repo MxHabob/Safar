@@ -7,55 +7,55 @@ import { TravelGuidesViewLoading } from "@/features/home/travel-guides-view";
 import { listListingsApiV1ListingsGet } from "@/generated/actions/listings";
 import { getGuidesApiV1TravelGuidesGet } from "@/generated/actions/travelGuides";
 
-// const EditorialDestinations = dynamic(
-//   () =>
-//     import("@/features/home/components/editorial-destinations").then(
-//       (mod) => mod.EditorialDestinations
-//     ),
-//   {
-//     loading: () => (
-//       <div className="space-y-6">
-//         <div className="h-8 w-64 bg-muted rounded-md animate-pulse" />
-//         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-//           {Array.from({ length: 3 }).map((_, i) => (
-//             <div key={i} className="h-72 rounded-[18px] bg-muted animate-pulse" />
-//           ))}
-//         </div>
-//       </div>
-//     ),
-//     ssr: true,
-//   }
-// );
+const EditorialDestinations = dynamic(
+  () =>
+    import("@/features/home/components/editorial-destinations").then(
+      (mod) => mod.EditorialDestinations
+    ),
+  {
+    loading: () => (
+      <div className="space-y-6">
+        <div className="h-8 w-64 bg-muted rounded-md animate-pulse" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-72 rounded-[18px] bg-muted animate-pulse" />
+          ))}
+        </div>
+      </div>
+    ),
+    ssr: true,
+  }
+);
 
-// const CuratedListings = dynamic(
-//   () =>
-//     import("@/features/home/components/curated-listings").then(
-//       (mod) => mod.CuratedListings
-//     ),
-//   {
-//     loading: () => (
-//       <div className="space-y-6">
-//         <div className="h-8 w-64 bg-muted rounded-md animate-pulse" />
-//         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-//           {Array.from({ length: 3 }).map((_, i) => (
-//             <div key={i} className="h-80 rounded-[18px] bg-muted animate-pulse" />
-//           ))}
-//         </div>
-//       </div>
-//     ),
-//     ssr: true,
-//   }
-// );
+const CuratedListings = dynamic(
+  () =>
+    import("@/features/home/components/curated-listings").then(
+      (mod) => mod.CuratedListings
+    ),
+  {
+    loading: () => (
+      <div className="space-y-6">
+        <div className="h-8 w-64 bg-muted rounded-md animate-pulse" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-80 rounded-[18px] bg-muted animate-pulse" />
+          ))}
+        </div>
+      </div>
+    ),
+    ssr: true,
+  }
+);
 
-// const TravelGuidesView = dynamic(
-//   () =>
-//     import("@/features/home/travel-guides-view").then(
-//       (mod) => mod.TravelGuidesView
-//     ),
-//   {
-//     ssr: true,
-//   }
-// );
+const TravelGuidesView = dynamic(
+  () =>
+    import("@/features/home/travel-guides-view").then(
+      (mod) => mod.TravelGuidesView
+    ),
+  {
+    ssr: true,
+  }
+);
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -108,18 +108,51 @@ export const metadata: MetadataType = {
 
 export const revalidate = 60;
 
+// Timeout wrapper to ensure API calls don't exceed Vercel's 10s limit
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number = 8000,
+  fallback?: T
+): Promise<T | undefined> {
+  try {
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout')), timeoutMs);
+    });
+    
+    return await Promise.race([promise, timeoutPromise]);
+  } catch (error) {
+    console.error('API call timeout or error:', error);
+    return fallback;
+  }
+}
+
 const page = async () => {
+  // Use Promise.allSettled with timeout wrapper to prevent Vercel timeout
+  // Critical: listings for hero (8s timeout)
+  // Non-critical: other data (6s timeout, can fail gracefully)
   const [listingsResult, editorialGuidesResult, curatedListingsResult, travelGuidesResult] = await Promise.allSettled([
-    listListingsApiV1ListingsGet({ query: { skip: 0, limit: 10, status: "active" } }),
-    getGuidesApiV1TravelGuidesGet({ query: { is_official: true, status: "published", skip: 0, limit: 6, sort_by: "view_count" } }),
-    listListingsApiV1ListingsGet({ query: { skip: 0, limit: 6, status: "active" } }),
-    getGuidesApiV1TravelGuidesGet({ query: { status: "published", skip: 0, limit: 9, sort_by: "view_count" } }),
+    withTimeout(
+      listListingsApiV1ListingsGet({ query: { skip: 0, limit: 10, status: "active" } }),
+      8000
+    ),
+    withTimeout(
+      getGuidesApiV1TravelGuidesGet({ query: { is_official: true, status: "published", skip: 0, limit: 6, sort_by: "view_count" } }),
+      6000
+    ),
+    withTimeout(
+      listListingsApiV1ListingsGet({ query: { skip: 0, limit: 6, status: "active" } }),
+      6000
+    ),
+    withTimeout(
+      getGuidesApiV1TravelGuidesGet({ query: { status: "published", skip: 0, limit: 9, sort_by: "view_count" } }),
+      6000
+    ),
   ]);
 
-  const listings = listingsResult.status === "fulfilled" && listingsResult.value.data ? listingsResult.value.data : undefined;
+  const listings = listingsResult.status === "fulfilled" && listingsResult.value && listingsResult.value.data ? listingsResult.value.data : undefined;
   
   const extractGuidesData = (result: PromiseSettledResult<any>): any[] | undefined => {
-    if (result.status !== "fulfilled") return undefined;
+    if (result.status !== "fulfilled" || !result.value) return undefined;
     const value = result.value;
     if (value && typeof value === 'object' && 'data' in value) {
       const data = value.data;
@@ -134,7 +167,7 @@ const page = async () => {
   };
 
   const editorialGuides = extractGuidesData(editorialGuidesResult);
-  const curatedListings = curatedListingsResult.status === "fulfilled" && curatedListingsResult.value.data ? curatedListingsResult.value.data : undefined;
+  const curatedListings = curatedListingsResult.status === "fulfilled" && curatedListingsResult.value && curatedListingsResult.value.data ? curatedListingsResult.value.data : undefined;
   const travelGuides = extractGuidesData(travelGuidesResult);
 
   return (
