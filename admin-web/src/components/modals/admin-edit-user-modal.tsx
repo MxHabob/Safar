@@ -10,28 +10,45 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useUpdateUserApiV1AdminUsersUserIdPutMutation } from "@/generated/hooks/admin"
+import { useQueryClient } from "@tanstack/react-query"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { Save } from "lucide-react"
 
 const Schema = z.object({
   email: z.string().email().optional(),
-  full_name: z.string().optional(),
-  company: z.string().optional(),
-  bio: z.string().optional(),
-  username: z.string().optional(),
+  first_name: z.string().optional(),
+  last_name: z.string().optional(),
+  role: z.enum(["guest", "host", "admin", "super_admin"]).optional(),
+  status: z.enum(["active", "inactive", "suspended", "pending_verification"]).optional(),
+  is_active: z.boolean().optional(),
 })
 
 type FormValues = z.infer<typeof Schema>
 
 export function AdminEditUserModal() {
   const { isOpen, type, data, onClose } = useModal()
+  const queryClient = useQueryClient()
   const isActive = isOpen && type === "adminEditUser"
 
-  const { register, handleSubmit, formState: { isSubmitting } } = useForm<FormValues>({
+  const { register, handleSubmit, watch, setValue, formState: { isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(Schema),
     defaultValues: (data?.payload as Partial<FormValues>) || {}
   })
 
-  const mutation = useUpdateUserApiV1AdminUsersUserIdPutMutation({ showToast: true })
+  const isActiveValue = watch("is_active")
+
+  const mutation = useUpdateUserApiV1AdminUsersUserIdPutMutation({ 
+    showToast: true,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["listUsersApiV1AdminUsersGet"] })
+      queryClient.invalidateQueries({ queryKey: ["getUserApiV1AdminUsersUserIdGet"] })
+      if (data?.onSuccess) {
+        data.onSuccess()
+      }
+      onClose()
+    }
+  })
 
   const onSubmit = async (values: FormValues) => {
     if (!data?.userId) return
@@ -39,7 +56,6 @@ export function AdminEditUserModal() {
       body: values,
       params: { path: { user_id: data.userId } },
     } as unknown as Parameters<typeof mutation.mutateAsync>[0])
-    onClose()
   }
 
   return (
@@ -54,26 +70,66 @@ export function AdminEditUserModal() {
           </div>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid gap-3">
+          <div className="grid gap-4">
             <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground">Email</Label>
               <Input {...register("email")} placeholder="user@example.com" className="rounded-xl h-9 text-sm" />
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">Full name</Label>
-              <Input {...register("full_name")} placeholder="Full name" className="rounded-xl h-9 text-sm" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground">First Name</Label>
+                <Input {...register("first_name")} placeholder="First name" className="rounded-xl h-9 text-sm" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground">Last Name</Label>
+                <Input {...register("last_name")} placeholder="Last name" className="rounded-xl h-9 text-sm" />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">Username</Label>
-              <Input {...register("username")} placeholder="username" className="rounded-xl h-9 text-sm" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground">Role</Label>
+                <Select
+                  value={watch("role") || ""}
+                  onValueChange={(value) => setValue("role", value as FormValues["role"])}
+                >
+                  <SelectTrigger className="rounded-xl h-9 text-sm">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="guest">Guest</SelectItem>
+                    <SelectItem value="host">Host</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="super_admin">Super Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground">Status</Label>
+                <Select
+                  value={watch("status") || ""}
+                  onValueChange={(value) => setValue("status", value as FormValues["status"])}
+                >
+                  <SelectTrigger className="rounded-xl h-9 text-sm">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="suspended">Suspended</SelectItem>
+                    <SelectItem value="pending_verification">Pending Verification</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">Company</Label>
-              <Input {...register("company")} placeholder="Company" className="rounded-xl h-9 text-sm" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">Bio</Label>
-              <Input {...register("bio")} placeholder="Bio" className="rounded-xl h-9 text-sm" />
+            <div className="flex items-center justify-between space-x-2 rounded-lg border p-3">
+              <div className="space-y-0.5">
+                <Label className="text-xs font-medium">Active Account</Label>
+                <p className="text-xs text-muted-foreground">Enable or disable user account</p>
+              </div>
+              <Switch
+                checked={isActiveValue ?? true}
+                onCheckedChange={(checked) => setValue("is_active", checked)}
+              />
             </div>
           </div>
           <DialogFooter>

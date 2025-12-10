@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button"
 import { ActionButton } from "@/components/ui/action-button"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useModal } from "@/lib/stores/modal-store"
-import { useVerifyTotpApiV1AuthMfaTotpVerifyPostMutation } from "@/generated/hooks/authentication"
+import { useModal } from "@/lib/stores/modal-store" 
+import { useVerify2faSetupApiV1Users2faVerifyPostMutation } from "@/generated/hooks/users"
 import { Shield, AlertCircle } from "lucide-react"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 
@@ -18,17 +18,17 @@ export function MfaVerifyModal() {
   const [verificationCode, setVerificationCode] = useState("")
   const [error, setError] = useState<string | null>(null)
 
-  const verifyMutation = useVerifyTotpApiV1AuthMfaTotpVerifyPostMutation({
+  const verifyMutation = useVerify2faSetupApiV1Users2faVerifyPostMutation({
     showToast: false, // Don't show toast for MFA verification as we show error in UI
     onSuccess: () => {
       setError(null)
       // Call the onConfirm callback with the verified code
-      if (data.onConfirm) {
+      if (data?.onConfirm) {
         data.onConfirm(verificationCode)
       }
       onClose()
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       setError(error.message || "Invalid verification code")
       // Error is shown in UI via setError, no need for toast
     },
@@ -44,6 +44,7 @@ export function MfaVerifyModal() {
     try {
       await verifyMutation.mutateAsync({
         code: verificationCode,
+        method: "totp",
       })
     } catch (error) {
       // Error handled in onError
@@ -53,7 +54,7 @@ export function MfaVerifyModal() {
   const handleCancel = () => {
     setVerificationCode("")
     setError(null)
-    if (data.onCancel) {
+    if (data?.onCancel && typeof data.onCancel === "function") {
       data.onCancel()
     }
     onClose()

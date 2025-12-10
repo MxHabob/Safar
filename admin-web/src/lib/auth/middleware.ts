@@ -40,24 +40,16 @@ function validateToken(token: string): DecodedToken | null {
 
 /**
  * Check if path requires authentication
+ * By default, ALL paths require authentication except public paths
  */
 function isProtectedPath(pathname: string): boolean {
-  const protectedPaths = [
-    '/account',
-    '/dashboard',
-    '/admin',
-    '/bookings',
-    '/messages',
-    '/notifications',
-    '/payments',
-    '/subscriptions',
-  ]
-  
-  return protectedPaths.some(path => pathname.startsWith(path))
+  // All paths are protected by default
+  // Only public paths are excluded (handled in isAuthPath)
+  return true
 }
 
 /**
- * Check if path is a public auth path
+ * Check if path is a public auth path (accessible without authentication)
  */
 function isAuthPath(pathname: string): boolean {
   const authPaths = [
@@ -69,11 +61,13 @@ function isAuthPath(pathname: string): boolean {
     '/verify-2fa',
   ]
   
-  return authPaths.some(path => pathname.startsWith(path))
+  // Exact match or starts with auth path
+  return authPaths.some(path => pathname === path || pathname.startsWith(path + '/'))
 }
 
 /**
  * Check if path should be excluded from middleware
+ * These paths are skipped entirely (no auth check)
  */
 function isExcludedPath(pathname: string): boolean {
   const excludedPaths = [
@@ -83,18 +77,30 @@ function isExcludedPath(pathname: string): boolean {
     '/public',
     '/static',
     '/health',
+    '/robots.txt',
+    '/sitemap.xml',
   ]
   
-  return excludedPaths.some(path => pathname.startsWith(path))
+  // Also exclude static file extensions
+  const staticExtensions = ['.ico', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.css', '.js', '.woff', '.woff2', '.ttf', '.eot']
+  const hasStaticExtension = staticExtensions.some(ext => pathname.endsWith(ext))
+  
+  return excludedPaths.some(path => pathname.startsWith(path)) || hasStaticExtension
 }
 
 /**
  * Authentication Middleware
+ * 
+ * Security Model:
+ * - ALL paths are protected by default
+ * - Only public auth paths (login, register, etc.) are accessible without auth
+ * - Excluded paths (static files, API, etc.) are skipped
+ * - Authenticated users are redirected away from auth pages
  */
 export async function authMiddleware(request: NextRequest): Promise<NextResponse | null> {
   const { pathname } = request.nextUrl
   
-  // Skip excluded paths
+  // Skip excluded paths (static files, API routes, etc.)
   if (isExcludedPath(pathname)) {
     return null
   }
@@ -105,21 +111,26 @@ export async function authMiddleware(request: NextRequest): Promise<NextResponse
   // Check if user is authenticated
   const isAuthenticated = accessToken ? validateToken(accessToken) !== null : false
   
-  // Handle protected paths
-  if (isProtectedPath(pathname)) {
-    if (!isAuthenticated) {
-      const loginUrl = new URL('/login', request.url)
-      loginUrl.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(loginUrl)
+  // Handle public auth paths (login, register, etc.)
+  if (isAuthPath(pathname)) {
+    // If user is already authenticated, redirect to dashboard
+    if (isAuthenticated) {
+      const redirectTo = request.nextUrl.searchParams.get('redirect') || '/'
+      return NextResponse.redirect(new URL(redirectTo, request.url))
     }
+    // Allow access to auth pages for unauthenticated users
+    return null
   }
   
-  // Handle auth paths - redirect authenticated users away
-  if (isAuthPath(pathname) && isAuthenticated) {
-    const redirectTo = request.nextUrl.searchParams.get('redirect') || '/'
-    return NextResponse.redirect(new URL(redirectTo, request.url))
+  // ALL other paths require authentication
+  // This is the default behavior - protect everything except auth pages
+  if (!isAuthenticated) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(loginUrl)
   }
   
+  // User is authenticated and accessing protected path - allow access
   return null
 }
 

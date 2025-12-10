@@ -3,24 +3,42 @@ import type { NextRequest } from 'next/server'
 import { authMiddleware } from '@/lib/auth/middleware'
 
 /**
- * Next.js Proxy
+ * Next.js Proxy (Middleware)
  * Runs on every request before the page is rendered
  * 
- * Features:
- * - Authentication checks
- * - Rate limiting
- * - CSRF protection
+ * Security Features:
+ * - Authentication checks (ALL pages protected by default)
+ * - Authorization checks
  * - Security headers
+ * - CSRF protection ready
+ * - Rate limiting ready
+ * 
+ * Protection Model:
+ * - Default: ALL routes require authentication
+ * - Exceptions: Public auth pages (login, register, etc.)
+ * - Exclusions: Static files, API routes, health checks
  */
 export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl
 
-  // 3. Authentication & Authorization
+  // 1. Authentication & Authorization
+  // This will redirect unauthenticated users to /login
+  // and allow authenticated users to access protected routes
   const authResponse = await authMiddleware(request)
   if (authResponse) {
+    // authResponse is either:
+    // - Redirect to /login (unauthenticated user)
+    // - Redirect from auth page to dashboard (authenticated user on auth page)
+    // Add security headers to redirect response
+    authResponse.headers.set('X-DNS-Prefetch-Control', 'on')
+    authResponse.headers.set('X-Frame-Options', 'SAMEORIGIN')
+    authResponse.headers.set('X-Content-Type-Options', 'nosniff')
+    authResponse.headers.set('X-XSS-Protection', '1; mode=block')
+    authResponse.headers.set('Referrer-Policy', 'origin-when-cross-origin')
     return authResponse
   }
 
-  // 4. Add security headers
+  // 2. Add security headers to successful responses
   const response = NextResponse.next()
   
   // Security headers
@@ -29,6 +47,12 @@ export async function proxy(request: NextRequest) {
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('X-XSS-Protection', '1; mode=block')
   response.headers.set('Referrer-Policy', 'origin-when-cross-origin')
+  
+  // Content Security Policy (adjust as needed)
+  response.headers.set(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;"
+  )
   
   // HSTS (only in production)
   if (process.env.NODE_ENV === 'production') {

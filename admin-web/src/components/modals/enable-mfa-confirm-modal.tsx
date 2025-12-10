@@ -4,21 +4,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/components/ui/button"
 import { ActionButton } from "@/components/ui/action-button"
 import { useModal } from "@/lib/stores/modal-store"
-import { useSetupTotpApiV1AuthMfaTotpSetupPostMutation } from "@/generated/hooks/authentication"
+import { useSetup2faApiV1Users2faSetupPostMutation } from "@/generated/hooks/users"
 import { Shield } from "lucide-react"
 
 export function EnableMfaConfirmModal() {
   const { isOpen, type, data, onClose, onOpen } = useModal()
   const isActive = isOpen && type === "enableMfaConfirm"
 
-  const setupMutation = useSetupTotpApiV1AuthMfaTotpSetupPostMutation({
+  const setupMutation = useSetup2faApiV1Users2faSetupPostMutation({
     showToast: true,
     onSuccess: (response) => {
       onClose()
       // Open MFA setup modal with QR code and backup codes
       onOpen("mfaSetup", {
         secret: response.secret,
-        otpauthUrl: response.otpauth_url,
+        otpauthUrl: response.secret, // Use secret if otpauth_url not available
         qrCode: response.qr_code,
         backupCodes: response.backup_codes,
       })

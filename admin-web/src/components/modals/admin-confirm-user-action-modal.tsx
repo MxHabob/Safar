@@ -18,7 +18,9 @@ export function AdminConfirmUserActionModal() {
   const isActive = isOpen && (isSuspend || isActivate || isDelete)
 
   const handleSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ["admin", "users"] })
+    queryClient.invalidateQueries({ queryKey: ["listUsersApiV1AdminUsersGet"] })
+    queryClient.invalidateQueries({ queryKey: ["getUserApiV1AdminUsersUserIdGet"] })
+    queryClient.invalidateQueries({ queryKey: ["getUserStatsApiV1AdminUsersStatsGet"] })
     if (data?.onSuccess) {
       data.onSuccess()
     }

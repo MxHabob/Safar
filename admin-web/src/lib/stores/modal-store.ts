@@ -4,10 +4,23 @@ import { create } from "zustand"
 
 export type ModalType =
   | "signOutConfirm"
+  | "adminEditUser"
   | "adminConfirmSuspendUser"
   | "adminConfirmActivateUser"
   | "adminConfirmDeleteUser"
+  | "adminEditListing"
+  | "adminConfirmDeleteListing"
+  | "adminEditBooking"
+  | "adminConfirmCancelBooking"
+  | "adminEditPayment"
+  | "adminConfirmRefundPayment"
   | "deleteAccountConfirm"
+  | "mfaSetup"
+  | "mfaVerify"
+  | "enableMfaConfirm"
+  | "setPassword"
+  | "languagePicker"
+  | "analysisFeedback"
   | "confirm"
 
 export interface ShareResultModalPayload {

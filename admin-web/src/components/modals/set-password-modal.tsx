@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ActionButton } from "@/components/ui/action-button"
 import { useModal } from "@/lib/stores/modal-store"
-import { useChangePasswordApiV1AuthMeChangePasswordPostMutation } from "@/generated/hooks/authentication"
+import { useChangePasswordApiV1UsersPasswordChangePostMutation } from "@/generated/hooks/users"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -42,7 +42,7 @@ export function SetPasswordModal() {
     },
   })
 
-  const mutation = useChangePasswordApiV1AuthMeChangePasswordPostMutation({ showToast: true })
+  const mutation = useChangePasswordApiV1UsersPasswordChangePostMutation({ showToast: true })
 
   const onSubmit = async (values: PasswordFormValues) => {
     await mutation.mutateAsync({ current_password: values.current_password, new_password: values.new_password })

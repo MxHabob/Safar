@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { OctagonAlert, Mail, Lock, ArrowRight } from "lucide-react";
 import Graphic from "@/components/shared/graphic";
-import { OAuthButtons } from "@/components/auth/oauth-buttons";
+import { OAuthButtons } from "@/features/auth/oauth-buttons";
 
 export function SignInView() {
   const [error, setError] = useState<string | null>(null);

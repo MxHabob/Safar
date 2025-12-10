@@ -9,12 +9,13 @@ import { useGetUserApiV1AdminUsersUserIdGet } from "@/generated/hooks/admin";
 import type { GetUserApiV1AdminUsersUserIdGetResponse } from "@/generated/schemas";
 
 interface UserDetailPageProps {
-  userId: string;
   initialUserData?: GetUserApiV1AdminUsersUserIdGetResponse;
 }
 
-export function UserDetailPage({ userId, initialUserData }: UserDetailPageProps) {
+export function UserDetailPage({ initialUserData }: UserDetailPageProps) {
   const router = useRouter();
+  
+  const userId = initialUserData?.id || "";
 
   const { data, isLoading, error, refetch } = useGetUserApiV1AdminUsersUserIdGet(userId, {
     enabled: !!userId,
@@ -22,7 +23,7 @@ export function UserDetailPage({ userId, initialUserData }: UserDetailPageProps)
     // refetchOnWindowFocus: false,
   });
 
-  const user = data?.data;
+  const user = data || initialUserData;
 
   if (error) {
     return (
@@ -37,7 +38,7 @@ export function UserDetailPage({ userId, initialUserData }: UserDetailPageProps)
               <RefreshCw className="h-4 w-4 mr-2" />
               Try Again
             </Button>
-            <Button onClick={() => router.push("/ai/admin/users")} variant="outline">
+            <Button onClick={() => router.push("/users")} variant="outline">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Users
             </Button>
@@ -75,7 +76,7 @@ export function UserDetailPage({ userId, initialUserData }: UserDetailPageProps)
           <p className="text-muted-foreground mb-4">
             The user you&apos;re looking for doesn&apos;t exist or has been deleted.
           </p>
-          <Button onClick={() => router.push("/ai/admin/users")}>
+          <Button onClick={() => router.push("/users")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Users
           </Button>
@@ -91,12 +92,16 @@ export function UserDetailPage({ userId, initialUserData }: UserDetailPageProps)
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push("/ai/admin/users")}
+            onClick={() => router.push("/users")}
             className="p-2"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold tracking-tight">User #{user.id}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {user.first_name || user.last_name 
+              ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
+              : `User #${user.id}`}
+          </h1>
         </div>
       </div>
       <Card>
@@ -107,27 +112,59 @@ export function UserDetailPage({ userId, initialUserData }: UserDetailPageProps)
               <div className="font-medium">{user.email}</div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Full name</div>
-              <div className="font-medium">{(user.full_name as unknown as string) || "-"}</div>
+              <div className="text-sm text-muted-foreground">First Name</div>
+              <div className="font-medium">{user.first_name || "-"}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">Last Name</div>
+              <div className="font-medium">{user.last_name || "-"}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">Username</div>
+              <div className="font-medium">{user.username || "-"}</div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">Role</div>
-              <div className="font-medium">{user.role}</div>
+              <div className="font-medium capitalize">{user.role}</div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">Status</div>
-              <div className="font-medium">{user.status}</div>
+              <div className="font-medium capitalize">{user.status}</div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Company</div>
-              <div className="font-medium">{(user.company as unknown as string) || "-"}</div>
+              <div className="text-sm text-muted-foreground">Active</div>
+              <div className="font-medium">{user.is_active ? "Yes" : "No"}</div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Joined</div>
+              <div className="text-sm text-muted-foreground">Email Verified</div>
+              <div className="font-medium">{user.is_email_verified ? "Yes" : "No"}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">Phone Verified</div>
+              <div className="font-medium">{user.is_phone_verified ? "Yes" : "No"}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">Bookings</div>
+              <div className="font-medium">{user.booking_count || 0}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">Listings</div>
+              <div className="font-medium">{user.listing_count || 0}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">Created At</div>
               <div className="font-medium">
-                {new Date(user.created_at || "").toLocaleString()}
+                {new Date(user.created_at).toLocaleString()}
               </div>
             </div>
+            {user.last_login_at && (
+              <div>
+                <div className="text-sm text-muted-foreground">Last Login</div>
+                <div className="font-medium">
+                  {new Date(user.last_login_at).toLocaleString()}
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

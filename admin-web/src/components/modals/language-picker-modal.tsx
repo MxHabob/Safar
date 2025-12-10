@@ -27,8 +27,8 @@ export function LanguagePickerModal() {
   const open = isOpen && type === "languagePicker"
 
   const [searchQuery, setSearchQuery] = React.useState("")
-  const selectedLanguage = data.language || "en"
-  const onSelectLanguage = data.onLanguageSelect
+  const selectedLanguage = (data?.language as string | undefined) || "en"
+  const onSelectLanguage = data?.onLanguageSelect as ((code: string) => void) | undefined
 
   const filteredLanguages = languages.filter(
     (lang) =>
@@ -41,8 +41,12 @@ export function LanguagePickerModal() {
     onClose()
   }
 
+  if (!open) {
+    return null
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={(isOpen) => (!isOpen ? onClose() : undefined)}>
       <DialogContent className="sm:max-w-md w-[95vw] max-w-[95vw] mx-2">
         <DialogHeader>
           <div className="flex items-center gap-2">

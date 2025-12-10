@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth/session-provider";
+import { getServerSession } from "@/lib/auth/server/session";
 
 export const metadata: Metadata = {
   title: "Authentication - Safar",
@@ -22,7 +22,7 @@ export default async function AuthLayout({
   children: React.ReactNode;
 }) {
   // Redirect if already authenticated
-  const session = await getSession().catch(() => null);
+  const session = await getServerSession().catch(() => null);
   if (session) {
     redirect("/");
   }

@@ -32,7 +32,7 @@ export function UserActionsDropdown({ user }: UserActionsProps) {
   const route = useRouter()
   const { onOpen } = useModal()
   const handleViewDetails = () => {
-    route.push(`/ai/admin/users/${user.id}`)
+    route.push(`/users/${user.id}`)
   };
 
   const handleEditUser = () => {

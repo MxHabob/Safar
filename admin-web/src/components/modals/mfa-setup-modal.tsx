@@ -8,15 +8,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { useModal } from "@/lib/stores/modal-store"
-import { useVerifyTotpApiV1AuthMfaTotpVerifyPostMutation } from "@/generated/hooks/authentication"
+import { useVerify2faSetupApiV1Users2faVerifyPostMutation } from "@/generated/hooks/users"
 import { Shield, CheckCircle2, Copy, Download, Eye, EyeOff } from "lucide-react"
 import Image from "next/image"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useSession } from "next-auth/react"
+// Note: useSession removed - using direct session management if needed
 
 export function MfaSetupModal() {
   const { isOpen, type, data, onClose } = useModal()
-  const { update } = useSession()
   const isActive = isOpen && type === "mfaSetup"
 
   const [verificationCode, setVerificationCode] = useState("")
@@ -29,12 +28,14 @@ export function MfaSetupModal() {
   const qrCode = data?.qrCode as string | undefined
   const backupCodes = (data?.backupCodes as string[] | undefined) || []
 
-  const verifyMutation = useVerifyTotpApiV1AuthMfaTotpVerifyPostMutation({
+  const verifyMutation = useVerify2faSetupApiV1Users2faVerifyPostMutation({
     showToast: true,
-    onSuccess: async () => {
+    onSuccess: () => {
       setStep("verified")
-      // Update session to reflect MFA status change
-      await update()
+      // Session will be updated automatically via query invalidation
+      if (data?.onSuccess) {
+        data.onSuccess()
+      }
     },
   })
 
@@ -47,6 +48,7 @@ export function MfaSetupModal() {
     try {
       await verifyMutation.mutateAsync({
         code: verificationCode,
+        method: "totp",
       })
     } catch (error) {
       // Error handled in onError
