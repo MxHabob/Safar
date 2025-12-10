@@ -11,10 +11,10 @@ export function TripPlannerPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
           <Sparkles className="h-8 w-8 text-primary" />
-          مخطّط الرحلات بالذكاء الاصطناعي
+          AI trip planner
         </h1>
         <p className="text-muted-foreground">
-          أنشئ خطط سفر مخصصة باستخدام الذكاء الاصطناعي. فقط أخبرنا عن رحلتك المثالية!
+          Create custom travel plans with AI. Tell us about your ideal trip!
         </p>
       </div>
 
@@ -22,11 +22,11 @@ export function TripPlannerPage() {
         <TabsList className="grid w-full grid-cols-2 max-w-md">
           <TabsTrigger value="create" className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            إنشاء خطة جديدة
+            Create new plan
           </TabsTrigger>
           <TabsTrigger value="list" className="flex items-center gap-2">
             <List className="h-4 w-4" />
-            خططي المحفوظة
+            My saved plans
           </TabsTrigger>
         </TabsList>
 

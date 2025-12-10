@@ -1,13 +1,10 @@
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
 import type { Metadata as MetadataType } from "next";
-
 import Footer from "@/components/footer";
-import { getServerSession } from "@/lib/auth/server/session";
 import { MinimalHero } from "@/features/home/components/minimal-hero";
 import { TravelGuidesViewLoading } from "@/features/home/travel-guides-view";
 
-// Defer client-heavy sections to the browser to lighten the initial payload
 const EditorialDestinations = dynamic(
   () =>
     import("@/features/home/components/editorial-destinations").then(
@@ -53,7 +50,6 @@ const TravelGuidesView = dynamic(
     )
 );
 
-// Structured data for SEO
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "TravelAgency",
@@ -73,7 +69,7 @@ const structuredData = {
 };
 
 export const metadata: MetadataType = {
-  title: "Home",
+  title: "",
   description: "Discover amazing travel destinations, unique stays, and expert travel guides. Book your next adventure with Safar - the world's smartest travel platform.",
   keywords: ["travel", "accommodation", "bookings", "travel guides", "destinations", "hotels", "vacation rentals", "travel planning"],
   openGraph: {
@@ -104,51 +100,22 @@ export const metadata: MetadataType = {
   },
 };
 
-/**
- * Root page component for Safar travel platform
- * 
- * Performance optimizations:
- * - ISR with 60s revalidation for fresh content
- * - Parallel data fetching with Promise.all
- * - Streaming with Suspense boundaries
- * - Optimized image loading with priority for LCP
- * 
- * Unique, beautiful, and minimal design that stands out:
- * - Editorial-style hero with elegant typography
- * - Asymmetric, magazine-inspired layouts
- * - Creative use of 18px graphic corners
- * - Generous whitespace and refined spacing
- * - Smooth transitions and micro-interactions
- * - Dark-first design with 18px rounded corners
- * - Focus on beauty and simplicity over functionality overload
- */
-export const revalidate = 60; // ISR: Revalidate every 60 seconds
+export const revalidate = 60;
 
 const page = async () => {
-  // Get session silently - no need to log or await if not critical
-  const session = await getServerSession().catch(() => null);
 
   return (
     <>
-      {/* Structured Data for SEO */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       
       <div className="min-h-screen w-full">
-        {/* MINIMAL HERO SECTION */}
         <MinimalHero />
-
-        {/* MAIN CONTENT - Editorial Layout */}
         <main className="w-full max-w-7xl mx-auto px-3 lg:px-6 py-16 lg:py-24 space-y-24 lg:space-y-32">
-          {/* Editorial Destinations */}
           <EditorialDestinations />
-
-          {/* Curated Listings */}
           <CuratedListings />
-
-          {/* Travel Guides - Minimal Section */}
           <section className="space-y-12">
             <div className="flex items-baseline gap-4">
               <h2 className="text-3xl lg:text-4xl font-light tracking-tight">
@@ -161,8 +128,6 @@ const page = async () => {
             </Suspense>
           </section>
         </main>
-
-        {/* Footer */}
         <Footer />
       </div>
     </>

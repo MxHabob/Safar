@@ -27,7 +27,6 @@ export default function Loading() {
 
       {/* MAIN CONTENT */}
       <main className="w-full max-w-7xl mx-auto px-3 lg:px-6 py-16 lg:py-24 space-y-24 lg:space-y-32">
-        {/* Editorial Destinations */}
         <section className="space-y-12">
           <Skeleton className="h-10 w-64" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -37,7 +36,6 @@ export default function Loading() {
           </div>
         </section>
 
-        {/* Curated Listings */}
         <section className="space-y-12">
           <Skeleton className="h-10 w-64" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -47,14 +45,12 @@ export default function Loading() {
           </div>
         </section>
 
-        {/* Travel Guides */}
         <section className="space-y-12">
           <Skeleton className="h-10 w-64" />
           <TravelGuidesViewLoading />
         </section>
       </main>
 
-      {/* Footer */}
       <Footer />
     </div>
   );

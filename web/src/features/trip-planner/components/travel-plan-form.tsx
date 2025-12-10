@@ -47,41 +47,41 @@ const formatDate = (date: Date): string => {
 };
 
 const travelPlanSchema = z.object({
-  destination: z.string().min(2, "يجب أن يكون الوجهة على الأقل حرفين").max(200),
+  destination: z.string().min(2, "Destination must be at least 2 characters").max(200),
   start_date: z.date({
-    message: "تاريخ البداية مطلوب",
+    message: "Start date is required",
   }),
   end_date: z.date({
-    message: "تاريخ النهاية مطلوب",
+    message: "End date is required",
   }),
-  budget: z.number().min(1, "يجب أن يكون الميزانية أكبر من 0"),
+  budget: z.number().min(1, "Budget must be greater than 0"),
   currency: z.string().default("USD"),
   travelers_count: z.number().int().min(1).default(1),
   travel_style: z.string().optional(),
   natural_language_request: z.string().optional(),
 }).refine((data) => data.end_date > data.start_date, {
-  message: "تاريخ النهاية يجب أن يكون بعد تاريخ البداية",
+  message: "End date must be after the start date",
   path: ["end_date"],
 });
 
 type TravelPlanFormValues = z.infer<typeof travelPlanSchema>;
 
 const travelStyles = [
-  { value: "family", label: "عائلي" },
-  { value: "solo", label: "فردي" },
-  { value: "couple", label: "زوجي" },
-  { value: "business", label: "عمل" },
-  { value: "adventure", label: "مغامرة" },
-  { value: "luxury", label: "فاخر" },
-  { value: "budget", label: "اقتصادي" },
+  { value: "family", label: "Family" },
+  { value: "solo", label: "Solo" },
+  { value: "couple", label: "Couple" },
+  { value: "business", label: "Business" },
+  { value: "adventure", label: "Adventure" },
+  { value: "luxury", label: "Luxury" },
+  { value: "budget", label: "Budget" },
 ];
 
 const currencies = [
-  { value: "USD", label: "دولار أمريكي (USD)" },
-  { value: "EUR", label: "يورو (EUR)" },
-  { value: "SAR", label: "ريال سعودي (SAR)" },
-  { value: "AED", label: "درهم إماراتي (AED)" },
-  { value: "EGP", label: "جنيه مصري (EGP)" },
+  { value: "USD", label: "US Dollar (USD)" },
+  { value: "EUR", label: "Euro (EUR)" },
+  { value: "SAR", label: "Saudi Riyal (SAR)" },
+  { value: "AED", label: "UAE Dirham (AED)" },
+  { value: "EGP", label: "Egyptian Pound (EGP)" },
 ];
 
 export function TravelPlanForm() {
@@ -91,11 +91,11 @@ export function TravelPlanForm() {
 
   const createMutation = useCreateTravelPlanApiV1AiTravelPlannerPostMutation({
     onSuccess: (data) => {
-      toast.success("تم إنشاء خطة السفر بنجاح!");
+      toast.success("Travel plan created successfully!");
       router.push(`/trip-planner/${data.id}`);
     },
     onError: (error) => {
-      toast.error(error.message || "فشل إنشاء خطة السفر");
+      toast.error(error.message || "Failed to create travel plan");
     },
   });
 
@@ -144,10 +144,10 @@ export function TravelPlanForm() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5" />
-          إنشاء خطة سفر بالذكاء الاصطناعي
+          Create an AI travel plan
         </CardTitle>
         <CardDescription>
-          املأ المعلومات التالية وسيقوم الذكاء الاصطناعي بإنشاء خطة سفر مخصصة لك
+          Fill in the details and we'll generate a personalized travel plan for you.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -161,16 +161,16 @@ export function TravelPlanForm() {
                 <FormItem>
                   <FormLabel className="flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
-                    الوجهة
+                    Destination
                   </FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="مثال: باريس، فرنسا"
+                      placeholder="e.g., Paris, France"
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    أدخل المدينة أو الدولة التي تريد زيارتها
+                    Enter the city or country you want to visit.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -185,8 +185,8 @@ export function TravelPlanForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      تاريخ البداية
+                    <Calendar className="h-4 w-4" />
+                    Start date
                     </FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
@@ -201,7 +201,7 @@ export function TravelPlanForm() {
                             {field.value ? (
                               formatDate(field.value)
                             ) : (
-                              <span>اختر التاريخ</span>
+                              <span>Select a date</span>
                             )}
                           </Button>
                         </FormControl>
@@ -227,8 +227,8 @@ export function TravelPlanForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      تاريخ النهاية
+                    <Calendar className="h-4 w-4" />
+                    End date
                     </FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
@@ -243,7 +243,7 @@ export function TravelPlanForm() {
                             {field.value ? (
                               formatDate(field.value)
                             ) : (
-                              <span>اختر التاريخ</span>
+                              <span>Select a date</span>
                             )}
                           </Button>
                         </FormControl>
@@ -275,7 +275,7 @@ export function TravelPlanForm() {
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4" />
-                      الميزانية
+                      Budget
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -296,11 +296,11 @@ export function TravelPlanForm() {
                 name="currency"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>العملة</FormLabel>
+                    <FormLabel>Currency</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="اختر العملة" />
+                          <SelectValue placeholder="Choose a currency" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -326,7 +326,7 @@ export function TravelPlanForm() {
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
                       <Users className="h-4 w-4" />
-                      عدد المسافرين
+                      Travelers
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -346,15 +346,20 @@ export function TravelPlanForm() {
                 name="travel_style"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>نمط السفر</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                  <FormLabel>Travel style</FormLabel>
+                  <Select
+                    onValueChange={(val) =>
+                      field.onChange(val === "none" ? undefined : val)
+                    }
+                    value={field.value ?? undefined}
+                  >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="اختر نمط السفر (اختياري)" />
+                      <SelectValue placeholder="Choose a travel style (optional)" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">لا يوجد</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                         {travelStyles.map((style) => (
                           <SelectItem key={style.value} value={style.value}>
                             {style.label}
@@ -374,16 +379,16 @@ export function TravelPlanForm() {
               name="natural_language_request"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>وصف إضافي (اختياري)</FormLabel>
+                  <FormLabel>Additional notes (optional)</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="مثال: رحلة عائلية إلى باريس لمدة 5 أيام بميزانية 3000 دولار. نريد زيارة المتاحف والمعالم السياحية الشهيرة..."
+                      placeholder="Example: Family trip to Paris for 5 days with a $3000 budget. We want to visit museums and famous landmarks..."
                       className="min-h-24"
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    اكتب وصفاً تفصيلياً لرحلتك المثالية. كلما كان الوصف أكثر تفصيلاً، كانت الخطة أفضل
+                    Write a detailed description of your ideal trip. More details lead to better plans.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -398,12 +403,12 @@ export function TravelPlanForm() {
               {isSubmitting || createMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  جاري إنشاء الخطة...
+                  Creating plan...
                 </>
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  إنشاء خطة السفر
+                  Create travel plan
                 </>
               )}
             </Button>

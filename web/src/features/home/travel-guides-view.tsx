@@ -68,6 +68,7 @@ export const TravelGuidesView = () => {
         const city = guide.city || guide.destination || "Unknown";
         const coverImageUrl = guide.cover_image_url || guide.image_urls?.[0];
         
+        // Use a deterministic timestamp to avoid hydration mismatches
         const coverPhoto: FileUploadResponse = {
           message: "Travel guide cover image",
           file: {
@@ -80,7 +81,7 @@ export const TravelGuidesView = () => {
             mime_type: "image/jpeg",
             file_size: 0,
             uploaded_by: "0",
-            created_at: new Date().toISOString(),
+            created_at: guide.created_at || "1970-01-01T00:00:00.000Z",
             description: undefined,
           },
         };

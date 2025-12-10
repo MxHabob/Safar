@@ -9,7 +9,7 @@ import Link from "next/link";
 // Simple date formatter
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
-  return date.toLocaleDateString("ar-SA", {
+  return date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -42,7 +42,7 @@ export function TravelPlansList() {
       <Card>
         <CardContent className="pt-6">
           <p className="text-sm text-muted-foreground">
-            {error instanceof Error ? error.message : "فشل تحميل خطط السفر"}
+            {error instanceof Error ? error.message : "Failed to load travel plans"}
           </p>
         </CardContent>
       </Card>
@@ -53,12 +53,12 @@ export function TravelPlansList() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>خطط السفر</CardTitle>
-          <CardDescription>لا توجد خطط سفر حتى الآن</CardDescription>
+          <CardTitle>Travel plans</CardTitle>
+          <CardDescription>No travel plans yet</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            ابدأ بإنشاء خطة سفر جديدة باستخدام الذكاء الاصطناعي
+            Start by creating a new AI travel plan.
           </p>
         </CardContent>
       </Card>
@@ -77,7 +77,7 @@ export function TravelPlansList() {
                 </CardTitle>
                 {plan.is_saved && (
                   <Badge variant="secondary" className="shrink-0">
-                    محفوظ
+                    Saved
                   </Badge>
                 )}
               </div>
@@ -95,7 +95,7 @@ export function TravelPlansList() {
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Users className="h-4 w-4" />
-                <span>{plan.travelers_count} مسافر</span>
+                <span>{plan.travelers_count} travelers</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <DollarSign className="h-4 w-4" />
@@ -109,7 +109,7 @@ export function TravelPlansList() {
                 </p>
               )}
               <div className="flex items-center justify-end gap-2 mt-4 pt-4 border-t">
-                <span className="text-sm text-primary">عرض التفاصيل</span>
+                <span className="text-sm text-primary">View details</span>
                 <ArrowRight className="h-4 w-4 text-primary" />
               </div>
             </CardContent>

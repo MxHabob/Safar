@@ -16,7 +16,6 @@ export default function Error({
   reset: () => void
 }) {
   useEffect(() => {
-    // Log error to monitoring service
     console.error('Public route error:', error)
   }, [error])
 

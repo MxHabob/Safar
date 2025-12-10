@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 // Simple date formatter
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
-  return date.toLocaleDateString("ar-SA", {
+  return date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -65,7 +65,7 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
       <Card>
         <CardContent className="pt-6">
           <p className="text-sm text-muted-foreground">
-            {error instanceof Error ? error.message : "فشل تحميل خطة السفر"}
+            {error instanceof Error ? error.message : "Failed to load travel plan"}
           </p>
         </CardContent>
       </Card>
@@ -89,7 +89,7 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
               </CardDescription>
             </div>
             {plan.is_saved && (
-              <Badge variant="secondary">محفوظ</Badge>
+              <Badge variant="secondary">Saved</Badge>
             )}
           </div>
         </CardHeader>
@@ -98,28 +98,28 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <div>
-                <p className="text-xs text-muted-foreground">من</p>
+                <p className="text-xs text-muted-foreground">From</p>
                 <p className="text-sm font-medium">{formatDate(plan.start_date)}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <div>
-                <p className="text-xs text-muted-foreground">إلى</p>
+                <p className="text-xs text-muted-foreground">To</p>
                 <p className="text-sm font-medium">{formatDate(plan.end_date)}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" />
               <div>
-                <p className="text-xs text-muted-foreground">المسافرون</p>
+                <p className="text-xs text-muted-foreground">Travelers</p>
                 <p className="text-sm font-medium">{plan.travelers_count}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-muted-foreground" />
               <div>
-                <p className="text-xs text-muted-foreground">الميزانية</p>
+                <p className="text-xs text-muted-foreground">Budget</p>
                 <p className="text-sm font-medium">
                   {plan.budget} {plan.currency}
                 </p>
@@ -139,9 +139,9 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
       {plan.daily_itinerary && plan.daily_itinerary.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>البرنامج اليومي</CardTitle>
+            <CardTitle>Daily itinerary</CardTitle>
             <CardDescription>
-              {plan.duration_days} يوم من الأنشطة المخططة
+              {plan.duration_days} days of planned activities
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -149,7 +149,7 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
               {plan.daily_itinerary.map((day: any, index: number) => (
                 <div key={index} className="border-l-2 border-primary pl-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="outline">اليوم {day.day || index + 1}</Badge>
+                    <Badge variant="outline">Day {day.day || index + 1}</Badge>
                     {day.date && (
                       <span className="text-sm text-muted-foreground">
                         {formatDate(day.date)}
@@ -160,7 +160,7 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
                     <div className="mb-3">
                       <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
                         <Activity className="h-4 w-4" />
-                        الأنشطة
+                        Activities
                       </h4>
                       <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                         {day.activities.map((activity: any, i: number) => (
@@ -175,7 +175,7 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
                     <div className="mb-3">
                       <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
                         <Utensils className="h-4 w-4" />
-                        المطاعم
+                        Restaurants
                       </h4>
                       <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                         {day.restaurants.map((restaurant: any, i: number) => (
@@ -204,10 +204,10 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Hotel className="h-5 w-5" />
-              العقارات المقترحة
+              Recommended stays
             </CardTitle>
             <CardDescription>
-              {plan.recommended_properties.length} عقار موصى به
+              {plan.recommended_properties.length} recommended properties
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -217,9 +217,9 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
                   <Card className="hover:shadow-md transition-shadow cursor-pointer">
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">عقار #{propertyId}</span>
+                        <span className="text-sm font-medium">Property #{propertyId}</span>
                         <Button variant="ghost" size="sm">
-                          عرض التفاصيل
+                          View details
                         </Button>
                       </div>
                     </CardContent>
@@ -237,7 +237,7 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5" />
-              الأنشطة المقترحة
+              Recommended activities
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -245,14 +245,14 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
               {plan.recommended_activities.map((activity: any, index: number) => (
                 <div key={index} className="p-4 border rounded-lg">
                   <h4 className="font-semibold mb-2">
-                    {activity.name || activity.title || `نشاط ${index + 1}`}
+                    {activity.name || activity.title || `Activity ${index + 1}`}
                   </h4>
                   {activity.description && (
                     <p className="text-sm text-muted-foreground">{activity.description}</p>
                   )}
                   {activity.cost && (
                     <p className="text-sm font-medium mt-2">
-                      التكلفة: {activity.cost} {plan.currency}
+                      Cost: {activity.cost} {plan.currency}
                     </p>
                   )}
                 </div>
@@ -268,7 +268,7 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Utensils className="h-5 w-5" />
-              المطاعم المقترحة
+              Recommended restaurants
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -276,7 +276,7 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
               {plan.recommended_restaurants.map((restaurant: any, index: number) => (
                 <div key={index} className="p-4 border rounded-lg">
                   <h4 className="font-semibold mb-2">
-                    {restaurant.name || restaurant.title || `مطعم ${index + 1}`}
+                    {restaurant.name || restaurant.title || `Restaurant ${index + 1}`}
                   </h4>
                   {restaurant.description && (
                     <p className="text-sm text-muted-foreground">{restaurant.description}</p>
@@ -300,7 +300,7 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
         plan.estimated_transportation_cost) && (
         <Card>
           <CardHeader>
-            <CardTitle>تقسيم التكاليف المقدرة</CardTitle>
+            <CardTitle>Estimated cost breakdown</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -308,7 +308,7 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Hotel className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">الإقامة</span>
+                    <span className="text-sm">Stay</span>
                   </div>
                   <span className="font-medium">
                     {plan.estimated_accommodation_cost} {plan.currency}
@@ -319,7 +319,7 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Activity className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">الأنشطة</span>
+                    <span className="text-sm">Activities</span>
                   </div>
                   <span className="font-medium">
                     {plan.estimated_activities_cost} {plan.currency}
@@ -330,7 +330,7 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Utensils className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">الطعام</span>
+                    <span className="text-sm">Food</span>
                   </div>
                   <span className="font-medium">
                     {plan.estimated_food_cost} {plan.currency}
@@ -341,7 +341,7 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Car className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">المواصلات</span>
+                    <span className="text-sm">Transport</span>
                   </div>
                   <span className="font-medium">
                     {plan.estimated_transportation_cost} {plan.currency}
@@ -350,7 +350,7 @@ export function TravelPlanDetail({ planId }: TravelPlanDetailProps) {
               )}
               {plan.total_estimated_cost && (
                 <div className="flex items-center justify-between pt-3 border-t font-semibold">
-                  <span>المجموع</span>
+                  <span>Total</span>
                   <span>
                     {plan.total_estimated_cost} {plan.currency}
                   </span>
