@@ -30,13 +30,18 @@ from app.modules.bookings.models import (
     Booking, BookingStatus, Payment, PaymentStatus, PaymentMethodType,
     BookingTimelineEvent, Payout
 )
-from app.modules.users.models import User, UserRole, UserStatus, HostProfile, Agency
+from app.modules.users.models import (
+    User, UserRole, UserStatus, HostProfile, Agency,
+    Account, UserDevice, UserPasskey, TwoFactorChallenge, UserSession
+)
 from app.modules.listings.models import Listing, ListingType, ListingStatus, BookingType
 from app.modules.messages.models import Conversation, Message, conversation_participants, MessageAutomation
 from app.modules.reviews.models import Review
 from app.modules.wishlist.models import Wishlist
 from app.modules.notifications.models import Notification, NotificationType
 from app.modules.promotions.models import PromotionRedemption
+from app.modules.loyalty.models import LoyaltyProgram, LoyaltyLedger
+from app.modules.analytics.models import AnalyticsEvent, AuditLog
 
 
 async def create_admin_user(
