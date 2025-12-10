@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { ThemeProvider } from "@/lib/providers/theme-provider";
@@ -29,6 +29,21 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
         },
       })
   );
+
+  // Unregister any existing Service Workers
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => {
+          registration.unregister().then((success) => {
+            if (success) {
+              console.log('Service Worker unregistered successfully');
+            }
+          });
+        });
+      });
+    }
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
