@@ -64,35 +64,12 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        {/* Preconnect to external domains for faster resource loading */}
-        <link rel="preconnect" href="https://safar.mulverse.com" />
-        <link rel="dns-prefetch" href="https://safar.mulverse.com" />
-      </head>
       <body className={` antialiased`}>
         <Providers>
           {children}
         </Providers>
         {/* <SpeedInsights />
         <Analytics /> */}
-        {/* Service Worker registration script */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator && typeof window !== 'undefined') {
-                window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js')
-                    .then((registration) => {
-                      console.log('SW registered:', registration);
-                    })
-                    .catch((error) => {
-                      console.log('SW registration failed:', error);
-                    });
-                });
-              }
-            `,
-          }}
-        />
       </body>
     </html>
   );
