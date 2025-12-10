@@ -136,6 +136,7 @@ class AuthResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int
     user: UserResponse
+    session_id: ID
 
 
 class RefreshTokenRequest(BaseModel):

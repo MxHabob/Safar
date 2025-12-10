@@ -12,6 +12,8 @@ import { getServerSession } from "@/lib/auth/server/session";
 export const RightSideNavbar = async () => {
   const session = await getServerSession();
 
+  console.log("session", session);
+
   return (
     <div className="fixed top-3 right-3 z-40 bg-background rounded-bl-[18px] cursor-pointer select-none">
       <div className="relative pb-3 px-4">

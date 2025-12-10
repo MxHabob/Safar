@@ -282,7 +282,8 @@ export const AuthResponseSchema = z.object({
   refresh_token: z.string(),
   token_type: z.string().optional(),
   expires_in: z.number().int(),
-  user: UserResponseSchema
+  user: UserResponseSchema,
+  session_id: z.string()
 })
 export type AuthResponse = z.infer<typeof AuthResponseSchema>
 export const BodyCreateCouponApiV1PromotionsCouponsPostSchema = z.object({
