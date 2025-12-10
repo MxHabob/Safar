@@ -81,7 +81,6 @@ const structuredData = {
 };
 
 export const metadata: MetadataType = {
-  title: "",
   description: "Discover amazing travel destinations, unique stays, and expert travel guides. Book your next adventure with Safar - the world's smartest travel platform.",
   keywords: ["travel", "accommodation", "bookings", "travel guides", "destinations", "hotels", "vacation rentals", "travel planning"],
   openGraph: {

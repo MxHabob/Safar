@@ -157,8 +157,8 @@ export const ListingsView = ({ initialData }: { initialData?: ListingListRespons
               : "space-y-6"
           }
         >
-          {listings.map((listing) => {
-            const primaryPhoto = listing.photos?.[0] || listing.images?.[0];
+          {listings.map((listing, index) => {
+            const primaryPhoto = listing.images?.[0];
             const photoUrl = (primaryPhoto?.url || "/images/image1.jpg").trim();
             const listingTitle = listing.title?.trim() || "Accommodation";
             const listingAlt = `${listingTitle} in ${listing.city || ""}, ${listing.country || ""}`.trim() || "Travel accommodation";
