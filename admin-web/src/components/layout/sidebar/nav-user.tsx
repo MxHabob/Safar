@@ -2,7 +2,6 @@
 
 // External dependencies
 import { BadgeCheck, Bell, ChevronsUpDown, CreditCard, LogOut, Settings, Sparkles } from "lucide-react"
-import { useSession, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 // Internal components
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -17,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
 import { useModal } from "@/lib/stores/modal-store"
-
+import { useAuth } from "@/lib/auth/client"
 /**
  * NavUser Component
  *
@@ -27,12 +26,12 @@ import { useModal } from "@/lib/stores/modal-store"
  */
 export function NavUser() {
   const { isMobile } = useSidebar()
-  const { data: session, status } = useSession()
+  const { user, isLoading, isAuthenticated, logout } = useAuth()
   const { onOpen, onClose } = useModal()
   const router = useRouter()
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: "/" })
+    await logout()
   }
   const handleRedirectProfile = () => { 
     router.push("/profile/account");
@@ -44,7 +43,7 @@ export function NavUser() {
   }
 
   // Show loading state while session is being fetched
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <SidebarMenu>
         <SidebarMenuItem>
@@ -61,7 +60,7 @@ export function NavUser() {
   }
 
   // Show fallback if no session
-  if (!session?.user) {
+  if (!user) {
     return (
       <SidebarMenu>
         <SidebarMenuItem>
@@ -81,13 +80,12 @@ export function NavUser() {
     )
   }
 
-  const user = session.user
-  const userName = user.name ?? ""
+  const userName = user.full_name ?? ""
   const userEmail = user.email ?? ""
   const userInitials = userName
     ? userName
         .split(" ")
-        .map((n) => n[0])
+        .map((n: string) => n[0])
         .join("")
         .substring(0, 2)
         .toUpperCase()
@@ -106,11 +104,11 @@ export function NavUser() {
               aria-label="User profile and options"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.image || ""} alt={`${user.name || user.email || "User"}'s profile`} />
+                <AvatarImage src={user.avatar_url || ""} alt={`${user.full_name || user.email || "User"}'s profile`} />
                 <AvatarFallback className="rounded-lg">{userInitials}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{user.name || user.email || "User"}</span>
+                <span className="truncate font-semibold">{user.full_name || user.email || "User"}</span>
                 <span className="truncate text-xs">{user.email || ""}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" aria-hidden="true" />
@@ -127,43 +125,21 @@ export function NavUser() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.image || ""} alt={`${user.name || user.email || "User"}'s profile`} />
+                  <AvatarImage src={user.avatar_url || ""} alt={`${user.full_name || user.email || "User"}'s profile`} />
                   <AvatarFallback className="rounded-lg">{userInitials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.name || user.email || "User"}</span>
+                  <span className="truncate font-semibold">{user.full_name || user.email || "User"}</span>
                   <span className="truncate text-xs">{user.email || ""}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              {!(session?.user as any)?.has_active_subscription && (
-                <DropdownMenuItem role="menuitem" onClick={handleUpgradeToPro}>
-                <Sparkles aria-hidden="true" />
-                Upgrade to Pro
-              </DropdownMenuItem>
-              )}
-            </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem role="menuitem" onClick={() => onOpen("userSettings")}>
-                <Settings aria-hidden="true" />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleRedirectProfile} role="menuitem">
+            <DropdownMenuItem onClick={handleRedirectProfile} role="menuitem">
                 <BadgeCheck aria-hidden="true" />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem role="menuitem" onClick={handleRedirectProfile}>
-                <CreditCard aria-hidden="true" />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem role="menuitem">
-                <Bell aria-hidden="true" />
-                Notifications
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} role="menuitem">
               <LogOut aria-hidden="true" />

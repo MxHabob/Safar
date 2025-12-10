@@ -5,10 +5,7 @@ import { BellIcon, SearchIcon } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { NotificationCenter } from "@/components/notification-center";
-import { ModeToggle } from "@/components/mode-toggle";
-import { SelectModel } from "@/components/pages/ai/pages/ai-page/components/select-model";
-import { PrivacyModeToggle } from "@/components/pages/ai/components/privacy-mode-toggle";
+
 
 type Model = {
   id: string;
@@ -61,13 +58,7 @@ export const DashboardHeader = ({ defaultModel }: DashboardHeaderProps) => {
             <SearchIcon className="h-4 w-4" aria-hidden="true" />
             <span className="sr-only">Search</span>
           </Button>
-
-          <NotificationCenter variant="popover" />
-
-          <ModeToggle />
-        </div>
-        <SelectModel defaultModel={defaultModel} />
-        <PrivacyModeToggle />
+      </div>
       </div>
     </header>
   );

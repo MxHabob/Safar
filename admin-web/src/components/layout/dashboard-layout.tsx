@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useIsClient } from "@uidotdev/usehooks"
+import { useIsClient } from "@/hooks/use-is-client";
 
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "./sidebar/app-sidebar"

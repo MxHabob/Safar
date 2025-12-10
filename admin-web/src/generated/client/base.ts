@@ -9,7 +9,7 @@
  */
 import { z } from 'zod'
 import { cache } from 'react'
-
+import { getServerSession } from '@/lib/auth/server/session'
 /**
  * Server-only modules interface
  * Next.js 16.0.1: These modules are only available on the server
@@ -317,7 +317,13 @@ export class BaseApiClient {
     try {
       // Get server modules (only available server-side)
       const serverModules = await getServerModules()
-      
+
+      const session = await getServerSession()
+      if (session?.accessToken) {
+        getAuthHeaders.Authorization = `Bearer ${session.accessToken}`
+        return getAuthHeaders
+      }
+
       // Get auth token from various sources (server-side only)
       if (serverModules?.cookies && serverModules.headers) {
         try {
