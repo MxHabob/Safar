@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import dynamic from "next/dynamic";
 import type { Metadata as MetadataType } from "next";
 import Footer from "@/components/footer";
 import { MinimalHero } from "@/features/home/components/minimal-hero";
@@ -8,24 +7,6 @@ import { listListingsApiV1ListingsGet } from "@/generated/actions/listings";
 import { CuratedListings } from "@/features/home/components/curated-listings";
 import { TravelGuidesView } from "@/features/home/travel-guides-view";
 import { EditorialDestinations } from "@/features/home/components/editorial-destinations";
-
-const structuredData = {
-  "@context": "https://schema.org",
-  "@type": "TravelAgency",
-  name: "Safar",
-  description: "The smartest, most distinctive, and seamless travel platform in the world",
-  url: "https://safar.com",
-  logo: "https://safar.com/logo.png",
-  sameAs: [
-    "https://instagram.com/safar",
-    "https://twitter.com/safar",
-  ],
-  potentialAction: {
-    "@type": "SearchAction",
-    target: "https://safar.com/search?q={search_term_string}",
-    "query-input": "required name=search_term_string",
-  },
-};
 
 export const metadata: MetadataType = {
   description: "Discover amazing travel destinations, unique stays, and expert travel guides. Book your next adventure with Safar - the world's smartest travel platform.",
@@ -58,10 +39,8 @@ export const metadata: MetadataType = {
   },
 };
 
-export const revalidate = 60;
 
 const page = async () => {
-
   const listingsResult = await listListingsApiV1ListingsGet({ 
     query: { skip: 0, limit: 10, status: "active" } 
   }).catch(() => null);
