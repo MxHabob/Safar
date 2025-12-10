@@ -1,11 +1,21 @@
 "use client";
 
-import { Suspense } from "react";
+import dynamic from "next/dynamic";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { HeroSlider, HeroSliderLoading } from "@/features/home/hero-slider";
+import { HeroSliderLoading } from "@/features/home/hero-slider";
 import Graphic from "@/components/shared/graphic";
+
+// Defer heavy carousel bundle to the client to keep first paint light
+const HeroSlider = dynamic(
+  () =>
+    import("@/features/home/hero-slider").then((mod) => mod.HeroSlider),
+  {
+    ssr: false,
+    loading: () => <HeroSliderLoading />,
+  }
+);
 
 /**
  * Minimal hero section - Editorial style with subtle elegance
@@ -16,9 +26,7 @@ export const MinimalHero = () => {
     <section className="relative min-h-screen flex items-center justify-center p-3 lg:p-6">
       {/* Background with graphic corners */}
       <div className="absolute inset-0 rounded-[18px] overflow-hidden bg-muted/30">
-        <Suspense fallback={<HeroSliderLoading />}>
-          <HeroSlider />
-        </Suspense>
+        <HeroSlider />
         <div className="absolute inset-0 bg-background/40" />
       </div>
 

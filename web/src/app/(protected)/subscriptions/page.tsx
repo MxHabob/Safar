@@ -1,11 +1,22 @@
+import dynamic from "next/dynamic";
 import { Suspense } from "react";
 import { Metadata } from "next";
-import { SubscriptionsPage } from "@/features/subscriptions/subscriptions-page";
 import { SubscriptionPlansLoading } from "@/features/subscriptions/components/subscription-plans";
 import {
   getSubscriptionPlansApiV1SubscriptionsPlansGet,
   getMySubscriptionApiV1SubscriptionsMySubscriptionGet,
 } from "@/generated/actions/subscriptions";
+
+const SubscriptionsPageView = dynamic(
+  () =>
+    import("@/features/subscriptions/subscriptions-page").then(
+      (mod) => mod.SubscriptionsPage
+    ),
+  {
+    ssr: false,
+    loading: () => <SubscriptionPlansLoading />,
+  }
+);
 
 export const metadata: Metadata = {
   title: "Subscriptions",
@@ -28,9 +39,14 @@ async function SubscriptionsData() {
     const plans = plansResult?.data || [];
     const subscription = subscriptionResult?.data || null;
 
-    return <SubscriptionsPage plans={plans} currentSubscription={subscription} />;
+    return (
+      <SubscriptionsPageView
+        plans={plans}
+        currentSubscription={subscription}
+      />
+    );
   } catch (error) {
-    return <SubscriptionsPage plans={[]} currentSubscription={null} />;
+    return <SubscriptionsPageView plans={[]} currentSubscription={null} />;
   }
 }
 

@@ -1,9 +1,17 @@
-import { Suspense } from "react";
+import dynamic from "next/dynamic";
 import { Metadata } from "next";
-import { NotificationsPage, NotificationsPageLoading } from "@/features/notifications/notifications-page";
+import { NotificationsPageLoading } from "@/features/notifications/notifications-page";
+
+const NotificationsPageView = dynamic(
+  () =>
+    import("@/features/notifications/notifications-page").then(
+      (mod) => mod.NotificationsPage
+    ),
+  { ssr: false, loading: () => <NotificationsPageLoading /> }
+);
 
 export const metadata: Metadata = {
-  title: "Notifications - Safar",
+  title: "Notifications",
   description: "View and manage your notifications",
   robots: {
     index: false,
@@ -12,10 +20,6 @@ export const metadata: Metadata = {
 };
 
 export default function NotificationsPageRoute() {
-  return (
-    <Suspense fallback={<NotificationsPageLoading />}>
-      <NotificationsPage />
-    </Suspense>
-  );
+  return <NotificationsPageView />;
 }
 

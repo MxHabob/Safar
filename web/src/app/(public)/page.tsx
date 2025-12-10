@@ -1,16 +1,61 @@
 import { Suspense } from "react";
+import dynamic from "next/dynamic";
 import { Metadata } from "next";
 import type { Metadata as MetadataType } from "next";
 
 import Footer from "@/components/footer";
-import { getServerSession } from '@/lib/auth/server/session'
+import { getServerSession } from "@/lib/auth/server/session";
 import { MinimalHero } from "@/features/home/components/minimal-hero";
-import { EditorialDestinations } from "@/features/home/components/editorial-destinations";
-import { CuratedListings } from "@/features/home/components/curated-listings";
-import {
-  TravelGuidesView,
-  TravelGuidesViewLoading,
-} from "@/features/home/travel-guides-view";
+import { TravelGuidesViewLoading } from "@/features/home/travel-guides-view";
+
+// Defer client-heavy sections to the browser to lighten the initial payload
+const EditorialDestinations = dynamic(
+  () =>
+    import("@/features/home/components/editorial-destinations").then(
+      (mod) => mod.EditorialDestinations
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="space-y-6">
+        <div className="h-8 w-64 bg-muted rounded-md" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-72 rounded-[18px] bg-muted" />
+          ))}
+        </div>
+      </div>
+    ),
+  }
+);
+
+const CuratedListings = dynamic(
+  () =>
+    import("@/features/home/components/curated-listings").then(
+      (mod) => mod.CuratedListings
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="space-y-6">
+        <div className="h-8 w-64 bg-muted rounded-md" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-80 rounded-[18px] bg-muted" />
+          ))}
+        </div>
+      </div>
+    ),
+  }
+);
+
+const TravelGuidesView = dynamic(
+  () =>
+    import("@/features/home/travel-guides-view").then(
+      (mod) => mod.TravelGuidesView
+    ),
+  { ssr: false }
+);
 
 // Structured data for SEO
 const structuredData = {
