@@ -13,8 +13,9 @@ import { useListListingsApiV1ListingsGet } from "@/generated/hooks/listings";
  * Used in the hero section of the home page
  */
 export const HeroSlider = () => {
+  // Explicitly set skip=0 so the hook always queries and we don't accidentally skip
   const { data, isLoading, error } = useListListingsApiV1ListingsGet(
-    undefined, // skip
+    0, // skip
     10, // limit - get 10 featured listings
     undefined, // city
     undefined, // country
@@ -45,11 +46,11 @@ export const HeroSlider = () => {
   }
 
   const listings = data?.items || [];
-  
-  // Get all photos from listings (flatten photos arrays)
+
+  // Get all photos from listings (flatten photos/photos arrays)
   const allPhotos = listings
-    .flatMap((listing) => 
-      (listing.images || []).map((photo) => ({
+    .flatMap((listing) =>
+      (listing.photos || listing.images || []).map((photo) => ({
         url: photo.url,
         thumbnail_url: photo.url,
         alt: listing.title || "Travel destination",
@@ -58,6 +59,20 @@ export const HeroSlider = () => {
       }))
     )
     .filter((photo) => photo.url && photo.url.trim() !== "");
+
+  // If no photos are available, show an empty state so the hero isn't blank
+  if (allPhotos.length === 0) {
+    return (
+      <div className="absolute inset-0 w-full h-full rounded-[18px] overflow-hidden">
+        <EmptyState
+          icon={<ImageOff className="h-12 w-12" />}
+          title="No featured listings yet"
+          description="Check back soon for new destinations."
+          height="h-full"
+        />
+      </div>
+    );
+  }
 
   return (
     <Carousel
