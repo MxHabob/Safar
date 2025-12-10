@@ -21,7 +21,22 @@ from sqlalchemy import select
 from app.core.database import AsyncSessionLocal, init_db
 from app.core.id import generate_typed_id
 from app.core.security import get_password_hash
-from app.modules.users.models import User, UserRole, UserStatus
+
+# Import all models to ensure SQLAlchemy relationships are properly configured
+# This is necessary to avoid "failed to locate a name" errors when initializing relationships
+# Import order matters: Dispute must be imported before Booking
+from app.modules.disputes.models import Dispute, DisputeEvidence
+from app.modules.bookings.models import (
+    Booking, BookingStatus, Payment, PaymentStatus, PaymentMethodType,
+    BookingTimelineEvent, Payout
+)
+from app.modules.users.models import User, UserRole, UserStatus, HostProfile, Agency
+from app.modules.listings.models import Listing, ListingType, ListingStatus, BookingType
+from app.modules.messages.models import Conversation, Message, conversation_participants, MessageAutomation
+from app.modules.reviews.models import Review
+from app.modules.wishlist.models import Wishlist
+from app.modules.notifications.models import Notification, NotificationType
+from app.modules.promotions.models import PromotionRedemption
 
 
 async def create_admin_user(
