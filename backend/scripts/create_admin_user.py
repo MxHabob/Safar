@@ -133,6 +133,9 @@ async def create_admin_user(
         user_role = UserRole.ADMIN if role == "admin" else UserRole.SUPER_ADMIN
         
         # Create user
+        # Note: Two-Factor Authentication (2FA) is disabled by default
+        # totp_enabled defaults to False, totp_secret is None, backup_codes is empty
+        # The admin can enable 2FA later through the admin panel
         admin_user = User(
             id=generate_typed_id("usr"),
             email=email,
@@ -147,6 +150,10 @@ async def create_admin_user(
             is_active=True,
             is_email_verified=is_email_verified,
             is_phone_verified=False,
+            # 2FA fields (disabled by default)
+            totp_enabled=False,  # 2FA is not enabled by default
+            totp_secret=None,  # TOTP secret will be generated when user enables 2FA
+            backup_codes=[],  # Backup codes will be generated when user enables 2FA
             language="ar",
             locale="en",
             currency="USD",
@@ -253,6 +260,7 @@ Examples:
         print(f"   Role: {user.role.value}")
         print(f"   Status: {user.status.value}")
         print(f"   Email Verified: {user.is_email_verified}")
+        print(f"   2FA Enabled: {user.totp_enabled} (can be enabled later through admin panel)")
         
     except ValueError as e:
         print(f"❌ Error: {e}")

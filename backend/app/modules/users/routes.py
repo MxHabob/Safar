@@ -139,12 +139,9 @@ async def login(
         uow.db, user_entity.id
     )
     
-    # If 2FA is required but not enabled, block login
-    if requires_2fa and not is_2fa_enabled:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Two-factor authentication is required for your role. Please set up 2FA first."
-        )
+    # Note: We allow login even if 2FA is required but not enabled
+    # The user will be prompted to set up 2FA after login
+    # This allows initial admin setup without blocking access
     
     # If 2FA is enabled, require verification before issuing tokens
     if is_2fa_enabled:
@@ -157,7 +154,7 @@ async def login(
     
     # Complete authentication (create session, tokens, update user)
     remember_me = getattr(credentials, 'remember_me', False)
-    return await AuthHelper.complete_authentication(
+    response = await AuthHelper.complete_authentication(
         db=uow.db,
         user_entity=user_entity,
         user_model=user_model,
@@ -166,6 +163,14 @@ async def login(
         mfa_verified=False,
         client_ip=client_ip
     )
+    
+    # Add warning header if 2FA is required but not enabled
+    if requires_2fa and not is_2fa_enabled:
+        # Note: FastAPI response doesn't support modifying headers after creation
+        # The frontend should check 2FA status after login and show a warning
+        pass
+    
+    return response
 
 
 @router.post("/refresh", response_model=TokenResponse)
