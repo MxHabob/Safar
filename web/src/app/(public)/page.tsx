@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
-import { Metadata } from "next";
 import type { Metadata as MetadataType } from "next";
 
 import Footer from "@/components/footer";
@@ -15,7 +14,6 @@ const EditorialDestinations = dynamic(
       (mod) => mod.EditorialDestinations
     ),
   {
-    ssr: false,
     loading: () => (
       <div className="space-y-6">
         <div className="h-8 w-64 bg-muted rounded-md" />
@@ -35,7 +33,6 @@ const CuratedListings = dynamic(
       (mod) => mod.CuratedListings
     ),
   {
-    ssr: false,
     loading: () => (
       <div className="space-y-6">
         <div className="h-8 w-64 bg-muted rounded-md" />
@@ -53,8 +50,7 @@ const TravelGuidesView = dynamic(
   () =>
     import("@/features/home/travel-guides-view").then(
       (mod) => mod.TravelGuidesView
-    ),
-  { ssr: false }
+    )
 );
 
 // Structured data for SEO

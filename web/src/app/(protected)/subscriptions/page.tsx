@@ -13,7 +13,6 @@ const SubscriptionsPageView = dynamic(
       (mod) => mod.SubscriptionsPage
     ),
   {
-    ssr: false,
     loading: () => <SubscriptionPlansLoading />,
   }
 );

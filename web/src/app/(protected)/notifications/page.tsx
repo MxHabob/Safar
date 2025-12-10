@@ -7,7 +7,7 @@ const NotificationsPageView = dynamic(
     import("@/features/notifications/notifications-page").then(
       (mod) => mod.NotificationsPage
     ),
-  { ssr: false, loading: () => <NotificationsPageLoading /> }
+  { loading: () => <NotificationsPageLoading /> }
 );
 
 export const metadata: Metadata = {
