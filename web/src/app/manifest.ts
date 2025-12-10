@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Discover amazing travel destinations, stories, and guides. Share your travel experiences and explore the world with Safar.",
     start_url: "/",
     scope: "/",
-    display: "standalone",
+    display: "browser",
     background_color: "#ffffff",
     theme_color: "#000000",
     orientation: "portrait-primary",
