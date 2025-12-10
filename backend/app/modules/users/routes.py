@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
+from pydantic import BaseModel, EmailStr
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, get_current_active_user, get_unit_of_work
@@ -838,22 +839,39 @@ async def verify_email(
     return {"message": "Email verified successfully"}
 
 
+class ResendEmailVerificationRequest(BaseModel):
+    email: EmailStr
+
+
 @router.post("/email/resend-verification")
 async def resend_email_verification(
-    current_user: User = Depends(get_current_active_user),
+    payload: ResendEmailVerificationRequest,
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
     Resend email verification code.
+
+    Made unauthenticated to allow users to resend after registering
+    but before logging in. Requires the email in the request body.
     """
-    if current_user.is_email_verified:
+    # Find user by email
+    result = await uow.db.execute(select(User).where(User.email == payload.email))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    if user.is_email_verified:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email is already verified"
         )
     
     # Create new verification code
-    verification = await UserService.create_verification_code(uow, current_user.id, "email")
+    verification = await UserService.create_verification_code(uow, user.id, "email")
     
     # Send email
     from app.infrastructure.email.service import EmailService

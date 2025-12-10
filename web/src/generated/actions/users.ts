@@ -1601,7 +1601,7 @@ export const verifyEmailApiV1UsersEmailVerifyPost = authActionClient
 export const resendEmailVerificationApiV1UsersEmailResendVerificationPost = authActionClient
   .metadata({
     name: "resend-email-verification-api-v1-users-email-resend-verification-post",
-    requiresAuth: true
+    requiresAuth: false
   })
   .schema(z.void())
   .action(async ({ parsedInput, ctx }: { parsedInput: void; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
