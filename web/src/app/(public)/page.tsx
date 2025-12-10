@@ -5,56 +5,9 @@ import Footer from "@/components/footer";
 import { MinimalHero } from "@/features/home/components/minimal-hero";
 import { TravelGuidesViewLoading } from "@/features/home/travel-guides-view";
 import { listListingsApiV1ListingsGet } from "@/generated/actions/listings";
-
-const EditorialDestinations = dynamic(
-  () =>
-    import("@/features/home/components/editorial-destinations").then(
-      (mod) => mod.EditorialDestinations
-    ),
-  {
-    loading: () => (
-      <div className="space-y-6">
-        <div className="h-8 w-64 bg-muted rounded-md animate-pulse" />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-72 rounded-[18px] bg-muted animate-pulse" />
-          ))}
-        </div>
-      </div>
-    ),
-    ssr: true,
-  }
-);
-
-const CuratedListings = dynamic(
-  () =>
-    import("@/features/home/components/curated-listings").then(
-      (mod) => mod.CuratedListings
-    ),
-  {
-    loading: () => (
-      <div className="space-y-6">
-        <div className="h-8 w-64 bg-muted rounded-md animate-pulse" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-80 rounded-[18px] bg-muted animate-pulse" />
-          ))}
-        </div>
-      </div>
-    ),
-    ssr: true,
-  }
-);
-
-const TravelGuidesView = dynamic(
-  () =>
-    import("@/features/home/travel-guides-view").then(
-      (mod) => mod.TravelGuidesView
-    ),
-  {
-    ssr: true,
-  }
-);
+import { CuratedListings } from "@/features/home/components/curated-listings";
+import { TravelGuidesView } from "@/features/home/travel-guides-view";
+import { EditorialDestinations } from "@/features/home/components/editorial-destinations";
 
 const structuredData = {
   "@context": "https://schema.org",
