@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertTitle } from '@/components/ui/alert'
 import { OctagonAlert } from 'lucide-react'
-import type { OAuthProvider } from '@/lib/auth/oauth'
+import type { OAuthProvider } from '@/lib/auth/oauth/handlers'
 
 interface OAuthButtonsProps {
   onError?: (error: string) => void

@@ -1,7 +1,7 @@
 import Graphic from "@/components/shared/graphic";
 import { UserAvatar } from "./user-avatar";
 import { LoginButton } from "./login-button";
-import { getServerSession } from "@/lib/auth/server";
+import { getServerSession } from "@/lib/auth/server/session";
 
 /**
  * Right Side Navbar Component (Server Component)

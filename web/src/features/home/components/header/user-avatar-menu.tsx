@@ -11,9 +11,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { logoutAction } from "@/lib/auth/actions";
+import { logoutAction } from "@/lib/auth/server/actions";
 import { User, Settings, LogOut, UserCircle } from "lucide-react";
-import { ServerSession } from "@/lib/auth/server";
+import { ServerSession } from "@/lib/auth/server/session";
 
 export function UserAvatarMenu({ user }: { user: ServerSession }) {
   const router = useRouter();

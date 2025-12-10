@@ -29,6 +29,9 @@ import {
   VerifyOtpApiV1UsersOtpVerifyPostRequestSchema,
   VerifyOtpApiV1UsersOtpVerifyPostResponseSchema,
   LogoutApiV1UsersLogoutPostResponseSchema,
+  GetSessionsApiV1UsersSessionsGetResponseSchema,
+  RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema,
+  RevokeSessionApiV1UsersSessionsSessionIdDeleteResponseSchema,
   LogoutAllApiV1UsersLogoutAllPostResponseSchema,
   OauthLoginApiV1UsersOauthLoginPostRequestSchema,
   OauthLoginApiV1UsersOauthLoginPostResponseSchema,
@@ -1003,6 +1006,146 @@ export const logoutApiV1UsersLogoutPost = authActionClient
   })
 
 /**
+ * Get Sessions
+ * @generated from GET /api/v1/users/sessions
+ * Features: React cache, input validation, error handling
+ */
+export const getSessionsApiV1UsersSessionsGet = cache(
+  authActionClient
+    .metadata({
+      name: "get-sessions-api-v1-users-sessions-get",
+      requiresAuth: true
+    })
+    .schema(z.void())
+    .action(async ({ parsedInput, ctx }: { parsedInput: void; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
+      const startTime = Date.now()
+      
+      try {
+
+        // Execute API call with enhanced error handling
+        const response = await apiClient.users.getSessionsApiV1UsersSessionsGet({
+          config: {
+            timeout: 30000,
+            retries: 3,
+            validateResponse: false,
+            responseSchema: GetSessionsApiV1UsersSessionsGetResponseSchema
+          }
+        })
+        
+
+        // Log successful execution
+        const duration = Date.now() - startTime
+        await logActionExecution('getSessionsApiV1UsersSessionsGet', true, duration, {
+          method: 'GET',
+          path: '/api/v1/users/sessions'
+        })
+        
+        return response.data
+      } catch (error) {
+
+        const duration = Date.now() - startTime
+
+        // Enhanced error logging
+        await logActionExecution('getSessionsApiV1UsersSessionsGet', false, duration, {
+          method: 'GET',
+          path: '/api/v1/users/sessions',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        })
+        
+        // Throw enhanced error with context
+        throw new ActionExecutionError(
+          error instanceof Error ? error.message : 'Unknown error occurred',
+          {
+            endpoint: '/api/v1/users/sessions',
+            method: 'GET',
+            timestamp: Date.now()
+          },
+          error
+        )
+      }
+    })
+)
+
+/**
+ * Revoke Session
+ * @generated from DELETE /api/v1/users/sessions/{session_id}
+ * Features: Input validation, revalidation, error handling
+ */
+export const revokeSessionApiV1UsersSessionsSessionIdDelete = authActionClient
+  .metadata({
+    name: "revoke-session-api-v1-users-sessions-session-id-delete",
+    requiresAuth: true
+  })
+  .schema(RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema)
+  .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
+    const startTime = Date.now()
+    
+    try {
+      // Validate and sanitize parameters
+      const validatedParams = await validateAndSanitizeInput(RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema, parsedInput) as z.infer<typeof RevokeSessionApiV1UsersSessionsSessionIdDeleteParamsSchema>
+
+      // Execute API call with enhanced configuration
+      const response = await apiClient.users.revokeSessionApiV1UsersSessionsSessionIdDelete({params: {
+path: {
+        session_id: validatedParams.path.session_id
+      }
+    },
+        config: {
+          timeout: 30000,
+          retries: 3,
+          validateResponse: false,
+          responseSchema: RevokeSessionApiV1UsersSessionsSessionIdDeleteResponseSchema
+        }
+      })
+        // Handle streaming responses
+        if (response.headers.get('content-type')?.includes('text/stream')) {
+          // Process streaming response
+          return response.data
+        }
+        // Handle potential redirects based on response
+        if (response.status === 201 && response.headers.get('location')) {
+          const location = response.headers.get('location')!
+          redirect(location)
+        }
+
+            // Revalidate cache after successful mutation
+      updateTag('Users')
+      console.log('Updated tag: Users')
+
+
+      // Log successful execution
+      const duration = Date.now() - startTime
+      await logActionExecution('revokeSessionApiV1UsersSessionsSessionIdDelete', true, duration, {
+        method: 'DELETE',
+        path: '/api/v1/users/sessions/{session_id}'
+      })
+      
+      return response.data
+    } catch (error) {
+
+      const duration = Date.now() - startTime
+
+      // Enhanced error logging
+      await logActionExecution('revokeSessionApiV1UsersSessionsSessionIdDelete', false, duration, {
+        method: 'DELETE',
+        path: '/api/v1/users/sessions/{session_id}',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
+      
+      // Throw enhanced error with context
+      throw new ActionExecutionError(
+        error instanceof Error ? error.message : 'Unknown error occurred',
+        {
+          endpoint: '/api/v1/users/sessions/{session_id}',
+          method: 'DELETE',
+          timestamp: Date.now()
+        },
+        error
+      )
+    }
+  })
+
+/**
  * Logout All
  * @generated from POST /api/v1/users/logout-all
  * Features: Input validation, revalidation, error handling
@@ -1383,7 +1526,7 @@ export const changePasswordApiV1UsersPasswordChangePost = authActionClient
 export const verifyEmailApiV1UsersEmailVerifyPost = authActionClient
   .metadata({
     name: "verify-email-api-v1-users-email-verify-post",
-    requiresAuth: true
+    requiresAuth: false
   })
   .schema(VerifyEmailApiV1UsersEmailVerifyPostRequestSchema)
   .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostRequestSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {

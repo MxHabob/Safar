@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle } from "@/components/ui/alert";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Mail, ArrowRight, CheckCircle2, OctagonAlert, Loader2 } from "lucide-react";
 import Graphic from "@/components/shared/graphic";
 import { useVerifyEmailApiV1UsersEmailVerifyPostMutation, useResendEmailVerificationApiV1UsersEmailResendVerificationPostMutation } from "@/generated/hooks/users";
@@ -12,6 +13,7 @@ import { useVerifyEmailApiV1UsersEmailVerifyPostMutation, useResendEmailVerifica
 export function VerifyEmailView() {
   const [status, setStatus] = useState<"loading" | "success" | "error" | "pending">("loading");
   const [error, setError] = useState<string | null>(null);
+  const [codeInput, setCodeInput] = useState<string>("");
   const router = useRouter();
   const searchParams = useSearchParams();
   const code = searchParams?.get("code") || null;
@@ -44,11 +46,19 @@ export function VerifyEmailView() {
 
   useEffect(() => {
     if (code) {
+      setCodeInput(code);
       verifyEmailMutation.mutate({ code });
     } else {
       setStatus("pending");
     }
   }, [code]);
+
+  const handleManualVerify = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!codeInput.trim() || verifyEmailMutation.isPending) return;
+    setError(null);
+    verifyEmailMutation.mutate({ code: codeInput.trim() });
+  };
 
   const resendVerification = () => {
     if (!email) return;
@@ -149,6 +159,42 @@ export function VerifyEmailView() {
                       : "Please check your email for the verification link."}
                   </p>
                 </div>
+                <form onSubmit={handleManualVerify} className="space-y-4 text-left">
+                  <div className="space-y-2">
+                    <label className="text-sm text-muted-foreground">Verification code</label>
+                    <InputOTP
+                      value={codeInput}
+                      onChange={(value) => setCodeInput(value)}
+                      maxLength={6}
+                      containerClassName="w-full justify-center"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full h-11 rounded-[18px] font-light"
+                    disabled={!codeInput.trim() || verifyEmailMutation.isPending}
+                  >
+                    {verifyEmailMutation.isPending ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="size-4 animate-spin" />
+                        Verifying...
+                      </span>
+                    ) : (
+                      "Verify code"
+                    )}
+                  </Button>
+                </form>
                 {email && (
                   <Button
                     onClick={resendVerification}

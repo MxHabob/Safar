@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { UserCreateSchema } from "@/generated/schemas";
-import { useAuth } from "@/lib/auth/client";
+import { useAuth } from "@/lib/auth/client/provider";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {

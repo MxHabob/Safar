@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import type { Metadata as MetadataType } from "next";
 
 import Footer from "@/components/footer";
-import { getSession } from '@/lib/auth/session-provider'
+import { getServerSession } from '@/lib/auth/server/session'
 import { MinimalHero } from "@/features/home/components/minimal-hero";
 import { EditorialDestinations } from "@/features/home/components/editorial-destinations";
 import { CuratedListings } from "@/features/home/components/curated-listings";
@@ -85,7 +85,7 @@ export const revalidate = 60; // ISR: Revalidate every 60 seconds
 
 const page = async () => {
   // Get session silently - no need to log or await if not critical
-  const session = await getSession().catch(() => null);
+  const session = await getServerSession().catch(() => null);
 
   return (
     <>

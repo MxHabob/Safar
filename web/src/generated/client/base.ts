@@ -26,15 +26,11 @@ let serverOnlyModules: {
   updateTag?: (tag: string) => void
 } | null = null
 
-async function toMutableHeaders(source: NextReadonlyHeaders) {
+function toMutableHeaders(source: NextReadonlyHeaders) {
   const mutableHeaders = new Headers()
-  // In Next.js 16, headers() returns a Promise, so we need to await it
-  const headers = await source
-  if (headers && typeof headers.forEach === 'function') {
-    headers.forEach((value, key) => {
-      mutableHeaders.append(key, value)
-    })
-  }
+  source.forEach((value, key) => {
+    mutableHeaders.append(key, value)
+  })
   return mutableHeaders
 }
 
@@ -55,14 +51,17 @@ async function getServerModules() {
       const serverModule = await import('next/server').catch(() => null)
       const cacheModule = await import('next/cache').catch(() => null)
       
+      // Next.js 16: headers() and cookies() return Promises
       const getReadonlyHeaders = headersModule?.headers as (() => Promise<NextReadonlyHeaders>) | undefined
       const getReadonlyCookies = headersModule?.cookies as (() => Promise<NextReadonlyCookies>) | undefined
       serverOnlyModules = {
         cookies: getReadonlyCookies,
-        headers: getReadonlyHeaders ? async () => {
-          const headers = await getReadonlyHeaders()
-          return toMutableHeaders(headers)
-        } : undefined,
+        headers: getReadonlyHeaders 
+          ? async () => {
+              const headers = await getReadonlyHeaders()
+              return toMutableHeaders(headers)
+            }
+          : undefined,
         after: serverModule?.after,
         updateTag: cacheModule?.updateTag,
       }
@@ -342,10 +341,6 @@ export class BaseApiClient {
           // Server modules not available (client-side) or error accessing
         }
       }
-      
-      // Client-side: cookies are sent automatically with credentials: 'include'
-      // No need to manually get token - the browser will send httpOnly cookies
-      // The backend will extract the token from the Cookie header
       
       // Try external auth service
       // No external auth configured
@@ -634,10 +629,7 @@ export class BaseApiClient {
         // Only include next options if we're on the server (Next.js App Router)
         const fetchInit: RequestInit & { next?: { tags?: string[]; revalidate?: number | false; connection?: string } } = {
           ...requestConfig,
-          signal: controller.signal,
-          // Include credentials to send cookies with requests
-          // This is necessary for cross-origin requests when CORS allows credentials
-          credentials: 'include'
+          signal: controller.signal
         }
         
         // Add Next.js-specific options only if we have cache tags, revalidate, or connection
@@ -704,85 +696,6 @@ export class BaseApiClient {
             errorData,
             requestId
           )
-
-          // Special handling for 401 errors: try token refresh before throwing
-          // Use server action directly instead of API route
-          if (response.status === 401 && !skipAuth) {
-            // Skip refresh for auth endpoints
-            if (!url.includes('/login') && !url.includes('/refresh') && !url.includes('/oauth')) {
-              try {
-                // Use server action to refresh token (works on both client and server)
-                const { refreshTokenAction } = await import('@/lib/auth/actions')
-                const refreshResult = await refreshTokenAction()
-                
-                if (refreshResult?.success && refreshResult?.data?.access_token) {
-                  // Token was refreshed, retry the request with new token
-                  const newToken = refreshResult.data.access_token
-                  
-                  // Build headers properly
-                  const existingHeaders = requestConfig.headers || {}
-                  const headersObj = existingHeaders instanceof Headers 
-                    ? Object.fromEntries(existingHeaders.entries())
-                    : typeof existingHeaders === 'object' 
-                      ? existingHeaders 
-                      : {}
-                  
-                  const retryConfig: RequestInit = {
-                    ...requestConfig,
-                    headers: {
-                      ...headersObj,
-                      Authorization: `Bearer ${newToken}`
-                    } as HeadersInit
-                  }
-                  
-                  // Apply request middleware again
-                  let finalConfig: RequestConfiguration = retryConfig as RequestConfiguration
-                  for (const mw of middleware) {
-                    if (mw.onRequest) {
-                      finalConfig = await mw.onRequest(finalConfig)
-                    }
-                  }
-                  
-                  // Retry the request
-                  const retryResponse = await fetch(url, {
-                    ...finalConfig,
-                    signal: controller.signal,
-                    credentials: 'include'
-                  } as RequestInit)
-                  
-                  if (retryResponse.ok) {
-                    // Retry succeeded, parse and return response
-                    const retryData = await this.parseResponse<TData>(retryResponse, responseSchema, validateResponse)
-                    const retryClientResponse: ClientResponse<TData> = {
-                      data: retryData,
-                      status: retryResponse.status,
-                      statusText: retryResponse.statusText,
-                      headers: retryResponse.headers,
-                      retryCount: retryCount + 1,
-                      responseTime: Date.now() - startTime,
-                      requestId
-                    }
-                    
-                    // Apply response middleware
-                    let finalResponse = retryClientResponse
-                    for (const mw of middleware) {
-                      if (mw.onResponse) {
-                        finalResponse = await mw.onResponse(finalResponse)
-                      }
-                    }
-                    
-                    await metricsCollector.endRequest(requestId!, retryResponse.status, false, retryCount + 1)
-                    return finalResponse
-                  }
-                }
-              } catch (refreshError) {
-                // Refresh failed, continue to error handling
-                if (process.env.NODE_ENV === 'development') {
-                  console.warn('[API Client] Token refresh failed:', refreshError)
-                }
-              }
-            }
-          }
 
           // Apply error middleware
           for (const mw of middleware) {

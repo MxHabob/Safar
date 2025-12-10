@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, and_
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, get_current_active_user, get_unit_of_work
@@ -14,7 +15,7 @@ from app.repositories.unit_of_work import IUnitOfWork
 from app.core.security import create_access_token, create_refresh_token, decode_token
 from app.core.token_blacklist import add_token_to_blacklist, revoke_user_tokens, is_token_blacklisted, get_user_revocation_time
 from app.core.config import get_settings
-from app.modules.users.models import User, UserRole, UserStatus
+from app.modules.users.models import User, UserRole, UserStatus, UserVerification
 from app.domain.entities.user import UserEntity
 from app.modules.users.schemas import (
     UserCreate, UserResponse, UserUpdate, UserLogin,
@@ -799,25 +800,41 @@ async def change_password(
 @router.post("/email/verify")
 async def verify_email(
     verification_data: EmailVerificationRequest,
-    current_user: User = Depends(get_current_active_user),
     uow: IUnitOfWork = Depends(get_unit_of_work)
 ) -> Any:
     """
     Verify email address with verification code.
+
+    This endpoint does not require authentication because users typically
+    open the verification link from their email while not logged in.
     """
-    is_valid = await UserService.verify_code(
-        uow, current_user.id, verification_data.code, "email"
+    # Find latest unused, non-expired verification entry by code
+    result = await uow.db.execute(
+        select(UserVerification).where(
+            and_(
+                UserVerification.code == verification_data.code,
+                UserVerification.verification_type == "email",
+                UserVerification.is_used == False,
+                UserVerification.expires_at > datetime.utcnow(),
+            )
+        ).order_by(UserVerification.created_at.desc())
     )
-    
-    if not is_valid:
+    verification = result.scalar_one_or_none()
+
+    if not verification:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired verification code"
+            detail="Invalid or expired verification code",
         )
-    
-    # Mark email as verified
-    await UserService.verify_user(uow, current_user.id, "email")
-    
+
+    # Mark the code as used
+    verification.is_used = True
+    verification.attempts += 1
+    await uow.commit()
+
+    # Mark email as verified for the associated user
+    await UserService.verify_user(uow, verification.user_id, "email")
+
     return {"message": "Email verified successfully"}
 
 

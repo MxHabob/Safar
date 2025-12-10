@@ -20,6 +20,7 @@ import { PremiumListingsApiClient } from './premiumListings'
 import { TravelGuidesApiClient } from './travelGuides'
 import { SubscriptionsApiClient } from './subscriptions'
 import { MultiTenancyApiClient } from './multiTenancy'
+import { AdminApiClient } from './admin'
 
 /**
  * Enhanced API client with all endpoint groups
@@ -47,6 +48,7 @@ export class ApiClient extends BaseApiClient {
   public readonly travelGuides: TravelGuidesApiClient
   public readonly subscriptions: SubscriptionsApiClient
   public readonly multiTenancy: MultiTenancyApiClient
+  public readonly admin: AdminApiClient
 
   constructor() {
     super()
@@ -72,6 +74,7 @@ export class ApiClient extends BaseApiClient {
     this.travelGuides = new TravelGuidesApiClient()
     this.subscriptions = new SubscriptionsApiClient()
     this.multiTenancy = new MultiTenancyApiClient()
+    this.admin = new AdminApiClient()
     
     // Add global middleware
     createMiddlewareStack().forEach(middleware => {
@@ -137,6 +140,7 @@ export { PremiumListingsApiClient } from './premiumListings'
 export { TravelGuidesApiClient } from './travelGuides'
 export { SubscriptionsApiClient } from './subscriptions'
 export { MultiTenancyApiClient } from './multiTenancy'
+export { AdminApiClient } from './admin'
 
 // Export types and utilities
 export type { ClientResponse, RequestConfiguration, ApiError, ValidationError, TimeoutError, NetworkError } from './base'

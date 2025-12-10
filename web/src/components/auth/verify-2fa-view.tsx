@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { OctagonAlert, Shield, ArrowRight } from "lucide-react";
 import Graphic from "@/components/shared/graphic";
-import { useAuth } from "@/lib/auth/client";
+import { useAuth } from "@/lib/auth/client/provider";
 
 const Verify2FASchema = z.object({
   code: z.string().min(6, "Code must be 6 digits").max(6, "Code must be 6 digits"),
