@@ -525,31 +525,40 @@ export const loginApiV1UsersLoginPost = actionClientWithMeta
         }
       })
       
-      // Handle 202 status code (2FA required) FIRST - backend sets pending state before returning 202
-      // This must be checked before any other processing to ensure the request completes
+      // Handle 2FA requirement (status 202)
       if (response.status === 202) {
-        console.log('Login returned 202 - 2FA required. Backend has set pending state in Redis.')
-        // Backend has already set the pending state in Redis (2fa_pending:{user.id})
-        // Return the error response data so frontend can detect 2FA requirement
-        // The response.data should be {error: true, message: '...', status_code: 202}
-        return response.data || { error: true, status_code: 202, message: '2FA verification required' }
+        // Return the response data which should contain email and user_id
+        // The backend now returns this in the response body
+        // Type assertion needed because 202 response has different structure than normal login response
+        const responseData = response.data as unknown as {
+          requires2FA?: boolean;
+          email?: string;
+          user_id?: string;
+          message?: string;
+          detail?: string;
+        }
+        return {
+          requires2FA: true,
+          email: responseData?.email || '',
+          user_id: responseData?.user_id || response.headers.get('X-User-ID') || '',
+          message: responseData?.message || responseData?.detail || '2FA verification required. Please verify with your authenticator app.'
+        } as any
       }
       
-        // Handle streaming responses
-        if (response.headers.get('content-type')?.includes('text/stream')) {
-          // Process streaming response
-          return response.data
-        }
-        // Handle potential redirects based on response
-        if (response.status === 201 && response.headers.get('location')) {
-          const location = response.headers.get('location')!
-          redirect(location)
-        }
+      // Handle streaming responses
+      if (response.headers.get('content-type')?.includes('text/stream')) {
+        // Process streaming response
+        return response.data
+      }
+      // Handle potential redirects based on response
+      if (response.status === 201 && response.headers.get('location')) {
+        const location = response.headers.get('location')!
+        redirect(location)
+      }
 
-            // Revalidate cache after successful mutation
+      // Revalidate cache after successful mutation
       updateTag('Users')
       console.log('Updated tag: Users')
-
 
       // Log successful execution
       const duration = Date.now() - startTime
@@ -1535,13 +1544,13 @@ export const changePasswordApiV1UsersPasswordChangePost = authActionClient
  * @generated from POST /api/v1/users/email/verify
  * Features: Input validation, revalidation, error handling
  */
-export const verifyEmailApiV1UsersEmailVerifyPost = authActionClient
+export const verifyEmailApiV1UsersEmailVerifyPost = actionClientWithMeta
   .metadata({
     name: "verify-email-api-v1-users-email-verify-post",
     requiresAuth: false
   })
   .schema(VerifyEmailApiV1UsersEmailVerifyPostRequestSchema)
-  .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostRequestSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
+  .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostRequestSchema>; ctx?: any }) => {
     const startTime = Date.now()
     
     try {
@@ -1610,20 +1619,21 @@ export const verifyEmailApiV1UsersEmailVerifyPost = authActionClient
  * @generated from POST /api/v1/users/email/resend-verification
  * Features: Input validation, revalidation, error handling
  */
-export const resendEmailVerificationApiV1UsersEmailResendVerificationPost = authActionClient
+export const resendEmailVerificationApiV1UsersEmailResendVerificationPost = actionClientWithMeta
   .metadata({
     name: "resend-email-verification-api-v1-users-email-resend-verification-post",
     requiresAuth: false
   })
   .schema(ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema)
-  .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>; ctx: { user?: any; ratelimit?: { remaining: number } } }) => {
+  .action(async ({ parsedInput, ctx }: { parsedInput: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>; ctx?: any }) => {
     const startTime = Date.now()
     
     try {
+      // Validate and sanitize request body
+      const validatedBody = await validateAndSanitizeInput(ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema, parsedInput)
 
       // Execute API call with enhanced configuration
-      const response = await apiClient.users.resendEmailVerificationApiV1UsersEmailResendVerificationPost({
-body: parsedInput,
+      const response = await apiClient.users.resendEmailVerificationApiV1UsersEmailResendVerificationPost({body: validatedBody,
         config: {
           timeout: 30000,
           retries: 3,

@@ -50,10 +50,15 @@ export function SignInView() {
       
       // Check if 2FA is required
       if (result.requires2FA) {
-        // Redirect to 2FA verification page
+        // Redirect to 2FA verification page with email from result or form
+        const email = (result as any).email || values.email;
         const params = new URLSearchParams({
-          email: values.email,
+          email: email,
         });
+        // Add userId if available
+        if ((result as any).userId) {
+          params.append('userId', (result as any).userId);
+        }
         router.push(`/verify-2fa?${params.toString()}`);
         return;
       }

@@ -203,9 +203,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session_id: (data as any).session_id,
         requires2FA: (data as any).requires2FA,
       })
+      
       // Check if 2FA is required (status 202 or requires2FA flag)
+      // Also check if user data is missing (which indicates 2FA is required)
       if ('requires2FA' in data && data.requires2FA) {
         // Don't proceed - let the login function handle 2FA requirement
+        return
+      }
+      
+      // If user data is missing, this might be a 2FA requirement response
+      if (!data.user) {
+        // Don't proceed - let the login function handle 2FA requirement
+        return
+      }
+      
+      // Validate that we have all required data for successful login
+      if (!data.access_token || !data.refresh_token || !data.user) {
+        console.warn('Incomplete login response, missing required fields')
         return
       }
 
@@ -243,6 +257,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         queryClient.invalidateQueries({ queryKey: ['auth', 'session'] })
         router.push('/')
       })
+    },
+    onError: (error: Error) => {
+      // Don't show error toast for 2FA requirement (status 202)
+      // This is handled in the login function
+      const is2FAError = 
+        (error as any)?.statusCode === 202 || 
+        (error as any)?.status === 202 || 
+        error?.message?.includes('2FA') ||
+        error?.message?.includes('2FA verification required')
+      
+      if (!is2FAError && (error as any)?.showToast !== false) {
+        // Only show error for non-2FA errors
+        console.error('Login error:', error)
+      }
     },
   })
 
@@ -326,9 +354,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const result = await loginMutation.mutateAsync(credentials)
       
-      // Check if 2FA is required
+      // Check if 2FA is required (from action response)
       if (result && typeof result === 'object' && 'requires2FA' in result && result.requires2FA) {
-        return { success: false, requires2FA: true }
+        return { 
+          success: false, 
+          requires2FA: true,
+          email: (result as any).email || credentials.email, // Use email from response or fallback to credentials
+          userId: (result as any).user_id || undefined
+        }
+      }
+      
+      // Check if result is empty or missing user data (indicates 2FA requirement)
+      if (!result || (typeof result === 'object' && !result.user && !result.access_token)) {
+        return { 
+          success: false, 
+          requires2FA: true,
+          email: credentials.email // Fallback to email from credentials
+        }
       }
 
       // Success - tokens and session are already set in onSuccess
@@ -336,7 +378,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       // Check for 2FA requirement (status 202)
       if (error?.statusCode === 202 || error?.status === 202 || error?.message?.includes('2FA')) {
-        return { success: false, requires2FA: true }
+        return { 
+          success: false, 
+          requires2FA: true,
+          email: credentials.email // Fallback to email from credentials
+        }
       }
 
       return {

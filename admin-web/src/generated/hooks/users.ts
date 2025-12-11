@@ -42,8 +42,8 @@ import {
   ChangePasswordApiV1UsersPasswordChangePostRequestSchema,
   VerifyEmailApiV1UsersEmailVerifyPostResponseSchema,
   VerifyEmailApiV1UsersEmailVerifyPostRequestSchema,
-  ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema,
   ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema,
+  ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema,
   Verify2faLoginApiV1UsersLogin2faVerifyPostResponseSchema,
   Verify2faLoginApiV1UsersLogin2faVerifyPostRequestSchema,
   Setup2faApiV1Users2faSetupPostResponseSchema,
@@ -1233,7 +1233,7 @@ export function useLogoutApiV1UsersLogoutPostMutation(options?: {
       options?.onSuccess?.(data, variables)
     },
     
-    onError: (error, variables) => {
+    onError: (error: Error, variables: void) => {
       // Show error toast
       if (options?.showToast !== false) {
         toast.error(error.message || 'Failed to create')
@@ -1907,12 +1907,8 @@ export function useResendEmailVerificationApiV1UsersEmailResendVerificationPostM
   const [isPending, startTransition] = useTransition()
   const [optimisticData, setOptimisticData] = useOptimistic<unknown, z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>>(null, (_, newData) => newData)
 
-  const mutation = useMutation<
-    z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>,
-    Error,
-    z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>
-  >({
-    mutationFn: async (variables): Promise<z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>> => {
+  const mutation = useMutation({
+    mutationFn: async (variables: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>): Promise<z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>> => {
       try {
         const result = await resolveActionResult<z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>>(resendEmailVerificationApiV1UsersEmailResendVerificationPost(variables))
         return (result ?? ({} as z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>))
@@ -1921,7 +1917,7 @@ export function useResendEmailVerificationApiV1UsersEmailResendVerificationPostM
       }
     },
     
-    onMutate: async (variables) => {
+    onMutate: async (variables: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>) => {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ['listDevicesApiV1UsersUsersDevicesGet'] }),
         queryClient.cancelQueries({ queryKey: ['getCurrentUserInfoApiV1UsersMeGet'] }),
@@ -1949,7 +1945,7 @@ export function useResendEmailVerificationApiV1UsersEmailResendVerificationPostM
       options?.onSuccess?.(data, variables)
     },
     
-    onError: (error, variables) => {
+    onError: (error: Error, variables: z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>) => {
       // Show error toast
       if (options?.showToast !== false) {
         toast.error(error.message || 'Failed to create')

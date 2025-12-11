@@ -590,6 +590,9 @@ responseSchema: ChangePasswordApiV1UsersPasswordChangePostResponseSchema
   /**
    * Verify Email
    * Verify email address with verification code.
+
+This endpoint does not require authentication because users typically
+open the verification link from their email while not logged in.
    * @param options - Request options
    * @returns Promise<ClientResponse<z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostResponseSchema>>>
    * @example
@@ -618,6 +621,9 @@ responseSchema: VerifyEmailApiV1UsersEmailVerifyPostResponseSchema
   /**
    * Resend Email Verification
    * Resend email verification code.
+
+Made unauthenticated to allow users to resend after registering
+but before logging in. Requires the email in the request body.
    * @param options - Request options
    * @returns Promise<ClientResponse<z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>>>
    * @example

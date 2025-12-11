@@ -143,7 +143,33 @@ export const AdminListingListResponseSchema = z.object({
   limit: z.number().int()
 })
 export type AdminListingListResponse = z.infer<typeof AdminListingListResponseSchema>
-
+/**
+ * Schema returned in user responses.
+ */
+export const UserResponseSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  phone_number: z.any().optional(),
+  first_name: z.any().optional(),
+  last_name: z.any().optional(),
+  username: z.any().optional(),
+  full_name: z.any().optional(),
+  id: z.string().max(40, "Maximum length is 40"),
+  is_email_verified: z.boolean(),
+  is_phone_verified: z.boolean(),
+  avatar_url: z.any().optional(),
+  bio: z.any().optional(),
+  role: UserRoleSchema,
+  roles: z.array(z.string()).optional(),
+  status: UserStatusSchema,
+  is_active: z.boolean(),
+  locale: z.string(),
+  language: z.string(),
+  currency: z.string(),
+  created_at: z.string(),
+  country: z.any().optional(),
+  city: z.any().optional()
+})
+export type UserResponse = z.infer<typeof UserResponseSchema>
 /**
  * Listing statistics for admin.
  */
@@ -248,33 +274,6 @@ export const AdminUserUpdateSchema = z.object({
 })
 export type AdminUserUpdate = z.infer<typeof AdminUserUpdateSchema>
 /**
- * Schema returned in user responses.
- */
-export const UserResponseSchema = z.object({
-  email: z.string().email("Invalid email format"),
-  phone_number: z.any().optional(),
-  first_name: z.any().optional(),
-  last_name: z.any().optional(),
-  username: z.any().optional(),
-  full_name: z.any().optional(),
-  id: z.string().max(40, "Maximum length is 40"),
-  is_email_verified: z.boolean(),
-  is_phone_verified: z.boolean(),
-  avatar_url: z.any().optional(),
-  bio: z.any().optional(),
-  role: UserRoleSchema,
-  roles: z.array(z.string()).optional(),
-  status: UserStatusSchema,
-  is_active: z.boolean(),
-  locale: z.string(),
-  language: z.string(),
-  currency: z.string(),
-  created_at: z.string(),
-  country: z.any().optional(),
-  city: z.any().optional()
-})
-export type UserResponse = z.infer<typeof UserResponseSchema>
-/**
  * Schema returned when logging in - includes tokens and user data.
  */
 export const AuthResponseSchema = z.object({
@@ -355,7 +354,6 @@ export const BookingCreateSchema = z.object({
   coupon_code: z.any().optional()
 })
 export type BookingCreate = z.infer<typeof BookingCreateSchema>
-
 /**
  * Timeline event response schema.
  */
@@ -408,7 +406,6 @@ export const BookingListResponseSchema = z.object({
   limit: z.number().int()
 })
 export type BookingListResponse = z.infer<typeof BookingListResponseSchema>
-
 /**
  * Single data point for booking trends.
  */
@@ -476,7 +473,6 @@ export const ConversationListResponseSchema = z.object({
   limit: z.number().int()
 })
 export type ConversationListResponse = z.infer<typeof ConversationListResponseSchema>
-
 /**
  * Admin dashboard metrics.
  */
@@ -584,25 +580,6 @@ export const ListingImageResponseSchema = z.object({
 })
 export type ListingImageResponse = z.infer<typeof ListingImageResponseSchema>
 /**
- * Schema for creating a listing location.
- */
-export const ListingLocationCreateSchema = z.object({
-  timezone: z.string().optional(),
-  neighborhood: z.any().optional(),
-  latitude: z.any(),
-  longitude: z.any()
-})
-export type ListingLocationCreate = z.infer<typeof ListingLocationCreateSchema>
-/**
- * Listing location response schema.
- */
-export const ListingLocationResponseSchema = z.object({
-  id: z.string().max(40, "Maximum length is 40"),
-  timezone: z.string(),
-  neighborhood: z.any().optional()
-})
-export type ListingLocationResponse = z.infer<typeof ListingLocationResponseSchema>
-/**
  * Listing photo response schema.
  */
 export const ListingPhotoResponseSchema = z.object({
@@ -673,6 +650,25 @@ export const ListingListResponseSchema = z.object({
   limit: z.number().int()
 })
 export type ListingListResponse = z.infer<typeof ListingListResponseSchema>
+/**
+ * Schema for creating a listing location.
+ */
+export const ListingLocationCreateSchema = z.object({
+  timezone: z.string().optional(),
+  neighborhood: z.any().optional(),
+  latitude: z.any(),
+  longitude: z.any()
+})
+export type ListingLocationCreate = z.infer<typeof ListingLocationCreateSchema>
+/**
+ * Listing location response schema.
+ */
+export const ListingLocationResponseSchema = z.object({
+  id: z.string().max(40, "Maximum length is 40"),
+  timezone: z.string(),
+  neighborhood: z.any().optional()
+})
+export type ListingLocationResponse = z.infer<typeof ListingLocationResponseSchema>
 
 /**
  * Schema for updating a listing.
@@ -746,7 +742,6 @@ export const MessageListResponseSchema = z.object({
   limit: z.number().int()
 })
 export type MessageListResponse = z.infer<typeof MessageListResponseSchema>
-
 /**
  * Schema for OAuth-based login requests.
  */
@@ -948,6 +943,10 @@ export const RefreshTokenRequestSchema = z.object({
   refresh_token: z.string()
 })
 export type RefreshTokenRequest = z.infer<typeof RefreshTokenRequestSchema>
+export const ResendEmailVerificationRequestSchema = z.object({
+  email: z.string().email("Invalid email format")
+})
+export type ResendEmailVerificationRequest = z.infer<typeof ResendEmailVerificationRequestSchema>
 /**
  * Schema for creating a review.
  */
@@ -1700,17 +1699,26 @@ export const VerifyEmailApiV1UsersEmailVerifyPostErrorSchema = HTTPValidationErr
 
 export type VerifyEmailApiV1UsersEmailVerifyPostError = z.infer<typeof VerifyEmailApiV1UsersEmailVerifyPostErrorSchema>
 /**
+ * Request schema for POST /api/v1/users/email/resend-verification
+ */
+export const ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema = ResendEmailVerificationRequestSchema
+export type ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequest = z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>
+/**
  * Success response schema for POST /api/v1/users/email/resend-verification
  * Status: 200
  * Successful Response
  */
-export const ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema = z.object({ email: z.string().email() })
-
-export type ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequest = z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostRequestSchema>
-
 export const ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema = z.any()
 
 export type ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponse = z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostResponseSchema>
+/**
+ * Error response schema for POST /api/v1/users/email/resend-verification
+ * Status: 422
+ * Validation Error
+ */
+export const ResendEmailVerificationApiV1UsersEmailResendVerificationPostErrorSchema = HTTPValidationErrorSchema
+
+export type ResendEmailVerificationApiV1UsersEmailResendVerificationPostError = z.infer<typeof ResendEmailVerificationApiV1UsersEmailResendVerificationPostErrorSchema>
 /**
  * Request schema for POST /api/v1/users/login/2fa/verify
  */

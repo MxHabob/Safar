@@ -146,9 +146,16 @@ async def login(
     # If 2FA is enabled, require verification before issuing tokens
     if is_2fa_enabled:
         await AuthHelper.prepare_2fa_verification(user_entity.id)
-        raise HTTPException(
+        # Return 202 with user email in response body for frontend to redirect to 2FA page
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
             status_code=status.HTTP_202_ACCEPTED,
-            detail="2FA verification required. Please verify with your authenticator app.",
+            content={
+                "requires2FA": True,
+                "email": user_entity.email,
+                "user_id": str(user_entity.id),
+                "message": "2FA verification required. Please verify with your authenticator app."
+            },
             headers={"X-Requires-2FA": "true", "X-User-ID": str(user_entity.id)}
         )
     
