@@ -1,7 +1,7 @@
 import { DEFAULT_SERVER_ERROR_MESSAGE, createSafeActionClient } from "next-safe-action";
 import { headers } from "next/headers";
 import { z } from "zod";
-
+import { getCurrentUser } from "@/lib/auth/server/session";
 /**
  * Enhanced Action Error class for better error handling
  * Follows Next.js 16.0.1 best practices
@@ -147,9 +147,3 @@ export const authActionClient = actionClientWithMeta
     }
     return next();
   });
-
-// Mock user function
-async function getCurrentUser() {
-  // Implement your authentication logic here
-  return null;
-}

@@ -314,37 +314,87 @@ export class BaseApiClient {
   private async getAuthHeaders(): Promise<Record<string, string>> {
     const getAuthHeaders: Record<string, string> = {}
     
+    // Check if we're on the server-side
+    const isServerSide = typeof window === 'undefined'
+    
     try {
-      // Get server modules (only available server-side)
-      const serverModules = await getServerModules()
-
-      const session = await getServerSession()
-      if (session?.accessToken) {
-        getAuthHeaders.Authorization = `Bearer ${session.accessToken}`
-        return getAuthHeaders
-      }
-
-      // Get auth token from various sources (server-side only)
-      if (serverModules?.cookies && serverModules.headers) {
+      if (isServerSide) {
+        // Server-side: Get token from session or cookies
         try {
-          const cookieStore = await serverModules.cookies()
-          const headersList = await serverModules.headers()
-          
-          // Try cookie first
-          const tokenFromCookie = cookieStore.get('auth-token')?.value
-          if (tokenFromCookie) {
-            getAuthHeaders.Authorization = `Bearer ${tokenFromCookie}`
-            return getAuthHeaders
-          }
-          
-          // Try header
-          const tokenFromHeader = headersList.get('authorization')
-          if (tokenFromHeader) {
-            getAuthHeaders.Authorization = tokenFromHeader
+          const session = await getServerSession()
+          if (session?.accessToken) {
+            getAuthHeaders.Authorization = `Bearer ${session.accessToken}`
             return getAuthHeaders
           }
         } catch (error) {
-          // Server modules not available (client-side) or error accessing
+          // getServerSession might fail in some contexts, continue to try cookies
+        }
+
+        // Get server modules (only available server-side)
+        const serverModules = await getServerModules()
+
+        // Get auth token from various sources (server-side only)
+        if (serverModules?.cookies && serverModules.headers) {
+          try {
+            const cookieStore = await serverModules.cookies()
+            const headersList = await serverModules.headers()
+            
+            // Try cookie first
+            const tokenFromCookie = cookieStore.get('auth-token')?.value
+            if (tokenFromCookie) {
+              getAuthHeaders.Authorization = `Bearer ${tokenFromCookie}`
+              return getAuthHeaders
+            }
+            
+            // Try header
+            const tokenFromHeader = headersList.get('authorization')
+            if (tokenFromHeader) {
+              getAuthHeaders.Authorization = tokenFromHeader
+              return getAuthHeaders
+            }
+          } catch (error) {
+            // Server modules not available or error accessing
+          }
+        }
+      } else {
+        // Client-side: Try to get token from cookies (if not httpOnly) or localStorage
+        try {
+          // Try reading from document.cookie (only works if cookie is not httpOnly)
+          const cookies = document.cookie.split('; ')
+          const authCookie = cookies.find(row => row.startsWith('auth-token='))
+          if (authCookie) {
+            const token = authCookie.split('=')[1]
+            if (token) {
+              getAuthHeaders.Authorization = `Bearer ${token}`
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[Auth] Using token from cookie')
+              }
+              return getAuthHeaders
+            }
+          }
+
+          // Try localStorage as fallback (if tokens are stored there)
+          if (typeof Storage !== 'undefined') {
+            const tokenFromStorage = localStorage.getItem('access_token') || localStorage.getItem('auth-token')
+            if (tokenFromStorage) {
+              getAuthHeaders.Authorization = `Bearer ${tokenFromStorage}`
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[Auth] Using token from localStorage')
+              }
+              return getAuthHeaders
+            }
+          }
+
+          // If we can't get token, cookies will be sent automatically via credentials: 'include'
+          // The backend should accept authentication via cookies OR Authorization header
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[Auth] No token found on client-side, relying on automatic cookie sending')
+          }
+        } catch (error) {
+          // Client-side token retrieval failed, continue to fallback
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[Auth] Failed to get token on client-side:', error)
+          }
         }
       }
       
@@ -635,7 +685,9 @@ export class BaseApiClient {
         // Only include next options if we're on the server (Next.js App Router)
         const fetchInit: RequestInit & { next?: { tags?: string[]; revalidate?: number | false; connection?: string } } = {
           ...requestConfig,
-          signal: controller.signal
+          signal: controller.signal,
+          // Include credentials to send cookies automatically (important for client-side requests)
+          credentials: 'include' as RequestCredentials
         }
         
         // Add Next.js-specific options only if we have cache tags, revalidate, or connection

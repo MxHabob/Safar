@@ -2,6 +2,7 @@
 
 // External dependencies
 import { ChevronRight, LucideIcon } from "lucide-react";
+import Link from "next/link";
 
 // Internal components
 import { cn } from "@/lib/utils";
@@ -116,26 +117,26 @@ export function SidebarMenuWrapper({ item }: Props) {
 
   return (
     <SidebarMenuItem>
-      <CollapsibleTrigger asChild>
-        <SidebarMenuButton
-          tooltip={item.title}
-          className={cn(
-            "cursor-pointer hover:bg-transparent hover:font-bold hover:underline hover:underline-offset-4 active:bg-transparent data-[state=open]:hover:bg-transparent",
-            isSubmenuActive && "font-bold",
-          )}
-          aria-label={item.title}
-          aria-expanded="false"
-          aria-haspopup={item.items?.length ? "true" : undefined}
-        >
-          <item.icon
-            strokeWidth={isSubmenuActive ? 2.5 : 1.8}
-            aria-hidden="true"
-          />
-          <span>{item.title}</span>
-        </SidebarMenuButton>
-      </CollapsibleTrigger>
       {item.items?.length ? (
         <>
+          <CollapsibleTrigger asChild>
+            <SidebarMenuButton
+              tooltip={item.title}
+              className={cn(
+                "cursor-pointer hover:bg-transparent hover:font-bold hover:underline hover:underline-offset-4 active:bg-transparent data-[state=open]:hover:bg-transparent",
+                isSubmenuActive && "font-bold",
+              )}
+              aria-label={item.title}
+              aria-expanded="false"
+              aria-haspopup="true"
+            >
+              <item.icon
+                strokeWidth={isSubmenuActive ? 2.5 : 1.8}
+                aria-hidden="true"
+              />
+              <span>{item.title}</span>
+            </SidebarMenuButton>
+          </CollapsibleTrigger>
           <CollapsibleTrigger asChild>
             <SidebarMenuAction
               className="cursor-pointer hover:bg-transparent data-[state=open]:rotate-90"
@@ -149,7 +150,23 @@ export function SidebarMenuWrapper({ item }: Props) {
             <SidebarSubmenuWrapper isPopover={isPopover} item={item} />
           </CollapsibleContent>
         </>
-      ) : null}
+      ) : (
+        <SidebarMenuButton asChild tooltip={item.title}>
+          <Link
+            href={item.url}
+            className={cn(
+              "cursor-pointer hover:bg-transparent hover:font-bold hover:underline hover:underline-offset-4 active:bg-transparent",
+            )}
+            aria-label={item.title}
+          >
+            <item.icon
+              strokeWidth={1.8}
+              aria-hidden="true"
+            />
+            <span>{item.title}</span>
+          </Link>
+        </SidebarMenuButton>
+      )}
     </SidebarMenuItem>
   );
 }

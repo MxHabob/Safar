@@ -20,10 +20,10 @@ import { UsersTablePagination } from "./users-table-pagination";
 import { useUserColumns } from "./users-table-columns";
 import { UsersTableHeaderCell } from "./users-table-header-cell";
 import { Separator } from "@/components/ui/separator";
-import { User } from "@/generated/schemas";
+import { AdminUserResponse } from "@/generated/schemas";
 
 interface UsersTableProps {
-  users: User[];
+  users: AdminUserResponse[];
   totalRows?: number;
   sorting: SortingState;
   onSort: OnChangeFn<SortingState>;

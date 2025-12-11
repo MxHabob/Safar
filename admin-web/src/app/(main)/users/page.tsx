@@ -6,7 +6,7 @@ import { Spinner } from '@/components/ui/spinner'
 
 // Dynamic import for better code splitting
 const UserPage = dynamic(
-  () => import("@/components/pages/ai/pages/admin/users").then(mod => ({ default: mod.UserPage })),
+  () => import("@/features/admin/users").then(mod => ({ default: mod.UserPage })),
   {
     loading: () => (
       <div className="w-full h-full m-auto min-h-[400px] flex items-center justify-center">

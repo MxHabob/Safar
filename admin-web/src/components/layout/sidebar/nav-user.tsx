@@ -34,7 +34,7 @@ export function NavUser() {
     await logout()
   }
   const handleRedirectProfile = () => { 
-    router.push("/profile/account");
+    router.push("/account");
     onClose()
   }
   const handleUpgradeToPro = () => {

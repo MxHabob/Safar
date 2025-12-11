@@ -6,7 +6,7 @@ import {
 } from "@tanstack/react-table";
 import { parseAsString, parseAsInteger, useQueryStates } from "nuqs";
 import { useListUsersApiV1AdminUsersGet } from "@/generated/hooks/admin";
-import { ListUsersApiV1AdminUsersGetResponse, User } from "@/generated/schemas";
+import { ListUsersApiV1AdminUsersGetResponse, AdminUserResponse } from "@/generated/schemas";
 
 const searchParamsConfig = {
   search: parseAsString.withDefault(""),
@@ -35,8 +35,6 @@ export function useUsers({ initialUsersData }: UseUsersProps = {}) {
       search: searchParams.search || undefined,
       status: searchParams.status !== "all" ? searchParams.status : undefined,
       role: searchParams.role || undefined,
-      date_join_start: searchParams.date_join_start || undefined,
-      date_join_end: searchParams.date_join_end || undefined,
     },
   }), [searchParams]);
 
@@ -56,8 +54,6 @@ export function useUsers({ initialUsersData }: UseUsersProps = {}) {
     !filters.query.search && 
     filters.query.status === undefined && 
     !filters.query.role && 
-    !filters.query.date_join_start && 
-    !filters.query.date_join_end && 
     pagination.pageIndex === 0;
 
   // Fetch users from API with filters - API handles filtering and pagination
@@ -68,8 +64,6 @@ export function useUsers({ initialUsersData }: UseUsersProps = {}) {
     filters.query.role, // role
     filters.query.status, // status
     filters.query.search, // search
-    filters.query.date_join_start, // date_join_start
-    filters.query.date_join_end, // date_join_end
     {
       enabled: true,
       // refetchOnWindowFocus: false,
@@ -79,9 +73,9 @@ export function useUsers({ initialUsersData }: UseUsersProps = {}) {
   );
 
   // Extract users from API response
-  // Note: The API response structure may vary - adjust based on actual response
-  const users = Array.isArray(data?.data) ? data.data : [];
-  const totalCount = users.length; // Note: API should return total count in metadata
+  // API returns AdminUserListResponse with items array and total count
+  const users = Array.isArray(data?.items) ? data.items : [];
+  const totalCount = data?.total ?? 0;
 
   // Apply client-side sorting (API should handle this, but keeping for now)
   const sortedUsers = useMemo(() => {
@@ -115,7 +109,7 @@ export function useUsers({ initialUsersData }: UseUsersProps = {}) {
 
     return [...users].sort((a, b) => {
       for (const sort of sorting) {
-        const key = sort.id as keyof User;
+        const key = sort.id as keyof AdminUserResponse;
         const compared = compareValues(a[key], b[key], sort.desc);
         if (compared !== 0) return compared;
       }
@@ -128,8 +122,6 @@ export function useUsers({ initialUsersData }: UseUsersProps = {}) {
       search?: string;
       status?: string;
       role?: string;
-      date_join_start?: string | Date;
-      date_join_end?: string | Date;
     };
   }>) => {
     const query = newFilters.query || {};
@@ -137,16 +129,6 @@ export function useUsers({ initialUsersData }: UseUsersProps = {}) {
       search: query.search || null,
       status: query.status === undefined ? "all" : (query.status || null),
       role: query.role || null,
-      date_join_start: query.date_join_start 
-        ? (typeof query.date_join_start === 'string' 
-          ? query.date_join_start 
-          : query.date_join_start.toISOString())
-        : null,
-      date_join_end: query.date_join_end
-        ? (typeof query.date_join_end === 'string'
-          ? query.date_join_end
-          : query.date_join_end.toISOString())
-        : null,
       page: 0, // Reset to first page when filters change
     });
   }, [setSearchParams]);
@@ -177,8 +159,6 @@ export function useUsers({ initialUsersData }: UseUsersProps = {}) {
       search: null,
       status: "all",
       role: null,
-      date_join_start: null,
-      date_join_end: null,
       page: 0,
     });
   }, [setSearchParams]);
@@ -200,12 +180,6 @@ export function useUsers({ initialUsersData }: UseUsersProps = {}) {
         search: searchParams.search || undefined,
         status: (searchParams.status !== "all" ? searchParams.status : "all") as unknown,
         role: searchParams.role || undefined,
-        date_join_start: searchParams.date_join_start 
-          ? (searchParams.date_join_start as unknown as string)
-          : undefined,
-        date_join_end: searchParams.date_join_end
-          ? (searchParams.date_join_end as unknown as string)
-          : undefined,
       },
     },
     sorting,

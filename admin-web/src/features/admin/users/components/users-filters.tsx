@@ -60,26 +60,7 @@ export function UsersFilters({
             ))}
           </SelectContent>
         </Select>
-        <DatePickerWithRange
-          className="w-full md:w-auto"
-          date={{
-            from: filters.query?.date_join_start
-              ? new Date(filters.query.date_join_start as unknown as string)
-              : undefined,
-            to: filters.query?.date_join_end
-              ? new Date(filters.query.date_join_end as unknown as string)
-              : undefined,
-          }}
-          onDateChange={(dateRange: DateRange | undefined) =>
-            onFiltersChange({
-              query: {
-                ...filters.query,
-                date_join_start: dateRange?.from ?? undefined,
-                date_join_end: dateRange?.to ?? undefined,
-              },
-            })
-          }
-        />
+        {/* Date filter removed - API doesn't support date filtering in query params */}
       </div>
     </div>
   );

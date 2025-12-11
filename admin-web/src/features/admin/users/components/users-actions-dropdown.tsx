@@ -20,12 +20,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { User } from "@/generated/schemas";
+import { AdminUserResponse } from "@/generated/schemas";
 import { useRouter } from "next/navigation";
 import { useModal } from "@/lib/stores/modal-store";
 
 interface UserActionsProps {
-  user: User;
+  user: AdminUserResponse;
 }
 
 export function UserActionsDropdown({ user }: UserActionsProps) {
@@ -36,16 +36,19 @@ export function UserActionsDropdown({ user }: UserActionsProps) {
   };
 
   const handleEditUser = () => {
+    const userName = 
+      (user.first_name && user.last_name)
+        ? `${user.first_name} ${user.last_name}`
+        : user.username || user.email || undefined;
     onOpen("adminEditUser", {
       userId: user.id,
       userEmail: user.email as unknown as string,
-      userName: (user.full_name as unknown as string) || undefined,
+      userName: userName as unknown as string,
       payload: {
         email: user.email as unknown as string,
-        full_name: user.full_name as unknown as string,
+        first_name: user.first_name as unknown as string,
+        last_name: user.last_name as unknown as string,
         username: user.username as unknown as string,
-        company: user.company as unknown as string,
-        bio: user.bio as unknown as string,
       },
     })
   };

@@ -524,6 +524,17 @@ export const loginApiV1UsersLoginPost = actionClientWithMeta
           responseSchema: LoginApiV1UsersLoginPostResponseSchema
         }
       })
+      
+      // Handle 202 status code (2FA required) FIRST - backend sets pending state before returning 202
+      // This must be checked before any other processing to ensure the request completes
+      if (response.status === 202) {
+        console.log('Login returned 202 - 2FA required. Backend has set pending state in Redis.')
+        // Backend has already set the pending state in Redis (2fa_pending:{user.id})
+        // Return the error response data so frontend can detect 2FA requirement
+        // The response.data should be {error: true, message: '...', status_code: 202}
+        return response.data || { error: true, status_code: 202, message: '2FA verification required' }
+      }
+      
         // Handle streaming responses
         if (response.headers.get('content-type')?.includes('text/stream')) {
           // Process streaming response

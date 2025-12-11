@@ -99,8 +99,8 @@ export const DEFAULT_PHOTOS_UPLOAD_FOLDER = "photos";
     ],
     navSecondary: [
       {
-        title: "Admin Settings",
-        url: "/profile",
+        title: "Account Settings",
+        url: "/account",
         icon: Cog,
       },
       {
@@ -111,8 +111,8 @@ export const DEFAULT_PHOTOS_UPLOAD_FOLDER = "photos";
     ],
     adminNavSecondary: [
       {
-        title: "Admin Settings",
-        url: "/profile",
+        title: "Account Settings",
+        url: "/account",
         icon: Cog,
       },
       {
