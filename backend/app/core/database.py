@@ -6,6 +6,7 @@ SQLAlchemy 2.0 async setup with read replica support.
 from typing import AsyncGenerator, Optional, List
 import random
 import logging
+import asyncio
 from urllib.parse import urlparse
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -16,6 +17,7 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.pool import NullPool
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 
 from app.core.config import get_settings
 
@@ -160,47 +162,94 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     FastAPI dependency that provides a database session per request.
     
     Uses primary (write) database for all operations.
+    Includes retry logic for connection failures.
     
     Raises:
-        ConnectionError: If database connection fails with DNS resolution error
+        ConnectionError: If database connection fails with DNS resolution error after retries
     """
-    try:
-        async with AsyncSessionLocal() as session:
-            try:
-                yield session
-                await session.commit()
-            except Exception as e:
-                await session.rollback()
-                # Check for DNS resolution errors and provide helpful error message
-                error_msg = str(e)
-                if "name resolution" in error_msg.lower() or "gaierror" in error_msg.lower() or "temporary failure" in error_msg.lower():
-                    db_info = parse_db_url(settings.database_url)
+    max_retries = 3
+    retry_delay = 1.0  # Start with 1 second
+    
+    # Retry logic for establishing connection
+    for attempt in range(max_retries):
+        try:
+            async with AsyncSessionLocal() as session:
+                try:
+                    # Test connection by executing a simple query
+                    await session.execute(text("SELECT 1"))
+                    # Connection successful, yield the session
+                    yield session
+                    await session.commit()
+                    return  # Success, exit function
+                except Exception as e:
+                    await session.rollback()
+                    error_msg = str(e)
+                    
+                    # Check for DNS resolution errors
+                    is_connection_error = any(
+                        keyword in error_msg.lower() 
+                        for keyword in ["name resolution", "gaierror", "temporary failure", "connection", "network", "unable to connect"]
+                    )
+                    
+                    # Only retry if it's a connection error and we haven't yielded yet
+                    # (connection errors after yield should not retry)
+                    if is_connection_error and attempt < max_retries - 1:
+                        db_info = parse_db_url(settings.database_url)
+                        logger.warning(
+                            f"Database connection attempt {attempt + 1}/{max_retries} failed: "
+                            f"DNS resolution error for host '{db_info['host']}'. Retrying in {retry_delay}s..."
+                        )
+                        await asyncio.sleep(retry_delay)
+                        retry_delay *= 2  # Exponential backoff
+                        break  # Break out of session context, retry outer loop
+                    elif is_connection_error:
+                        # All retries exhausted
+                        db_info = parse_db_url(settings.database_url)
+                        raise ConnectionError(
+                            f"Database connection failed after {max_retries} attempts: "
+                            f"DNS resolution error for host '{db_info['host']}'.\n"
+                            f"Please check:\n"
+                            f"  1. POSTGRES_SERVER or DATABASE_URL environment variable\n"
+                            f"  2. Database service is running and accessible\n"
+                            f"  3. Network connectivity to database host\n"
+                            f"  4. In Docker: use service name, not 'localhost'\n"
+                            f"  5. Ensure containers are on the same Docker network\n"
+                            f"Original error: {error_msg}"
+                        ) from e
+                    # For non-connection errors, raise immediately
+                    raise
+                finally:
+                    await session.close()
+        except ConnectionError:
+            # Re-raise connection errors as-is (after all retries exhausted)
+            raise
+        except (OperationalError, Exception) as e:
+            error_msg = str(e)
+            # Check for connection-related errors during session creation
+            is_connection_error = any(
+                keyword in error_msg.lower() 
+                for keyword in ["name resolution", "gaierror", "temporary failure", "connection", "network", "unable to connect"]
+            )
+            
+            if is_connection_error:
+                db_info = parse_db_url(settings.database_url)
+                if attempt < max_retries - 1:
+                    logger.warning(
+                        f"Database connection attempt {attempt + 1}/{max_retries} failed: {error_msg}. "
+                        f"Retrying in {retry_delay}s..."
+                    )
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                    continue
+                else:
                     raise ConnectionError(
-                        f"Database connection failed: DNS resolution error for host '{db_info['host']}'.\n"
-                        f"Please check:\n"
-                        f"  1. POSTGRES_SERVER or DATABASE_URL environment variable\n"
-                        f"  2. Database service is running and accessible\n"
-                        f"  3. Network connectivity to database host\n"
-                        f"  4. In Docker: use service name, not 'localhost'\n"
+                        f"Database connection failed after {max_retries} attempts: "
+                        f"DNS resolution error for host '{db_info['host']}'.\n"
+                        f"Please check your database configuration and network connectivity.\n"
                         f"Original error: {error_msg}"
                     ) from e
-                raise
-            finally:
-                await session.close()
-    except ConnectionError:
-        # Re-raise connection errors as-is
-        raise
-    except Exception as e:
-        # Wrap other exceptions that might be connection-related
-        error_msg = str(e)
-        if "name resolution" in error_msg.lower() or "gaierror" in error_msg.lower():
-            db_info = parse_db_url(settings.database_url)
-            raise ConnectionError(
-                f"Database connection failed: DNS resolution error for host '{db_info['host']}'.\n"
-                f"Please check your database configuration and network connectivity.\n"
-                f"Original error: {error_msg}"
-            ) from e
-        raise
+            # For non-connection errors, raise immediately
+            raise
 
 
 async def get_read_db() -> AsyncGenerator[AsyncSession, None]:
@@ -209,40 +258,69 @@ async def get_read_db() -> AsyncGenerator[AsyncSession, None]:
     
     Falls back to primary database if no replicas are configured.
     Use this for search, analytics, and other read-heavy operations.
+    Includes retry logic for connection failures.
     
     Raises:
-        ConnectionError: If database connection fails with DNS resolution error
+        ConnectionError: If database connection fails with DNS resolution error after retries
     """
     replica_session_factory = get_read_replica_session()
+    max_retries = 3
+    retry_delay = 1.0  # Start with 1 second
     
-    try:
-        if replica_session_factory:
-            # Use read replica
-            async with replica_session_factory() as session:
-                try:
-                    yield session
-                    # Read-only: no commit needed
-                finally:
-                    await session.close()
-        else:
-            # Fall back to primary database
-            async with AsyncSessionLocal() as session:
-                try:
-                    yield session
-                    # Read-only: no commit needed
-                finally:
-                    await session.close()
-    except Exception as e:
-        # Check for DNS resolution errors and provide helpful error message
-        error_msg = str(e)
-        if "name resolution" in error_msg.lower() or "gaierror" in error_msg.lower() or "temporary failure" in error_msg.lower():
-            db_info = parse_db_url(settings.database_url)
-            raise ConnectionError(
-                f"Database connection failed: DNS resolution error for host '{db_info['host']}'.\n"
-                f"Please check your database configuration and network connectivity.\n"
-                f"Original error: {error_msg}"
-            ) from e
-        raise
+    # Retry logic for establishing connection
+    for attempt in range(max_retries):
+        try:
+            if replica_session_factory:
+                # Use read replica
+                async with replica_session_factory() as session:
+                    try:
+                        # Test connection
+                        await session.execute(text("SELECT 1"))
+                        # Connection successful, yield the session
+                        yield session
+                        # Read-only: no commit needed
+                        return  # Success, exit function
+                    finally:
+                        await session.close()
+            else:
+                # Fall back to primary database
+                async with AsyncSessionLocal() as session:
+                    try:
+                        # Test connection
+                        await session.execute(text("SELECT 1"))
+                        # Connection successful, yield the session
+                        yield session
+                        # Read-only: no commit needed
+                        return  # Success, exit function
+                    finally:
+                        await session.close()
+        except (OperationalError, Exception) as e:
+            error_msg = str(e)
+            # Check for DNS resolution or connection errors
+            is_connection_error = any(
+                keyword in error_msg.lower() 
+                for keyword in ["name resolution", "gaierror", "temporary failure", "connection", "network", "unable to connect"]
+            )
+            
+            if is_connection_error:
+                db_info = parse_db_url(settings.database_url)
+                if attempt < max_retries - 1:
+                    logger.warning(
+                        f"Read database connection attempt {attempt + 1}/{max_retries} failed: "
+                        f"DNS resolution error for host '{db_info['host']}'. Retrying in {retry_delay}s..."
+                    )
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                    continue
+                else:
+                    raise ConnectionError(
+                        f"Database connection failed after {max_retries} attempts: "
+                        f"DNS resolution error for host '{db_info['host']}'.\n"
+                        f"Please check your database configuration and network connectivity.\n"
+                        f"Original error: {error_msg}"
+                    ) from e
+            # For non-connection errors, raise immediately
+            raise
 
 
 DB_INIT_LOCK_KEY = 874512987  # Arbitrary constant for advisory lock
