@@ -247,12 +247,13 @@ async def refresh_token(
         # Get mfa_verified from token payload
         mfa_verified = payload.get("mfa_verified", False)
         
-        # Create new tokens
+        # Create new tokens with complete user data including roles
         access_token = create_access_token(
             data={
                 "sub": str(user_entity.id),
                 "email": user_entity.email,
                 "role": user_entity.role,
+                "roles": getattr(user_entity, "roles", []) or [],  # Include roles array
                 "mfa_verified": mfa_verified,
                 "session_id": session_id  # Include session_id in new token
             },
@@ -262,6 +263,8 @@ async def refresh_token(
             data={
                 "sub": str(user_entity.id),
                 "email": user_entity.email,
+                "role": user_entity.role,
+                "roles": getattr(user_entity, "roles", []) or [],  # Include roles array
                 "mfa_verified": mfa_verified,
                 "session_id": session_id  # Include session_id in refresh token
             }
@@ -965,9 +968,33 @@ async def verify_2fa_login(
     except Exception:
         pass
     
-    # Get user entity
-    from app.domain.entities.user import UserEntity
-    user_entity = UserEntity.from_model(user)
+    # Convert user model to entity
+    # Use the same conversion logic as repository for consistency
+    user_entity = UserEntity(
+        id=user.id,
+        email=user.email,
+        phone_number=user.phone_number,
+        username=user.username,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        full_name=user.full_name,
+        avatar_url=user.avatar_url,
+        bio=user.bio,
+        role=user.role.value if hasattr(user.role, 'value') else str(user.role),
+        roles=user.roles or [],
+        status=user.status.value if hasattr(user.status, 'value') else str(user.status),
+        is_active=user.is_active,
+        is_email_verified=user.is_email_verified,
+        is_phone_verified=user.is_phone_verified,
+        language=user.language,
+        locale=user.locale,
+        currency=user.currency,
+        country=user.country,
+        city=user.city,
+        agency_id=user.agency_id,
+        created_at=user.created_at,
+        updated_at=user.updated_at
+    )
     
     # Complete authentication with MFA verified
     remember_me = getattr(verify_data, 'remember_me', False)

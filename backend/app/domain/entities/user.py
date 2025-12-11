@@ -64,8 +64,19 @@ class UserEntity(DomainEntity):
         return "host" in self.roles or self.role == "host"
     
     def is_admin(self) -> bool:
-        """Check if user is admin"""
-        return "admin" in self.roles or self.role in ["admin", "super_admin"]
+        """Check if user is admin or super admin"""
+        return (
+            self.role in ["admin", "super_admin"] or
+            "admin" in (self.roles or []) or
+            "super_admin" in (self.roles or [])
+        )
+    
+    def is_super_admin(self) -> bool:
+        """Check if user is super admin"""
+        return (
+            self.role == "super_admin" or
+            "super_admin" in (self.roles or [])
+        )
     
     def is_verified(self) -> bool:
         """Check if user is verified"""
@@ -78,4 +89,36 @@ class UserEntity(DomainEntity):
         if self.first_name and self.last_name:
             return f"{self.first_name} {self.last_name}"
         return self.username or self.email
+    
+    @classmethod
+    def from_model(cls, model) -> Optional['UserEntity']:
+        """Convert SQLAlchemy model to domain entity"""
+        if not model:
+            return None
+        
+        return cls(
+            id=model.id,
+            email=model.email,
+            phone_number=model.phone_number,
+            username=model.username,
+            first_name=model.first_name,
+            last_name=model.last_name,
+            full_name=model.full_name,
+            avatar_url=model.avatar_url,
+            bio=model.bio,
+            role=model.role.value if hasattr(model.role, 'value') else str(model.role),
+            roles=model.roles or [],
+            status=model.status.value if hasattr(model.status, 'value') else str(model.status),
+            is_active=model.is_active,
+            is_email_verified=model.is_email_verified,
+            is_phone_verified=model.is_phone_verified,
+            language=model.language,
+            locale=model.locale,
+            currency=model.currency,
+            country=model.country,
+            city=model.city,
+            agency_id=model.agency_id,
+            created_at=model.created_at,
+            updated_at=model.updated_at
+        )
 

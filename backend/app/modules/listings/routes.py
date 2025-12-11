@@ -14,7 +14,7 @@ from app.core.dependencies import (
     get_optional_active_user
 )
 from app.repositories.unit_of_work import IUnitOfWork
-from app.modules.users.models import User
+from app.modules.users.models import User, UserRole
 from typing import Optional, Union
 from app.modules.listings.models import ListingStatus, ListingType
 from app.modules.listings.schemas import (
@@ -283,7 +283,12 @@ async def update_listing(
     """
     Update an existing listing (host or admin only).
     """
-    is_admin = current_user.role.value in ["admin", "super_admin"]
+    # Check if user is admin (check both role and roles array for consistency)
+    is_admin = (
+        current_user.role in {UserRole.ADMIN, UserRole.SUPER_ADMIN} or
+        any(role in {UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value} 
+            for role in (current_user.roles or []))
+    )
     
     listing = await ListingService.update_listing(
         uow=uow,
@@ -321,7 +326,12 @@ async def delete_listing(
     """
     Delete a listing (host or admin only).
     """
-    is_admin = current_user.role.value in ["admin", "super_admin"]
+    # Check if user is admin (check both role and roles array for consistency)
+    is_admin = (
+        current_user.role in {UserRole.ADMIN, UserRole.SUPER_ADMIN} or
+        any(role in {UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value} 
+            for role in (current_user.roles or []))
+    )
     
     await ListingService.delete_listing(
         uow=uow,

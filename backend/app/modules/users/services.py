@@ -253,6 +253,7 @@ class UserService:
             "sub": str(user.id),
             "email": user.email,
             "role": user.role,
+            "roles": getattr(user, "roles", []) or [],  # Include roles array for proper authorization
             "mfa_verified": mfa_verified,  # Include 2FA verification status in JWT
             # Enrich claims so frontend can hydrate session without extra fetches
             "first_name": getattr(user, "first_name", None),

@@ -119,26 +119,38 @@ async def require_host(
 async def require_admin(
     current_user: User = Depends(get_current_active_user)
 ) -> User:
-    """Require admin or super admin role and enforce 2FA."""
-    is_admin = (
-        current_user.role in {UserRole.ADMIN, UserRole.SUPER_ADMIN} or
-        any(role in (current_user.roles or []) for role in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value])
+    """
+    Require admin or super admin role and enforce 2FA.
+    
+    Checks both the primary role field and the roles array for consistency.
+    """
+    # Check primary role
+    has_admin_role = current_user.role in {UserRole.ADMIN, UserRole.SUPER_ADMIN}
+    
+    # Check roles array
+    user_roles = current_user.roles or []
+    has_admin_in_roles = any(
+        role in {UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value}
+        for role in user_roles
     )
+    
+    is_admin = has_admin_role or has_admin_in_roles
+    
     if not is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin privileges required"
         )
     
-    # Enforce 2FA for admins
+    # Enforce 2FA for admins - must be enabled
     if not current_user.totp_enabled:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="2FA required"
+            detail="2FA is required for admin accounts. Please enable 2FA in your account settings."
         )
     
     # Note: mfa_verified check is done in get_current_user via token payload
-    # This is enforced at the authentication layer
+    # This is enforced at the authentication layer - token must have mfa_verified=True
     
     return current_user
 
