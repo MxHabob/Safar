@@ -7,6 +7,7 @@ from typing import AsyncGenerator, Optional, List
 import random
 import logging
 import asyncio
+import re
 from urllib.parse import urlparse
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -126,13 +127,22 @@ if settings.postgres_read_replica_enabled and settings.postgres_read_replica_url
             except Exception as e:
                 error_msg = str(e)
                 if "name resolution" in error_msg.lower() or "gaierror" in error_msg.lower():
-                    logger.error(
+                    logger.warning(
                         f"DNS resolution failed for read replica host '{replica_info['host']}'. "
-                        f"Skipping this replica. Error: {error_msg}"
+                        f"Skipping this replica. The application will fall back to the primary database for read operations. "
+                        f"Error: {error_msg}"
                     )
                 else:
                     logger.error(f"Failed to create read replica engine for {replica_info['host']}: {error_msg}")
                     raise
+
+# Warn if read replicas are enabled but none were successfully created
+if settings.postgres_read_replica_enabled and settings.postgres_read_replica_url and not read_replica_sessions:
+    logger.warning(
+        "Read replicas are enabled but no replica engines were successfully created. "
+        "All read operations will use the primary database. "
+        "Please check your POSTGRES_READ_REPLICA_URL configuration and ensure replica services are running."
+    )
 
 # Async Session Factory (Primary/Write)
 AsyncSessionLocal = async_sessionmaker(
@@ -256,7 +266,7 @@ async def get_read_db() -> AsyncGenerator[AsyncSession, None]:
     """
     FastAPI dependency that provides a read replica session for read-only queries.
     
-    Falls back to primary database if no replicas are configured.
+    Falls back to primary database if no replicas are configured or if all replicas fail.
     Use this for search, analytics, and other read-heavy operations.
     Includes retry logic for connection failures.
     
@@ -267,33 +277,30 @@ async def get_read_db() -> AsyncGenerator[AsyncSession, None]:
     max_retries = 3
     retry_delay = 1.0  # Start with 1 second
     
-    # Retry logic for establishing connection
+    # If no replicas configured, use primary database
+    if not replica_session_factory:
+        async with AsyncSessionLocal() as session:
+            try:
+                await session.execute(text("SELECT 1"))
+                yield session
+                return
+            finally:
+                await session.close()
+    
+    # Try to use read replica, with fallback to primary if it fails
     for attempt in range(max_retries):
         try:
-            if replica_session_factory:
-                # Use read replica
-                async with replica_session_factory() as session:
-                    try:
-                        # Test connection
-                        await session.execute(text("SELECT 1"))
-                        # Connection successful, yield the session
-                        yield session
-                        # Read-only: no commit needed
-                        return  # Success, exit function
-                    finally:
-                        await session.close()
-            else:
-                # Fall back to primary database
-                async with AsyncSessionLocal() as session:
-                    try:
-                        # Test connection
-                        await session.execute(text("SELECT 1"))
-                        # Connection successful, yield the session
-                        yield session
-                        # Read-only: no commit needed
-                        return  # Success, exit function
-                    finally:
-                        await session.close()
+            # Use read replica
+            async with replica_session_factory() as session:
+                try:
+                    # Test connection
+                    await session.execute(text("SELECT 1"))
+                    # Connection successful, yield the session
+                    yield session
+                    # Read-only: no commit needed
+                    return  # Success, exit function
+                finally:
+                    await session.close()
         except (OperationalError, Exception) as e:
             error_msg = str(e)
             # Check for DNS resolution or connection errors
@@ -303,22 +310,54 @@ async def get_read_db() -> AsyncGenerator[AsyncSession, None]:
             )
             
             if is_connection_error:
-                db_info = parse_db_url(settings.database_url)
+                # Try to extract hostname from error message
+                hostname = "unknown"
+                if "postgres-replica" in error_msg:
+                    # Extract replica hostname from error
+                    match = re.search(r"postgres-replica-\d+", error_msg)
+                    if match:
+                        hostname = match.group(0)
+                elif "postgres" in error_msg.lower():
+                    # Fallback: try to get from replica URL if available
+                    if settings.postgres_read_replica_url:
+                        replica_urls = str(settings.postgres_read_replica_url).split(",")
+                        if replica_urls:
+                            db_info = parse_db_url(replica_urls[0].strip())
+                            hostname = db_info.get('host', 'unknown')
+                
                 if attempt < max_retries - 1:
                     logger.warning(
-                        f"Read database connection attempt {attempt + 1}/{max_retries} failed: "
-                        f"DNS resolution error for host '{db_info['host']}'. Retrying in {retry_delay}s..."
+                        f"Read replica connection attempt {attempt + 1}/{max_retries} failed: "
+                        f"DNS resolution error for host '{hostname}'. Retrying in {retry_delay}s..."
                     )
                     await asyncio.sleep(retry_delay)
                     retry_delay *= 2  # Exponential backoff
                     continue
                 else:
-                    raise ConnectionError(
-                        f"Database connection failed after {max_retries} attempts: "
-                        f"DNS resolution error for host '{db_info['host']}'.\n"
-                        f"Please check your database configuration and network connectivity.\n"
-                        f"Original error: {error_msg}"
-                    ) from e
+                    # All retries exhausted - fall back to primary database
+                    logger.warning(
+                        f"All read replica connection attempts failed. "
+                        f"Falling back to primary database for host '{hostname}'."
+                    )
+                    # Fall back to primary database
+                    try:
+                        async with AsyncSessionLocal() as session:
+                            try:
+                                await session.execute(text("SELECT 1"))
+                                yield session
+                                return
+                            finally:
+                                await session.close()
+                    except Exception as primary_error:
+                        # Even primary database failed
+                        db_info = parse_db_url(settings.database_url)
+                        raise ConnectionError(
+                            f"Database connection failed after {max_retries} attempts: "
+                            f"Read replica host '{hostname}' and primary database '{db_info['host']}' both failed.\n"
+                            f"Please check your database configuration and network connectivity.\n"
+                            f"Read replica error: {error_msg}\n"
+                            f"Primary database error: {str(primary_error)}"
+                        ) from primary_error
             # For non-connection errors, raise immediately
             raise
 
