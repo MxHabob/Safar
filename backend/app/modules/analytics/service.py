@@ -141,7 +141,8 @@ class AnalyticsService:
                     )
                 )
             )
-            listing_metrics = listing_stats.first()._asdict() if listing_stats.first() else {}
+            listing_stats_row = listing_stats.first()
+            listing_metrics = listing_stats_row._asdict() if listing_stats_row else {}
         
         # User growth (if admin)
         user_metrics = {}
@@ -154,7 +155,8 @@ class AnalyticsService:
                 )
                 .where(User.created_at >= start_date)
             )
-            user_metrics = user_stats.first()._asdict() if user_stats.first() else {}
+            user_stats_row = user_stats.first()
+            user_metrics = user_stats_row._asdict() if user_stats_row else {}
         
         return {
             "period": {

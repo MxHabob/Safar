@@ -60,17 +60,6 @@ export function UserPage({ initialUsersData }: UserPageProps = {}) {
         </div>
       </div>
 
-      {error && (
-        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
-          <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
-            <h3 className="mt-4 text-lg font-semibold text-destructive">Error Loading Users</h3>
-            <p className="mb-4 mt-2 text-sm text-muted-foreground">
-              {error.message || "Failed to load users. Please try again."}
-            </p>
-          </div>
-        </div>
-      )}
-
       {isEmpty && (
         <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center animate-in fade-in-50">
           <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
