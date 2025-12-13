@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const guide = guides?.data?.[0];
     if (guide) {
       return {
-        title: `${guide.city}, ${guide.country} - Safar`,
+        title: `${guide.city}, ${guide.country}`,
         description: guide.summary || `Travel guide for ${guide.city}, ${guide.country}`,
         keywords: [guide.city, guide.country, "travel guide", "destinations"],
         openGraph: {
