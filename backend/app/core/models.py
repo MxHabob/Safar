@@ -48,7 +48,7 @@ from app.modules.ai_trip_planner.models import (
 from app.modules.notifications.models import Notification
 
 # Wishlist
-from app.modules.wishlist.models import Wishlist
+from app.modules.wishlist.models import Wishlist, WishlistShare
 
 # Files
 from app.modules.files.models import File
@@ -159,6 +159,7 @@ __all__ = [
     
     # Wishlist
     "Wishlist",
+    "WishlistShare",
     
     # Files
     "File",
