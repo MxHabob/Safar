@@ -31,11 +31,17 @@ export const revalidate = 30; // ISR: Revalidate every 30 seconds
 
 export default async function ListingsPage() {
   // Fetch initial data for faster initial load
-  const listingsResult = await listListingsApiV1ListingsGet({ 
-    query: { skip: 0, limit: 24, status: "active" } 
-  }).catch(() => null);
-  
-  const initialData = listingsResult?.data || undefined;
+  let initialData;
+  try {
+    const listingsResult = await listListingsApiV1ListingsGet({ 
+      query: { skip: 0, limit: 24, status: "active" } 
+    });
+    initialData = listingsResult?.data;
+  } catch (error) {
+    // Log error but don't block page render - component handles empty state
+    console.error("[Listings Page] Failed to fetch initial listings:", error);
+    initialData = undefined;
+  }
 
   return (
     <div className="min-h-screen w-full">

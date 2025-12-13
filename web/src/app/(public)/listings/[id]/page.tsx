@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   try {
     const result = await getListingApiV1ListingsListingIdGet({
       path: { listing_id: id },
-    }).catch(() => null);
+    });
     
     const listing = (result as any)?.data || result;
     

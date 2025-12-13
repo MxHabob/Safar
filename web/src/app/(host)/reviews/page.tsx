@@ -24,9 +24,13 @@ async function ReviewsData() {
 
   try {
     const listingsResult = await listListingsApiV1ListingsGet({
-      query: {},
-    }).catch(() => ({ data: { items: [] } }));
+      query: { limit: 100 },
+    }).catch((error) => {
+      console.error("[Host Reviews] Failed to fetch listings:", error);
+      return { data: { items: [] } };
+    });
 
+    // Filter listings by host (client-side - API limitation)
     const allListings = listingsResult?.data?.items || [];
     const listings = allListings.filter((listing: any) => 
       listing.host_id === user.id || listing.host?.id === user.id
@@ -34,6 +38,7 @@ async function ReviewsData() {
 
     return <HostReviews listings={listings} />;
   } catch (error) {
+    console.error("[Host Reviews] Unexpected error:", error);
     return <HostReviews listings={[]} />;
   }
 }

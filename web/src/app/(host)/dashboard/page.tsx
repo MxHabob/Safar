@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import { HostDashboard } from "@/features/host/host-dashboard";
 import { HostListingsLoading } from "@/features/host/components/host-listings";
 import { listListingsApiV1ListingsGet } from "@/generated/actions/listings";
-import { listBookingsApiV1BookingsGet } from "@/generated/actions/bookings";
+import { listHostBookingsApiV1BookingsHostListingsGet } from "@/generated/actions/bookings";
 import { getCurrentUser } from "@/lib/auth/server/session";
 
 export const metadata: Metadata = {
@@ -25,25 +25,36 @@ async function HostDashboardData() {
   }
 
   try {
+    // Use server-side filtering for bookings via host endpoint
+    // For listings: try host_id filter if available, fallback to client-side filtering
     const [listingsResult, bookingsResult] = await Promise.all([
+      // TODO: When backend supports host_id filter, use:
+      // listListingsApiV1ListingsGet({ query: { host_id: user.id, limit: 100 } })
+      // For now, fetch all and filter client-side
       listListingsApiV1ListingsGet({
-        query: {},
-      }).catch(() => ({ data: { items: [] } })),
-      listBookingsApiV1BookingsGet({
-        query: {},
-      }).catch(() => ({ data: { items: [] } })),
+        query: { limit: 100 }, // Fetch more to ensure we get all host listings
+      }).catch((error) => {
+        console.error("[Host Dashboard] Failed to fetch listings:", error);
+        return { data: { items: [] } };
+      }),
+      listHostBookingsApiV1BookingsHostListingsGet({
+        query: { limit: 100 }, // Fetch all host bookings server-side
+      }).catch((error) => {
+        console.error("[Host Dashboard] Failed to fetch host bookings:", error);
+        return { data: { items: [] } };
+      }),
     ]);
 
-    // Filter listings and bookings by host (client-side filtering)
+    // Filter listings by host (client-side - API limitation)
+    // TODO: Remove this client-side filtering when backend supports host_id query parameter
+    // See BACKEND_API_REQUIREMENTS.md for details
     const allListings = listingsResult?.data?.items || [];
-    const allBookings = bookingsResult?.data?.items || [];
-    
     const listings = allListings.filter((listing: any) => 
       listing.host_id === user.id || listing.host?.id === user.id
     );
-    const bookings = allBookings.filter((booking: any) => 
-      booking.host_id === user.id || booking.listing?.host_id === user.id
-    );
+    
+    // Bookings are already filtered server-side via host endpoint
+    const bookings = bookingsResult?.data?.items || [];
 
     // Calculate stats
     const stats = {
@@ -55,7 +66,14 @@ async function HostDashboardData() {
 
     return <HostDashboard listings={listings} bookings={bookings} stats={stats} />;
   } catch (error) {
-    return <HostDashboard listings={[]} bookings={[]} />;
+    console.error("[Host Dashboard] Unexpected error:", error);
+    // Return empty state on error - component should handle gracefully
+    return <HostDashboard listings={[]} bookings={[]} stats={{
+      totalListings: 0,
+      totalBookings: 0,
+      activeBookings: 0,
+      totalRevenue: 0,
+    }} />;
   }
 }
 

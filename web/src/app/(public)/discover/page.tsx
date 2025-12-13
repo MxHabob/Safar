@@ -27,11 +27,17 @@ export const revalidate = 60; // ISR: Revalidate every 60 seconds
 
 const page = async () => {
   // Fetch initial data for faster initial load
-  const listingsResult = await listListingsApiV1ListingsGet({ 
-    query: { skip: 0, limit: 100, status: "active" } 
-  }).catch(() => null);
-  
-  const initialData = listingsResult?.data || undefined;
+  let initialData;
+  try {
+    const listingsResult = await listListingsApiV1ListingsGet({ 
+      query: { skip: 0, limit: 100, status: "active" } 
+    });
+    initialData = listingsResult?.data;
+  } catch (error) {
+    // Log error but don't block page render - component handles empty state
+    console.error("[Discover Page] Failed to fetch initial listings:", error);
+    initialData = undefined;
+  }
 
   return (
     <div className="w-full h-[calc(100vh-1.5rem)]">

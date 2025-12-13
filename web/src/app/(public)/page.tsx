@@ -40,19 +40,8 @@ export const metadata: MetadataType = {
 
 
 const page = async () => {
-  // const listingsResult = await listListingsApiV1ListingsGet({ 
-  //   query: { skip: 0, limit: 10, status: "active" } 
-  // }).catch(() => null);
-
-  // const listings = listingsResult?.data || undefined;
-
   return (
     <>
-      {/* <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      /> */}
-      
       <div className="min-h-screen w-full">
         <MinimalHero />
         <main className="w-full max-w-7xl mx-auto px-3 lg:px-6 py-16 lg:py-24 space-y-24 lg:space-y-32">

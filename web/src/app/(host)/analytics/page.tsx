@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { Metadata } from "next";
 import { HostAnalytics, HostAnalyticsLoading } from "@/features/host/components/host-analytics";
 import { listListingsApiV1ListingsGet } from "@/generated/actions/listings";
-import { listBookingsApiV1BookingsGet } from "@/generated/actions/bookings";
+import { listHostBookingsApiV1BookingsHostListingsGet } from "@/generated/actions/bookings";
 import { getCurrentUser } from "@/lib/auth/server/session";
 
 export const metadata: Metadata = {
@@ -24,27 +24,34 @@ async function AnalyticsData() {
   }
 
   try {
+    // Use server-side filtering for bookings via host endpoint
     const [listingsResult, bookingsResult] = await Promise.all([
       listListingsApiV1ListingsGet({
-        query: {},
-      }).catch(() => ({ data: { items: [] } })),
-      listBookingsApiV1BookingsGet({
-        query: {},
-      }).catch(() => ({ data: { items: [] } })),
+        query: { limit: 100 },
+      }).catch((error) => {
+        console.error("[Host Analytics] Failed to fetch listings:", error);
+        return { data: { items: [] } };
+      }),
+      listHostBookingsApiV1BookingsHostListingsGet({
+        query: { limit: 100 },
+      }).catch((error) => {
+        console.error("[Host Analytics] Failed to fetch host bookings:", error);
+        return { data: { items: [] } };
+      }),
     ]);
 
+    // Filter listings by host (client-side - API limitation)
     const allListings = listingsResult?.data?.items || [];
-    const allBookings = bookingsResult?.data?.items || [];
-    
     const listings = allListings.filter((listing: any) => 
       listing.host_id === user.id || listing.host?.id === user.id
     );
-    const bookings = allBookings.filter((booking: any) => 
-      booking.host_id === user.id || booking.listing?.host_id === user.id
-    );
+    
+    // Bookings are already filtered server-side
+    const bookings = bookingsResult?.data?.items || [];
 
     return <HostAnalytics listings={listings} bookings={bookings} />;
   } catch (error) {
+    console.error("[Host Analytics] Unexpected error:", error);
     return <HostAnalytics listings={[]} bookings={[]} />;
   }
 }

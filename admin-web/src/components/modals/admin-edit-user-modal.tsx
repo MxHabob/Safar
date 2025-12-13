@@ -19,7 +19,7 @@ const Schema = z.object({
   email: z.string().email().optional(),
   first_name: z.string().optional(),
   last_name: z.string().optional(),
-  role: z.enum(["guest", "host", "admin", "super_admin"]).optional(),
+  role: z.enum(["guest", "host", "admin", "super_admin", "agency"]).optional(),
   status: z.enum(["active", "inactive", "suspended", "pending_verification"]).optional(),
   is_active: z.boolean().optional(),
 })
@@ -100,6 +100,7 @@ export function AdminEditUserModal() {
                     <SelectItem value="host">Host</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                     <SelectItem value="super_admin">Super Admin</SelectItem>
+                    <SelectItem value="agency">Agency</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

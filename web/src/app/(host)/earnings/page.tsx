@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
 import { HostEarnings, HostEarningsLoading } from "@/features/host/components/host-earnings";
-import { listBookingsApiV1BookingsGet } from "@/generated/actions/bookings";
+import { listHostBookingsApiV1BookingsHostListingsGet } from "@/generated/actions/bookings";
 import { getCurrentUser } from "@/lib/auth/server/session";
 
 export const metadata: Metadata = {
@@ -23,17 +23,20 @@ async function EarningsData() {
   }
 
   try {
-    const bookingsResult = await listBookingsApiV1BookingsGet({
-      query: {},
-    }).catch(() => ({ data: { items: [] } }));
+    // Use server-side filtering via host bookings endpoint
+    const bookingsResult = await listHostBookingsApiV1BookingsHostListingsGet({
+      query: { limit: 100 },
+    }).catch((error) => {
+      console.error("[Host Earnings] Failed to fetch host bookings:", error);
+      return { data: { items: [] } };
+    });
 
-    const allBookings = bookingsResult?.data?.items || [];
-    const bookings = allBookings.filter((booking: any) => 
-      booking.host_id === user.id || booking.listing?.host_id === user.id
-    );
+    // Bookings are already filtered server-side
+    const bookings = bookingsResult?.data?.items || [];
 
     return <HostEarnings bookings={bookings} />;
   } catch (error) {
+    console.error("[Host Earnings] Unexpected error:", error);
     return <HostEarnings bookings={[]} />;
   }
 }
