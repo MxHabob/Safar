@@ -26,7 +26,7 @@ import { useAuth } from "@/lib/auth/client"
  */
 export function NavUser() {
   const { isMobile } = useSidebar()
-  const { user, isLoading, isAuthenticated, logout } = useAuth()
+  const { user, isLoading, logout } = useAuth()
   const { onOpen, onClose } = useModal()
   const router = useRouter()
 

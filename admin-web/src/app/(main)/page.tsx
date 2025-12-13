@@ -54,11 +54,11 @@ export default async function AdminPage() {
         </div>
       }
     >
-      {/* <DashboardPage
+      <DashboardPage
         initialMetrics={metrics}
         initialTrends={trends}
         initialDestinations={destinations}
-      /> */}
+      />
     </Suspense>
   );
 }
