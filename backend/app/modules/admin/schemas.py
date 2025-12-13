@@ -3,7 +3,7 @@ Admin API schemas for request/response models.
 """
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 from app.modules.users.models import UserRole, UserStatus
 from app.modules.listings.models import ListingStatus
 from app.modules.bookings.models import BookingStatus, PaymentMethodType, PaymentStatus
@@ -124,6 +124,24 @@ class AdminListingResponse(BaseModel):
     review_count: int
     created_at: datetime
     updated_at: datetime
+    
+    @model_validator(mode='before')
+    @classmethod
+    def map_base_price_to_price_per_night(cls, data: Any) -> Any:
+        """Map base_price to price_per_night for compatibility."""
+        if isinstance(data, dict):
+            if 'base_price' in data and 'price_per_night' not in data:
+                data['price_per_night'] = float(data['base_price']) if data['base_price'] is not None else 0.0
+        elif hasattr(data, 'base_price'):
+            # For SQLAlchemy models: if price_per_night property doesn't exist or isn't accessible,
+            # map from base_price
+            if not hasattr(data, 'price_per_night') or not isinstance(getattr(type(data), 'price_per_night', None), property):
+                base_price = getattr(data, 'base_price', None)
+                if base_price is not None:
+                    setattr(data, 'price_per_night', float(base_price))
+                else:
+                    setattr(data, 'price_per_night', 0.0)
+        return data
 
 
 class AdminListingListResponse(BaseModel):

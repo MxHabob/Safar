@@ -117,6 +117,14 @@ class Listing(BaseModel):
     # Metadata
     listing_metadata = Column("metadata", JSONB, default=dict, nullable=True)
     
+    # Computed properties for API compatibility
+    @property
+    def price_per_night(self) -> float:
+        """Alias for base_price to match AdminListingResponse schema."""
+        if self.base_price is None:
+            return 0.0
+        return float(self.base_price)
+    
     # Relationships - Existing
     host = relationship("User", foreign_keys=[host_id], lazy="selectin")
     host_profile = relationship("HostProfile", foreign_keys=[host_profile_id], lazy="selectin")
