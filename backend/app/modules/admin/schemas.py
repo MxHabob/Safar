@@ -230,9 +230,29 @@ class AdminPaymentResponse(BaseModel):
     booking_id: ID
     amount: float
     status: PaymentStatus
-    method: PaymentMethodType
+    method: Optional[PaymentMethodType] = None
     created_at: datetime
     completed_at: Optional[datetime] = None
+    
+    @model_validator(mode='before')
+    @classmethod
+    def map_payment_method_to_method(cls, data: Any) -> Any:
+        """Map payment_method enum to method field, handling relationship name conflict."""
+        if isinstance(data, dict):
+            # For dict input, map payment_method to method
+            if 'payment_method' in data and 'method' not in data:
+                data['method'] = data['payment_method']
+        elif hasattr(data, 'payment_method'):
+            # For SQLAlchemy models: payment_method is the enum column
+            # method is the relationship, so we need to get the enum value
+            payment_method_enum = getattr(data, 'payment_method', None)
+            # Override the method attribute with the enum value (not the relationship)
+            if payment_method_enum is not None:
+                # Temporarily store the relationship if it exists
+                method_rel = getattr(data, 'method', None) if hasattr(data, 'method') else None
+                # Set method to the enum value
+                setattr(data, 'method', payment_method_enum)
+        return data
 
 
 class AdminPaymentListResponse(BaseModel):
