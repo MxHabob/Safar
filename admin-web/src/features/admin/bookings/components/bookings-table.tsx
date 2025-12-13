@@ -9,6 +9,7 @@ import {
   useReactTable,
   SortingState,
   PaginationState,
+  OnChangeFn,
 } from "@tanstack/react-table";
 import {
   Table,
@@ -23,14 +24,15 @@ import type { AdminBookingResponse } from "@/generated/schemas";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { BookingActionsDropdown } from "./bookings-actions-dropdown";
 
 interface BookingsTableProps {
   bookings: AdminBookingResponse[];
   totalRows: number;
   sorting: SortingState;
-  onSort: (sorting: SortingState) => void;
+  onSort: OnChangeFn<SortingState>;
   pagination: PaginationState;
-  onPaginationChange: (pagination: PaginationState) => void;
+  onPaginationChange: OnChangeFn<PaginationState>;
   pageCount: number;
   isLoading?: boolean;
 }

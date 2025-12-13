@@ -242,16 +242,36 @@ class AdminPaymentResponse(BaseModel):
             # For dict input, map payment_method to method
             if 'payment_method' in data and 'method' not in data:
                 data['method'] = data['payment_method']
-        elif hasattr(data, 'payment_method'):
-            # For SQLAlchemy models: payment_method is the enum column
-            # method is the relationship, so we need to get the enum value
+        elif hasattr(data, '_sa_instance_state'):
+            # For SQLAlchemy models: convert to dict to avoid relationship conflicts
+            # payment_method is the enum column, method is the relationship
+            from sqlalchemy.inspection import inspect
+            
+            mapper = inspect(data.__class__)
+            data_dict = {}
+            
+            # Extract all column values
+            for column in mapper.columns:
+                value = getattr(data, column.key, None)
+                if value is not None:
+                    data_dict[column.key] = value
+            
+            # Get payment_method enum value
             payment_method_enum = getattr(data, 'payment_method', None)
-            # Override the method attribute with the enum value (not the relationship)
-            if payment_method_enum is not None:
-                # Temporarily store the relationship if it exists
-                method_rel = getattr(data, 'method', None) if hasattr(data, 'method') else None
-                # Set method to the enum value
-                setattr(data, 'method', payment_method_enum)
+            
+            # Map payment_method to method in the dict (override any relationship)
+            data_dict['method'] = payment_method_enum
+            
+            # Ensure all required fields are present
+            for key in ['id', 'booking_id', 'amount', 'status', 'created_at']:
+                if key not in data_dict and hasattr(data, key):
+                    data_dict[key] = getattr(data, key)
+            
+            # Add optional fields
+            if hasattr(data, 'captured_at'):
+                data_dict['completed_at'] = getattr(data, 'captured_at', None)
+            
+            return data_dict
         return data
 
 
