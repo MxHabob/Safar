@@ -9,7 +9,7 @@ import Link from "next/link";
 import { UserLoginSchema } from "@/generated/schemas";
 import { useAuth } from "@/lib/auth/client/provider";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { ActionButton } from "@/components/ui/action-button";
 import {
   Form,
   FormControl,
@@ -177,23 +177,15 @@ export function SignInView() {
                   </Alert>
                 )}
 
-                <Button
+                <ActionButton
                   type="submit"
+                  loading={pending}
+                  loadingText="Signing in..."
+                  icon={ArrowRight}
                   className="w-full h-11 rounded-[18px] font-light"
-                  disabled={pending}
                 >
-                  {pending ? (
-                    <>
-                      <Spinner className="size-4" />
-                      <span>Signing in...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Sign in</span>
-                      <ArrowRight className="size-4" />
-                    </>
-                  )}
-                </Button>
+                  Sign in
+                </ActionButton>
               </form>
             </Form>
 

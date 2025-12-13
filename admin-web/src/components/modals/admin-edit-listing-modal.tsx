@@ -3,6 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { ActionButton } from "@/components/ui/action-button"
 import { Label } from "@/components/ui/label"
 import { useModal } from "@/lib/stores/modal-store"
 import { useForm } from "react-hook-form"
@@ -94,13 +95,15 @@ export function AdminEditListingModal() {
             <Button variant="outline" type="button" onClick={onClose} disabled={isSubmitting} className="rounded-xl h-9 px-4 text-sm">
               Cancel
             </Button>
-            <Button
+            <ActionButton
               type="submit"
-              disabled={isSubmitting}
+              loading={isSubmitting}
+              icon={Save}
+              loadingText="Saving..."
               className="rounded-xl h-9 px-4 text-sm"
             >
-              {isSubmitting ? "Saving..." : "Save"}
-            </Button>
+              Save
+            </ActionButton>
           </DialogFooter>
         </form>
       </DialogContent>

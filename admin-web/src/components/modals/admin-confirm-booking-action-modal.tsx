@@ -2,6 +2,7 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { ActionButton } from "@/components/ui/action-button"
 import { useModal } from "@/lib/stores/modal-store"
 import { useQueryClient } from "@tanstack/react-query"
 import { X } from "lucide-react"
@@ -52,20 +53,20 @@ export function AdminConfirmBookingActionModal() {
           </div>
         </DialogHeader>
         <DialogDescription className="text-sm text-zinc-400">
-          This will cancel booking {data?.bookingId || "this booking"}. The guest will be notified and any refunds will be processed according to the cancellation policy.
+          This will cancel booking {typeof data?.bookingId === 'string' ? data.bookingId : "this booking"}. The guest will be notified and any refunds will be processed according to the cancellation policy.
         </DialogDescription>
         <DialogFooter className="pt-2">
           <Button variant="outline" onClick={onClose} className="rounded-xl h-9 px-4 text-sm">
             Cancel
           </Button>
-          <Button
+          <ActionButton
             onClick={onConfirm}
             variant="destructive"
+            icon={X}
             className="rounded-xl h-9 px-4 text-sm"
           >
-            <X className="mr-2 h-4 w-4" />
             Cancel Booking
-          </Button>
+          </ActionButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

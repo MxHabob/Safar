@@ -1,11 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { Button, ButtonProps } from "@/components/ui/button"
+import { Button, ButtonProps, buttonVariants } from "@/components/ui/button"
+import { type VariantProps } from "class-variance-authority"
 import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-interface ActionButtonProps extends ButtonProps {
+interface ActionButtonProps extends ButtonProps, VariantProps<typeof buttonVariants> {
   loading?: boolean
   loadingText?: string
   icon?: React.ComponentType<{ className?: string }>

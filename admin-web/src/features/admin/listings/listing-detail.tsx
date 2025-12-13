@@ -220,20 +220,6 @@ export function ListingDetailPage({ initialListingData }: ListingDetailPageProps
                 <div className="font-medium">{listing.country}</div>
               </div>
             )}
-            {listing.address && (
-              <div>
-                <div className="text-sm text-muted-foreground">Address</div>
-                <div className="font-medium">{listing.address}</div>
-              </div>
-            )}
-            {listing.latitude && listing.longitude && (
-              <div>
-                <div className="text-sm text-muted-foreground">Coordinates</div>
-                <div className="font-mono text-sm">
-                  {listing.latitude.toFixed(6)}, {listing.longitude.toFixed(6)}
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
 
@@ -249,34 +235,9 @@ export function ListingDetailPage({ initialListingData }: ListingDetailPageProps
               <div className="text-sm text-muted-foreground">Host ID</div>
               <div className="font-mono text-sm font-medium">{listing.host_id}</div>
             </div>
-            {listing.host_name && (
-              <div>
-                <div className="text-sm text-muted-foreground">Host Name</div>
-                <div className="font-medium">{listing.host_name}</div>
-              </div>
-            )}
-            {listing.host_email && (
-              <div>
-                <div className="text-sm text-muted-foreground">Host Email</div>
-                <div className="font-medium">{listing.host_email}</div>
-              </div>
-            )}
           </CardContent>
         </Card>
 
-        {listing.description && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Description
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm leading-relaxed">{listing.description}</p>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );

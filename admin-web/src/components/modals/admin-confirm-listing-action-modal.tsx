@@ -2,6 +2,7 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { ActionButton } from "@/components/ui/action-button"
 import { useModal } from "@/lib/stores/modal-store"
 import { useQueryClient } from "@tanstack/react-query"
 import { Trash2, Ban } from "lucide-react"
@@ -52,20 +53,20 @@ export function AdminConfirmListingActionModal() {
           </div>
         </DialogHeader>
         <DialogDescription className="text-sm text-zinc-400">
-          This will permanently delete {data?.listingTitle || "this listing"}. This action cannot be undone.
+          This will permanently delete {typeof data?.listingTitle === 'string' ? data.listingTitle : "this listing"}. This action cannot be undone.
         </DialogDescription>
         <DialogFooter className="pt-2">
           <Button variant="outline" onClick={onClose} className="rounded-xl h-9 px-4 text-sm">
             Cancel
           </Button>
-          <Button
+          <ActionButton
             onClick={onConfirm}
             variant="destructive"
+            icon={Trash2}
             className="rounded-xl h-9 px-4 text-sm"
           >
-            <Trash2 className="mr-2 h-4 w-4" />
             Delete
-          </Button>
+          </ActionButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

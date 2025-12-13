@@ -164,15 +164,15 @@ export function BookingDetailPage({ initialBookingData }: BookingDetailPageProps
             </div>
             <div>
               <div className="text-sm text-muted-foreground">Check-in Date</div>
-              <div className="font-medium">{formatDate(booking.check_in_date)}</div>
+              <div className="font-medium">{formatDate(booking.check_in)}</div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">Check-out Date</div>
-              <div className="font-medium">{formatDate(booking.check_out_date)}</div>
+              <div className="font-medium">{formatDate(booking.check_out)}</div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">Number of Guests</div>
-              <div className="font-medium">{booking.number_of_guests || "N/A"}</div>
+              <div className="font-medium">{booking.guests || "N/A"}</div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">Total Amount</div>
@@ -187,12 +187,6 @@ export function BookingDetailPage({ initialBookingData }: BookingDetailPageProps
               <div className="text-sm text-muted-foreground">Created At</div>
               <div className="font-medium">{formatDate(booking.created_at)}</div>
             </div>
-            {booking.updated_at && (
-              <div>
-                <div className="text-sm text-muted-foreground">Last Updated</div>
-                <div className="font-medium">{formatDate(booking.updated_at)}</div>
-              </div>
-            )}
           </CardContent>
         </Card>
 
@@ -208,18 +202,10 @@ export function BookingDetailPage({ initialBookingData }: BookingDetailPageProps
               <div className="text-sm text-muted-foreground">Guest ID</div>
               <div className="font-mono text-sm font-medium">{booking.guest_id}</div>
             </div>
-            {booking.guest_email && (
-              <div>
-                <div className="text-sm text-muted-foreground">Guest Email</div>
-                <div className="font-medium">{booking.guest_email}</div>
-              </div>
-            )}
-            {booking.guest_name && (
-              <div>
-                <div className="text-sm text-muted-foreground">Guest Name</div>
-                <div className="font-medium">{booking.guest_name}</div>
-              </div>
-            )}
+            <div>
+              <div className="text-sm text-muted-foreground">Host ID</div>
+              <div className="font-mono text-sm font-medium">{booking.host_id}</div>
+            </div>
           </CardContent>
         </Card>
 
@@ -235,49 +221,9 @@ export function BookingDetailPage({ initialBookingData }: BookingDetailPageProps
               <div className="text-sm text-muted-foreground">Listing ID</div>
               <div className="font-mono text-sm font-medium">{booking.listing_id}</div>
             </div>
-            {booking.listing_title && (
-              <div>
-                <div className="text-sm text-muted-foreground">Listing Title</div>
-                <div className="font-medium">{booking.listing_title}</div>
-              </div>
-            )}
-            {booking.listing_location && (
-              <div>
-                <div className="text-sm text-muted-foreground">Location</div>
-                <div className="font-medium">{booking.listing_location}</div>
-              </div>
-            )}
           </CardContent>
         </Card>
 
-        {booking.payment_status && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Payment Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <div className="text-sm text-muted-foreground">Payment Status</div>
-                <div className="mt-1">
-                  <Badge variant={booking.payment_status === "completed" ? "default" : "secondary"}>
-                    {booking.payment_status}
-                  </Badge>
-                </div>
-              </div>
-              {booking.payment_method && (
-                <div>
-                  <div className="text-sm text-muted-foreground">Payment Method</div>
-                  <div className="font-medium capitalize">
-                    {booking.payment_method.replace("_", " ")}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );

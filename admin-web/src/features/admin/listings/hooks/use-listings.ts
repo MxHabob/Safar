@@ -191,9 +191,9 @@ export function useListings({ initialListingsData }: UseListingsProps = {}) {
       query: {
         search: searchParams.search || undefined,
         status:
-          (searchParams.status !== "all"
+          searchParams.status !== "all"
             ? searchParams.status
-            : "all") as unknown,
+            : undefined,
       },
     },
     sorting,

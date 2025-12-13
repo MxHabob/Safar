@@ -2,6 +2,7 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { ActionButton } from "@/components/ui/action-button"
 import { useModal } from "@/lib/stores/modal-store"
 import { useQueryClient } from "@tanstack/react-query"
 import { RotateCcw } from "lucide-react"
@@ -52,20 +53,20 @@ export function AdminConfirmPaymentActionModal() {
           </div>
         </DialogHeader>
         <DialogDescription className="text-sm text-zinc-400">
-          This will refund payment {data?.paymentId || "this payment"}. The amount of ${data?.amount?.toLocaleString() || "0.00"} will be returned to the customer. This action cannot be undone.
+          This will refund payment {typeof data?.paymentId === 'string' ? data.paymentId : "this payment"}. The amount of ${typeof data?.amount === 'number' ? data.amount.toLocaleString() : "0.00"} will be returned to the customer. This action cannot be undone.
         </DialogDescription>
         <DialogFooter className="pt-2">
           <Button variant="outline" onClick={onClose} className="rounded-xl h-9 px-4 text-sm">
             Cancel
           </Button>
-          <Button
+          <ActionButton
             onClick={onConfirm}
             variant="default"
+            icon={RotateCcw}
             className="rounded-xl h-9 px-4 text-sm"
           >
-            <RotateCcw className="mr-2 h-4 w-4" />
             Process Refund
-          </Button>
+          </ActionButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

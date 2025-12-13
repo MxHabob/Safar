@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { ActionButton } from "@/components/ui/action-button";
 import {
   Form,
   FormControl,
@@ -149,23 +149,15 @@ export function ForgotPasswordView() {
                   </Alert>
                 )}
 
-                <Button
+                <ActionButton
                   type="submit"
+                  loading={requestPasswordResetMutation.isPending}
+                  loadingText="Sending..."
+                  icon={ArrowRight}
                   className="w-full h-11 rounded-[18px] font-light"
-                  disabled={requestPasswordResetMutation.isPending}
                 >
-                  {requestPasswordResetMutation.isPending ? (
-                    <>
-                      <Spinner className="size-4" />
-                      <span>Sending...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Send reset link</span>
-                      <ArrowRight className="size-4" />
-                    </>
-                  )}
-                </Button>
+                  Send reset link
+                </ActionButton>
               </form>
             </Form>
 

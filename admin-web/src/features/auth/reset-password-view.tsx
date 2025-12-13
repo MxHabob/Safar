@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { ActionButton } from "@/components/ui/action-button";
 import {
   Form,
   FormControl,
@@ -177,23 +177,16 @@ export function ResetPasswordView() {
                   </Alert>
                 )}
 
-                <Button
+                <ActionButton
                   type="submit"
+                  loading={resetPasswordMutation.isPending}
+                  loadingText="Resetting..."
+                  icon={ArrowRight}
+                  disabled={!code || !email}
                   className="w-full h-11 rounded-[18px] font-light"
-                  disabled={resetPasswordMutation.isPending || !code || !email}
                 >
-                  {resetPasswordMutation.isPending ? (
-                    <>
-                      <Spinner className="size-4" />
-                      <span>Resetting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Reset password</span>
-                      <ArrowRight className="size-4" />
-                    </>
-                  )}
-                </Button>
+                  Reset password
+                </ActionButton>
               </form>
             </Form>
 

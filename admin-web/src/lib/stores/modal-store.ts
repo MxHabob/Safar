@@ -22,6 +22,8 @@ export type ModalType =
   | "languagePicker"
   | "analysisFeedback"
   | "confirm"
+  | "mapboxToolbar"
+  | "youtubeToolbar"
 
 export interface ShareResultModalPayload {
   id: string

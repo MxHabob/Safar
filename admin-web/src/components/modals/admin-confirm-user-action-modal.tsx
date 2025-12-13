@@ -39,20 +39,22 @@ export function AdminConfirmUserActionModal() {
   const busy = activateMutation.isPending || suspendMutation.isPending
 
   const title = isSuspend ? "Suspend user" : isActivate ? "Activate user" : "Delete user"
+  const userEmail = typeof data?.userEmail === 'string' ? data.userEmail : "this user"
   const description = isSuspend
-    ? `This will suspend ${data?.userEmail || "this user"}. They won't be able to sign in until reactivated.`
+    ? `This will suspend ${userEmail}. They won't be able to sign in until reactivated.`
     : isActivate
-    ? `This will activate ${data?.userEmail || "this user"} and restore access.`
-    : `This will permanently suspend ${data?.userEmail || "this user"}. This action may be irreversible.`
+    ? `This will activate ${userEmail} and restore access.`
+    : `This will permanently suspend ${userEmail}. This action may be irreversible.`
 
   const onConfirm = async () => {
-    if (!data?.userId) return
+    if (!data?.userId || typeof data.userId !== 'string') return
+    const userId = data.userId
     if (isSuspend) {
-      await suspendMutation.mutateAsync({ path: { user_id: data.userId } })
+      await suspendMutation.mutateAsync({ path: { user_id: userId } })
     } else if (isActivate) {
-      await activateMutation.mutateAsync({ path: { user_id: data.userId } })
+      await activateMutation.mutateAsync({ path: { user_id: userId } })
     } else if (isDelete) {
-      await suspendMutation.mutateAsync({ path: { user_id: data.userId } })
+      await suspendMutation.mutateAsync({ path: { user_id: userId } })
     }
   }
 

@@ -8,8 +8,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { UserCreateSchema } from "@/generated/schemas";
 import { useAuth } from "@/lib/auth/client/provider";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { ActionButton } from "@/components/ui/action-button";
 import {
   Form,
   FormControl,
@@ -237,23 +236,15 @@ export function SignUpView() {
                   </Alert>
                 )}
 
-                <Button
+                <ActionButton
                   type="submit"
+                  loading={pending}
+                  loadingText="Creating account..."
+                  icon={ArrowRight}
                   className="w-full h-11 rounded-[18px] font-light"
-                  disabled={pending}
                 >
-                  {pending ? (
-                    <>
-                      <Spinner className="size-4" />
-                      <span>Creating account...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Create account</span>
-                      <ArrowRight className="size-4" />
-                    </>
-                  )}
-                </Button>
+                  Create account
+                </ActionButton>
               </form>
             </Form>
 

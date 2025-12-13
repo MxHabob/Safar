@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { ActionButton } from "@/components/ui/action-button";
 import {
   Form,
   FormControl,
@@ -16,7 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { OctagonAlert, Shield, ArrowRight } from "lucide-react";
 import Graphic from "@/components/shared/graphic";
@@ -114,20 +114,24 @@ export function Verify2FAView() {
                     <FormItem>
                       <FormLabel className="text-sm font-light">Verification code</FormLabel>
                       <FormControl>
-                        <div className="relative">
-                          <Shield className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                          <Input
-                            placeholder="000000"
-                            type="text"
+                        <div className="flex justify-center">
+                          <InputOTP
+                            value={field.value}
+                            onChange={field.onChange}
                             maxLength={6}
-                            className="pl-10 h-11 rounded-[18px] border-input bg-background focus-visible:ring-2 focus-visible:ring-ring/50 text-center text-2xl tracking-widest"
-                            {...field}
-                            onChange={(e) => {
-                              // Only allow digits
-                              const value = e.target.value.replace(/\D/g, '');
-                              field.onChange(value);
-                            }}
-                          />
+                            containerClassName="w-full justify-center"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                          >
+                            <InputOTPGroup>
+                              <InputOTPSlot index={0} />
+                              <InputOTPSlot index={1} />
+                              <InputOTPSlot index={2} />
+                              <InputOTPSlot index={3} />
+                              <InputOTPSlot index={4} />
+                              <InputOTPSlot index={5} />
+                            </InputOTPGroup>
+                          </InputOTP>
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -164,23 +168,15 @@ export function Verify2FAView() {
                   </Alert>
                 )}
 
-                <Button
+                <ActionButton
                   type="submit"
+                  loading={pending}
+                  loadingText="Verifying..."
+                  icon={ArrowRight}
                   className="w-full h-11 rounded-[18px] font-light"
-                  disabled={pending}
                 >
-                  {pending ? (
-                    <>
-                      <Spinner className="size-4" />
-                      <span>Verifying...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Verify</span>
-                      <ArrowRight className="size-4" />
-                    </>
-                  )}
-                </Button>
+                  Verify
+                </ActionButton>
               </form>
             </Form>
 

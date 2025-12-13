@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { ActionButton } from "@/components/ui/action-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useGetCurrentUserInfoApiV1UsersMeGet, useGet2faStatusApiV1Users2faStatusGet, useDisable2faApiV1Users2faDisablePostMutation, useResendEmailVerificationApiV1UsersEmailResendVerificationPostMutation } from "@/generated/hooks/users";
@@ -107,23 +108,24 @@ export function SecuritySection({ initialUser }: SecuritySectionProps) {
           </div>
           <div className="flex flex-col gap-2">
             {isMfaEnabled ? (
-              <Button
+              <ActionButton
                 onClick={handleDisableMfa}
                 variant="outline"
+                loading={disableMfaMutation.isPending}
+                loadingText="Disabling..."
                 className="rounded-xl h-9"
-                disabled={disableMfaMutation.isPending}
               >
-                {disableMfaMutation.isPending ? "Disabling..." : "Disable MFA"}
-              </Button>
+                Disable MFA
+              </ActionButton>
             ) : (
-              <Button
+              <ActionButton
                 onClick={handleEnableMfa}
                 variant="default"
+                icon={Shield}
                 className="rounded-xl h-9"
               >
-                <Shield className="h-4 w-4 mr-2" />
                 Enable MFA
-              </Button>
+              </ActionButton>
             )}
           </div>
         </div>
@@ -155,16 +157,17 @@ export function SecuritySection({ initialUser }: SecuritySectionProps) {
             </p>
           </div>
           {!user?.is_email_verified && (
-            <Button
+            <ActionButton
               variant="outline"
               className="rounded-xl h-9"
               onClick={() => {
                 resendEmailMutation.mutate({ email: user?.email || "" });
               }}
-              disabled={resendEmailMutation.isPending}
+              loading={resendEmailMutation.isPending}
+              loadingText="Sending..."
             >
-              {resendEmailMutation.isPending ? "Sending..." : "Resend Verification"}
-            </Button>
+              Resend Verification
+            </ActionButton>
           )}
         </div>
       </div>
