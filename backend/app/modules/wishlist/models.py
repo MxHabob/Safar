@@ -7,9 +7,15 @@ from sqlalchemy import (
     Index, ForeignKey, Text
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 import secrets
 
 from app.shared.base import BaseModel
+
+
+def generate_share_token():
+    """Generate a secure share token."""
+    return secrets.token_urlsafe(32)
 
 
 class Wishlist(BaseModel):
@@ -42,7 +48,7 @@ class WishlistShare(BaseModel):
     shared_by_user_id = Column(String(40), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     shared_with_user_id = Column(String(40), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
     shared_with_email = Column(String(255), nullable=True, index=True)
-    share_token = Column(String(64), unique=True, nullable=False, index=True)
+    share_token = Column(String(128), unique=True, nullable=False, index=True, default=generate_share_token)
     permission = Column(String(20), default="view", nullable=False)  # view, edit
     expires_at = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False, index=True)
@@ -56,10 +62,4 @@ class WishlistShare(BaseModel):
         Index("idx_wishlist_share_token", "share_token", unique=True),
         Index("idx_wishlist_share_active", "is_active", "expires_at"),
     )
-    
-    def __init__(self, **kwargs):
-        """Generate share token on creation if not provided."""
-        if 'share_token' not in kwargs or not kwargs.get('share_token'):
-            kwargs['share_token'] = secrets.token_urlsafe(32)
-        super().__init__(**kwargs)
 
