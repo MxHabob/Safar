@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { ActionButton } from "@/components/shared/action-button";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Mail, ArrowRight, CheckCircle2, OctagonAlert, Loader2 } from "lucide-react";
@@ -109,10 +109,10 @@ export function VerifyEmailView() {
                   </p>
                 </div>
                 <Link href="/login">
-                  <Button className="w-full h-11 rounded-[18px] font-light">
+                  <ActionButton className="w-full h-11 rounded-[18px] font-light">
                     Go to sign in
                     <ArrowRight className="size-4" />
-                  </Button>
+                  </ActionButton>
                 </Link>
               </>
             )}
@@ -132,18 +132,18 @@ export function VerifyEmailView() {
                   </Alert>
                 )}
                 {email && (
-                  <Button
+                  <ActionButton
                     onClick={resendVerification}
                     variant="outline"
                     className="w-full h-11 rounded-[18px] font-light"
                   >
                     Resend verification email
-                  </Button>
+                  </ActionButton>
                 )}
                 <Link href="/login">
-                  <Button variant="ghost" className="w-full h-11 rounded-[18px] font-light">
+                  <ActionButton variant="ghost" className="w-full h-11 rounded-[18px] font-light">
                     Back to sign in
-                  </Button>
+                  </ActionButton>
                 </Link>
               </>
             )}
@@ -180,34 +180,29 @@ export function VerifyEmailView() {
                       </InputOTPGroup>
                     </InputOTP>
                   </div>
-                  <Button
+                  <ActionButton
                     type="submit"
+                    loading={verifyEmailMutation.isPending}
+                    loadingText="Verifying..."
+                    disabled={!codeInput.trim()}
                     className="w-full h-11 rounded-[18px] font-light"
-                    disabled={!codeInput.trim() || verifyEmailMutation.isPending}
                   >
-                    {verifyEmailMutation.isPending ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="size-4 animate-spin" />
-                        Verifying...
-                      </span>
-                    ) : (
-                      "Verify code"
-                    )}
-                  </Button>
+                    Verify code
+                  </ActionButton>
                 </form>
                 {email && (
-                  <Button
+                  <ActionButton
                     onClick={resendVerification}
                     variant="outline"
                     className="w-full h-11 rounded-[18px] font-light"
                   >
                     Resend verification email
-                  </Button>
+                  </ActionButton>
                 )}
                 <Link href="/login">
-                  <Button variant="ghost" className="w-full h-11 rounded-[18px] font-light">
+                  <ActionButton variant="ghost" className="w-full h-11 rounded-[18px] font-light">
                     Back to sign in
-                  </Button>
+                  </ActionButton>
                 </Link>
               </>
             )}

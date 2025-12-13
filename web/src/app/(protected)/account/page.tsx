@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth/server/session'
-import { AccountOverview } from '@/components/account/account-overview'
+import { AccountOverview } from '@/features/account/account-overview'
 
 export default async function AccountPage() {
   const user = await getCurrentUser()

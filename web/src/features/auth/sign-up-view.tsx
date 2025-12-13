@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { OctagonAlert, Mail, Lock, User, ArrowRight, CheckCircle2 } from "lucide-react";
 import Graphic from "@/components/shared/graphic";
-import { OAuthButtons } from "@/components/auth/oauth-buttons";
+import { OAuthButtons } from "@/features/auth/oauth-buttons";
 
 const SignUpSchema = UserCreateSchema.extend({
   confirmPassword: z.string().min(8, "Password must be at least 8 characters"),

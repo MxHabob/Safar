@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth/server/session'
-import { AccountSidebar } from '@/components/account/account-sidebar'
-import { MobileAccountNav } from '@/components/account/mobile-account-nav'
+import { AccountSidebar } from '@/features/account/account-sidebar'
+import { MobileAccountNav } from '@/features/account/mobile-account-nav'
 
 export default async function AccountLayout({
   children,

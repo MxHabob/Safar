@@ -1,4 +1,4 @@
-import { ProfileView } from '@/components/account/profile-view'
+import { ProfileView } from '@/features/account/profile-view'
 import { getCurrentUser } from '@/lib/auth/server/session'
 import { redirect } from 'next/navigation'
 

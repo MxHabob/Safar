@@ -8,8 +8,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { UserLoginSchema } from "@/generated/schemas";
 import { useAuth } from "@/lib/auth/client/provider";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { ActionButton } from "@/components/shared/action-button";
 import {
   Form,
   FormControl,
@@ -22,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { OctagonAlert, Mail, Lock, ArrowRight } from "lucide-react";
 import Graphic from "@/components/shared/graphic";
-import { OAuthButtons } from "@/components/auth/oauth-buttons";
+import { OAuthButtons } from "@/features/auth/oauth-buttons";
 
 export function SignInView() {
   const [error, setError] = useState<string | null>(null);
@@ -50,10 +49,15 @@ export function SignInView() {
       
       // Check if 2FA is required
       if (result.requires2FA) {
-        // Redirect to 2FA verification page
+        // Redirect to 2FA verification page with email from result or form
+        const email = (result as any).email || values.email;
         const params = new URLSearchParams({
-          email: values.email,
+          email: email,
         });
+        // Add userId if available
+        if ((result as any).userId) {
+          params.append('userId', (result as any).userId);
+        }
         router.push(`/verify-2fa?${params.toString()}`);
         return;
       }
@@ -172,23 +176,15 @@ export function SignInView() {
                   </Alert>
                 )}
 
-                <Button
+                <ActionButton
                   type="submit"
+                  loading={pending}
+                  loadingText="Signing in..."
+                  icon={ArrowRight}
                   className="w-full h-11 rounded-[18px] font-light"
-                  disabled={pending}
                 >
-                  {pending ? (
-                    <>
-                      <Spinner className="size-4" />
-                      <span>Signing in...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Sign in</span>
-                      <ArrowRight className="size-4" />
-                    </>
-                  )}
-                </Button>
+                  Sign in
+                </ActionButton>
               </form>
             </Form>
 
@@ -200,18 +196,7 @@ export function SignInView() {
                 <span className="bg-card px-2 text-muted-foreground font-light">Or</span>
               </div>
             </div>
-
             <OAuthButtons onError={setError} />
-
-            <div className="text-center text-sm font-light">
-              <span className="text-muted-foreground">Don't have an account? </span>
-              <Link
-                href="/register"
-                className="text-foreground hover:underline transition-colors"
-              >
-                Sign up
-              </Link>
-            </div>
           </div>
         </div>
       </div>

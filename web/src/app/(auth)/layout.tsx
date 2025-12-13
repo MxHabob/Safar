@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "@/lib/auth/server/session";
 
 export const metadata: Metadata = {
-  title: "Authentication - Safar",
+  title: "Authentication",
   description: "Sign in or create an account to access Safar",
   robots: {
     index: false,

@@ -1,4 +1,4 @@
-import { SettingsView } from '@/components/account/settings-view'
+import { SettingsView } from '@/features/account/settings-view'
 
 export default async function SettingsPage() {
 

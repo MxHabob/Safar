@@ -1,4 +1,4 @@
-import { SecurityView } from '@/components/account/security-view'
+import { SecurityView } from '@/features/account/security-view'
 
 export default async function SecurityPage() {
 

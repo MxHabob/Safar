@@ -1,4 +1,4 @@
-import { BookingsView } from '@/components/account/bookings-view'
+import { BookingsView } from '@/features/account/bookings-view'
 
 export default async function BookingsPage() {
   return (

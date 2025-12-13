@@ -1,4 +1,4 @@
-import { WishlistView } from '@/components/account/wishlist-view'
+import { WishlistView } from '@/features/account/wishlist-view'
 
 export default async function WishlistPage() {
 
