@@ -183,10 +183,7 @@ export function usePayments({ initialPaymentsData }: UsePaymentsProps = {}) {
     pageCount,
     filters: {
       query: {
-        status:
-          (searchParams.status !== "all"
-            ? searchParams.status
-            : "all") as unknown,
+        status: searchParams.status !== "all" ? searchParams.status : undefined,
       },
     },
     sorting,

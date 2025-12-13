@@ -347,9 +347,14 @@ export function BookingsTable({
         </Table>
       </div>
       <DataPagination
-        table={table}
-        totalRows={totalRows}
-        pageSize={pagination.pageSize}
+        page={pagination.pageIndex + 1}
+        totalPages={pageCount}
+        onPageChange={(page) => {
+          onPaginationChange({
+            ...pagination,
+            pageIndex: page - 1,
+          });
+        }}
       />
     </div>
   );

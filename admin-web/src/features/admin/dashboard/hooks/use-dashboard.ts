@@ -57,45 +57,44 @@ export function useDashboard({
 
   // Transform metrics data for easier consumption
   const metrics = useMemo(() => {
-    if (!metricsData?.data) return undefined;
+    if (!metricsData) return undefined;
 
-    const data = metricsData.data;
     return {
       bookings: {
-        total: data.bookings?.total || 0,
-        change: data.bookings?.change_percentage || 0,
-        completed: data.bookings?.completed || 0,
-        pending: data.bookings?.pending || 0,
+        total: metricsData.bookings?.total || 0,
+        change: metricsData.bookings?.change_percentage || 0,
+        completed: metricsData.bookings?.completed || 0,
+        pending: metricsData.bookings?.pending || 0,
       },
       revenue: {
-        total: data.revenue?.total || 0,
-        change: data.revenue?.change_percentage || 0,
-        this_month: data.revenue?.this_month || 0,
-        last_month: data.revenue?.last_month || 0,
+        total: metricsData.revenue?.total || 0,
+        change: metricsData.revenue?.change_percentage || 0,
+        this_month: metricsData.revenue?.this_month || 0,
+        last_month: metricsData.revenue?.last_month || 0,
       },
       users: {
-        total: data.users?.total || 0,
-        change: data.users?.change_percentage || 0,
-        active: data.users?.active || 0,
-        new: data.users?.new || 0,
+        total: metricsData.users?.total || 0,
+        change: metricsData.users?.change_percentage || 0,
+        active: metricsData.users?.active || 0,
+        new: metricsData.users?.new || 0,
       },
       listings: {
-        total: data.listings?.total || 0,
-        change: data.listings?.change_percentage || 0,
-        active: data.listings?.active || 0,
-        pending: data.listings?.pending || 0,
+        total: metricsData.listings?.total || 0,
+        change: metricsData.listings?.change_percentage || 0,
+        active: metricsData.listings?.active || 0,
+        pending: metricsData.listings?.pending || 0,
       },
     };
   }, [metricsData]);
 
   // Extract trends array
   const trends = useMemo(() => {
-    return trendsData?.data?.trends || [];
+    return trendsData?.trends || [];
   }, [trendsData]);
 
   // Extract destinations array
   const destinations = useMemo(() => {
-    return destinationsData?.data?.destinations || [];
+    return destinationsData?.destinations || [];
   }, [destinationsData]);
 
   return {

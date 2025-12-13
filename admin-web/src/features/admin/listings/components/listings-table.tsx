@@ -9,6 +9,7 @@ import {
   useReactTable,
   SortingState,
   PaginationState,
+  OnChangeFn,
 } from "@tanstack/react-table";
 import {
   Table,
@@ -39,9 +40,9 @@ interface ListingsTableProps {
   listings: AdminListingResponse[];
   totalRows: number;
   sorting: SortingState;
-  onSort: (sorting: SortingState) => void;
+  onSort: OnChangeFn<SortingState>;
   pagination: PaginationState;
-  onPaginationChange: (pagination: PaginationState) => void;
+  onPaginationChange: OnChangeFn<PaginationState>;
   pageCount: number;
   isLoading?: boolean;
 }
@@ -325,9 +326,14 @@ export function ListingsTable({
         </Table>
       </div>
       <DataPagination
-        table={table}
-        totalRows={totalRows}
-        pageSize={pagination.pageSize}
+        page={pagination.pageIndex + 1}
+        totalPages={pageCount}
+        onPageChange={(page) => {
+          onPaginationChange({
+            ...pagination,
+            pageIndex: page - 1,
+          });
+        }}
       />
     </div>
   );

@@ -9,6 +9,7 @@ import {
   useReactTable,
   SortingState,
   PaginationState,
+  OnChangeFn,
 } from "@tanstack/react-table";
 import {
   Table,
@@ -23,14 +24,15 @@ import type { AdminPaymentResponse } from "@/generated/schemas";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { PaymentActionsDropdown } from "./payments-actions-dropdown";
 
 interface PaymentsTableProps {
   payments: AdminPaymentResponse[];
   totalRows: number;
   sorting: SortingState;
-  onSort: (sorting: SortingState) => void;
+  onSort: OnChangeFn<SortingState>;
   pagination: PaginationState;
-  onPaginationChange: (pagination: PaginationState) => void;
+  onPaginationChange: OnChangeFn<PaginationState>;
   pageCount: number;
   isLoading?: boolean;
 }
@@ -315,9 +317,14 @@ export function PaymentsTable({
         </Table>
       </div>
       <DataPagination
-        table={table}
-        totalRows={totalRows}
-        pageSize={pagination.pageSize}
+        page={pagination.pageIndex + 1}
+        totalPages={pageCount}
+        onPageChange={(page) => {
+          onPaginationChange({
+            ...pagination,
+            pageIndex: page - 1,
+          });
+        }}
       />
     </div>
   );
