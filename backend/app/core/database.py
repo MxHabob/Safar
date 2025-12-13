@@ -88,6 +88,8 @@ except Exception as e:
 # Read Replica Engines (for read-only queries)
 read_replica_engines: List[AsyncEngine] = []
 read_replica_sessions: List[async_sessionmaker] = []
+# Mapping of session factories to their hostnames for better error messages
+read_replica_session_hostnames: dict = {}
 
 if settings.postgres_read_replica_enabled and settings.postgres_read_replica_url:
     # Parse comma-separated replica URLs or use single URL
@@ -114,15 +116,16 @@ if settings.postgres_read_replica_enabled and settings.postgres_read_replica_url
                     connect_args=replica_connect_args,
                 )
                 read_replica_engines.append(replica_engine)
-                read_replica_sessions.append(
-                    async_sessionmaker(
-                        replica_engine,
-                        class_=AsyncSession,
-                        expire_on_commit=False,
-                        autocommit=False,
-                        autoflush=False,
-                    )
+                replica_session = async_sessionmaker(
+                    replica_engine,
+                    class_=AsyncSession,
+                    expire_on_commit=False,
+                    autocommit=False,
+                    autoflush=False,
                 )
+                read_replica_sessions.append(replica_session)
+                # Store hostname mapping for error messages
+                read_replica_session_hostnames[replica_session] = replica_info['host']
                 logger.info(f"Read replica engine created for host: {replica_info['host']}:{replica_info['port']}")
             except Exception as e:
                 error_msg = str(e)
@@ -287,7 +290,19 @@ async def get_read_db() -> AsyncGenerator[AsyncSession, None]:
             finally:
                 await session.close()
     
+    # Get hostname from the replica session factory mapping for better error messages
+    replica_hostname = read_replica_session_hostnames.get(replica_session_factory, "unknown")
+    if replica_hostname == "unknown" and settings.postgres_read_replica_url:
+        # Fallback: try to get from settings
+        replica_urls = str(settings.postgres_read_replica_url).split(",")
+        if replica_urls:
+            db_info = parse_db_url(replica_urls[0].strip())
+            replica_hostname = db_info.get('host', 'unknown')
+    
     # Try to use read replica, with fallback to primary if it fails
+    last_replica_error = None
+    last_hostname = replica_hostname
+    
     for attempt in range(max_retries):
         try:
             # Use read replica
@@ -303,27 +318,28 @@ async def get_read_db() -> AsyncGenerator[AsyncSession, None]:
                     await session.close()
         except (OperationalError, Exception) as e:
             error_msg = str(e)
+            last_replica_error = error_msg
             # Check for DNS resolution or connection errors
             is_connection_error = any(
                 keyword in error_msg.lower() 
-                for keyword in ["name resolution", "gaierror", "temporary failure", "connection", "network", "unable to connect"]
+                for keyword in ["name resolution", "gaierror", "temporary failure", "connection", "network", "unable to connect", "dns"]
             )
             
             if is_connection_error:
-                # Try to extract hostname from error message
-                hostname = "unknown"
-                if "postgres-replica" in error_msg:
-                    # Extract replica hostname from error
-                    match = re.search(r"postgres-replica-\d+", error_msg)
-                    if match:
-                        hostname = match.group(0)
-                elif "postgres" in error_msg.lower():
-                    # Fallback: try to get from replica URL if available
-                    if settings.postgres_read_replica_url:
-                        replica_urls = str(settings.postgres_read_replica_url).split(",")
-                        if replica_urls:
-                            db_info = parse_db_url(replica_urls[0].strip())
-                            hostname = db_info.get('host', 'unknown')
+                # Try to extract hostname from error message as fallback
+                hostname = replica_hostname
+                if hostname == "unknown":
+                    # Try to extract from error message
+                    if "postgres-replica" in error_msg:
+                        match = re.search(r"postgres-replica-\d+", error_msg)
+                        if match:
+                            hostname = match.group(0)
+                    elif "postgres" in error_msg.lower():
+                        # Try to find any hostname in the error
+                        match = re.search(r"host[=:\s]+([a-zA-Z0-9\-\.]+)", error_msg, re.IGNORECASE)
+                        if match:
+                            hostname = match.group(1)
+                last_hostname = hostname
                 
                 if attempt < max_retries - 1:
                     logger.warning(
@@ -334,32 +350,35 @@ async def get_read_db() -> AsyncGenerator[AsyncSession, None]:
                     retry_delay *= 2  # Exponential backoff
                     continue
                 else:
-                    # All retries exhausted - fall back to primary database
+                    # All retries exhausted - will fall back to primary database below
                     logger.warning(
-                        f"All read replica connection attempts failed. "
-                        f"Falling back to primary database for host '{hostname}'."
+                        f"All read replica connection attempts failed for host '{hostname}'. "
+                        f"Falling back to primary database."
                     )
-                    # Fall back to primary database
-                    try:
-                        async with AsyncSessionLocal() as session:
-                            try:
-                                await session.execute(text("SELECT 1"))
-                                yield session
-                                return
-                            finally:
-                                await session.close()
-                    except Exception as primary_error:
-                        # Even primary database failed
-                        db_info = parse_db_url(settings.database_url)
-                        raise ConnectionError(
-                            f"Database connection failed after {max_retries} attempts: "
-                            f"Read replica host '{hostname}' and primary database '{db_info['host']}' both failed.\n"
-                            f"Please check your database configuration and network connectivity.\n"
-                            f"Read replica error: {error_msg}\n"
-                            f"Primary database error: {str(primary_error)}"
-                        ) from primary_error
-            # For non-connection errors, raise immediately
-            raise
+                    break  # Break out of retry loop to fall back to primary
+            else:
+                # For non-connection errors, raise immediately
+                raise
+    
+    # If we get here, all replica retries failed - fall back to primary database
+    try:
+        async with AsyncSessionLocal() as session:
+            try:
+                await session.execute(text("SELECT 1"))
+                yield session
+                return
+            finally:
+                await session.close()
+    except Exception as primary_error:
+        # Even primary database failed
+        db_info = parse_db_url(settings.database_url)
+        raise ConnectionError(
+            f"Database connection failed after {max_retries} attempts: "
+            f"Read replica host '{last_hostname}' and primary database '{db_info['host']}' both failed.\n"
+            f"Please check your database configuration and network connectivity.\n"
+            f"Read replica error: {last_replica_error or 'Unknown error'}\n"
+            f"Primary database error: {str(primary_error)}"
+        ) from primary_error
 
 
 DB_INIT_LOCK_KEY = 874512987  # Arbitrary constant for advisory lock
