@@ -48,11 +48,13 @@ def parse_db_url(db_url: str) -> dict:
 db_info = parse_db_url(settings.database_url)
 connect_args = {
     "command_timeout": 30,  # 30 seconds for query execution
+    "timeout": 10,  # 10 seconds for connection establishment (asyncpg-specific)
     "server_settings": {
         "default_transaction_isolation": "repeatable read"
     }
 } if settings.environment != "test" else {
-    "command_timeout": 30
+    "command_timeout": 30,
+    "timeout": 10
 }
 
 # Primary (Write) Engine
@@ -67,6 +69,7 @@ try:
         pool_pre_ping=True,
         pool_size=20,
         max_overflow=40,
+        pool_recycle=3600,  # Recycle connections after 1 hour to prevent stale connections
         connect_args=connect_args,
     )
     logger.info(f"Database engine created for host: {db_info['host']}:{db_info['port']}")
@@ -101,8 +104,10 @@ if settings.postgres_read_replica_enabled and settings.postgres_read_replica_url
             replica_info = parse_db_url(replica_url)
             replica_connect_args = {
                 "command_timeout": 30,
+                "timeout": 10,  # 10 seconds for connection establishment (asyncpg-specific)
             } if settings.environment != "test" else {
-                "command_timeout": 30
+                "command_timeout": 30,
+                "timeout": 10
             }
             try:
                 replica_engine = create_async_engine(
@@ -112,6 +117,7 @@ if settings.postgres_read_replica_enabled and settings.postgres_read_replica_url
                     pool_pre_ping=True,
                     pool_size=10,  # Smaller pool for read replicas
                     max_overflow=20,
+                    pool_recycle=3600,  # Recycle connections after 1 hour to prevent stale connections
                     # Read replicas use default isolation level (READ COMMITTED)
                     connect_args=replica_connect_args,
                 )
@@ -397,12 +403,28 @@ async def init_db() -> None:
         try:
             # Create all tables
             await conn.run_sync(Base.metadata.create_all)
+        except Exception:
+            # If an error occurs, rollback the transaction
+            # The advisory lock will be automatically released when the transaction ends
+            raise
         finally:
+            # Try to unlock, but don't fail if transaction is already aborted
+            # Advisory locks are automatically released when the transaction ends (commit/rollback)
             if lock_acquired:
-                await conn.execute(
-                    text("SELECT pg_advisory_unlock(:lock_id)"),
-                    {"lock_id": DB_INIT_LOCK_KEY},
-                )
+                try:
+                    await conn.execute(
+                        text("SELECT pg_advisory_unlock(:lock_id)"),
+                        {"lock_id": DB_INIT_LOCK_KEY},
+                    )
+                except Exception as unlock_error:
+                    # If transaction is aborted, the unlock will fail
+                    # This is fine - the lock will be released when the transaction ends
+                    error_msg = str(unlock_error).lower()
+                    if "current transaction is aborted" not in error_msg:
+                        # Only log if it's not the expected transaction aborted error
+                        logger.warning(
+                            f"Failed to unlock advisory lock (will be released automatically): {unlock_error}"
+                        )
 
 
 async def close_db() -> None:
