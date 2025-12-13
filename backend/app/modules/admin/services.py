@@ -410,6 +410,9 @@ class AdminService:
         # Apply pagination and ordering
         query = query.order_by(desc(Booking.created_at)).offset(skip).limit(limit)
         
+        # Eager load listing relationship for host_id access
+        query = query.options(selectinload(Booking.listing))
+        
         result = await db.execute(query)
         bookings = result.scalars().all()
         

@@ -128,6 +128,14 @@ class Booking(BaseModel):
     # Metadata
     booking_metadata = Column("metadata", JSONB, default=dict, nullable=True)
     
+    # Computed properties for API compatibility
+    @property
+    def host_id(self) -> Optional[str]:
+        """Get host_id from the related listing."""
+        if self.listing is None:
+            return None
+        return self.listing.host_id
+    
     # Relationships - Existing
     listing = relationship("Listing", foreign_keys=[listing_id], back_populates="bookings", lazy="selectin")
     guest = relationship("User", foreign_keys=[guest_id], back_populates="bookings_as_guest", lazy="selectin")

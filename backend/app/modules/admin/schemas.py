@@ -179,6 +179,25 @@ class AdminBookingResponse(BaseModel):
     guests: int
     total_amount: float
     created_at: datetime
+    
+    @model_validator(mode='before')
+    @classmethod
+    def map_listing_host_id(cls, data: Any) -> Any:
+        """Map host_id from listing relationship for compatibility."""
+        if isinstance(data, dict):
+            if 'listing' in data and isinstance(data['listing'], dict):
+                if 'host_id' in data['listing'] and 'host_id' not in data:
+                    data['host_id'] = data['listing']['host_id']
+        elif hasattr(data, 'listing'):
+            # For SQLAlchemy models: if host_id property doesn't exist or isn't accessible,
+            # get it from the listing relationship
+            if not hasattr(data, 'host_id') or not isinstance(getattr(type(data), 'host_id', None), property):
+                listing = getattr(data, 'listing', None)
+                if listing is not None:
+                    host_id = getattr(listing, 'host_id', None)
+                    if host_id is not None:
+                        setattr(data, 'host_id', host_id)
+        return data
 
 
 class AdminBookingListResponse(BaseModel):
