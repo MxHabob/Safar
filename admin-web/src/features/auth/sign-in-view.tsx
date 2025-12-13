@@ -197,18 +197,7 @@ export function SignInView() {
                 <span className="bg-card px-2 text-muted-foreground font-light">Or</span>
               </div>
             </div>
-
             <OAuthButtons onError={setError} />
-
-            <div className="text-center text-sm font-light">
-              <span className="text-muted-foreground">Don't have an account? </span>
-              <Link
-                href="/register"
-                className="text-foreground hover:underline transition-colors"
-              >
-                Sign up
-              </Link>
-            </div>
           </div>
         </div>
       </div>
