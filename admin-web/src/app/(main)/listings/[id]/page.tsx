@@ -7,7 +7,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { notFound } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Listing Details | Admin",
+  title: "Listing Details",
   description: "View and manage listing details",
 };
 

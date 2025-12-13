@@ -6,7 +6,7 @@ import { AccountSettingsPage } from "@/features/account";
 import { Spinner } from "@/components/ui/spinner";
 
 export const metadata: Metadata = {
-  title: "Account Settings | Admin",
+  title: "Account Settings",
   description: "Manage your account settings, security, and preferences",
 };
 

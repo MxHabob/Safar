@@ -10,7 +10,7 @@ import { DashboardPage } from "@/features/admin/dashboard";
 import { Spinner } from "@/components/ui/spinner";
 
 export const metadata: Metadata = {
-  title: "Dashboard | Admin",
+  title: "Dashboard",
   description: "Admin dashboard overview with metrics and analytics",
 };
 

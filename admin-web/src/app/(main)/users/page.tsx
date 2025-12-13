@@ -18,7 +18,7 @@ const UserPage = dynamic(
 )
 
 export const metadata: Metadata = {
-  title: "User Management | Admin",
+  title: "User Management",
   description: "Manage platform users",
 }
 
