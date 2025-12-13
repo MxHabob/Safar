@@ -286,15 +286,41 @@ async def get_read_db() -> AsyncGenerator[AsyncSession, None]:
     max_retries = 3
     retry_delay = 1.0  # Start with 1 second
     
-    # If no replicas configured, use primary database
+    # If no replicas configured, use primary database with retry logic
     if not replica_session_factory:
-        async with AsyncSessionLocal() as session:
+        for attempt in range(max_retries):
             try:
-                await session.execute(text("SELECT 1"))
-                yield session
-                return
-            finally:
-                await session.close()
+                async with AsyncSessionLocal() as session:
+                    try:
+                        await session.execute(text("SELECT 1"))
+                        yield session
+                        return
+                    finally:
+                        await session.close()
+            except (OperationalError, Exception) as e:
+                error_msg = str(e)
+                is_connection_error = any(
+                    keyword in error_msg.lower() 
+                    for keyword in ["name resolution", "gaierror", "temporary failure", "connection", "network", "unable to connect", "dns"]
+                )
+                if is_connection_error:
+                    db_info = parse_db_url(settings.database_url)
+                    if attempt < max_retries - 1:
+                        logger.warning(
+                            f"Primary database connection attempt {attempt + 1}/{max_retries} failed: "
+                            f"DNS resolution error for host '{db_info['host']}'. Retrying in {retry_delay}s..."
+                        )
+                        await asyncio.sleep(retry_delay)
+                        retry_delay *= 2
+                        continue
+                    else:
+                        raise ConnectionError(
+                            f"Database connection failed after {max_retries} attempts: "
+                            f"DNS resolution error for host '{db_info['host']}'.\n"
+                            f"Please check your database configuration and network connectivity.\n"
+                            f"Original error: {error_msg}"
+                        ) from e
+                raise
     
     # Get hostname from the replica session factory mapping for better error messages
     replica_hostname = read_replica_session_hostnames.get(replica_session_factory, "unknown")
@@ -366,25 +392,45 @@ async def get_read_db() -> AsyncGenerator[AsyncSession, None]:
                 # For non-connection errors, raise immediately
                 raise
     
-    # If we get here, all replica retries failed - fall back to primary database
-    try:
-        async with AsyncSessionLocal() as session:
-            try:
-                await session.execute(text("SELECT 1"))
-                yield session
-                return
-            finally:
-                await session.close()
-    except Exception as primary_error:
-        # Even primary database failed
-        db_info = parse_db_url(settings.database_url)
-        raise ConnectionError(
-            f"Database connection failed after {max_retries} attempts: "
-            f"Read replica host '{last_hostname}' and primary database '{db_info['host']}' both failed.\n"
-            f"Please check your database configuration and network connectivity.\n"
-            f"Read replica error: {last_replica_error or 'Unknown error'}\n"
-            f"Primary database error: {str(primary_error)}"
-        ) from primary_error
+    # If we get here, all replica retries failed - fall back to primary database with retry logic
+    primary_retry_delay = 1.0
+    for attempt in range(max_retries):
+        try:
+            async with AsyncSessionLocal() as session:
+                try:
+                    await session.execute(text("SELECT 1"))
+                    yield session
+                    return
+                finally:
+                    await session.close()
+        except (OperationalError, Exception) as primary_error:
+            error_msg = str(primary_error)
+            is_connection_error = any(
+                keyword in error_msg.lower() 
+                for keyword in ["name resolution", "gaierror", "temporary failure", "connection", "network", "unable to connect", "dns"]
+            )
+            
+            if is_connection_error:
+                db_info = parse_db_url(settings.database_url)
+                if attempt < max_retries - 1:
+                    logger.warning(
+                        f"Primary database connection attempt {attempt + 1}/{max_retries} failed: "
+                        f"DNS resolution error for host '{db_info['host']}'. Retrying in {primary_retry_delay}s..."
+                    )
+                    await asyncio.sleep(primary_retry_delay)
+                    primary_retry_delay *= 2
+                    continue
+                else:
+                    # All retries exhausted for both replica and primary
+                    raise ConnectionError(
+                        f"Database connection failed after {max_retries} attempts: "
+                        f"Read replica host '{last_hostname}' and primary database '{db_info['host']}' both failed.\n"
+                        f"Please check your database configuration and network connectivity.\n"
+                        f"Read replica error: {last_replica_error or 'Unknown error'}\n"
+                        f"Primary database error: {error_msg}"
+                    ) from primary_error
+            # For non-connection errors from primary, raise immediately
+            raise
 
 
 DB_INIT_LOCK_KEY = 874512987  # Arbitrary constant for advisory lock
